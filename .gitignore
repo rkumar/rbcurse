@@ -1,0 +1,6 @@
+*.tgz
+*.tmp
+*.db
+dsl/*
+*.dsl
+out/*

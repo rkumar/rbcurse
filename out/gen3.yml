@@ -1,0 +1,102 @@
+--- 
+qty: 
+  fieldtype: 
+  - :INTEGER
+  label: 
+  - Qty
+  default: 
+  - "120"
+  error_message: 
+  - "Range is #{range}"
+  field_back: 
+  - :UNDERLINE
+  padding: 
+  - 2
+  help_text_eval: 
+  - "'Valid: ' + h[\"range\"].join(\" - \")"
+  range: 
+  - 0
+  - 1000
+  index: 2
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+total: 
+  label: 
+  - Total
+  update_func: 
+  - getv("qty").to_i * getv("rate").to_f
+  observes: 
+  - :qty
+  - :rate
+  field_back: 
+  - :UNDERLINE
+  opts_off: 
+  - :O_ACTIVE
+  - :O_EDIT
+  index: 4
+  fore: 
+  - 1
+  just: 
+  - :JUSTIFY_RIGHT
+  width: 
+  - 10
+rate: 
+  fieldtype: 
+  - :NUMERIC
+  label: 
+  - rate
+  field_back: 
+  - :UNDERLINE
+  padding: 
+  - 2
+  range: 
+  - 0
+  - 1000
+  index: 1
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+date: 
+  label: 
+  - Date
+  default: 
+  - Time.now
+  opts_off: 
+  - :O_ACTIVE
+  - :O_EDIT
+  index: 5
+  width: 
+  - 20
+state_code: 
+  fieldtype: 
+  - :CUSTOM
+  - :myfieldcheck
+  - :mycharcheck
+  label: 
+  - State code
+  default: 
+  - "@@states.keys.first"
+  field_back: 
+  - :UNDERLINE
+  help_text_eval: 
+  - " 'Valid: ' + @@states.keys.join(\", \")"
+  index: 3
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+item: 
+  fieldtype: 
+  - :ALNUM
+  label: 
+  - Item
+  help_text: 
+  - Enter item code
+  field_back: 
+  - :UNDERLINE
+  index: 0
+  width: 
+  - 10

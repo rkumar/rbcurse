@@ -1,0 +1,370 @@
+**2008-10-26 13:27**
+## new folder structure ##
+
+Finally used hoe
+    - created new structure
+    - called it rbcurse
+    - updated requires
+    - moved dsls to dsl and outputs to out. (older ones)
+    - now i will create DSLS and OUTs in a totally different area so i don't
+      clutter up the project.
+
+frmincr200810261325.tgz
+* * *
+**2008-10-26 00:57**
+## contractedit.rb ##
+
+passing a values hash and displaying values
+to pass an ID and have it select
+to save data on screen
+
+frmincr200810260057.tgz
+* * *
+**2008-10-25 23:08**
+## query and table app rewrite ##
+
+with yield
+and some awful changes in main variable so that printing of header and footer can happen
+header and footer win is driving me NUTS !!!!!
+
+frmincr200810252307.tgz
+* * *
+**2008-10-25 10:37**
+## update DSL to give edit app for emailer.rb ##
+
+_skelform2.rb generates emailer.rb with the block.
+
+frmincr200810251036.tgz
+* * *
+**2008-10-25 00:20**
+## more touches ##
+
+     - moved commons into EditApplication, removed from main
+     - entire header, footer creation in Edit Application.
+     - Is this causing more confusion, or reducing,
+     - main and app point to EA.
+     - perhaps emailer should not extend Application ?
+
+frmincr200810250019.tgz
+* * *
+**2008-10-24 22:03**
+## before yielding self ##
+
+making a zip before yielding self in EditApplication.
+
+frmincr200810242202.tgz
+* * *
+**2008-10-24 17:58**
+## lambda and method from DSL ##
+
+Did some crappy stuff so that you can use method or lambda from DSL.
+
+frmincr200810241757.tgz
+* * *
+**2008-10-24 14:34**
+## form and field handlers ##
+
+Done some changes to handlers, 
+    
+    - moved handle_unhandled_keys up to rbform
+    - used method(:) while passing procs
+    - trying to enforce usage of Proc or Method in handlers and not going to main
+      or datasource to check for an existing name
+      i.e. reduce coupling.
+    - tested with emailer.rb
+
+Am hoping to make sqlite etc based rbeditforms simpler to implement
+by cutting out dataasource nad passing handlers in to the form.
+
+frmincr200810241431.tgz
+* * *
+**2008-10-19 00:13**
+## proc ##
+
+bind and keys_handled has a proc too now
+
+passing form to handlers not curritem and listselected from rbeditform.
+to be done in tableapplication too. 
+
+frmincr200810190012.tgz
+* * *
+**2008-10-18 22:37**
+## set_proc ##
+
+one can set a proc for populating form and saving.
+Some other cleaning up too.
+
+frmincr200810182236.tgz
+* * *
+**2008-10-17 12:51**
+## FIELD related factoring ##
+
+A lot of stuff has gone into Field, valid, default, postproc
+This happens on get_value, set_value and field_term.
+
+frmincr200810171250.tgz
+* * *
+**2008-10-16 14:58**
+## touching up ##
+
+a few more touches so that DSL generates exactly like pines mailer.
+Some form refreshing so that focus is on first field.
+Also, clearing error at top of loop.
+
+frmincr200810161457.tgz
+* * *
+**2008-10-15 15:07**
+## cleanup ##
+
+removed @window, its already there are form_win() !
+
+frmincr200810151506.tgz
+* * *
+**2008-10-15 12:57**
+## set_value and get_value in FIELD ##
+
+Taking care of ML fields and chomp inside FIELD
+Next change is to knock off @current.
+
+frmincr200810151256.tgz
+* * *
+**2008-10-15 12:28**
+## Changes to FIELD ##
+
+set_value and get_value doing ML processing.
+But not calling it yet.
+
+frmincr200810151227.tgz
+* * *
+**2008-10-15 11:34**
+## email multiline format ##
+
+This was having to be called by the user in form_post_proc
+Now before save, heightwill be checked.
+
+Howevr, this should happen auto. Added get_value and set_value in FIELD. and maybe thats 
+where it shouldhappen.
+But we have to use it, too. We are using @current.
+
+frmincr200810151133.tgz
+* * *
+**2008-10-15 01:40**
+## Edit DSL ##
+
+Finally got the email program running from a DSL.
+One job pending still ... update_current_values.
+Some things could be generated at generate time, setup observers, rather
+than at load time.
+
+Still then need to start getting a  proper datasource into place.
+
+frmincr200810150138.tgz
+* * *
+**2008-10-14 14:29**
+## C-c ##
+
+1.  Now getting c-y, c-z, c-s and c-q
+2.  We seem to have lost C-c
+    The trap is eating it up totally.
+    Finally i am trapping and doing an ungetch for which had to open the Ncurses class
+    and fix.
+3. Also allowing user to bind_key and use the REQ_ values
+4. Fixed bugs so that keys_handled is called in rbeditform.
+
+frmincr200810141427.tgz
+* * *
+**2008-10-13 20:44**
+## Edit Emailer ##
+
+More cleaning u and corrections in C-x method.
+
+frmincr200810132044.tgz
+* * *
+**2008-10-13 18:50**
+## highlighting field ##
+
+Some cute coding, and we've got the current field label hightlighted.
+Sadly Message Text shows that : after it ;-(. That's the default.
+
+Now to get the silly keylabels functional.
+
+frmincr200810131848.tgz
+* * *
+**2008-10-13 17:32**
+## Edit screen ##
+
+More refactoring on editapplication and rbeditforms.
+Moved a lot iinto form. App should have less. Form should not keep calling into app.
+
+Also this version has fields centered abd reverse video. I am now going the alpine way.
+
+frmincr200810131731.tgz
+* * *
+**2008-10-13 12:57**
+## gen4.rb EDIT FORM ##
+
+I have the old gen2.rb redone into a datasource, rbeditform, editapplication.
+Just about coming up!
+Still many errors de to references from form to app.
+
+Totally unclear here as to what the app is doing, and should it have all thefunctinolity
+in it or not. Too much calling from form to app.
+
+Its quite a mess and needs a major overhaul.
+
+I also need to make changes so that rt_hashes and rt_fields dont have to be passed.
+
+Application should only have what is required by the main app for setting up and cleaning ==
+not all the stuff for regular work. 
+
+Form should contain all else.
+
+frmincr200810131253.tgz
+* * *
+**2008-10-12 13:32**
+## MENU ##
+
+Updated menu.skel so it generates a class that inherits from menuApplication.
+It generates a menu class.
+It is working !
+
+frmincr200810121331.tgz
+* * *
+**2008-10-12 00:29**
+## running from menu ##
+
+1.  Got the menu program working after all the changes in base classes.
+
+2. Got programs running from menu. Apparently, some panels were not being 
+   destroyed, so there was a BUS ERROR in update_panels.
+
+3. There was a warning of BOTTOM_WIN_WIDTH already defined that was messing the screen
+   and i could not see it clearly, so it bugged me a long time.
+
+All's okay but the skel programs have to be updated. The menu DSL minp1 has to be rerun to see
+if it gives correct output as per menu1.rb.
+Basically, panels have to be returned with windows so they can be destroyed.
+
+frmincr200810120025.tgz
+* * *
+**2008-10-10 20:48**
+## padreader and panelreader ##
+
+touched up both and maximized them.
+worked on keys of padreader.
+Called both from commons1. Seems okay.
+
+frmincr200810102048.tgz
+* * *
+**2008-10-10 18:19**
+## padreader.rb ##
+
+Made a class out of it
+Can view files using padreader using view_file(filename).
+Have not put buttons, and headers like in panelreader yet.
+
+frmincr200810101818.tgz
+* * *
+
+**2008-10-10 14:36**
+## form specific key labels - wip ##
+
+It is working but not standard
+Need to simplify it.
+qapp returns keylabels but does not support a keys_handled
+tapp has keyhasharray but does not generate its labels.
+we should junk app labels. that complicates things.
+
+frmincr200810101433.tgz
+* * *
+**2008-10-10 11:58**
+## tab and enter behaviour in query apps ##
+
+Tab moves between fields in query form
+Tab in table moves back to query form.
+Enter in table runs query as b4, but now also moves focus to table
+
+frmincr200810101157.tgz
+
+**2008-10-09 22:23**
+
+## HELP ##
+Using __FILE__ in  constructor of major programs to determine a name for file
+to check for help when user presses ?
+Application.rb checks for this.
+
+* * *
+**2008-10-09 19:14** 
+
+## panelreader ##
+deleting panel in ensure otherwise previous screen wuld be scr00d.
+
+## help ##
+Added a generic application_key_handler in Application.rb which shows
+page specific help. Currently, i have to work that out. Application should
+define a page. It by default pops up TODO !
+
+* * *
+**2008-10-09 18:02**
+
+More polishing on panelreader.rb
+But cannot get the line numbers correct.
+Also if I display line # on top, then cursor remains there.
+If i put the print statemnet at beg of loop, the line number is wonky.
+It is correct at end of loop, but then the cursor is stuck on top.
+
+* * *
+**2008-10-09 13:34**
+
+panelreader and editor
+so i can pop it up and view or edit content or a file
+
+* * *
+**2008-10-09 01:05**
+
+## datasource class ##
+
+  Made this more reusable. Lots of silly stuff changed.
+  * now it has a constructor.
+  * does not do any work other than init.
+  * more reusable than earlier.
+
+* * *
+**2008-10-08 18:16**
+
+## handling of cursor and selection in subseq queries ##
+
+especially if:
+  
+  *  fewer queries returned in second query
+  *  no queries returned in second query
+
+  Now cursor will always be in row one after a fresh query when you tab.
+  Can't tab in if no rows.
+
+* * *
+**2008-10-08 17:51**
+
+## get_curr_index bug ##
+
+this was returning one more (base 1) so some users were doing -1
+Some methods were getting wrong curr_item like the handle_? methods.
+
+User cannot tab into table if no data.
+
+Issue of wrong header count if no rows also fixed.
+
+* * *
+
+**2008-10-08 14:48**
+
+Moved stuff to Datasource class.
+Also checked out more stuff from DSL
+Added keys_handled to DLS and tested it.
+
+* * *
+
+**2008-10-07 22:40**
+
+1. based on datatype, aligning fields in table 
+2. based on datatype, using = in search query for integer and real and smallint

@@ -1,0 +1,121 @@
+--- 
+qty: 
+  fieldtype: 
+  - :INTEGER
+  label: 
+  - Qty
+  default: 
+  - 120
+  error_message: 
+  - "Range is #{range}"
+  field_back: 
+  - :UNDERLINE
+  padding: 
+  - 2
+  help_text_eval: 
+  - "'Valid: ' + h[\"range\"].join(\" - \")"
+  range: 
+  - 0
+  - 1000
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+nickname: 
+  fieldtype: 
+  - :ALPHA
+  label: 
+  - nickname
+  field_back: 
+  - :UNDERLINE
+  valid: 
+  - ^[a-z]*$
+  help_text_eval: 
+  - ("a".."z").entries
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+from: 
+  fieldtype: 
+  - :ALNUM
+  label: 
+  - From
+  help_text: 
+  - "Enter only #{h['width']} letters"
+  field_back: 
+  - :UNDERLINE
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+rate: 
+  fieldtype: 
+  - :NUMERIC
+  label: 
+  - rate
+  default: 
+  - rand(1000)
+  field_back: 
+  - :UNDERLINE
+  padding: 
+  - 2
+  range: 
+  - 0
+  - 1000
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+enumcheck: 
+  fieldtype: 
+  - :ENUM
+  label: 
+  - enumcheck
+  checkunique: 
+  - false
+  checkcase: 
+  - false
+  field_back: 
+  - :UNDERLINE
+  values: 
+  - "[\"one\",\"two\",\"three\"]"
+  help_text_eval: 
+  - "'Valid: ' + h[\"values\"].join(\", \")"
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+state_code: 
+  fieldtype: 
+  - :CUSTOM
+  - :myfieldcheck
+  - :mycharcheck
+  label: 
+  - State code
+  default: 
+  - states.keys.first
+  field_back: 
+  - :UNDERLINE
+  help_text_eval: 
+  - " 'Valid: ' + states.keys.join(\", \")"
+  min_data_width: 
+  - 0
+  width: 
+  - 10
+numbers: 
+  fieldtype: 
+  - :REGEXP
+  - ^ *[0-9]* *$
+  label: 
+  - numbers
+  field_back: 
+  - :UNDERLINE
+  fore: 
+  - 1
+  just: 
+  - :JUSTIFY_RIGHT
+  min_data_width: 
+  - 0
+  width: 
+  - 10

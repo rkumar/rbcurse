@@ -1,0 +1,36 @@
+
+set_field_buffer: this is a very cranky method. If I try stuffing it with the output of system it often prints nothing. My findings are: you need to chomp! the string before printing.
+xx = %x[echo $LOGNAME]
+e.g. set_field_buffer(0, xx.chomp!)
+
+If you have a multiline field, it will only show the value if you input one line. It rejects anythong longer. So putting the output of a file won't work. I read in a file into a var and tried setting it. Does not work. 
+It shows the result of ls -m f*.rb, but not ls -m *.rb. (ls -m concats output into one line and delimts with a comma).
+
+Okay, for longer results you have to remove newlines. It will not accept them.
+--- 
+
+field_status: once a field is modified, it remains true when exiting each time. For fields that have been set with a default value, it remains true from start. Perhaps I should set it to false in such cases. Or else I should set it to false after validating or whatever.
+-- Done the above.
+
+help_text is printed as-is.
+help_text_eval is evaluated to determine values such as ranges, keys of hashes in memory at runtime etc.
+
+
+form_wrap.c:  FORM_DEF_CONST(E_NO_ROOM);
+form_wrap.c:  FORM_DEF_CONST(NO_JUSTIFICATION);
+form_wrap.c:  FORM_DEF_CONST(O_VISIBLE);
+form_wrap.c:  FORM_DEF_CONST(O_ACTIVE);
+form_wrap.c:  FORM_DEF_CONST(O_PUBLIC);
+form_wrap.c:  FORM_DEF_CONST(O_EDIT);
+form_wrap.c:  FORM_DEF_CONST(O_WRAP);
+form_wrap.c:  FORM_DEF_CONST(O_BLANK);
+form_wrap.c:  FORM_DEF_CONST(O_AUTOSKIP);
+form_wrap.c:  FORM_DEF_CONST(O_NULLOK);
+form_wrap.c:  FORM_DEF_CONST(O_STATIC);
+form_wrap.c:  FORM_DEF_CONST(O_PASSOK);
+form_wrap.c:  FORM_DEF_CONST(O_NL_OVERLOAD);
+form_wrap.c:  FORM_DEF_CONST(O_BS_OVERLOAD);
+  FORM_DEF_CONST(NO_JUSTIFICATION);
+  FORM_DEF_CONST(JUSTIFY_RIGHT);
+  FORM_DEF_CONST(JUSTIFY_LEFT);
+  FORM_DEF_CONST(JUSTIFY_CENTER);

@@ -1,0 +1,107 @@
+--- 
+cc: 
+  label: 
+  - Cc
+  fieldtype: 
+  - :REGEXP
+  - ^[a-z0-9_@. ]+$
+  position: 
+  - 3
+  - 1
+  default: 
+  - "\"rahul\""
+  field_back: 
+  - :REVERSE
+  index: 2
+  post_proc: 
+  - :emailid_format
+  width: 
+  - 60
+body: 
+  label: 
+  - body
+  position: 
+  - 8
+  - 1
+  help_text: 
+  - "'Enter all you can. Tab out before saving.'"
+  field_back: 
+  - :REVERSE
+  opts_off: 
+  - :O_STATIC
+  height: 
+  - 5
+  index: 5
+  opts_on: 
+  - :O_WRAP
+  width: 
+  - 60
+from: 
+  fieldtype: 
+  - :REGEXP
+  - ^[a-z_0-9@.]+ *$
+  label: 
+  - From
+  position: 
+  - 1
+  - 1
+  help_text: 
+  - "Enter only #{h['width']} letters"
+  default: 
+  - "\"oneness.univ\""
+  field_back: 
+  - :REVERSE
+  index: 0
+  post_proc: 
+  - :emailid_format
+  min_data_width: 
+  - 0
+  width: 
+  - 60
+subject: 
+  label: 
+  - Subject
+  position: 
+  - 6
+  - 1
+  help_text: 
+  - No type set
+  field_back: 
+  - :REVERSE
+  index: 4
+  width: 
+  - 60
+date: 
+  label: 
+  - Date
+  fieldtype: 
+  - :ALNUM
+  position: 
+  - 4
+  - 1
+  default: 
+  - Time.now.rfc2822
+  opts_off: 
+  - :O_EDIT
+  - :O_ACTIVE
+  index: 3
+  width: 
+  - 60
+to: 
+  label: 
+  - To
+  fieldtype: 
+  - :REGEXP
+  - ^[a-z_0-9@.]+ *$
+  position: 
+  - 2
+  - 1
+  default: 
+  - "\"rahulbeneg\""
+  field_back: 
+  - :REVERSE
+  index: 1
+  post_proc: 
+  - :emailid_format
+  width: 
+  - 60
