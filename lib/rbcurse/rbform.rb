@@ -276,7 +276,7 @@ class RBForm
         #        end
       else
         action = @key_handlers[chup]
-        if action.class == 'Proc'  # added 2008-10-18 23:57 XXX NOT TESTED
+        if action.respond_to? :call # 2008-10-27 19:57 
           action.call(self)
         else  # string
           if respond_to?action

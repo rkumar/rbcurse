@@ -169,11 +169,11 @@ class RBEditForm < RBForm
       when 25  # c-y # need to do stty dsusp undef for this
         @main.print_status("SAVE as YAML");
       when 197, 3 # alt-Q alt-q C-c   in raw mode C-c is 3 not -1 
-        if form_changed? == true
-          ret =  @main.askyesno(nil, "Form was changed. Wish to save ?")
-          if ret
-            form_save
-            form_changed(false)
+        if form_changed?
+          ret =  @main.askyesno(nil, "Form was changed. Wish to abandon ?")
+          if !ret
+            #form_save
+            #form_changed(false)
             next
           else
             @main.print_status("Abandoning changes. Bye!")

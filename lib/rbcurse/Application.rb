@@ -3,6 +3,9 @@
 #                                                       #
 # Arunachalesha                                         #
 # $Id$  #
+# TODO:
+#    * create a class of application labels
+#      currently its scattered code here and commons.
 #*******************************************************#
 require 'rubygems'
 require 'ncurses'
@@ -124,6 +127,29 @@ class Application
     # this structure will be in the mem of the app that sets the labels but not necessarily in the one that uses this !!!
     create_datakeys(key_hash_array)
   end
+  ##
+  # updates existing label with a new one. 
+  # remember to call restore_application_key_labels after updating/inserting
+  # @return true if updated, else false
+  def update_application_key_label(display_code, new_display_code, text)
+    @key_labels.each_index do |ix|
+      kl = @key_labels[ix]
+      lab = kl.split('~')
+      if lab[0] == display_code
+        @key_labels[ix] = new_display_code + "~" + text
+        $log.debug("updated #{@key_labels[ix]}")
+        return true
+      end
+    end
+    return false
+  end
+  ##
+  # inserts an application label at given index
+  # to add the key, use create_datakeys to add bindings 
+  # remember to call restore_application_key_labels after updating/inserting
+  def insert_application_key_label(index, display_code, text)
+    @key_labels.insert(index, display_code + "~" + text)
+  end
 
     #create a hash of keys for quick lookup on keypress, 
     # keys will be ascii values 
@@ -135,7 +161,7 @@ class Application
     key_hash_array.each { |khash|
       kc = khash[:keycode]
       # added on 2008-10-23 22:57, pls give proc, we are not linking to datasources from rbform
-      raise "Action #{kc} #{kc.chr} can no longer be nil. Please give Proc" if khash[:action].nil?
+      raise "Action #{kc} #{kc.chr} can no longer be nil. Preferably give Proc" if khash[:action].nil?
       if kc.is_a?Array
         kc.each{ |arr| @datakeys[arr]=khash[:action] }
       else
@@ -286,12 +312,12 @@ class Application
     if File.exists?(ofilename)
       print_help_page(ofilename)   # TODO XXX get actual page
     else
-      @log.error("No help file found: #{ofilename}")
+      $log.warn("No help file found: #{ofilename}")
       filename = File.expand_path(@helpfilepath+"/"+self.class.to_s().downcase()+".txt")
       if File.exists?(filename)
         print_help_page(filename)   # TODO XXX get actual page
       else
-        @log.error("No help file found: #{filename}")
+        $log.error("No help file found: #{filename}")
         @main.print_error("No help file found: #{ofilename}")
       end
     end
