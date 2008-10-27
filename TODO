@@ -1,5 +1,12 @@
 #  NCURSES APPLICATION GENERATOR #
 #
+#  2008-10-26 16:47 
+#  Need to work on transv.rb and allow passing of code to query and populated.
+#  Also work on save.
+#
+#  I need to worry less on DSL and work more on how apps can be made simpler and more hackable.
+#   with appropriate hooks.
+#
 #  2008-10-26 10:34 
    How to simplify the awful header/footer_win business. If i pass the win's themselves as i had
    started doing, then progs can execute in their own space and use the win.

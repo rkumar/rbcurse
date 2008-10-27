@@ -1,11 +1,11 @@
-#!/usr/bin/ruby
-
+$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
 require 'rubygems'
 require 'ncurses'
-require 'commons1'
+require 'rbcurse/commons1'
 require 'logger'
-require 'queryapplication'
-require 'datasource'
+require 'rbcurse/queryapplication'
+require 'rbcurse/tableapplication'
+require 'rbcurse/datasource'
 require 'sqlite3'
 
 include Ncurses

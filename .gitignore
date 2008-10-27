@@ -1,6 +1,5 @@
 *.tgz
 *.tmp
 *.db
-dsl/*
-*.dsl
-out/*
+bak
+tmp

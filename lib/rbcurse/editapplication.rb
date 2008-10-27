@@ -196,17 +196,5 @@ class EditApplication < Application
     form.user_object.merge! hsh
   end
 
-# get a confirmation from user. very simplistic
-#  2008-09-23 21:00 
-  #  @deprecated XXX delete
-def get_confirmation(win, askstr, maxlen=1)
-  len = askstr.length
-  print_this(askstr, 1, 21, 2)
-  Ncurses.echo();
-  yn=''
-  yn = win.mvwgetnstr(21,askstr.length+3,yn,maxlen)
-  Ncurses.echo();
-  yn
-end
   ### ADD HERE ###
 end # class
