@@ -2,7 +2,7 @@
 ddd="$(date +%Y%m%d%H%M)"
 file=frmincr$ddd.tgz
 #tar zcvf  $file --newer=$prev *.rb
-prev=`ls -t *.tgz | head -1`
+prev=`ls -t ../*.tgz | head -1`
 echo "last was: $prev"
 echo "Enter comment. ^D to finish"
 echo -n "Enter subject:"
@@ -28,3 +28,5 @@ tar zcvf $file --newer-mtime="`date -r $prev`" $SRCDIR dsl/ out/ CHANGELOG TODO
 tar ztvf  $file 
 ls -l $file
 mailbackup.sh $file
+mv $file ..
+mv CHANGELOG.tmp ..

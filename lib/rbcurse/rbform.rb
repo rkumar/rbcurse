@@ -148,6 +148,81 @@ module Form
     def fire_handler handler_code, aform
       user_object[handler_code].call(aform) if user_object.include? handler_code
     end
+    def set_read_only(flag=true)
+      if flag
+        field_opts_off(O_EDIT)
+        field_opts_off(O_ACTIVE)
+      else
+        field_opts_on(O_EDIT)
+        field_opts_on(O_ACTIVE)
+      end
+    end
+    def set_reverse flag=true
+      if flag
+        set_field_back(A_REVERSE)
+      else
+        set_field_back(A_NORMAL)
+      end
+    end
+    def justify(align=:right)
+      case align.downcase
+      when :right
+        field.set_field_just(JUSTIFY_RIGHT)
+      when :left
+        field.set_field_just(JUSTIFY_LEFT)
+      when :center
+        field.set_field_just(JUSTIFY_CENTER)
+      end
+    end
+    def set_real(min=0, max=10000, pad=2)
+      set_field_type(TYPE_NUMERIC, pad, min, max)
+      set_field_just(JUSTIFY_RIGHT)
+      user_object["type"]="real"
+    end
+    def set_date
+      set_field_type(TYPE_REGEXP, "^[12][0-9]\{3}[\-/][0-9]\{2}[\-/][0-9]\{2}")
+      user_object["type"]="date"
+    end
+    def set_integer(min=0, max=10000, pad=2)
+      set_field_type(TYPE_INTEGER, pad, min, max)
+      set_field_just(JUSTIFY_RIGHT)
+      user_object["type"]="integer"
+    end
+    def self.create_integer_field
+    end
+    def self.create_real_field
+    end
+    def self.create_date_field
+    end
+    def self.create_field(fieldwidth, row, col, name, type=nil,label=nil, height=1, nrows=0, nbufs=0, config={})
+      field = FIELD.new(height, fieldwidth, row, col, nrows, nbufs)
+      help_text = config.fetch("help_text", "Enter a #{name}")
+      label ||= config.fetch("label", name)
+      type ||= config.fetch("type", "")
+
+      read_only = config.fetch("read_only", false)
+      field.set_read_only(true) if read_only
+
+
+      field.user_object = config
+      field.user_object.merge!({"label"=>label, "name"=>"#{name}", "help_text"=>help_text, 
+        :row=>row, :col => col, :label=>label, "type"=>type,"width"=>fieldwidth})
+
+      type = config.fetch("type", "")
+      case type.downcase
+      when "date":
+        field.set_date
+      when "integer"
+        field.set_integer
+      when "smallint"
+        field.set_integer(0,127,1)
+      when "real", "float", "numeric"
+        field.set_real
+      end
+
+      yield field if block_given?
+      return field
+    end
   end                        # class FIELD
 end                          # module Form
 
@@ -187,7 +262,7 @@ class RBForm
       if (@application.respond_to?(name))
         return @application.send(name,*args)
       else
-        raise "RBForm: I don't handle: #{name}"
+        raise "#{name}"
       end
     end
   end

@@ -1,3 +1,37 @@
+**2008-10-29 00:32**
+## contractedit new_create_fields ##
+
+this method uses the newly pimped FIELD object, hoping to make it MUCHO easier to create fields.
+Still a lot more that can go in, validate against values. 
+
+frmincr200810290030.tgz
+* * *
+**2008-10-28 11:26**
+## more fields ##
+
+more touching.
+
+frmincr200810281126.tgz
+* * *
+**2008-10-28 11:16**
+## work on create_field ##
+
+an easier create_field method
+and many convenence methods for field settings and creation.
+not tested.
+changes are in rbform.rb
+
+frmincr200810281115.tgz
+* * *
+**2008-10-28 00:13**
+## contractedit.rb ##
+
+a lot of generic stuff
+does insert/update
+    - generic field creation
+
+frmincr200810280013.tgz
+* * *
 **2008-10-26 13:27**
 ## new folder structure ##
 

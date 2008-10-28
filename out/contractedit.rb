@@ -160,6 +160,40 @@ end # class
 
 if __FILE__ == $0
   # Initialize curses
+      def new_create_fields tablename
+        columns = []
+        datatypes = []
+        db = SQLite3::Database.new('testd.db') 
+        command = %Q{select * from #{tablename} limit 1}
+        $log.debug(command)
+        columns, *rows = db.execute2(command)
+        datatypes = rows[0].types 
+        $log.debug("2.columns")
+        $log.debug(columns)
+        
+        field_start_col = 14
+        field_start_row = 1
+        fields = []
+        flen = field_start_col + field_start_col -5 # max size of col name
+        fieldwidth = 15
+        columns.each_index do |ix|
+          currow = ix
+          if ix >= ContractEdit::max_rows() -1
+            field_start_col = 36
+            currow -= (ContractEdit::max_rows() -1)
+          end
+          fname = columns[ix]
+          sname = fname
+          sname = fname[0..flen] if fname.length>flen
+          field = FIELD.create_field(fieldwidth, currow+field_start_row, field_start_col+field_start_col, fname, type=datatypes[ix],label=sname, height=1, nrows=0, nbufs=0, config={}) do |fld|
+            fld.set_reverse true
+          end
+          yield ix, fname, field, datatypes[ix] if block_given?
+          fields.push(field)
+        end # columns
+        $log.debug("done NEW creating fields"+fields.size.to_s)
+        return fields
+      end
       def my_create_fields tablename
         columns = []
         datatypes = []
@@ -207,7 +241,7 @@ if __FILE__ == $0
             field.set_field_type(TYPE_NUMERIC, 2, 0, 10000)
             field.user_object["help_text"] = "#{fname}: Valid range is 0,10000"
           end
-          yield field if block_given?
+          yield ix, fname, field, datatypes[ix] if block_given?
           fields.push(field)
         end # columns
         $log.debug("done creating fields")
@@ -217,7 +251,11 @@ if __FILE__ == $0
     stdscr = Ncurses.initscr();
     f =  ContractEdit.new { |ff|
       #fields = ff.create_fields
-      fields = my_create_fields "contracts"
+      #fields = my_create_fields "contracts"
+      fields = new_create_fields "contracts" 
+      fields[0].set_read_only true
+      fields[0].set_reverse false
+
       ff.create_application fields
       form = ff.eapp.form
       app = ff.eapp
