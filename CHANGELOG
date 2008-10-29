@@ -1,3 +1,12 @@
+**2008-10-29 23:53**
+## SingleTable ##
+
+Have moved generic methods into a module which can be called or bound to keys.
+generic update,delete,select, insert and create_fields.
+Or maybe we can extend a class from rbedit. lets see.
+
+frmincr200810292352.tgz
+* * *
 **2008-10-29 00:32**
 ## contractedit new_create_fields ##
 

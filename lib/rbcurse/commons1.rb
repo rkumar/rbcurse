@@ -173,7 +173,7 @@ module Commons1
     end
     return 0, yn
   end
-    def get_string(win, askstr, maxlen, default, labels )
+    def get_string(win, askstr, maxlen=20, default="", labels=nil )
     win ||= @footer_win
     askstr = "#{askstr} [#{default}]: "
     len = askstr.length
@@ -186,9 +186,15 @@ module Commons1
     print_key_labels( 0, 0, mylabels)
     Ncurses.echo();
     yn=''
-    win.mvwgetnstr(LINEONE,askstr.length,yn,maxlen)
+    begin
+      Signal.trap("INT"){ }
+      win.mvwgetnstr(LINEONE,askstr.length,yn,maxlen)
+    rescue
+      yn=''
+    ensure
     Ncurses.noecho();
     restore_application_key_labels # must be done after using print_key_labels
+    end
     return yn
   end
 

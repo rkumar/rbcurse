@@ -2,21 +2,22 @@
 #
 #  2008-10-27 19:12 
 #   - dynamic creation of fields, however, for this fields will have to be created before form
-     kicks in, and will have to supplant fields created. Unless we have some program that
-     allows us to do so - it does not create fields - DONE
-   - FIELD, allow dynamic setting of field readonly set_field_readonly
-   - move generic stuff fmr contractedit to a generic database app < editapplication
+#    kicks in, and will have to supplant fields created. Unless we have some program that
+#    allows us to do so - it does not create fields - DONE
+#   - FIELD, allow dynamic setting of field readonly set_field_readonly  DONE
+#   - move generic stuff fmr contractedit to a generic database app < editapplication
+#     moved to module named SingleTable
 
-   - creating a field is awfully verbos and pathetic. let's make it easy.
+#   - creating a field is awfully verbos and pathetic. let's make it easy. DONE
 
 #   - how can calling program change the label of Send to Save. or Update Delete DONE
-#     Use bind_key to pass method or proc
-   - How can calling program, insert keys in middle, pushing others to right - DONE
-   - caller to make a field/key readonly
+#     Use bind_key to pass method or proc DONE
+#   - How can calling program, insert keys in middle, pushing others to right - DONE
+#  - caller to make a field/key readonly
    - specify that only update to happen, or update or delete. which actions to allow
    - actions to go into rbedit or a derivative of rbedit that has update/delete/insert/select
 
-   - application labels should be a class currently the functionality is diffuse. can modify
+   - application labels should be a class currently the functionality is diffuse. can't modify
      easily. sheesh !
    
    
@@ -74,8 +75,8 @@
 
 ### SQLITE INTEGRATION ###
 
-    * done in mrows
-    * TODO in single edit
+#    * done in mrows
+#    * in single edit DONE
 
 ### mysql integration ###
 

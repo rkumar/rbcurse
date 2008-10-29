@@ -262,6 +262,7 @@ class RBForm
       if (@application.respond_to?(name))
         return @application.send(name,*args)
       else
+        $log.error("RBFORM method_missing (#{name}): #{@application.class.to_s} ")
         raise "#{name}"
       end
     end
@@ -318,7 +319,7 @@ class RBForm
   def set_handler handler_code, aproc
     #raise "#{handler_code} arg2 should be a proc or method" if aproc.class != Proc
     # check to see if it is callable
-    raise "#{handler_code} arg2 should be a proc or method" if !aproc.respond_to? :call
+    #raise "#{handler_code} arg2 should be a proc or method" if !aproc.respond_to? :call
     user_object[handler_code] = aproc
   end
   ##
@@ -326,7 +327,12 @@ class RBForm
   # others are default handler
   def fire_handler handler_code, *args
     return false if !user_object.include? handler_code
-    user_object[handler_code].call(*args) #if user_object.include? handler_code
+    aproc = user_object[handler_code]
+    if aproc.respond_to? :call
+      user_object[handler_code].call(*args) #if user_object.include? handler_code
+    else
+      send(aproc, *args)
+    end
   end
   def handle_unhandled_keys(ch)
     @key_handlers = @application.datakeys
