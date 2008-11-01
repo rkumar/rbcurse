@@ -208,7 +208,7 @@ fields = Array.new
       print_screen_labels(@eform_win, @labelarr) if !@labelarr.nil?
 
         #@keys_handled = EditApplication.get_keys_handled() + (@datasource.get_keys_handled() ||  [])
-        @keys_handled = EditApplication.get_keys_handled() 
+        @keys_handled = app.get_keys_handled() 
       app.add_to_application_labels(@keys_handled)
       app.restore_application_key_labels
       stdscr.refresh();

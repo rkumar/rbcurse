@@ -41,6 +41,7 @@ class RBEditForm < RBForm
     super(fields)
     @form_status = nil;
     @values_hash = nil; #may pass a values hash to be used to display
+    @field_hash = nil; #field name => field
     if block_given?
       yield self
     end
@@ -142,8 +143,8 @@ class RBEditForm < RBForm
         form_driver(REQ_DEL_PREV);
       when 153 # alt-h 
         helpproc()
-      when 24  # c-x
-        handle_save
+      #when 24  # c-x
+      #  handle_save
       when KEY_ENTER,10   # enter and c-j
         form_driver(REQ_NEXT_LINE);
         form_driver(REQ_INS_LINE);
@@ -189,8 +190,14 @@ class RBEditForm < RBForm
           # either we just swallow it with a beep, or ret a -1
           # so it can be processed. Like saw a alt-q or F1 or quit command
           #consumed=@application.handle_unhandled_keys(ch, get_curr_item(), @selecteditems)
+          begin
           consumed=handle_unhandled_keys(ch)
           @application.application_key_handler(ch) if !consumed
+          rescue => err
+            $log.error("ERROR: #{err}")
+            $log.error(err.backtrace.join("\n"))
+            @main.print_error("#{err}")
+          end
         else
           stdscr.refresh();
           form_driver(ch);
@@ -437,6 +444,8 @@ class RBEditForm < RBForm
   ##
   # Convenience method: returns a hash with field name as key, and field value as value
   def get_current_values_as_hash
+    form_driver(REQ_VALIDATION); # 2008-10-31 23:27 
+    #form_driver(REQ_PREV_FIELD);
     current = {}
     @fields.each { |ff|
       current[ ff["name"] ] = ff.get_value
@@ -446,11 +455,12 @@ class RBEditForm < RBForm
   ##
   # Convenience method: returns a hash with field name as key, and FIELD as value
   def get_fields_as_hash
-    allfields = {}
+    return @field_hash if !@field_hash.nil?
+    @fieldhash = {}
     @fields.each { |ff|
-      allfields[ ff["name"] ] = ff
+      @fieldhash[ ff["name"] ] = ff
     }
-    return current
+    return @fieldhash
   end
   # get the value of a field using its fieldname
   # cycles through field, i no longer keep that hash

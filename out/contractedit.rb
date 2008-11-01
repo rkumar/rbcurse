@@ -11,7 +11,7 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
 require 'rubygems'
 require 'ncurses'
 require 'rbcurse/editapplication'
-require 'rbcurse/SingleTable'
+require 'rbcurse/singletable'
 require 'sqlite3'
 
 include Ncurses
@@ -81,7 +81,7 @@ class ContractEdit < Application
 
     print_screen_labels(@eform_win, @labelarr) if !@labelarr.nil?
 
-    @keys_handled = EditApplication.get_keys_handled() 
+    @keys_handled = @eapp.get_keys_handled() 
     @eapp.create_header_footer(@keys_handled)
     stdscr.refresh();
   end # create_application
@@ -122,19 +122,19 @@ if __FILE__ == $0
       app.insert_application_key_label(   4,"^Z","Delete")
       app.insert_application_key_label(   5,"^S","Select")
       app.restore_application_key_labels
-      def get_db 
+      def db
         @db ||= SQLite3::Database.new('testd.db') 
       end
       ## returns string containg table name
-      def get_tablename 
+      def tablename 
         "contracts"
       end
       ##  returns array of strings containing key field/s
-      def get_keynames
+      def keynames
         ["contract_id"]
       end 
       ##  returns array containing values from form or wherever
-      def get_keyvalues
+      def keyvalues
         @contract_id
       end 
       ## returns hash of values, rbeditform gives this.

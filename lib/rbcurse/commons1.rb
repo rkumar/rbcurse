@@ -94,10 +94,11 @@ module Commons1
   #  @main.clear_error
   #  </code>
 
-  def askchoice(win, askstr, default, labels, validchars)
+  def askchoice(win, askstr, default, labels, validchars, config={})
     win ||= @footer_win
     askstr = "#{askstr} [#{default}]: "
     len = askstr.length
+    helptext = config.fetch("helptext", "No helptext provided for this action")
 
     clear_error # 2008-10-13 20:26 
     print_this(win, askstr, 4, LINEONE, 0)
@@ -110,6 +111,12 @@ module Commons1
     while true
       ch=win.mvwgetch(LINEONE,askstr.length)
       yn = ch.chr
+      # 2008-10-31 18:08 
+      if ch == ?\C-g or yn == '?'
+        print_footer_help(helptext)
+        print_key_labels( 0, 0, labels)
+        next
+      end
       yn = default if yn == '' or ch == 10 # KEY_ENTER
       yn.downcase!
       break if validchars.include?yn
@@ -195,6 +202,7 @@ module Commons1
     Ncurses.noecho();
     restore_application_key_labels # must be done after using print_key_labels
     end
+    yn = default if yn == "" # 2008-10-31 18:59 
     return yn
   end
 

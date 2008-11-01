@@ -48,7 +48,7 @@ class EditApplication < Application
       #@form.main = main
       @form.main = self
       @event_listeners = []
-      create_datakeys(EditApplication::get_keys_handled()) # 2008-10-14 10:29 
+      create_datakeys(get_keys_handled()) # 2008-10-14 10:29 
       bind_keys
 
       # the class which gives data and responds to events
@@ -65,7 +65,8 @@ class EditApplication < Application
     ##
     # TODO
     #
-    def self.get_keys_handled
+    def get_keys_handled
+    $log.debug("keys handled edit")
       @app_keys_handled=[
         { :keycode=>?\C-g, :display_code => "^G", :text => "Get Help  ", :action => "help" },
         { :keycode=>?\C-c, :display_code => "^C", :text => "Cancel    ", :action => "quit" },
@@ -186,6 +187,7 @@ class EditApplication < Application
   #
 
   def bind_keys
+    $log.debug("bindkey edit")
     bind_key ?\C-w, "REQ_NEXT_WORD"
     bind_key ?\C-b, "REQ_PREV_WORD"
 #    bind_key ?\C-l, "REQ_INS_MODE"

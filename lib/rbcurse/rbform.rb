@@ -156,6 +156,15 @@ module Form
         field_opts_on(O_EDIT)
         field_opts_on(O_ACTIVE)
       end
+      #o=Ncurses::Form.field_opts(self)
+      #$log.debug("OPTS RO #{name},#{flag} #{o}")
+    end
+    def set_static flag=true
+      if flag
+        field_opts_on(O_STATIC)
+      else
+        field_opts_off(O_STATIC)
+      end
     end
     def set_reverse flag=true
       if flag
@@ -165,13 +174,13 @@ module Form
       end
     end
     def justify(align=:right)
-      case align.downcase
+      case align
       when :right
-        field.set_field_just(JUSTIFY_RIGHT)
+        set_field_just(JUSTIFY_RIGHT)
       when :left
-        field.set_field_just(JUSTIFY_LEFT)
+        set_field_just(JUSTIFY_LEFT)
       when :center
-        field.set_field_just(JUSTIFY_CENTER)
+        set_field_just(JUSTIFY_CENTER)
       end
     end
     def set_real(min=0, max=10000, pad=2)

@@ -1,3 +1,23 @@
+**2008-11-01 23:47**
+## contractedit1101.rb ##
+
+This conttains the contract edit with:
+    - calls to create_default_application which takes care of windows etc
+      So calling code is very few lines. Fully functional table realted CRUD screen.
+    - ADded WHERE and ORDER BY in actions.
+    - The search interface is still not clear. Using ^X-M for clearing screen and inserting.
+      Can be confusing.
+
+frmincr200811012345.tgz
+* * *
+**2008-10-31 14:48**
+## Actions: CRUD and FIND-all ##
+
+crud actions working
+findall, first, last, next, previous.
+
+frmincr200810311448.tgz
+* * *
 **2008-10-29 23:53**
 ## SingleTable ##
 
