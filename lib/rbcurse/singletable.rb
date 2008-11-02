@@ -86,6 +86,8 @@ module SingleTable
     raise "No key fields specified to search on. Cannot proceed." if key_array.nil?
     key_array.each_index do |ix|
       ret  = form.get_string(nil, "Enter a #{key_array[ix]}", 10, @keyvalues[ix])
+      $log.debug("ret is: (#{ret})")
+      return if ret.nil? or ret == ''
       if ret != ''
         @keyvalues[ix] = ret 
       else
@@ -102,7 +104,7 @@ module SingleTable
     values ||= keyvalues()
     #raise "db IS nil" if db().nil?
     raise "db is nil" if ddb.nil?
-    raise "No keys passed. Stubborn refusal to select data." if values.nil? or values[0]==""
+    raise "No keys passed. Stubborn refusal to select data." if values.nil? or values[0]=="" or values == [nil]
 
     ddb.results_as_hash = true
     wheres=[]

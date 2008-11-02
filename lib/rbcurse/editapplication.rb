@@ -4,16 +4,14 @@
   * Description   
   * Author:
   * Date:
-  * License:
-    This is free software; you can copy and distribute and modify
-    this program under the term of Ruby's License
-    (http://www.ruby-lang.org/LICENSE.txt)
+  * License: (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
 
 # This has the functionality of a single row editing application
 #   * most features are with the tableform itself.
 #   * will be related to a datasource 
+#    2008-11-02 11:30 replaced RBEditForm with BasicEditForm after moving specialized code down.
 #
 # Arunachalesha 
 # @version 
@@ -21,7 +19,8 @@
 require 'rubygems'
 require 'ncurses'
 require 'rbcurse/application'
-require 'rbcurse/rbeditform'
+#require 'rbcurse/rbeditform'
+require 'rbcurse/basiceditform' # 2008-11-02 11:30 
 require 'rbcurse/commons1'
 
 include Ncurses
@@ -136,7 +135,8 @@ class EditApplication < Application
   end
   # could be made static / class level - reverted since called from constructor
   def create_edit_form(fields)
-    my_form = create_form_with(RBEditForm.new(fields));
+    #my_form = create_form_with(RBEditForm.new(fields));
+    my_form = create_form_with(BasicEditForm.new(fields)); # 2008-11-02 11:30 
     return my_form;
   end
 

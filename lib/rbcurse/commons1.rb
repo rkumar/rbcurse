@@ -194,12 +194,13 @@ module Commons1
     Ncurses.echo();
     yn=''
     begin
-      Signal.trap("INT"){ }
+      Signal.trap("INT"){ return nil }
       win.mvwgetnstr(LINEONE,askstr.length,yn,maxlen)
     rescue
       yn=''
     ensure
     Ncurses.noecho();
+    clear_error #  2008-11-02 11:51 
     restore_application_key_labels # must be done after using print_key_labels
     end
     yn = default if yn == "" # 2008-10-31 18:59 

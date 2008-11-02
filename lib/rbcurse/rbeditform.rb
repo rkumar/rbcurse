@@ -80,16 +80,12 @@ class RBEditForm < RBForm
     set_form_init(form_init_proc)
     set_form_term(form_term_proc)
 
-      fire_handler :form_init, self # XXX this aint getting fired dude perhaps installedtoo late
+    fire_handler :form_init, self # XXX this aint getting fired dude perhaps installedtoo late
 
     stdscr.refresh();
 
     Ncurses::Panel.update_panels
     Ncurses.doupdate()
-    # unget is required becos the app is waiting at getch and trap takes the key
-    #trap("INT") { eform_win.ungetch(-1); }
-    # not required with raw() mode
-
     #set_defaults(nil)
     form_populate
     form_driver(REQ_FIRST_FIELD)
@@ -110,33 +106,25 @@ class RBEditForm < RBForm
       when 9 # tab
         form_driver(REQ_VALIDATION);
         form_driver(REQ_NEXT_FIELD);
-        # Go to the end of the present buffer
-        # Leaves nicely at the last character
         form_driver(REQ_END_LINE);
       when KEY_DOWN
         ret=form_driver(REQ_NEXT_LINE);
         if ret < 0
-          # Go to next field */
           form_driver(REQ_VALIDATION);
           form_driver(REQ_NEXT_FIELD);
-          # Go to the end of the present buffer
-          # Leaves nicely at the last character
           form_driver(REQ_END_LINE);
         end
 
-        #when KEY_UP
       when 353 # 353 is tab with TERM=screen # 90  # back-tab
         # Go to previous field
         form_driver(REQ_VALIDATION);
         form_driver(REQ_PREV_FIELD);
         form_driver(REQ_END_LINE);
 
-      when KEY_LEFT
-        # Go to previous char
+      when KEY_LEFT # Go to previous char
         form_driver(REQ_PREV_CHAR);
 
-      when KEY_RIGHT
-        # Go to next char
+      when KEY_RIGHT # Go to next char
         form_driver(REQ_NEXT_CHAR);
 
       when KEY_BACKSPACE,127
@@ -165,16 +153,10 @@ class RBEditForm < RBForm
         form_driver(REQ_END_FIELD);
       when 130  # A-d
         form_driver(REQ_DEL_LINE);
-        #when 11 # c-k # 154  # A-k
-        #  form_driver(REQ_CLR_EOL);
-      when 25  # c-y # need to do stty dsusp undef for this
-        @main.print_status("SAVE as YAML");
       when 197, 3 # alt-Q alt-q C-c   in raw mode C-c is 3 not -1 
         if form_changed?
           ret =  @main.askyesno(nil, "Form was changed. Wish to abandon ?")
           if !ret
-            #form_save
-            #form_changed(false)
             next
           else
             @main.print_status("Abandoning changes. Bye!")
@@ -184,7 +166,6 @@ class RBEditForm < RBForm
           break
         end
       else
-        #IF ch < 0 or ch > 255 or ch.chr =~ /[[:cntrl:]]/
         if ch < 0 or ch > 127 or ch.chr =~ /[[:cntrl:]]/
           #Ncurses.beep
           # either we just swallow it with a beep, or ret a -1
@@ -196,7 +177,7 @@ class RBEditForm < RBForm
           rescue => err
             $log.error("ERROR: #{err}")
             $log.error(err.backtrace.join("\n"))
-            @main.print_error("#{err}")
+            @main.print_error("#{err}. Please check log file.")
           end
         else
           stdscr.refresh();
@@ -212,19 +193,6 @@ class RBEditForm < RBForm
   end # handle_keys_loop
 
   def field_init_hook()
-    helpproc()
-    highlight_label true
-    # call any onenter eventhandler specified
-    # format (inside field block):
-    # onenter :myproc
-    # untested XXX 
-    #value=send(pproc, self, @fields, @rt_hashes) if pproc != nil
-
-    ## commented out 2008-10-23 17:48 
-    ##pproc = current_field["onenter"]
-    ##value=send(@main.pproc, self, @fields) if pproc != nil
-    ## added 2008-10-23 17:51 
-    #value = current_field.on_enter_handler(self) if current_field.on_enter_handler != nil
     current_field.fire_handler(:on_enter, self) 
     fire_handler(:field_init, self) 
   end
@@ -233,7 +201,6 @@ class RBEditForm < RBForm
     x = current_field
     fldname = x.user_object["name"]
     h = x.user_object
-    highlight_label  false
     if x.field_status == true
       begin
         value = x.get_value
@@ -256,15 +223,12 @@ class RBEditForm < RBForm
     x.set_field_status(false);
   end # field_term
 
-  # unused, but can be mapped
   # btw, there is a REQ_FLD_CLEAR also.
   def clear_fields
-    # added setting back to normal. 2008-10-08 18:07 for subseq searches
     form_driver(REQ_FIRST_FIELD) 
     @fields.each{ |ff| ff.set_field_buffer(0,""); 
       #  ff.set_field_back(A_NORMAL); ff.user_object=nil; 
     }
-
     @application.wrefresh # 2008-10-08 18:03 
   end
 
@@ -274,15 +238,6 @@ class RBEditForm < RBForm
     print_help(text.to_s) 
     #@main.footer_win.wrefresh # 2008-10-08 18:03 
   end
-
-  ##
-  # Save thedata of form. Calls send etc. Does too much. Need to break up
-  # and be clear what we wanna do.
-  #
-  # @param none
-  # @return none
-
-
 
   ##
   # set a user defined form_save_proc, will be called when user presses save
@@ -298,55 +253,9 @@ class RBEditForm < RBForm
   # @param [block, #call] call the block
   # @return 
   def form_save 
-    if !fire_handler(:form_save, self)
-      default_form_save_proc
-    end
+    fire_handler(:form_save, self)
     form_driver(REQ_FIRST_FIELD);
   end
-
-
-  ##
-  # If user does not specify any proc for saving we use this one.
-  # It has some pre-baked (half-baked) features:
-  #   - save_path
-  #   - save_format
-  #   - save_template
-  #   - pipe_output_path
-  #
-
-  def default_form_save_proc
-    outdata = get_current_values_as_hash
-    #if defined? @main.form_post_proc   # XXX ban this, its ugly coupling, let them set it
-    #  outdata = @main.send(:form_post_proc, outdata, @fields)
-    #end
-    ret = fire_handler(:form_post_proc, outdata,  self)
-    outdata = ret if ret # cludgy, but outdata is not in the form
-    filename = user_object["save_path"] || 'out.txt'
-    @main.print_status("Saving data to #{filename}");
-    ### XXX FIXME put this into methods and call them with default being
-    # save_as_text
-    # create a format at generation time and use that, if none given
-    # if save_proc specified, use that.
-    if user_object["save_format"]=='yml'
-      File.open(filename || "out.yml", "w") { | f | YAML.dump( outdata, f )} 
-    else
-      File.open("dump.yml", "w") { | f | YAML.dump( outdata, f )}  # debugging REMOVE
-
-      str=''
-      templateStr = user_object["save_template"]
-      if templateStr!=nil
-        str = template(templateStr, outdata)
-      else
-        str = default_format_text(outdata)
-      end
-      save_as_text(filename, str)
-      pipeto = user_object["pipe_output_path"]
-      pipe_output(str) if pipeto != nil
-    end
-    @main.print_status("Saved data to #{filename}  ");
-    set_current_field(@fields[0]);  
-    form_driver(REQ_FIRST_FIELD);
-  end # save
 
   ##
   # set a user defined form_populate_proc, will be called whenever the form is to be
@@ -415,9 +324,7 @@ class RBEditForm < RBForm
   # @return none
 
   def form_populate
-    if !fire_handler(:form_populate, self)
-      set_defaults(@values_hash)
-    end
+    fire_handler(:form_populate, self)
   end #  form_populate
   def set_values_hash vh
     @values_hash = vh
@@ -504,53 +411,9 @@ class RBEditForm < RBForm
     templateStr.gsub( /\{\{(.*?)\}\}/ ) { values[ $1 ].to_str rescue "" }
   end
 
-  # default save as text format, if user has not specified a format
-
-  def default_format_text(outdata)
-    str = ''
-    @fields.each{ |f| 
-      fn = f.user_object["name"]
-      value = outdata[fn]
-      str << "#{fn}: #{value}\n"
-    }
-    str << "\n"
-  end
-  def save_as_text(filename, str)
-    $log.info(str)
-    File.open(filename, "a") {|f| f.puts(str) }
-  end
-  def pipe_output (str)
-    pipeto = user_object["pipe_output_path"]
-    if pipeto != nil
-      proc = IO.popen(pipeto, "w+")
-      proc.puts str
-      proc.close_write
-      #@main.log.info(proc.gets)
-    end
-  end
-  # default save as yaml, can be overridden by user
-  def save_as_yaml (filename, outdata)
-    File.open(filename || "out.yml", "w") { | f | YAML.dump( outdata, f )} 
-  end
   ## prints help text for fields, or actions/events.
   def print_help(text)
     @main.print_status(text)
-  end
-  def highlight_label tf
-    x = current_field
-    uo = x.user_object
-    r,c = uo["label_rowcol"]
-    #len = uo["label"].length
-    len = x["label"].length   # possible since we've now overloaded [] to give us user_object
-    color=Ncurses.COLOR_PAIR(4); # selection
-    if !tf
-      color=Ncurses.COLOR_PAIR(5); # selection
-    end
-    win = form_win # 2008-10-15 14:58 
-    win.attron(color);
-    win.mvprintw(r, c, "%s" % uo["label"]);
-    win.attroff(color);
-    win.refresh
   end
   def handle_save
     form_driver(REQ_VALIDATION);
