@@ -47,7 +47,7 @@ class EditApplication < Application
       #@form.main = main
       @form.main = self
       @event_listeners = []
-      create_datakeys(get_keys_handled()) # 2008-10-14 10:29 
+      create_datakeys(get_keys_handled()) 
       bind_keys
 
       # the class which gives data and responds to events

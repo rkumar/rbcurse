@@ -21,11 +21,15 @@ class BasicEditForm < RBEditForm
     highlight_label true
     super
   end
-  # all these atributes have to be handled properly and not in this fashion, XXX
   def field_term_hook()
     highlight_label  false
     super
   end # field_term
+
+  def form_init_hook()
+    super
+  #  generic_form_populate(self, nil, nil, nil, ["T200"])
+  end
 
   def form_save 
     default_form_save_proc
@@ -77,7 +81,7 @@ class BasicEditForm < RBEditForm
   end # save
 
   def form_populate
-    set_defaults(@values_hash)
+  #  set_defaults(@values_hash)
   end #  form_populate
 
   # default save as text format, if user has not specified a format

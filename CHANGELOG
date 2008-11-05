@@ -1,3 +1,35 @@
+**2008-11-05 23:49**
+## create_view_one_application ##
+
+the first of the easy to call applications for a table, tell him you only want to view one
+contract. The user can only quit from there. No operations possible.
+
+Similarly now to do the view_any, delete_one, edit_one etc combinations.
+
+frmincr200811052348.tgz
+* * *
+**2008-11-03 00:18**
+## conditional submenu and sql options ##
+
+Using @sql_actions, one can specify which options should be shown to user
+   - retrict only to select, or upd/del etc, or give him no options
+   - have to take care of bind keys also in this situation.
+   - can start the program with a keyfield supplied
+     or with the values to display supplied.
+See contractedit1101.rb.
+
+frmincr200811030016.tgz
+* * *
+**2008-11-02 11:55**
+## basiceditform.rb ##
+
+functionality moved down from rbeditform to basicedit which should be instantiated
+hightlighting and helpproc display moved
+Now rbedit may either be extended and its handlers overridden,
+or else you can set handlers (if composing).
+
+frmincr200811021154.tgz
+* * *
 **2008-11-01 23:47**
 ## contractedit1101.rb ##
 

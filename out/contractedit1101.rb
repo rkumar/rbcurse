@@ -3,9 +3,7 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
   * Name: rkumar
   * $Id$
   * TODO
-    * do save of values - DONE
-    * allow caller to pass ID and select and populate
-    * put all fields on screen - DONE not all but more
+    * allow caller to pass ID and select and populate - was doing earlier but things have changed.
 =end
 
 require 'rubygems'
@@ -29,16 +27,22 @@ class ContractEdit1101  < Application
   
 
   def run
-    ###PROCS_COME_HERE###
     begin
     @db = SQLite3::Database.new('testd.db') 
-    fields = SingleTable.generic_create_fields @db, "contracts" , 20
+    fields = nil
+    #fields = SingleTable.generic_create_fields @db, "contracts" , 20
 
-    @eapp = SqlEditApplication.create_default_application(fields, @db, "contracts", ["contract_id"])  do
-      @rt_form={"classname"=>"NewContractEdit", "mydefs"=>"  def someproc\n\n  end\n", "myprocs"=>"  myfieldcheck = proc { |afield|\n    }\n"}
-      user_prefs(@rt_form)
-      form_headers["header_top_center"]='Contract Edit'
-      form_headers["header_top_left"]='Demo'
+    #@eapp = SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields, {"mode"=>:view_one, "keys"=>["T200"]})  do
+    SqlEditApplication.create_view_one_application(@db, "contracts", ["contract_id"], fields, ["T200"])  do
+      #@rt_form={"classname"=>"NewContractEdit", "mydefs"=>"  def someproc\n\n  end\n", "myprocs"=>"  myfieldcheck = proc { |afield|\n    }\n"}
+      #user_prefs(@rt_form)
+     # form_headers["header_top_center"]='Contract Edit'
+      form_headers["header_top_left"]='Demo' # << should be global
+      #@sql_actions = [:delete, :update]  # example of restring user to only delete and update
+      #@sql_actions = [:select, :findall]  # example of restraining user to only select abd findall
+      #@sql_actions = [:select, :nosubmenu]    # nosubmenu means the ^X submenu wont be shown
+      #set_sql_actions([:nosubmenu])    # nosubmenu means the ^X submenu wont be shown
+      #
     end
     ensure
       @db.close if !@db.nil?

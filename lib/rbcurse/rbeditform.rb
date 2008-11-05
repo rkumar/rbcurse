@@ -29,6 +29,13 @@ module Ncurses
     def ungetch(ch)
       Ncurses.ungetch(ch)
     end
+    def getch
+      begin
+        Ncurses.getch
+      rescue Interrupt => err
+        3 # control-c
+      end
+    end
   end
 end
 
@@ -64,30 +71,29 @@ class RBEditForm < RBForm
       field_term_hook()
       # commented off 2008-10-23 19:05 
       #@main.field_term_hook(self) if @main.respond_to? "field_term_hook"
-      # this needs to be called by keys too
     }
 
     form_init_proc = proc {
-      fire_handler :form_init, self
-      #    @main.print_status("Inside form_init_proc")
+      form_init_hook() # 2008-11-02 14:22 
     }
     form_term_proc = proc {
       fire_handler :form_term, self
-      #    @main.print_status("Inside form_term_proc")
     }
     set_field_init(field_init_proc)
     set_field_term(field_term_proc)
     set_form_init(form_init_proc)
     set_form_term(form_term_proc)
 
-    fire_handler :form_init, self # XXX this aint getting fired dude perhaps installedtoo late
 
     stdscr.refresh();
 
     Ncurses::Panel.update_panels
     Ncurses.doupdate()
     #set_defaults(nil)
-    form_populate
+    #fire_handler :form_init, self # XXX this aint getting fired dude perhaps installedtoo late
+    form_init_proc.call
+    #form_populate # 2008-11-02 14:36 pls overide init_proc to either use generic_form_populate
+    # with  a key, or if you data, use set_defaults(rowdata)
     form_driver(REQ_FIRST_FIELD)
     form_driver(REQ_END_LINE);
     #while((ch = eform_win.getch()) )
@@ -96,8 +102,6 @@ class RBEditForm < RBForm
       begin
         ch = eform_win.getch()
       rescue Interrupt
-        # this is not immediately triggering a C-c
-        $log.debug "rbeditform interrupt on #{ch}"
         ch =  3
       end
       @main.clear_error  # required but steals the cursor XXX oh no, this clears off helptext!!!
@@ -222,6 +226,11 @@ class RBEditForm < RBForm
     end
     x.set_field_status(false);
   end # field_term
+
+  # 2008-11-02 14:22 
+  def form_init_hook()
+    fire_handler(:form_init, self) 
+  end
 
   # btw, there is a REQ_FLD_CLEAR also.
   def clear_fields

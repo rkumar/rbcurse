@@ -1,13 +1,10 @@
 =begin
-  * Name: rkumar
+  * Name: sqleditapplication.rb
   * $Id$
-  * Description   
-  * Author:
-  * Date:
-  * License:
-    This is free software; you can copy and distribute and modify
-    this program under the term of Ruby's License
-    (http://www.ruby-lang.org/LICENSE.txt)
+  * Description: sql table editing and viewing application.   
+  * Author: rkumar
+  * Date: 2008-11-01
+  * License: (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
 
@@ -36,6 +33,7 @@ class SqlEditApplication < EditApplication
     attr_reader :tablename
     attr_reader :db
     attr_reader :keynames
+    attr_reader :config
     attr_accessor :keyvalues
     attr_accessor :order_string
     attr_accessor :where_string
@@ -45,40 +43,79 @@ class SqlEditApplication < EditApplication
     # also takes caller program, required to call the print and clear
     # takes datasource and sets it up, if not passed it must be passed later
     # to be usable
-    def initialize(fields, main, db, tablename, keynames)
+    def initialize(fields, main, db, tablename, keynames, config={})
       @db = db
       @tablename = tablename
       @keynames = keynames
+      @config = config
       @keyvalues = []
-      @findall_limit = 100
-      @order_string = ""
-      @where_string = ""
+      @findall_limit = config.fetch("findall_limit", 100)
+      @order_string = config.fetch("order_string", "")
+      @where_string = config.fetch("where_string", "")
+      set_form_actions(config.fetch("form_actions", [:all]))
+      set_sql_actions(config.fetch("sql_actions", [:all]))
       super(fields, main)
       #@main = self
       #@form.main = self
 
       # the class which gives data and responds to events
     end
-    def self.create_default_application(fields, db, tablename, keynames, config={}, &block)
+    ##
+    # creates a default application given a table name and key field.
+    # It will create fields as per its defaults.
+    #
+    def self.create_default_application(db, tablename, keynames, fields = nil, config={}, &block)
 
-      eapp = SqlEditApplication.new(fields, self, db, tablename, keynames)  do |app|
+      fields = SingleTable.generic_create_fields(db, tablename , 20, config) if fields.nil?
+
+      eapp = SqlEditApplication.new(fields, self, db, tablename, keynames, config)  do |app|
         max_rows = config.fetch("max_rows", 20)
         wrap_at = config.fetch("wrap_at", max_rows)
         labelarr = config.fetch("labelarr", nil)
         eform_win, eform_panel = app.create_window(max_rows, 0, 1, 0)
 
+        if config.include? "keys"
+            app.form.set_handler :form_init, Proc.new { app.generic_form_populate(app.form, nil, nil, nil, config["keys"])}
+        end
+
         app.wrefresh();
         app.print_screen_labels(eform_win, labelarr) if !labelarr.nil?
-        keys_handled = app.get_keys_handled() 
+        mode = config.fetch("mode", :all)
+        case mode
+        when :view_one
+          app.set_sql_actions([:nosubmenu])
+        when :view_any
+          app.set_sql_actions([:select, :nosubmenu])
+        when :delete_one
+          app.set_sql_actions([:delete])
+        when :delete_any
+          app.set_sql_actions([:select,:delete])
+        when :edit_one
+          app.set_sql_actions([:delete, :update])
+        when :edit_any
+          app.set_sql_actions([:select, :delete, :update])
+        when :browse
+          app.set_sql_actions([:select,:findall])
+        when :all
+        end
+        #app.form_headers["header_top_center"] = "Table: #{tablename} Mode: #{mode.to_s}"
+        app.form_headers["header_top_center"] = "#{tablename.capitalize} #{mode.to_s.capitalize}"
         app.instance_eval(&block)
+        keys_handled = app.get_keys_handled() 
         app.create_header_footer(keys_handled)
         stdscr.refresh();
         begin
           app.form.handle_keys_loop
         rescue => err
-          app.print_error("#{err}")
+          $log.error(err.backtrace.join("\n"))
+          app.print_error("SEA: #{err}")
         end
       end
+    end
+    def self.create_view_one_application(db, tablename, keyfields, fields, keys, config={}, &block)
+      config.merge!({"mode"=>:view_one, "keys"=>keys})
+      app=self.create_default_application(db, tablename, keyfields, fields, config, &block )
+      return app
     end
     def get_current_values_as_hash
       @form.get_current_values_as_hash
@@ -91,16 +128,39 @@ class SqlEditApplication < EditApplication
       end
       return values
     end
-    def generic_form_actions(form)
-      $log.debug("inside generic form actions")
-      labels=["?~Help  ","C~Cancel", "D~Delete", "U~Update", 
-        "M~ins Mode", "I~Insert    ",
-        "Spc~Clear  ","F~FindAll", 
-        "O~OrderBy",   "W~Where  ",
-        "Y~copY from","L~Limit    "]
-      validchars = "?CDUMOIFYLW "
-      # should not exceed 9
-        helptext = "Use Mode to get into insert mode, Insert to insert. Enter text on blank screen and use Findall. C-n (Next), C-p (Prev), C-[ (first) and C-] (last)."
+    def set_sql_actions(actions)
+      @sql_actions = actions
+    end
+    def set_form_actions(actions)
+      @form_actions = actions
+    end
+    def generic_sql_actions(form)
+      labels=["?~Help  ","C~Cancel"] 
+      validchars = "?C"
+      if @sql_actions.include? :all or @sql_actions.include? :delete
+        labels << "D~Delete" 
+        validchars += "D"
+      else
+        labels << " ~      " 
+      end
+      if @sql_actions.include? :all or @sql_actions.include? :update
+        labels << "U~Update" 
+        validchars += "U"
+      else
+        labels << " ~      " 
+      end
+      if @sql_actions.include? :all or @sql_actions.include? :insert
+        labels += [ "M~ins Mode", "I~Insert    "]
+        validchars += "MIY"
+      end
+      if @sql_actions.include? :all or @sql_actions.include? :findall
+        labels += [ "Spc~Clear  ","F~FindAll", "O~OrderBy",   "W~Where  ", "L~Limit    "]
+        validchars += " FOWL"
+      end
+      if @sql_actions.include? :all or @sql_actions.include? :insert
+        labels << "Y~copY from"
+      end
+      helptext = "Use Mode to get into insert mode, Insert to insert. Enter text on blank screen and use Findall. C-n (Next), C-p (Prev), C-[ (first) and C-] (last)."
       ret =  @main.askchoice(nil, "Choose action","",
                              labels,validchars, "helptext"=>helptext)
       @main.clear_error
@@ -162,19 +222,21 @@ class SqlEditApplication < EditApplication
     # 
     #
     def get_keys_handled
-      $log.debug("keys handled sql")
       @app_keys_handled=[
         { :keycode=>?\C-g, :display_code => "^G", :text => "Get Help  ", :action => "help" },
-        { :keycode=>?\C-c, :display_code => "^C", :text => "Cancel    ", :action => "quit" },
-        { :keycode=>?\C-x, :display_code => "^X", :text => "Actions ", :action => method(:generic_form_actions) },
-        { :keycode=>?\C-s, :display_code => "^S", :text => "Select  ", :action => method(:generic_form_select)},
+        { :keycode=>?\C-c, :display_code => "^C", :text => "Cancel    ", :action => "quit" }
+      ]
+    @app_keys_handled << 
+      { :keycode=>?\C-x, :display_code => "^X", :text => "Actions ", :action => method(:generic_sql_actions) } if !@sql_actions.include? :nosubmenu
+    @app_keys_handled << 
+        { :keycode=>?\C-s, :display_code => "^S", :text => "Select  ", :action => method(:generic_form_select)} if @sql_actions.include? :all or @sql_actions.include? :select
+    @app_keys_handled += [
         { :keycode=>?\C-k, :display_code => "^K", :text => "Cut Line", :action => "REQ_CLR_EOL"},
         { :keycode=>?\C-d, :display_code => "^D", :text => "Del Char", :action => "REQ_DEL_CHAR"},
         { :keycode=>?\C-a, :display_code => "^A", :text => "Beg Line", :action => "REQ_BEG_LINE"},
         { :keycode=>?\C-e, :display_code => "^E", :text => "End Line", :action => "REQ_END_LINE"},
         { :keycode=>?\M-a, :display_code => "_A", :text => "Beg Fld", :action => "handle_m_a"},
-        { :keycode=>?\M-e, :display_code => "_E", :text => "End Fld", :action => "handle_m_e"}
-    ]
+        { :keycode=>?\M-e, :display_code => "_E", :text => "End Fld", :action => "handle_m_e"} ]
     @app_keys_handled
   end
 
@@ -187,11 +249,10 @@ class SqlEditApplication < EditApplication
   # Bind some specific keys, this will now show up in the labels below.
   #
   def bind_keys
-    $log.debug("bindkey sql")
     bind_key ?\C-w, "REQ_NEXT_WORD"
     bind_key ?\C-b, "REQ_PREV_WORD"
-    unbind_key ?\C-x
-    bind_key ?\C-x, method(:generic_form_actions)
+    #unbind_key ?\C-x
+    bind_key ?\C-x, method(:generic_sql_actions)
     bind_key ?\C-n, method(:generic_form_findnext)
     bind_key ?\C-p, method(:generic_form_findprev)
     bind_key ?\C-[, method(:generic_form_findfirst)

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #######################################################
 # Template file used to generate ncurses screen/application
 # $Id: gen3.rb,v 0.2 2008/09/22 17:35:27 arunachala Exp arunachala $

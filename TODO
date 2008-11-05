@@ -1,12 +1,27 @@
 #  NCURSES APPLICATION GENERATOR #
 #
+#  2008-11-03 11:00 
+#   - caller app should not use instance vars in block but methods. inst var can change later.
+#     too tight coupling. DONE
 #  2008-11-02 00:31 
    - save search result/s as text or yaml
+   - check manver's code on window.rb and ncurses.rb.
+
+   - @db can easily be a global variable, i think
+   - currently have to mention key names each time. Can be good for a one off table, but painful
+     if doing repeatedly. Should either be stored in one place, or picked from table or something.
+
+   - I should be able to easily link in to a contract by passing the code, not needing to know
+     internals or overriding, etc. Should be able to easily get readonly screens,
+     or an update/delete screen for a given contract.
+     Should this also give me a multi-view, select one and you get edit.
+     All rolled into one.
+     It shuold work almost like URLs.
 #  2008-11-01 14:21 
    - be able to edit/configure the Actions submenu too.
 #  2008-10-30 00:09 
-   - rbeditform has hardcoded c-x so i could not override. The only way wsa to override
-     form_save proc. that's something one can totally forget.
+#   - rbeditform has hardcoded c-x so i could not override. The only way wsa to override
+#     form_save proc. that's something one can totally forget.
    - contractedit is not callable from menu since a lot in main, not in class.
    - move class FIELD from rbform into a sep module, so it can be used from wherever
    - generate screen code from table schema so online generation not required.
@@ -20,8 +35,8 @@
    - help on field, pop up code and desc from another table
    - should be able to see keys bound by some option
   
-   - clean up rbeditform - move functionality off to some implementing util kind of class
-     or a module that can be included
+#   - clean up rbeditform - move functionality off to some implementing util kind of class
+#     or a module that can be included
 #  2008-10-27 19:12 
 #   - dynamic creation of fields, however, for this fields will have to be created before form
 #    kicks in, and will have to supplant fields created. Unless we have some program that

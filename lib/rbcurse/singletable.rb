@@ -97,7 +97,7 @@ module SingleTable
     generic_form_populate form, nil, nil, nil, @keyvalues
   end
   def generic_form_populate form, ddb=nil, tablename=nil, key_array=nil, values=nil
-    raise "form does not implement set_defaults" if !form.respond_to? :set_defaults
+    raise "ST: form does not implement set_defaults" if !form.respond_to? :set_defaults
     ddb ||= db()
     tablename ||= tablename()
     key_array ||= keynames()
@@ -127,6 +127,7 @@ module SingleTable
     disable_key_fields form, true
     @data_selected = true
     form.form_changed(false)
+    row[0]
   end
   def generic_form_delete form=nil, ddb=nil, tablename=nil, key_array=nil, values=nil
     $log.debug("inside generic form delete")
@@ -148,15 +149,18 @@ module SingleTable
     row = ddb.execute(sql, *values)
     @data_selected = false
   end
-  def self.generic_create_fields db, tablename, max_rows
+  ##
+  # creates a default field list given tablename, and rows to wrap at
+  # Added config on 2008-11-05 10:56 so we can create readonly fields
+  def self.generic_create_fields db, tablename, max_rows, config={} # :yields index, name, field, datatype
     columns = []
     datatypes = []
     command = %Q{select * from #{tablename} limit 1}
-    $log.debug(command)
     columns, *rows = db.execute2(command)
     datatypes = rows[0].types 
-    $log.debug("2.columns")
+    $log.debug("gcf:columns")
     $log.debug(columns)
+    mode = config.fetch("mode", :all)
 
     field_start_col = 14
     field_start_row = 1
@@ -193,6 +197,7 @@ module SingleTable
         fld.set_reverse true
         fld.set_static(false) if !static
       end
+      field.set_read_only(true) if [:view_one, :delete_one, :view_any, :delete_any].include? mode
       yield ix, fname, field, datatypes[ix] if block_given?
       fields.push(field)
     end # columns
@@ -200,6 +205,7 @@ module SingleTable
     return fields
   end
   def disable_key_fields form, flag=true
+    form.req_last_field #  2008-11-03 00:15 if its in the field then readonly won't work
     keynames().each do |k|
       f = form.get_field_by_name(k)
       f.set_read_only flag

@@ -24,7 +24,7 @@ echo $oldtext >> CHANGELOG
 #tar  zcf  $file --atime-preserve --newer="$prev" *.rb CHANGELOG
 SRCDIR="lib/"
 #tar zcvf $file --newer-mtime="`date -r $prev`" $SRCDIR/*.rb $SRCDIR/*.dsl CHANGELOG TODO
-tar zcvf $file --newer-mtime="`date -r $prev`" $SRCDIR dsl/ out/ CHANGELOG TODO
+tar zcvf $file --exclude *.log --newer-mtime="`date -r $prev`" $SRCDIR dsl/ out/ CHANGELOG TODO
 tar ztvf  $file 
 ls -l $file
 mailbackup.sh $file
