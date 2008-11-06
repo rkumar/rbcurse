@@ -1,3 +1,14 @@
+**2008-11-06 22:48**
+## rowid and crud options ##
+
+Have checked out contractedit1101 with view, edit, delete etc options.
+Made sure that only relvnt keys are visible and active
+
+## ROWID ##
+Now rowid can be switched on so edit and delete use that. Same for find all.
+
+frmincr200811062246.tgz
+* * *
 **2008-11-05 23:49**
 ## create_view_one_application ##
 

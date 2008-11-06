@@ -148,16 +148,20 @@ module Form
     def fire_handler handler_code, aform
       user_object[handler_code].call(aform) if user_object.include? handler_code
     end
-    def set_read_only(flag=true)
-      if flag
+    ##
+    #sets current field as non editable and unfocusable. Sometimes we want the field
+    #to be focusable so user can see values that are larger than the field.
+    def set_read_only(oflag=true, aflag=true)
+      if oflag
         field_opts_off(O_EDIT)
-        field_opts_off(O_ACTIVE)
       else
         field_opts_on(O_EDIT)
+      end
+      if aflag
+        field_opts_off(O_ACTIVE)
+      else
         field_opts_on(O_ACTIVE)
       end
-      #o=Ncurses::Form.field_opts(self)
-      #$log.debug("OPTS RO #{name},#{flag} #{o}")
     end
     def set_static flag=true
       if flag

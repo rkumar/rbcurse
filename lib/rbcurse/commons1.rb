@@ -53,6 +53,7 @@ module Commons1
       Ncurses.beep
     end
     #Ncurses.noecho();
+    clear_error # 2008-11-06 19:27 
     restore_application_key_labels # must be done after using print_key_labels
     win.refresh
     return yn == 'y' 
@@ -185,6 +186,7 @@ module Commons1
     askstr = "#{askstr} [#{default}]: "
     len = askstr.length
 
+    clear_error #  2008-11-06 19:25 
     print_this(win, askstr, 4, LINEONE, 0)
     #labels=["N~No    ", "Y~Yes   ","C~Cancel"," ~    "]
     mylabels = ["^G~Help  ", "^C~Cancel"]

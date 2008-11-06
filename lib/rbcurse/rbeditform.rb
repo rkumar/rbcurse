@@ -31,7 +31,9 @@ module Ncurses
     end
     def getch
       begin
-        Ncurses.getch
+       Ncurses.keypad(stdscr,TRUE)  # should be done once only, required or UP DOWN wont work
+       Ncurses.getch
+        #window.getch
       rescue Interrupt => err
         3 # control-c
       end
@@ -158,6 +160,7 @@ class RBEditForm < RBForm
       when 130  # A-d
         form_driver(REQ_DEL_LINE);
       when 197, 3 # alt-Q alt-q C-c   in raw mode C-c is 3 not -1 
+        form_driver(REQ_VALIDATION); # 2008-11-06 19:16 
         if form_changed?
           ret =  @main.askyesno(nil, "Form was changed. Wish to abandon ?")
           if !ret
@@ -339,8 +342,9 @@ class RBEditForm < RBForm
     @values_hash = vh
   end
 
-  ## resets all fields as well as current hash.
+  ## resets all fields 
   # If another hash is supplied it should set its values in
+  # Any additional values in hash are ignored, we fetch what we need only
   def set_defaults(anotherhash = nil)
     #clear_current_values
     @fields.each { |ff|
@@ -448,5 +452,15 @@ class RBEditForm < RBForm
     }
     outdata
   end
+  ##
+  # This could be when exiting form, or selecting new data, or moving to next row of findall
+  # 2008-11-06 19:20 
+  def abandon_changes?
+    if form_changed?
+      return @main.askyesno(nil, "Form was changed. Abandon changes ?")
+    end
+    return true
+  end
+ 
   ### ADD HERE ###
 end # class

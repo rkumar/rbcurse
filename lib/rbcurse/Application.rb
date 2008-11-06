@@ -160,6 +160,7 @@ class Application
     return if key_hash_array.nil?
     key_hash_array.each { |khash|
       kc = khash[:keycode]
+      $log.debug("DATAKEYS: #{kc} #{khash[:action]}")
       # added on 2008-10-23 22:57, pls give proc, we are not linking to datasources from rbform
       raise "Action #{kc} #{kc.chr} can no longer be nil. Preferably give Proc" if khash[:action].nil?
       if kc.is_a?Array

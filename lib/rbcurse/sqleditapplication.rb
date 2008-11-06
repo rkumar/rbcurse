@@ -38,6 +38,9 @@ class SqlEditApplication < EditApplication
     attr_accessor :order_string
     attr_accessor :where_string
     attr_accessor :findall_limit # how many rows to limit find all to.
+    # should navigation keys be displayed or not, true/false, default false
+    attr_accessor :show_navigation_keys
+    attr_accessor :use_rowid   # true or false. useful if someone has duplicated and no unique
 
     # takes an array of fields and creates a form and manages it
     # also takes caller program, required to call the print and clear
@@ -49,6 +52,7 @@ class SqlEditApplication < EditApplication
       @keynames = keynames
       @config = config
       @keyvalues = []
+      @use_rowid = true
       @findall_limit = config.fetch("findall_limit", 100)
       @order_string = config.fetch("order_string", "")
       @where_string = config.fetch("where_string", "")
@@ -80,7 +84,8 @@ class SqlEditApplication < EditApplication
 
         app.wrefresh();
         app.print_screen_labels(eform_win, labelarr) if !labelarr.nil?
-        mode = config.fetch("mode", :all)
+        @mode = config.fetch("mode", :all)
+        mode = @mode
         case mode
         when :view_one
           app.set_sql_actions([:nosubmenu])
@@ -94,6 +99,8 @@ class SqlEditApplication < EditApplication
           app.set_sql_actions([:delete, :update])
         when :edit_any
           app.set_sql_actions([:select, :delete, :update])
+        when :insert
+          app.set_sql_actions([:insert])
         when :browse
           app.set_sql_actions([:select,:findall])
         when :all
@@ -112,8 +119,14 @@ class SqlEditApplication < EditApplication
         end
       end
     end
-    def self.create_view_one_application(db, tablename, keyfields, fields, keys, config={}, &block)
-      config.merge!({"mode"=>:view_one, "keys"=>keys})
+    def self.create_view_one_application(db, tablename, keyfields, fields, config={}, &block)
+      #config.merge!({"mode"=>:view_one, "keys"=>keys})
+      config["mode"]=:view_one
+      app=self.create_default_application(db, tablename, keyfields, fields, config, &block )
+      return app
+    end
+    def self.create_view_any_application(db, tablename, keyfields, fields, config={}, &block)
+      config["mode"]=:view_any
       app=self.create_default_application(db, tablename, keyfields, fields, config, &block )
       return app
     end
@@ -176,15 +189,15 @@ class SqlEditApplication < EditApplication
           @main.print_error("ERROR: #{err}")
         end
       when 'm'
-        disable_key_fields form, false
+        disable_key_fields form, false, false
         form.set_defaults
         @main.print_status("Use Actions-I to insert")
       when 'y'
-        disable_key_fields form, false
+        disable_key_fields form, false, false
         #form.set_defaults
         @main.print_status("Use Actions-I to insert")
       when ' '
-        disable_key_fields form, false
+        disable_key_fields form, false, false
         #form.set_defaults
         form.clear_fields
         @main.print_status("Use Actions-F to search")
@@ -222,6 +235,7 @@ class SqlEditApplication < EditApplication
     # 
     #
     def get_keys_handled
+      $log.debug("SQL_ACT: #{@sql_actions}")
       @app_keys_handled=[
         { :keycode=>?\C-g, :display_code => "^G", :text => "Get Help  ", :action => "help" },
         { :keycode=>?\C-c, :display_code => "^C", :text => "Cancel    ", :action => "quit" }
@@ -232,11 +246,14 @@ class SqlEditApplication < EditApplication
         { :keycode=>?\C-s, :display_code => "^S", :text => "Select  ", :action => method(:generic_form_select)} if @sql_actions.include? :all or @sql_actions.include? :select
     @app_keys_handled += [
         { :keycode=>?\C-k, :display_code => "^K", :text => "Cut Line", :action => "REQ_CLR_EOL"},
-        { :keycode=>?\C-d, :display_code => "^D", :text => "Del Char", :action => "REQ_DEL_CHAR"},
+        { :keycode=>?\C-d, :display_code => "^D", :text => "Del Char", :action => "REQ_DEL_CHAR"}] if sql_actions_include? :update or sql_actions_include? :insert
+
+        # only if navig keys to be displayed, but take care that the keys shold not stop working!
+    @app_keys_handled += [
         { :keycode=>?\C-a, :display_code => "^A", :text => "Beg Line", :action => "REQ_BEG_LINE"},
         { :keycode=>?\C-e, :display_code => "^E", :text => "End Line", :action => "REQ_END_LINE"},
         { :keycode=>?\M-a, :display_code => "_A", :text => "Beg Fld", :action => "handle_m_a"},
-        { :keycode=>?\M-e, :display_code => "_E", :text => "End Fld", :action => "handle_m_e"} ]
+        { :keycode=>?\M-e, :display_code => "_E", :text => "End Fld", :action => "handle_m_e"} ] if @show_navigation_keys
     @app_keys_handled
   end
 
@@ -249,18 +266,20 @@ class SqlEditApplication < EditApplication
   # Bind some specific keys, this will now show up in the labels below.
   #
   def bind_keys
-    bind_key ?\C-w, "REQ_NEXT_WORD"
-    bind_key ?\C-b, "REQ_PREV_WORD"
-    #unbind_key ?\C-x
-    bind_key ?\C-x, method(:generic_sql_actions)
-    bind_key ?\C-n, method(:generic_form_findnext)
-    bind_key ?\C-p, method(:generic_form_findprev)
-    bind_key ?\C-[, method(:generic_form_findfirst)
-    bind_key ?\C-], method(:generic_form_findlast)
-
-
+    $log.debug("BIND: #{@sql_actions}")
+    super
+#    bind_key ?\C-x, method(:generic_sql_actions) # conditional
+    if sql_actions_include? :browse or sql_actions_include? :find_all
+      bind_key ?\C-n, method(:generic_form_findnext)
+      bind_key ?\C-p, method(:generic_form_findprev)
+      bind_key ?\C-[, method(:generic_form_findfirst)
+      bind_key ?\C-], method(:generic_form_findlast)
+    end
   end # method
-
+  def sql_actions_include? act
+    return true if @mode == :all or @sql_actions.include? :all
+    return (@mode == act or @sql_actions.include? act)
+  end
 
   ### ADD HERE ###
 end # class

@@ -42,7 +42,7 @@ module SingleTable
     end
     sql=%Q{insert into #{tablename} (  #{names.join(",")}  ) values (  #{qm.join(",")}  ) }
     ret = ddb.execute(sql, *values)
-    form.form_changed(true)
+    form.form_changed(false)
   end
   ##
   # creates an update sql based on tablename, values hash
@@ -75,15 +75,23 @@ module SingleTable
       values << key
       wheres << "#{k} = ?"
     end
+    rowid = form.user_object["rowid"] # 2008-11-06 19:57  could be nil
+    if !rowid.nil?
+      wheres << " rowid = ? "
+      values << rowid
+    end
     sql=%Q{UPDATE #{tablename} SET  #{names.join(",")} WHERE #{wheres.join(" and ")} }
     $log.debug(sql)
     ret = ddb.execute(sql, *values)
-    form.form_changed(true)
+    valhash["rowid"]=rowid   # 2008-11-06 20:52 update cursor
+    form_cursor_update valhash
+    form.form_changed(false)
   end
   def generic_form_select form
+    return if !form.abandon_changes?
     key_array ||= keynames()
     @keyvalues ||= []
-    raise "No key fields specified to search on. Cannot proceed." if key_array.nil?
+    raise "No key fields configured to search on. Cannot proceed." if key_array.nil?
     key_array.each_index do |ix|
       ret  = form.get_string(nil, "Enter a #{key_array[ix]}", 10, @keyvalues[ix])
       $log.debug("ret is: (#{ret})")
@@ -112,7 +120,8 @@ module SingleTable
       wheres << "#{k} = ?"
     end
     wherestr = wheres.join(" AND ") or " 1=1 "
-    sql=%Q{ SELECT * FROM #{tablename} WHERE #{wherestr} }
+    rowidstr = (@use_rowid ||= false)? " rowid, ": ""
+    sql=%Q{ SELECT #{rowidstr} * FROM #{tablename} WHERE #{wherestr} }
     $log.debug(sql)
     $log.debug(values)
     row = ddb.execute(sql, *values)
@@ -123,8 +132,9 @@ module SingleTable
       yield row[0] 
     else
       form.set_defaults row[0]
+      form.user_object["rowid"] = row[0]["rowid"] # 2008-11-06 19:57  could be nil
     end
-    disable_key_fields form, true
+    disable_key_fields form, true, true
     @data_selected = true
     form.form_changed(false)
     row[0]
@@ -142,11 +152,17 @@ module SingleTable
     key_array.each do |k|
       wheres << "#{k} = ?"
     end
+    rowid = form.user_object["rowid"] # 2008-11-06 19:57  could be nil
+    if !rowid.nil?
+      wheres << " rowid = ? "
+      values << rowid
+    end
     wherestr = wheres.join(" AND ")
     sql=%Q{ DELETE FROM #{tablename} WHERE #{wherestr} }
     $log.debug(sql)
     $log.debug(values)
     row = ddb.execute(sql, *values)
+    form_cursor_delete 
     @data_selected = false
   end
   ##
@@ -197,18 +213,18 @@ module SingleTable
         fld.set_reverse true
         fld.set_static(false) if !static
       end
-      field.set_read_only(true) if [:view_one, :delete_one, :view_any, :delete_any].include? mode
+      field.set_read_only(true, false) if [:view_one, :delete_one, :view_any, :delete_any].include? mode
       yield ix, fname, field, datatypes[ix] if block_given?
       fields.push(field)
     end # columns
     $log.debug("done NEW creating fields"+fields.size.to_s)
     return fields
   end
-  def disable_key_fields form, flag=true
+  def disable_key_fields form, flag=true, activeflag=true
     form.req_last_field #  2008-11-03 00:15 if its in the field then readonly won't work
     keynames().each do |k|
       f = form.get_field_by_name(k)
-      f.set_read_only flag
+      f.set_read_only flag, activeflag
       f.set_reverse !flag
     end
   end
@@ -234,26 +250,29 @@ module SingleTable
     wherestr = "1=1  " if wherestr==""
     wherestr += " AND #{@where_string} " if @where_string != ""
     order_by = @order_string != "" ? " ORDER BY #{@order_string} " : ""
-    sql=%Q{ SELECT * FROM #{tablename}  WHERE #{wherestr} #{order_by} LIMIT #{@findall_limit} }
+    rowidstr = (@use_rowid ||= false)? " rowid, ": ""
+    sql=%Q{ SELECT #{rowidstr} * FROM #{tablename}  WHERE #{wherestr} #{order_by} LIMIT #{@findall_limit} }
     $log.debug(sql)
     $log.debug(valhash)
     $log.debug(values)
     @find_results = ddb.execute(sql, *values)
-    $log.debug("ROW:SELECT #{@find_results.length}")
+    $log.debug("ROW:SELECT FINDALL #{@find_results.length}")
     $log.debug(@find_results)
     raise "No rows found for #{values} #{wherestr}" if @find_results.nil? or @find_results.length==0
     if block_given?
       yield @find_results 
     else
       form.set_defaults @find_results[0]
+      form.user_object["rowid"] = @find_results[0]["rowid"] # 2008-11-06 19:57  could be nil
     end
-    disable_key_fields form, false
+    disable_key_fields form, false, false
     @find_result_index = 0
     @data_selected = true
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
     return @find_results.length
   end
   def generic_form_findnext form, ddb=nil, tablename=nil, key_array=nil, values=nil
+    return if @data_selected.nil? or @find_results.nil?
     @find_result_index += 1
     if @find_result_index >= @find_results.length
       @find_result_index = @find_results.length() -1
@@ -265,10 +284,12 @@ module SingleTable
       yield row
     else
       form.set_defaults row
+      form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def generic_form_findprev form, ddb=nil, tablename=nil, key_array=nil, values=nil
+    return if @data_selected.nil? or @find_results.nil?
     @find_result_index -= 1
     if @find_result_index < 0
       @find_result_index = 0
@@ -280,28 +301,41 @@ module SingleTable
       yield row
     else
       form.set_defaults row
+      form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def generic_form_findfirst form, ddb=nil, tablename=nil, key_array=nil, values=nil
+    return if @data_selected.nil? or @find_results.nil?
     @find_result_index = 0
     row = @find_results[0]
     if block_given?
       yield row
     else
       form.set_defaults row
+      form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def generic_form_findlast form, ddb=nil, tablename=nil, key_array=nil, values=nil
+    return if @data_selected.nil? or @find_results.nil?
     @find_result_index = @find_results.length-1
     row = @find_results[@find_results.length-1]
     if block_given?
       yield row
     else
       form.set_defaults row
+      form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
+  end
+  def form_cursor_update valhash
+    return if @data_selected.nil? or @find_results.nil?
+    @find_results[@find_result_index] = valhash
+  end
+  def form_cursor_delete 
+    return if @data_selected.nil? or @find_results.nil?
+    @find_results.delete_at(@find_result_index)
   end
 
 end

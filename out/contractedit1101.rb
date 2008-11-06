@@ -33,7 +33,19 @@ class ContractEdit1101  < Application
     #fields = SingleTable.generic_create_fields @db, "contracts" , 20
 
     #@eapp = SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields, {"mode"=>:view_one, "keys"=>["T200"]})  do
-    SqlEditApplication.create_view_one_application(@db, "contracts", ["contract_id"], fields, ["T200"])  do
+#    SqlEditApplication.create_view_one_application(@db, "contracts", ["contract_id"], fields, {"keys"=>["T200"]})  do
+#    SqlEditApplication.create_view_any_application(@db, "contracts", ["contract_id"], fields, {"keys"=>["T200"]})  do
+#    SqlEditApplication.create_view_any_application(@db, "contracts", ["contract_id"], fields )  do
+#    SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
+#                                                  {"mode"=>:edit_one, "keys"=>["345"]})  do
+#    SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
+#                                                  {"mode"=>:edit_any, "keys"=>["345"]})  do
+#    SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
+#                                                  {"mode"=>:delete_one, "keys"=>["456"]})  do
+#   SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
+#                                                 {"mode"=>:delete_any, "keys"=>["T200"]})  do
+    SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
+                                                  {"mode"=>:all, "keys"=>["T200"]})  do
       #@rt_form={"classname"=>"NewContractEdit", "mydefs"=>"  def someproc\n\n  end\n", "myprocs"=>"  myfieldcheck = proc { |afield|\n    }\n"}
       #user_prefs(@rt_form)
      # form_headers["header_top_center"]='Contract Edit'

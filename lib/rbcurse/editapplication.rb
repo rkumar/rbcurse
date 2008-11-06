@@ -47,8 +47,8 @@ class EditApplication < Application
       #@form.main = main
       @form.main = self
       @event_listeners = []
-      create_datakeys(get_keys_handled()) 
-      bind_keys
+      #create_datakeys(get_keys_handled())  2008-11-06 12:28 getting called when labels are created also  ... XXX how will it affect others ??? in a multi=app scenario ??
+      bind_keys # called twice 2008-11-06 12:54 
 
       # the class which gives data and responds to events
       #set_data_source(datasource) if !datasource.nil?
@@ -65,7 +65,6 @@ class EditApplication < Application
     # TODO
     #
     def get_keys_handled
-    $log.debug("keys handled edit")
       @app_keys_handled=[
         { :keycode=>?\C-g, :display_code => "^G", :text => "Get Help  ", :action => "help" },
         { :keycode=>?\C-c, :display_code => "^C", :text => "Cancel    ", :action => "quit" },
@@ -187,7 +186,6 @@ class EditApplication < Application
   #
 
   def bind_keys
-    $log.debug("bindkey edit")
     bind_key ?\C-w, "REQ_NEXT_WORD"
     bind_key ?\C-b, "REQ_PREV_WORD"
 #    bind_key ?\C-l, "REQ_INS_MODE"
