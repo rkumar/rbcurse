@@ -50,6 +50,17 @@ class ContractEdit1101  < Application
       #user_prefs(@rt_form)
      # form_headers["header_top_center"]='Contract Edit'
       form_headers["header_top_left"]='Demo' # << should be global
+      h = @form.get_fields_as_hash
+      [ h["time_zone"], h["customer_company_name"], h["seller_company_name"] ].each do |f|
+     f.set_handler(:on_exit, lambda { |v, cf, fo| v.upcase; } )
+#     f.user_object["post_proc"] = lambda { |v, cf| return v.upcase;} 
+      end
+      uc = h.select { |k,v| k =~ /name$/ }
+      uc.each do |elem|
+        f = elem[1]
+        f.set_handler(:on_exit, lambda { |v, cf, fo| v.upcase; } )
+      end
+
       #@sql_actions = [:delete, :update]  # example of restring user to only delete and update
       #@sql_actions = [:select, :findall]  # example of restraining user to only select abd findall
       #@sql_actions = [:select, :nosubmenu]    # nosubmenu means the ^X submenu wont be shown

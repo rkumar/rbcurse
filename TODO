@@ -1,5 +1,11 @@
 #  NCURSES APPLICATION GENERATOR #
 #
+#  2008-11-06 22:51 
+#  implemented rowid' s for sqlite. hope they will work for mysql
+-  allow user to switch off highlighting and help, which is not relevant if ACTIVE is off.
+-  Application level config - DB and form header etc. No need to keep defining.
+- use a table with 2 or more keys.
+- implement keyboard.rb from ver, so we get many more keys
 #  2008-11-03 11:00 
 #   - caller app should not use instance vars in block but methods. inst var can change later.
 #     too tight coupling. DONE
@@ -11,29 +17,29 @@
    - currently have to mention key names each time. Can be good for a one off table, but painful
      if doing repeatedly. Should either be stored in one place, or picked from table or something.
 
-   - I should be able to easily link in to a contract by passing the code, not needing to know
-     internals or overriding, etc. Should be able to easily get readonly screens,
-     or an update/delete screen for a given contract.
-     Should this also give me a multi-view, select one and you get edit.
-     All rolled into one.
-     It shuold work almost like URLs.
+#   - I should be able to easily link in to a contract by passing the code, not needing to know
+#     internals or overriding, etc. Should be able to easily get readonly screens,
+#     or an update/delete screen for a given contract.
+#     Should this also give me a multi-view, select one and you get edit.
+#     All rolled into one.
+#     It shuold work almost like URLs.
 #  2008-11-01 14:21 
-   - be able to edit/configure the Actions submenu too.
+#   - be able to edit/configure the Actions submenu too.
 #  2008-10-30 00:09 
 #   - rbeditform has hardcoded c-x so i could not override. The only way wsa to override
 #     form_save proc. that's something one can totally forget.
    - contractedit is not callable from menu since a lot in main, not in class.
    - move class FIELD from rbform into a sep module, so it can be used from wherever
-   - generate screen code from table schema so online generation not required.
+A  - generate screen code from table schema so online generation not required.
      maybe also crud code
-     Move to DBI so we are not rewriting for other dbs.
+A    Move to DBI so we are not rewriting for other dbs.
 #  - make sure update does not update key fields - DONE
    - revisit the old skels and reduce the code
    - at some point revisit table, query and menu.
    - call contractedit from a menu to see if proper cleanup
    - linked tables, validate value in another table
    - help on field, pop up code and desc from another table
-   - should be able to see keys bound by some option
+A  - should be able to see keys bound by some option
   
 #   - clean up rbeditform - move functionality off to some implementing util kind of class
 #     or a module that can be included
@@ -51,10 +57,10 @@
 #     Use bind_key to pass method or proc DONE
 #   - How can calling program, insert keys in middle, pushing others to right - DONE
 #  - caller to make a field/key readonly
-   - specify that only update to happen, or update or delete. which actions to allow
-   - actions to go into rbedit or a derivative of rbedit that has update/delete/insert/select
+#  - specify that only update to happen, or update or delete. which actions to allow
+#  - actions to go into rbedit or a derivative of rbedit that has update/delete/insert/select
 
-   - application labels should be a class currently the functionality is diffuse. can't modify
+A  - application labels should be a class currently the functionality is diffuse. can't modify
      easily. sheesh !
    
    
@@ -149,39 +155,39 @@ giving hard coded coords which is one way. Otherwise, when we generate, we have 
 
 * 2008-09-16 20:29 *
 
-0. Take care of inputting default values if user omits so he can keep input as little as possible
-   Avoid errors totally. - DONE
-1. Do other functions like:
-    helptext - DONE
-    default  - DONE
-    error-message - NOT REQUIRED YET with help, but print_status is there
+#0. Take care of inputting default values if user omits so he can keep input as little as possible
+#   Avoid errors totally. - DONE
+#1. Do other functions like:
+#    helptext - DONE
+#    default  - DONE
+#    error-message - NOT REQUIRED YET with help, but print_status is there
 
-2. allow other keys to be defined, add some more immediately to make it more helpful
-Save, etc. Display keys at bottom.
+#2. allow other keys to be defined, add some more immediately to make it more helpful
+#Save, etc. Display keys at bottom.
 
-3. Read up from file and write to file
- Later read from sqlite and write back.
+#3. Read up from file and write to file
+# Later read from sqlite and write back.
 
-4. read only fields that can be set based on other fields like total, or time.
+#4. read only fields that can be set based on other fields like total, or time.
 
-   Display date on top,  - DONE
+#   Display date on top,  - DONE
    maybe running time.
 
-5. postprocessing of fields, - field_term_hook
-if valid or validate, call that. valid regexp check against that
-place value in a hash so user can access that.
+#5. postprocessing of fields, - field_term_hook
+#if valid or validate, call that. valid regexp check against that
+#place value in a hash so user can access that.
 
-   valid is now checked ( 2008-09-19 16:15 ) but it is better to use REGEXP since I cannot
-  put cursor back to field.
-  Updating a hash named current whenever field modified. Hopefull can be used by user.
+#   valid is now checked ( 2008-09-19 16:15 ) but it is better to use REGEXP since I cannot
+#  put cursor back to field.
+#  Updating a hash named current whenever field modified. Hopefull can be used by user.
 
 Save - check if all required fields filled
        keep a list of required fields, maybe warn if empty fields
        or one global warn if empty field
    function handles per field - DONE use post_proc
 
-6. a multi-line text box  - DONE. Needs specific key checks to make it usable. Also when saving,
-   need to replace spaces with newline after splitting it. DONE.
+#6. a multi-line text box  - DONE. Needs specific key checks to make it usable. Also when saving,
+#   need to replace spaces with newline after splitting it. DONE.
 
 7. multi-row input wiht selection, maybe add and delete or select and do something
 

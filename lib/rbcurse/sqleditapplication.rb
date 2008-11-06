@@ -28,8 +28,8 @@ include Ncurses::Form
 class SqlEditApplication < EditApplication
   include Commons1
   include SingleTable
-    attr_reader :form
-    attr_reader :fields  
+    attr_reader :form    # already in editapp
+    attr_reader :fields      # already in editapp
     attr_reader :tablename
     attr_reader :db
     attr_reader :keynames

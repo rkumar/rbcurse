@@ -79,7 +79,7 @@ module Form
       if h == 1
         value = field_buffer(buf)
         value =  handle_default value
-        value = handle_post_proc value
+        value = handle_post_proc value  ### my GOD, calling get_value in the post_proc triggers it!!!
         if valid? value
           return value
         else
@@ -109,12 +109,13 @@ module Form
       value
     end
 
+    # we can really do without this if on_exit is there.
     def handle_post_proc value
       if user_object.include?"post_proc"
         pproc = user_object["post_proc"];
         #value=@main.send(pproc, value, self )
         #value=send(pproc, value, self ) # 2008-10-24 10:28 
-        value = pproc.call(value,self)
+        value = pproc.call(value,self)  
       end
       value
     end
@@ -138,15 +139,21 @@ module Form
       end
       return @height, @width
     end
+    ## field handler
     def set_handler handler_code, aproc
       raise "#{handler_code} arg2 should be a proc" if aproc.class != Proc
+      $log.debug("setting HANDLER for #{name} #{handler_code}")
       user_object[handler_code] = aproc
     end
-    ##
+    ## Field
     # will typically return value, at least if its on_exit or on_enter handler
     # others are default handler
-    def fire_handler handler_code, aform
-      user_object[handler_code].call(aform) if user_object.include? handler_code
+    # passes form, and field itself.
+    def fire_handler handler_code, aform, value = nil, *args
+      if user_object.include? handler_code
+        return user_object[handler_code].call(value, self, aform, *args) 
+      end
+      return value
     end
     ##
     #sets current field as non editable and unfocusable. Sometimes we want the field
@@ -335,7 +342,7 @@ class RBForm
     #raise "#{handler_code} arg2 should be a proc or method" if !aproc.respond_to? :call
     user_object[handler_code] = aproc
   end
-  ##
+  ## Form
   # will typically return value, at least if its on_exit or on_enter handler
   # others are default handler
   def fire_handler handler_code, *args

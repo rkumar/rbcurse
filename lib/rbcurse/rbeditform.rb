@@ -200,8 +200,8 @@ class RBEditForm < RBForm
   end # handle_keys_loop
 
   def field_init_hook()
-    current_field.fire_handler(:on_enter, self) 
-    fire_handler(:field_init, self) 
+    current_field.fire_handler(:on_enter, self, nil) 
+    fire_handler(:field_init, self, nil) 
   end
   # all these atributes have to be handled properly and not in this fashion, XXX
   def field_term_hook()
@@ -220,9 +220,10 @@ class RBEditForm < RBForm
         form_driver(REQ_PREV_FIELD); # seems it is the same as REQ_UP
         return
       end
+      # we already have a post proc, what's this doing here ?? on_exit ?
       # added on 2008-10-23 17:55 TEST XXX
-      current_field.fire_handler(:on_exit, self)  # what of return values
-      fire_handler(:field_term, self)  # is this becoming an overkill, it can handle generic cases
+      value = current_field.fire_handler(:on_exit, self, value)  # what of return values
+      fire_handler(:field_term, self, value)  # is this becoming an overkill, it can handle generic cases
       x.set_value(value.to_s)
       form_changed(true);
       notify_observers(fldname, @fields) # this should be only if changed, moved 2008-10-23 17:56 

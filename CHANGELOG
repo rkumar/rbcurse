@@ -1,3 +1,11 @@
+**2008-11-07 01:42**
+## on_exit and post_proc ##
+
+These 2 are duplicating each other,
+Got both to work though. samples in contractedit1101.rb
+
+frmincr200811070141.tgz
+* * *
 **2008-11-06 22:48**
 ## rowid and crud options ##
 
