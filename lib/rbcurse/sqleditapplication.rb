@@ -191,15 +191,18 @@ class SqlEditApplication < EditApplication
       when 'm'
         disable_key_fields form, false, false
         form.set_defaults
+        @data_selected = false # to prevent UPDATE or DELETE
         @main.print_status("Use Actions-I to insert")
       when 'y'
         disable_key_fields form, false, false
         #form.set_defaults
+        @data_selected = false # to prevent UPDATE or DELETE
         @main.print_status("Use Actions-I to insert")
       when ' '
         disable_key_fields form, false, false
         #form.set_defaults
         form.clear_fields
+        @data_selected = false # to prevent UPDATE or DELETE
         @main.print_status("Use Actions-F to search")
       when 'f'
         @find_mode = false

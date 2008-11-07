@@ -40,8 +40,11 @@ module SingleTable
       values << v
       qm << '?'
     end
-    sql=%Q{insert into #{tablename} (  #{names.join(",")}  ) values (  #{qm.join(",")}  ) }
+    sql=%Q{INSERT INTO #{tablename} (  #{names.join(",")}  ) values (  #{qm.join(",")}  ) }
     ret = ddb.execute(sql, *values)
+    $log.debug("Insert returned: #{ret}")
+    @main.print_status("Insert succeeded (#{ret})")
+    @data_selected = false
     form.form_changed(false)
   end
   ##
@@ -82,7 +85,10 @@ module SingleTable
     end
     sql=%Q{UPDATE #{tablename} SET  #{names.join(",")} WHERE #{wheres.join(" and ")} }
     $log.debug(sql)
-    ret = ddb.execute(sql, *values)
+    ret = ddb.execute(sql, *values)    # XXX check ret value
+    $log.debug("Update returned: #{ret}")
+    @data_selected = false # he can't delete or update same row
+    @main.print_status("Update succeeded (#{ret})")
     valhash["rowid"]=rowid   # 2008-11-06 20:52 update cursor
     form_cursor_update valhash
     form.form_changed(false)
@@ -94,7 +100,7 @@ module SingleTable
     raise "No key fields configured to search on. Cannot proceed." if key_array.nil?
     key_array.each_index do |ix|
       ret  = form.get_string(nil, "Enter a #{key_array[ix]}", 10, @keyvalues[ix])
-      $log.debug("ret is: (#{ret})")
+      $log.debug("get_string ret is: (#{ret})")
       return if ret.nil? or ret == ''
       if ret != ''
         @keyvalues[ix] = ret 
@@ -161,9 +167,11 @@ module SingleTable
     sql=%Q{ DELETE FROM #{tablename} WHERE #{wherestr} }
     $log.debug(sql)
     $log.debug(values)
-    row = ddb.execute(sql, *values)
+    ret = ddb.execute(sql, *values)
+    $log.debug("Delete returned: #{ret}")
+    @main.print_status("Delete succeeded (#{ret})")
     form_cursor_delete 
-    @data_selected = false
+    @data_selected = false # he can't delete or update same row
   end
   ##
   # creates a default field list given tablename, and rows to wrap at
@@ -236,13 +244,14 @@ module SingleTable
     valhash ||= get_current_values_as_hash rescue form.get_current_values_as_hash
     #raise "db IS nil" if db().nil?
     raise "db is nil" if ddb.nil?
+    @data_selected = false
 
     form.form_changed(false)
     ddb.results_as_hash = true
     wheres=[]
     values=[]
     valhash.each_pair do |k,v|
-      next if v.nil? or v.strip == ""
+      next if v.nil? or v.strip == "" or k == "rowid" # rowid going into search too !
       wheres << "#{k} = ?"
       values << v
     end
@@ -286,6 +295,7 @@ module SingleTable
       form.set_defaults row
       form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
+    @data_selected = true # he can delete or update
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def generic_form_findprev form, ddb=nil, tablename=nil, key_array=nil, values=nil
@@ -303,6 +313,7 @@ module SingleTable
       form.set_defaults row
       form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
+    @data_selected = true # he can delete or update
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def generic_form_findfirst form, ddb=nil, tablename=nil, key_array=nil, values=nil
@@ -315,6 +326,7 @@ module SingleTable
       form.set_defaults row
       form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
+    @data_selected = true # he can delete or update
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def generic_form_findlast form, ddb=nil, tablename=nil, key_array=nil, values=nil
@@ -327,6 +339,7 @@ module SingleTable
       form.set_defaults row
       form.user_object["rowid"] = row["rowid"] #  2008-11-06 20:40 
     end
+    @data_selected = true # he can delete or update
     @main.print_status("Row #{@find_result_index+1} of #{@find_results.length} ")
   end
   def form_cursor_update valhash
