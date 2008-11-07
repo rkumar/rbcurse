@@ -12,22 +12,28 @@ require 'rbcurse/rbeditform'
 
 class BasicEditForm < RBEditForm 
 
+  attr_accessor :show_help
+  attr_accessor :show_highlight
+
   def initialize(fields)
+    @show_help = true
+    @show_highlight = true
     super
   end
 
   def field_init_hook()
-    helpproc()
-    highlight_label true
+    helpproc()             if @show_help
+    highlight_label(true)   if @show_highlight
     super
   end
   def field_term_hook()
-    highlight_label  false
+    highlight_label(false)   if @show_highlight
     super
   end # field_term
 
   def form_init_hook()
-    super
+    set_defaults(@values_hash) if !@values_hash.nil?  # should we keep this, or is it an overkill
+    super # this calls the init_hook which could put you in a loop
   #  generic_form_populate(self, nil, nil, nil, ["T200"])
   end
 

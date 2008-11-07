@@ -347,6 +347,7 @@ class RBEditForm < RBForm
   # If another hash is supplied it should set its values in
   # Any additional values in hash are ignored, we fetch what we need only
   def set_defaults(anotherhash = nil)
+    @values_hash = anotherhash if !@value_hash.nil?
     #clear_current_values
     @fields.each { |ff|
       fielddef = ff.handle_default ''     # clumsy !
@@ -363,15 +364,17 @@ class RBEditForm < RBForm
     }
   end
   ##
-  # Convenience method: returns a hash with field name as key, and field value as value
+  # Returns a hash with field name as key, and field value as value
+  # 2008-11-07 12:02 now it updates the hash it got for setting, set using set_defaults
+  # @see set_defaults
+  # @returns values_hash : fieldname, value
   def get_current_values_as_hash
     form_driver(REQ_VALIDATION); # 2008-10-31 23:27 
-    #form_driver(REQ_PREV_FIELD);
-    current = {}
+    @values_hash ||= {}
     @fields.each { |ff|
-      current[ ff["name"] ] = ff.get_value
+      @values_hash[ ff["name"] ] = ff.get_value
     }
-    return current
+    return @values_hash
   end
   ##
   # Convenience method: returns a hash with field name as key, and FIELD as value
