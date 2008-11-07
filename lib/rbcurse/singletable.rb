@@ -185,6 +185,7 @@ module SingleTable
     $log.debug("gcf:columns")
     $log.debug(columns)
     mode = config.fetch("mode", :all)
+    mandatory = config.fetch("mandatory", "")
 
     field_start_col = 14
     field_start_row = 1
@@ -217,7 +218,12 @@ module SingleTable
           width = len.to_i
         end
       end
-      field = FIELD.create_field(width, currow+field_start_row, field_start_col+field_start_col, fname, type=datatypes[ix],label=sname, height=1, nrows=0, nbufs=0, config={}) do |fld|
+      fconfig = {}
+      fconfig["mandatory"] = true if mandatory == "all" or mandatory.include?fname
+     $log.debug("setting mandatory for #{fname}") if fconfig["mandatory"]
+      # currently we are sending in the same config to field as was sent to us for general
+      # definition of all fields
+      field = FIELD.create_field(width, currow+field_start_row, field_start_col+field_start_col, fname, type=datatypes[ix],label=sname, height=1, nrows=0, nbufs=0, fconfig) do |fld|
         fld.set_reverse true
         fld.set_static(false) if !static
       end

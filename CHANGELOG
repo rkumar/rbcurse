@@ -1,3 +1,20 @@
+**2008-11-07 20:24**
+## mandatory fields ##
+
+     - checking at time of get_current_values_as_hash
+     - display with asterisk if passed before form creation
+
+frmincr200811072023.tgz
+* * *
+**2008-11-07 13:10**
+## messages on execute and checks ##
+
+insert/del/update messages
+
+check on update/del whether select was done or not.
+
+frmincr200811071309.tgz
+* * *
 **2008-11-07 01:42**
 ## on_exit and post_proc ##
 

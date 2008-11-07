@@ -1,5 +1,9 @@
 #  NCURSES APPLICATION GENERATOR #
-#
+# 
+#  MANDATORY FIELDS CHECKING in get_current_values_as_hash
+#  fields that are mandatory - can we display them in some way. - DONE
+#    if mandatory fields passed in array in config then asterisk is displayed.
+#    if passed later, or set in user_object later, then validation will still be in effect.
 #  2008-11-06 22:51 
 #  implemented rowid' s for sqlite. hope they will work for mysql
 -  allow user to switch off highlighting and help, which is not relevant if ACTIVE is off.

@@ -30,6 +30,7 @@ class ContractEdit1101  < Application
     begin
     @db = SQLite3::Database.new('testd.db') 
     fields = nil
+    mandatory =["customer_company_name", "rate", "quantity","product_type_name"]
     #fields = SingleTable.generic_create_fields @db, "contracts" , 20
 
     #@eapp = SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields, {"mode"=>:view_one, "keys"=>["T200"]})  do
@@ -44,8 +45,9 @@ class ContractEdit1101  < Application
 #                                                  {"mode"=>:delete_one, "keys"=>["456"]})  do
 #   SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
 #                                                 {"mode"=>:delete_any, "keys"=>["T200"]})  do
+    # if you pass mandatory flag at first call, when fields/form are created you get an asterisk.
     SqlEditApplication.create_default_application(@db, "contracts", ["contract_id"], fields,
-                                                  {"mode"=>:all, "keys"=>["T200"]})  do
+                                                  {"mode"=>:all, "keys"=>["T200"], "mandatory"=>mandatory})  do
       #@rt_form={"classname"=>"NewContractEdit", "mydefs"=>"  def someproc\n\n  end\n", "myprocs"=>"  myfieldcheck = proc { |afield|\n    }\n"}
       #user_prefs(@rt_form)
      # form_headers["header_top_center"]='Contract Edit'
@@ -59,6 +61,7 @@ class ContractEdit1101  < Application
       uc.each do |elem|
         f = elem[1]
         f.set_handler(:on_exit, lambda { |v, cf, fo| v.upcase; } )
+        f["mandatory"] = true # setting after form created won't put asterisk there.
       end
 
       #@sql_actions = [:delete, :update]  # example of restring user to only delete and update

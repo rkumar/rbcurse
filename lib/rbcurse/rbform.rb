@@ -225,9 +225,12 @@ module Form
 
 
       field.user_object = config
+      $log.debug("CONFIG1 :#{name} " + field.user_object.inspect.to_s)
       field.user_object.merge!({"label"=>label, "name"=>"#{name}", "help_text"=>help_text, 
         :row=>row, :col => col, :label=>label, "type"=>type,"width"=>fieldwidth})
 
+      #$log.debug("MANDATORY:#{name} " + field.user_object["mandatory"].to_s)
+      $log.debug("CONFIG:#{name} " + field.user_object.inspect.to_s)
       type = config.fetch("type", "")
       case type.downcase
       when "date":

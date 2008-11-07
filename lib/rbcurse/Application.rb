@@ -258,7 +258,10 @@ class Application
            fldhash["label_rowcol"] = [lrow, lcol ]
            qfields[i].user_object = fldhash
         end
-        qform_win.mvaddstr(lrow, lcol, fldhash[:label]+" :")
+        # added star for mandatory 2008-11-07 19:47 
+        mandatory = qfields[i].user_object.fetch("mandatory",false)
+        mandatory = mandatory ? "*" : ""
+        qform_win.mvaddstr(lrow, lcol, fldhash[:label]+":#{mandatory}")
       end
     }
     #@qform_win.mvaddstr(qform_row1+1, qform_label_offset , "URL")

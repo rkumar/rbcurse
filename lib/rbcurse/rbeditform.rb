@@ -365,13 +365,16 @@ class RBEditForm < RBForm
   end
   ##
   # Returns a hash with field name as key, and field value as value
+  # Please use this before posting to database or any process since validations are done.
   # 2008-11-07 12:02 now it updates the hash it got for setting, set using set_defaults
+  # 2008-11-07 18:52 : it runs validations and checks such as mandatory check
   # @see set_defaults
   # @returns values_hash : fieldname, value
   def get_current_values_as_hash
     form_driver(REQ_VALIDATION); # 2008-10-31 23:27 
     @values_hash ||= {}
     @fields.each { |ff|
+      raise FieldValidationException, "Field #{ff["name"]} cannot be blank" if ff.get_value.strip.empty? and ff["mandatory"]
       @values_hash[ ff["name"] ] = ff.get_value
     }
     return @values_hash
