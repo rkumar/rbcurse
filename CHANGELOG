@@ -1,3 +1,17 @@
+**2008-11-08 22:03**
+## tabular view in pad ##
+
+Used the pad program to give TABULAR View too.
+SIMPLE view has column name and data per row.
+ALTERNATING has name followed by data in next row.
+TABULAR gives the entire result in one tabular form
+TABULAR implements a search using "/" and ^N and ^P to go back/forth in search.
+
+I need to make a selectable list which will return selectedrow, simple for use 
+as help in dataentry forms.
+
+frmincr200811082201.tgz
+* * *
 **2008-11-08 13:17**
 ## sqlresultsetpadviewer ##
 
