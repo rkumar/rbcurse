@@ -1,3 +1,23 @@
+**2008-11-08 13:17**
+## sqlresultsetpadviewer ##
+
+Using pads, made a scrollable viewer for sql result sets.
+Has a goto record also.
+
+To make tabular, with option of selecting.
+
+frmincr200811081316.tgz
+* * *
+**2008-11-08 01:09**
+## sqlview.rb ##
+
+a program to view an sql resultset on screen.
+allows going through mult rows, and paging if more columns than will come on a screen.
+
+Not tested with really long data. Will data get cut off or cause errors or what.
+
+frmincr200811080108.tgz
+* * *
 **2008-11-07 20:24**
 ## mandatory fields ##
 
