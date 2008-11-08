@@ -1,3 +1,12 @@
+**2008-11-09 01:24**
+## sqlview.rb ##
+
+TABULAR sql view with much better scrolling like our old tabular thingie
+scrolling like alpine
+allows selection, we need to allow UNselect all, goto-selected etc.
+
+frmincr200811090123.tgz
+* * *
 **2008-11-08 22:03**
 ## tabular view in pad ##
 

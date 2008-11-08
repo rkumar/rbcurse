@@ -31,6 +31,7 @@ class SqlPopup
     @barrow = @lastrow
     @padrows = Ncurses.LINES-1
     @message = ""
+    @selected = []
   end
   def estimate_column_widths
     colwidths = {}
@@ -100,12 +101,21 @@ class SqlPopup
 #    $log.debug("rows: #{@datarows.inspect}")
     db.close
   end
+  def do_select
+    if @selected[@prow].nil?
+      @selected[@prow] = "X"
+    else
+     @selected[@prow] = nil
+    end
+  end
+
   def show_focus_on_row row0, tf=true
+    @focussedrow = row0 if tf
     color = tf ? @selectioncolor : @datacolor
     lc = 1
     r = row0+2
     printstr(@pad, r, 0, "%-*s" % [Ncurses.COLS," "], color)
-    printstr(@pad, r, lc, idx=row0+1 , color);
+    printstr(@pad, r, lc, "#{@selected[row0]}%2d" % idx=row0+1 , color);
     lc += 3
     row = @content[row0]
     row.each_index do |ix|
@@ -139,12 +149,15 @@ class SqlPopup
 #    Ncurses.refresh();
 
     @prow = 0; @pcol = 0;
+    @toprow = 0
     ## CLEAR clear row
     print_header_left( sprintf("%*s", @cols, " "))
     print_header_left(@header_left) if !@header_left.nil?
     print_header_right(sprintf("Row 1 of %d ", @content.length))
     @win.wrefresh
     show_focus_on_row(0)
+    @scrolling = false
+    @winrow = 0
     @pad.prefresh(0,0, @startrow ,0, @rows-2,Ncurses.COLS-1);
 
 
@@ -155,12 +168,18 @@ class SqlPopup
       print_header_left(@header_left) if !@header_left.nil?
       @win.wrefresh
       @oldprow = @prow
+      @oldwinrow = @winrow
+      c = ch.chr rescue 0
+      $log.debug("ch: %d %s" % [ch, c])
       case ch
-      when ?[:
+      when ?[:      # BEGINNING
         @prow = 0
-      when ?]:
+        @toprow = @prow
+      when ?]:       # GOTO END
         #@prow = @content_rows - (@rows-2)
         @prow = @content_rows-1 
+        @toprow = @prow
+        @winrow = 0     # not putting this was cause prow < toprow !!
       when KEY_RIGHT,?l
         @pcol += 20 if @pcol + 50 < @cols
         $log.debug("pcols = #{@pcol}")
@@ -168,11 +187,14 @@ class SqlPopup
         @pcol -= 20 if @pcol > 0
         @pcol = 0 if @pcol < 0
       when KEY_DOWN, ?j
-        #next
-        # disallow
         if @prow >= @content_rows-1
           Ncurses.beep
           next
+        end
+        if @winrow < 20 # @lastrow-2
+          @winrow += 1
+        else
+          @toprow += 1 
         end
         @prow += 1 
       when KEY_UP,?k
@@ -181,25 +203,34 @@ class SqlPopup
         if @prow <= 0
           Ncurses.beep
           @prow = 0
-          #next
+          #  next
         else
-        @prow -= 1 
+          @prow -= 1 
         end
+        if @winrow > 0 
+          @winrow -= 1
+        else
+          @toprow -= 1 if @toprow > 0
+        end
+        $log.error("ERR !!!! #{@winrow} pr #{@prow} tr #{@toprow}") if @prow < @toprow
+        @toprow = @prow if @prow < @toprow
       when 32, ?n:
         if @prow + @rows > @content_rows
           next
         else
           @prow += @rows-2
+          @toprow = @prow
         end
       when ?-,?p:
         if @prow <= 0
           Ncurses.beep
-          #@prow = 0
+          @prow = 0
           #next
         else
           @prow -= (@rows-2)
           @prow = 0 if @prow < 0
         end
+          @toprow = @prow
       when KEY_ENTER, 10
         # selection
       when ?q, ?\,
@@ -220,6 +251,8 @@ class SqlPopup
         do_search_next
       when ?\C-p:
         do_search_prev
+      when ?x:
+        do_select
       end
       #@win.wclear
       @win.werase # gives less flicker since wclear sems to refresh immed
@@ -230,7 +263,8 @@ class SqlPopup
       @win.refresh
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
-      @pad.prefresh(@prow,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1);
+      $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
+      @pad.prefresh(@toprow,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
       Ncurses::Panel.update_panels
       #win.wrefresh # if i don't put this then upon return the other screen is still shown
       # till i press a key
@@ -275,7 +309,6 @@ class SqlPopup
     end
     @prow = @search_indices[@search_index]
   end
-
 
   def getstring prompt, r=@lastrow-1, c=1, maxlen = 10, color = @promptcolor
     clear_error @win, r, color
