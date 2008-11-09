@@ -1,3 +1,11 @@
+**2008-11-09 13:05**
+## sqlpopup ##
+
+    - row selection and navigation.
+    - search was no longer scrolling, fixed that so prow is always displayed.
+
+frmincr200811091304.tgz
+* * *
 **2008-11-09 01:24**
 ## sqlview.rb ##
 

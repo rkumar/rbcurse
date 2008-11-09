@@ -71,7 +71,7 @@ class SqlPopup
     r += 1
     @content.each_with_index do |row, rowid|
       lc = 1
-      printstr(@pad, r, lc, rowid+1 , @datacolor);
+      printstr(@pad, r, lc," %2d" % (rowid+1) , @datacolor);
       lc += 3
       row.each_index do |ix|
         col = row[ix]
@@ -102,11 +102,20 @@ class SqlPopup
     db.close
   end
   def do_select
+      $log.debug("CALLED SEL #{@prow}")
+    if @selected.include? @prow
+      @selected.delete @prow
+    else
+      $log.debug("Adding #{@prow}")
+      @selected << @prow
+    end
+=begin
     if @selected[@prow].nil?
       @selected[@prow] = "X"
     else
      @selected[@prow] = nil
     end
+=end
   end
 
   def show_focus_on_row row0, tf=true
@@ -115,7 +124,8 @@ class SqlPopup
     lc = 1
     r = row0+2
     printstr(@pad, r, 0, "%-*s" % [Ncurses.COLS," "], color)
-    printstr(@pad, r, lc, "#{@selected[row0]}%2d" % idx=row0+1 , color);
+    sel = @selected.include?(row0) ? "X" : " "
+    printstr(@pad, r, lc, "#{sel}%2d" % idx=row0+1 , color);
     lc += 3
     row = @content[row0]
     row.each_index do |ix|
@@ -236,15 +246,7 @@ class SqlPopup
       when ?q, ?\,
         break
       when ?g
-        line = getstring "Enter row to go to:"
-        oldrow = @prow
-        @prow = line.to_i
-        @prow -= 1 if @prow > 0
-        if @prow > @content.length
-          @prow = oldrow
-          Ncurses.beep
-          next
-        end
+        handle_goto_ask
       when ?/:
         do_search
       when ?\C-n:
@@ -253,8 +255,15 @@ class SqlPopup
         do_search_prev
       when ?x:
         do_select
+      when ?':
+        do_next_selection
+      when ?":
+        do_prev_selection
       end
       #@win.wclear
+      @toprow = @prow if @prow < @toprow   # ensre search could be 
+      @toprow = @prow if @prow > @toprow + 20   # ensre search could be 20 MAGIC FIXME
+
       @win.werase # gives less flicker since wclear sems to refresh immed
       print_header_left( sprintf("%*s", @cols, " "))
       print_header_left(@header_left) if !@header_left.nil?
@@ -277,73 +286,97 @@ class SqlPopup
 
   end # run
 
-  def do_search
-    regex = getstring "Enter regex to search for:"
-    res = []
-    @content.each_with_index do |row, ix| res << ix if row.grep(/#{regex}/) != [] end
-    $log.debug("RES: "+ res.inspect)
-    if res.length > 0
-      @prow = res[0]
-    end
-    @message = "%d matches for %s (Use ^N ^P)" % [res.length, regex]
-    @search_indices = res
-    @search_index = 0
+  def do_next_selection
+    return if @selected.length == 0 
+    row = @selected.sort.find { |i| i > @prow }
+    row ||= @prow
+    @prow = row
   end
-  def do_search_next
-    if @search_indices == []
-      Ncurses.beep
-    end
-    @search_index += 1
-    if @search_index >= @search_indices.length
-      @search_index = 0
-    end
-    @prow = @search_indices[@search_index]
-  end
-  def do_search_prev
-    if @search_indices == []
-      Ncurses.beep
-    end
-    @search_index -= 1
-    if @search_index < 0
-      @search_index = @search_indices.length-1
-    end
-    @prow = @search_indices[@search_index]
+  def do_prev_selection
+    return if @selected.length == 0 
+    row = @selected.sort{|a,b| b <=> a}.find { |i| i < @prow }
+    row ||= @prow
+    @prow = row
   end
 
-  def getstring prompt, r=@lastrow-1, c=1, maxlen = 10, color = @promptcolor
-    clear_error @win, r, color
-    printstr(@win,r, c, prompt, color);
-    ret = ''
-    Ncurses.echo();
-    @win.attron(Ncurses.COLOR_PAIR(color))
-    begin
-    @win.mvwgetnstr(r,c+prompt.length+1,ret,maxlen)
-    rescue Interrupt => err
-      # C-c
-      ret = ''
+  def handle_goto_ask
+    line = getstring "Enter row to go to:"
+    oldrow = @prow
+    @prow = line.to_i
+    @prow -= 1 if @prow > 0
+    if @prow > @content.length
+      @prow = oldrow
+      Ncurses.beep
+    #  next
     end
-    @win.attroff(Ncurses.COLOR_PAIR(color))
-    Ncurses.noecho();
-    return ret
   end
-  def clear_error win, r = @lastrow, color = @promptcolor
-    printstr(win, r, 0, "%-*s" % [Ncurses.COLS," "], color)
-  end
-  def print_header_left(string)
-    @win.attron(Ncurses.COLOR_PAIR(6))
-    @win.mvprintw(@header_row, 0, "%s", string);
-    @win.attroff(Ncurses.COLOR_PAIR(6))
-  end
-  def print_header_right(string)
-    @win.attron(Ncurses.COLOR_PAIR(6))
-    @win.mvprintw(@header_row, @cols-string.length, "%s", string);
-    @win.attroff(Ncurses.COLOR_PAIR(6))
-  end
-  def printstr(pad, r,c,string, color)
-    pad.attron(Ncurses.COLOR_PAIR(color))
-    pad.mvprintw(r, c, "%s", string);
-    pad.attroff(Ncurses.COLOR_PAIR(color))
-  end
+    def do_search
+      regex = getstring "Enter regex to search for:"
+      res = []
+      @content.each_with_index do |row, ix| res << ix if row.grep(/#{regex}/) != [] end
+      $log.debug("RES: "+ res.inspect)
+      if res.length > 0
+        @prow = res[0]
+      end
+      @message = "%d matches for %s (Use ^N ^P)" % [res.length, regex]
+      @search_indices = res
+      @search_index = 0
+    end
+    def do_search_next
+      if @search_indices == []
+        Ncurses.beep
+      end
+      @search_index += 1
+      if @search_index >= @search_indices.length
+        @search_index = 0
+      end
+      @prow = @search_indices[@search_index]
+    end
+    def do_search_prev
+      if @search_indices == []
+        Ncurses.beep
+      end
+      @search_index -= 1
+      if @search_index < 0
+        @search_index = @search_indices.length-1
+      end
+      @prow = @search_indices[@search_index]
+    end
+
+    def getstring prompt, r=@lastrow-1, c=1, maxlen = 10, color = @promptcolor
+      clear_error @win, r, color
+      printstr(@win,r, c, prompt, color);
+      ret = ''
+      Ncurses.echo();
+      @win.attron(Ncurses.COLOR_PAIR(color))
+      begin
+        @win.mvwgetnstr(r,c+prompt.length+1,ret,maxlen)
+      rescue Interrupt => err
+        # C-c
+        ret = ''
+      end
+      @win.attroff(Ncurses.COLOR_PAIR(color))
+      Ncurses.noecho();
+      return ret
+    end
+    def clear_error win, r = @lastrow, color = @promptcolor
+      printstr(win, r, 0, "%-*s" % [Ncurses.COLS," "], color)
+    end
+    def print_header_left(string)
+      @win.attron(Ncurses.COLOR_PAIR(6))
+      @win.mvprintw(@header_row, 0, "%s", string);
+      @win.attroff(Ncurses.COLOR_PAIR(6))
+    end
+    def print_header_right(string)
+      @win.attron(Ncurses.COLOR_PAIR(6))
+      @win.mvprintw(@header_row, @cols-string.length, "%s", string);
+      @win.attroff(Ncurses.COLOR_PAIR(6))
+    end
+    def printstr(pad, r,c,string, color)
+      pad.attron(Ncurses.COLOR_PAIR(color))
+      pad.mvprintw(r, c, "%s", string);
+      pad.attroff(Ncurses.COLOR_PAIR(color))
+    end
 
 
   end # class PadReader
@@ -375,9 +408,9 @@ class SqlPopup
     tp.labelcolor = 5
     tp.datacolor = 2
     tp.sql("select * from contacts ")
-      tp.labelcolor = 2
-      tp.datacolor = 5
-      tp.run_tabular
+    tp.labelcolor = 2
+    tp.datacolor = 5
+    tp.run_tabular
 
   ensure
     Ncurses.endwin();
