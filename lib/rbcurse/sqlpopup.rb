@@ -63,7 +63,7 @@ class SqlPopup
 
     ## LOOP PRINT
     printstr(@pad,r, lc, "#" , @labelcolor);
-    lc += 3
+    lc += @numpadding+1
     @columns.each do |name|
       printstr(@pad,r, lc, "%s" % name, @labelcolor);
       lc += @colwidths[name]+1
@@ -71,8 +71,10 @@ class SqlPopup
     r += 1
     @content.each_with_index do |row, rowid|
       lc = 1
-      printstr(@pad, r, lc," %2d" % (rowid+1) , @datacolor);
-      lc += 3
+      printstr(@pad, r, lc," %*d" % [@numpadding,(rowid+1)] , @datacolor);
+  #  printstr(@pad, r, lc, "#{sel}%*d" % [@numpadding, idx=row0+1] , color);
+    lc += @numpadding+1
+ #     lc += 3
       row.each_index do |ix|
         col = row[ix]
         if block_given?
@@ -94,12 +96,13 @@ class SqlPopup
     @columns, *@datarows = db.execute2(command)
     @datatypes = @datarows[0].types
     @content = @datarows
+    db.close
+    @numpadding = @content.length.to_s.length
     $log.debug("sql: #{command}")
 #    $log.debug("cols: #{@columns.inspect}")
 #    $log.debug("dt: #{@datatypes.inspect}")
 #    $log.debug("row0: #{@datarows[0].inspect}")
 #    $log.debug("rows: #{@datarows.inspect}")
-    db.close
   end
   def do_select
       $log.debug("CALLED SEL #{@prow}")
@@ -119,14 +122,13 @@ class SqlPopup
   end
 
   def show_focus_on_row row0, tf=true
-    @focussedrow = row0 if tf
     color = tf ? @selectioncolor : @datacolor
     lc = 1
     r = row0+2
     printstr(@pad, r, 0, "%-*s" % [Ncurses.COLS," "], color)
     sel = @selected.include?(row0) ? "X" : " "
-    printstr(@pad, r, lc, "#{sel}%2d" % idx=row0+1 , color);
-    lc += 3
+    printstr(@pad, r, lc, "#{sel}%*d" % [@numpadding, idx=row0+1] , color);
+    lc += @numpadding+1
     row = @content[row0]
     row.each_index do |ix|
       col = row[ix]
@@ -172,7 +174,6 @@ class SqlPopup
 
 
     # Loop through to get user requests
-    # # XXX Need to clear pad so earlier data in last line does not still remain
     while((ch = @pad.getch()) != KEY_F1 )
       print_header_left( sprintf("%*s", @cols, " "))
       print_header_left(@header_left) if !@header_left.nil?
@@ -259,6 +260,8 @@ class SqlPopup
         do_next_selection
       when ?":
         do_prev_selection
+      when ?\C-e:
+        do_clear_selection
       end
       #@win.wclear
       @toprow = @prow if @prow < @toprow   # ensre search could be 
@@ -297,6 +300,12 @@ class SqlPopup
     row = @selected.sort{|a,b| b <=> a}.find { |i| i < @prow }
     row ||= @prow
     @prow = row
+  end
+  def do_clear_selection
+    asel = @selected.dup
+    @selected = []
+    asel.each {|sel| show_focus_on_row(sel, false)}
+#   show_focus_on_row(@prow)
   end
 
   def handle_goto_ask
