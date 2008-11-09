@@ -1,3 +1,21 @@
+**2008-11-09 23:50**
+## sqlpopup out own keymapper ##
+
+
+Implemented a small quick dirty key method mapper. This will make transition to keyboard.rb
+easier.
+
+frmincr200811092349.tgz
+* * *
+**2008-11-09 19:37**
+## sqlpopup ##
+
+removed blank line and now selector on actual row 1.
+
+put columns on windw however, this means col names always shpwing but wont scroll!!
+
+frmincr200811091935.tgz
+* * *
 **2008-11-09 15:43**
 ## clearing selection ##
 

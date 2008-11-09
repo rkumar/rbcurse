@@ -19,7 +19,7 @@ class SqlPopup
   def initialize(rows=Ncurses.LINES-1, cols=Ncurses.COLS-1)
     @rows = rows
     @cols = cols
-    @startrow = 1
+    @startrow = 2 # 1
     @header_row = 0
     @lastrow = Ncurses.LINES-1 # @rows-1
 
@@ -29,9 +29,12 @@ class SqlPopup
     @barcolor = 2
     @selectioncolor = 4
     @barrow = @lastrow
+    @data_frow = 1  # first row of data
     @padrows = Ncurses.LINES-1
+    @scrollatrow = @lastrow - 4 # 2 header, 1 footer, 1 prompt 
     @message = ""
     @selected = []
+    @stopping = false
   end
   def estimate_column_widths
     colwidths = {}
@@ -57,24 +60,26 @@ class SqlPopup
 
   def print_tabular_data #:yields pad, ix,  row, labelcol, datacol, column_name, column_value
     @prow = 0
-    r = 1
+    r = @data_frow
     lc = 1
     @pad.clear
 
     ## LOOP PRINT
-    printstr(@pad,r, lc, "#" , @labelcolor);
+    #printstr(@pad,r, lc, "#" , @labelcolor);
     lc += @numpadding+1
+    ## COLUMNS
+    @colstring = " # "
     @columns.each do |name|
-      printstr(@pad,r, lc, "%s" % name, @labelcolor);
+      @colstring << sprintf("%-*s", @colwidths[name]+1, name)
+    #  printstr(@win,0, lc, "%s" % name, @labelcolor);
       lc += @colwidths[name]+1
     end
-    r += 1
+    r = @data_frow
+    ## DATA
     @content.each_with_index do |row, rowid|
       lc = 1
       printstr(@pad, r, lc," %*d" % [@numpadding,(rowid+1)] , @datacolor);
-  #  printstr(@pad, r, lc, "#{sel}%*d" % [@numpadding, idx=row0+1] , color);
-    lc += @numpadding+1
- #     lc += 3
+      lc += @numpadding+1
       row.each_index do |ix|
         col = row[ix]
         if block_given?
@@ -99,6 +104,7 @@ class SqlPopup
     db.close
     @numpadding = @content.length.to_s.length
     $log.debug("sql: #{command}")
+    $log.debug("scrollat: #{@scrollatrow}")
 #    $log.debug("cols: #{@columns.inspect}")
 #    $log.debug("dt: #{@datatypes.inspect}")
 #    $log.debug("row0: #{@datarows[0].inspect}")
@@ -124,7 +130,7 @@ class SqlPopup
   def show_focus_on_row row0, tf=true
     color = tf ? @selectioncolor : @datacolor
     lc = 1
-    r = row0+2
+    r = row0+1
     printstr(@pad, r, 0, "%-*s" % [Ncurses.COLS," "], color)
     sel = @selected.include?(row0) ? "X" : " "
     printstr(@pad, r, lc, "#{sel}%*d" % [@numpadding, idx=row0+1] , color);
@@ -148,15 +154,15 @@ class SqlPopup
     @padrows = [(@content.length) +6, @lastrow+1].max
     @content_rows = @content.length
     @colwidths = estimate_column_widths
-    @cols = @colwidths["__TOTAL__"]  +@columns.length
-    $log.debug("cols: #{@cols} #{@columns.length}")
-    @pad = Ncurses.newpad(@padrows,@cols)
+    @padcols = @colwidths["__TOTAL__"]  +@columns.length
+    $log.debug("cols: #{@padcols} #{@columns.length}")
+    @pad = Ncurses.newpad(@padrows,@padcols)
     @padpanel = @pad.new_panel
     Ncurses::Panel.update_panels
 
-    print_tabular_data
     @win.bkgd(Ncurses.COLOR_PAIR(5));
     @pad.keypad(TRUE);
+    print_tabular_data
 
 #    Ncurses.refresh();
 
@@ -166,85 +172,48 @@ class SqlPopup
     print_header_left( sprintf("%*s", @cols, " "))
     print_header_left(@header_left) if !@header_left.nil?
     print_header_right(sprintf("Row 1 of %d ", @content.length))
+    @win.mvprintw(@header_row+1, 0, "%s", @colstring);
     @win.wrefresh
     show_focus_on_row(0)
-    @scrolling = false
-    @winrow = 0
-    @pad.prefresh(0,0, @startrow ,0, @rows-2,Ncurses.COLS-1);
+    @winrow = 0 # the row on the window we are on
+    @pad.prefresh(1,0, @startrow, 0, @rows-2,Ncurses.COLS-1);
 
-
+    map_keys
     # Loop through to get user requests
     while((ch = @pad.getch()) != KEY_F1 )
-      print_header_left( sprintf("%*s", @cols, " "))
-      print_header_left(@header_left) if !@header_left.nil?
-      @win.wrefresh
+#     print_header_left( sprintf("%*s", @cols, " "))
+#     print_header_left(@header_left) if !@header_left.nil?
+#     @win.wrefresh
       @oldprow = @prow
       @oldwinrow = @winrow
       c = ch.chr rescue 0
       $log.debug("ch: %d %s" % [ch, c])
+      break if ch == ?q
+      @mapper.press(ch)
+=begin
       case ch
       when ?[:      # BEGINNING
-        @prow = 0
-        @toprow = @prow
+        goto_start
       when ?]:       # GOTO END
-        #@prow = @content_rows - (@rows-2)
-        @prow = @content_rows-1 
-        @toprow = @prow
-        @winrow = 0     # not putting this was cause prow < toprow !!
+        goto_end
       when KEY_RIGHT,?l
-        @pcol += 20 if @pcol + 50 < @cols
-        $log.debug("pcols = #{@pcol}")
+        right
       when KEY_LEFT, ?h
-        @pcol -= 20 if @pcol > 0
-        @pcol = 0 if @pcol < 0
+        left
       when KEY_DOWN, ?j
-        if @prow >= @content_rows-1
-          Ncurses.beep
-          next
-        end
-        if @winrow < 20 # @lastrow-2
-          @winrow += 1
-        else
-          @toprow += 1 
-        end
-        @prow += 1 
+        down
       when KEY_UP,?k
-        #next
-        # disallow
-        if @prow <= 0
-          Ncurses.beep
-          @prow = 0
-          #  next
-        else
-          @prow -= 1 
-        end
-        if @winrow > 0 
-          @winrow -= 1
-        else
-          @toprow -= 1 if @toprow > 0
-        end
-        $log.error("ERR !!!! #{@winrow} pr #{@prow} tr #{@toprow}") if @prow < @toprow
-        @toprow = @prow if @prow < @toprow
-      when 32, ?n:
-        if @prow + @rows > @content_rows
-          next
-        else
-          @prow += @rows-2
-          @toprow = @prow
-        end
+        up
+      when 32, ?n:    # SPACE
+        space
       when ?-,?p:
-        if @prow <= 0
-          Ncurses.beep
-          @prow = 0
-          #next
-        else
-          @prow -= (@rows-2)
-          @prow = 0 if @prow < 0
-        end
-          @toprow = @prow
+        minus
       when KEY_ENTER, 10
         # selection
+        enter
+        break
       when ?q, ?\,
+        stop!
         break
       when ?g
         handle_goto_ask
@@ -263,20 +232,24 @@ class SqlPopup
       when ?\C-e:
         do_clear_selection
       end
+=end
+      break if stopping?
       #@win.wclear
       @toprow = @prow if @prow < @toprow   # ensre search could be 
-      @toprow = @prow if @prow > @toprow + 20   # ensre search could be 20 MAGIC FIXME
+      @toprow = @prow if @prow > @toprow + @scrollatrow   # ensre search could be 20 MAGIC FIXME
 
       @win.werase # gives less flicker since wclear sems to refresh immed
       print_header_left( sprintf("%*s", @cols, " "))
       print_header_left(@header_left) if !@header_left.nil?
       print_header_right(sprintf("Row %d of %d ", @prow+1, @content.length))
-      printstr(@win, @barrow, 1, "row %d of %d (N-Next P-Prev Q-Quit, G-Goto, [, ]) %s" % [@prow+1, @content.length, @message], @barcolor);
+      @win.mvprintw(@header_row+1, 0, "%s", @colstring[@pcol..-1]);
+      #printstr(@win, @barrow, 1, "row %d of %d (N-Next P-Prev Q-Quit, G-Goto, [, ]) %s" % [@prow+1, @content.length, @message], @barcolor);
+      printstr(@win, @barrow, 1, "N-Next P-Prev Q-Quit G-Goto /-Srch [,], X-select  %s" % @message, @barcolor);
       @win.refresh
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
       $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
-      @pad.prefresh(@toprow,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
+      @pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
       Ncurses::Panel.update_panels
       #win.wrefresh # if i don't put this then upon return the other screen is still shown
       # till i press a key
@@ -286,6 +259,7 @@ class SqlPopup
       Ncurses::Panel.del_panel(@padpanel) if !@padpanel.nil?   
       @win.delwin if !@win.nil?
     end
+    return (@selected_data || [])
 
   end # run
 
@@ -306,6 +280,11 @@ class SqlPopup
     @selected = []
     asel.each {|sel| show_focus_on_row(sel, false)}
 #   show_focus_on_row(@prow)
+  end
+  def get_selected_data
+    ret = []
+    @selected.each { |sel| ret << @content[sel] }
+    return ret
   end
 
   def handle_goto_ask
@@ -386,37 +365,152 @@ class SqlPopup
       pad.mvprintw(r, c, "%s", string);
       pad.attroff(Ncurses.COLOR_PAIR(color))
     end
+    def goto_start
+      @prow = 0
+      @toprow = @prow
+    end
+    def goto_end
+      @prow = @content_rows-1 
+      @toprow = @prow
+      @winrow = 0     # not putting this was cause prow < toprow !!
+    end
+    def right
+      @pcol += 20 if @pcol + 50 < @padcols
+    end
+    def left
+      @pcol -= 20 if @pcol > 0
+      @pcol = 0 if @pcol < 0
+    end
+    def down
+      if @prow >= @content_rows-1
+        Ncurses.beep
+    #    next
+      end
+      if @winrow < @scrollatrow # 20
+        @winrow += 1
+      else
+        @toprow += 1 
+      end
+      @prow += 1 
+    end
+    def up # UP
+      if @prow <= 0
+        Ncurses.beep
+        @prow = 0
+        #  next
+      else
+        @prow -= 1 
+      end
+      if @winrow > 0 
+        @winrow -= 1
+      else
+        @toprow -= 1 if @toprow > 0
+      end
+      $log.error("ERR !!!! #{@winrow} pr #{@prow} tr #{@toprow}") if @prow < @toprow
+      @toprow = @prow if @prow < @toprow
+    end
+    def space
+      if @prow + @rows > @content_rows
+    #    next
+      else
+        @prow += @scrollatrow+1 # @rows-2
+        @toprow = @prow
+      end
+    end
+    def minus
+      if @prow <= 0
+        Ncurses.beep
+        @prow = 0
+        #next
+      else
+        @prow -=  (@scrollatrow+1) #(@rows-2)
+        @prow = 0 if @prow < 0
+      end
+      @toprow = @prow
+    end
+    def enter
+      @selected_data = get_selected_data
+      $log.debug("RETURN: #{@selected_data.inspect}")
+      stop!
+    end
+    def stop!
+      @stopping = true
+    end
+    def stopping? 
+      @stopping
+    end
+    def map_keys
+      @mapper = Mapper.new(self)
+      # map keys, methods, desc=""
+      @mapper.map [?[], :goto_start
+      @mapper.map  [?]], :goto_end
+      @mapper.map [32,?n], :space
+      @mapper.map [?-,?p], :minus
 
+      @mapper.map  [KEY_RIGHT,?l], :right
+      @mapper.map  [KEY_LEFT, ?h], :left
+      @mapper.map  [KEY_DOWN, ?j], :down
+      @mapper.map  [KEY_UP,?k], :up
+      @mapper.map  [KEY_ENTER, 10], :enter 
+      @mapper.map  [?q, ?\\], :stop!
+      @mapper.map  [?g], :handle_goto_ask
+      @mapper.map  [?/], :do_search
+      @mapper.map  [?\C-n], :do_search_next
+      @mapper.map  [?\C-p], :do_search_prev
+      @mapper.map  [?x], :do_select
+      @mapper.map  [?'], :do_next_selection
+      @mapper.map  [?"], :do_prev_selection
+      @mapper.map  [?\C-e], :do_clear_selection
+      end
+    ## ADD HERE
+end # class PadReader
+class Mapper
+  attr_reader :keymap
+  def initialize handler
+    @handler = handler
+    @keymap = {}
+  end
+  def map keys, methods, desc=""
+    $log.debug("MAP Got: #{keys.inspect} #{methods}")
+    keys.each { |key| @keymap[key]=methods }
+  end
+  def press key
+    $log.debug("press Got: #{key}")
+    *methods = @keymap[key]
+    $log.debug("Methods: #{methods}")
+   methods.each do |m|
+      @handler.send(m)
+   end
+  end
+end
 
-  end # class PadReader
+  if $0 == __FILE__
+    # Initialize curses
+    begin
+      stdscr = Ncurses.initscr();
+      Ncurses.start_color();
+      Ncurses.cbreak();
+      Ncurses.noecho();
+      Ncurses.keypad(stdscr, true);
 
- if $0 == __FILE__
-  # Initialize curses
-  begin
-    stdscr = Ncurses.initscr();
-    Ncurses.start_color();
-    Ncurses.cbreak();
-    Ncurses.noecho();
-    Ncurses.keypad(stdscr, true);
+      # Initialize few color pairs 
+      Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
+      Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
+      Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
+      Ncurses.init_pair(4, COLOR_YELLOW, COLOR_RED); # for selected item
+      Ncurses.init_pair(5, COLOR_WHITE, COLOR_BLACK); # for unselected menu items
+      Ncurses.init_pair(6, COLOR_WHITE, COLOR_BLUE); # for bottom/top bar
+      Ncurses.init_pair(7, COLOR_WHITE, COLOR_RED); # for error messages
 
-    # Initialize few color pairs 
-    Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
-    Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
-    Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
-    Ncurses.init_pair(4, COLOR_YELLOW, COLOR_RED); # for selected item
-    Ncurses.init_pair(5, COLOR_WHITE, COLOR_BLACK); # for unselected menu items
-    Ncurses.init_pair(6, COLOR_WHITE, COLOR_BLUE); # for bottom/top bar
-    Ncurses.init_pair(7, COLOR_WHITE, COLOR_RED); # for error messages
-
-    # Create the window to be associated with the form 
-    # Un post form and free the memory
-    $log = Logger.new("view.log")
-    $log.level = Logger::DEBUG
-    tp = SqlPopup.new
-    tp.header_left = "Contracts"
-    tp.labelcolor = 5
-    tp.datacolor = 2
-    tp.sql("select * from contacts ")
+      # Create the window to be associated with the form 
+      # Un post form and free the memory
+      $log = Logger.new("view.log")
+      $log.level = Logger::DEBUG
+      tp = SqlPopup.new
+      tp.header_left = "Contracts"
+      tp.labelcolor = 5
+      tp.datacolor = 2
+      tp.sql("select * from contacts ")
     tp.labelcolor = 2
     tp.datacolor = 5
     tp.run_tabular
