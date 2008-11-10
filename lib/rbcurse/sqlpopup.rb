@@ -32,7 +32,7 @@ class SqlPopup
     @data_frow = 1  # first row of data
     @padrows = Ncurses.LINES-1
     @scrollatrow = @lastrow - 4 # 2 header, 1 footer, 1 prompt 
-    @message = ""
+    @message = %Q{[-Start ]-End}
     @selected = []
     @stopping = false
   end
@@ -91,7 +91,6 @@ class SqlPopup
       end
       r += 1
     end
-    #printstr(@win, @barrow, 1, "row %d of %d (N-Next P-Prev Q-Quit, G-Goto, [, ]) " % [rowid+1, @content.length], @barcolor);
     @win.refresh
   end
   def sql(command)
@@ -111,13 +110,14 @@ class SqlPopup
 #    $log.debug("rows: #{@datarows.inspect}")
   end
   def do_select
-      $log.debug("CALLED SEL #{@prow}")
+    $log.debug("CALLED SEL #{@prow}")
     if @selected.include? @prow
       @selected.delete @prow
     else
       $log.debug("Adding #{@prow}")
       @selected << @prow
     end
+    @message = %q{ '-Next "-Prev ^E-Clear}
 =begin
     if @selected[@prow].nil?
       @selected[@prow] = "X"
@@ -236,15 +236,14 @@ class SqlPopup
       break if stopping?
       #@win.wclear
       @toprow = @prow if @prow < @toprow   # ensre search could be 
-      @toprow = @prow if @prow > @toprow + @scrollatrow   # ensre search could be 20 MAGIC FIXME
+      @toprow = @prow if @prow > @toprow + @scrollatrow   
 
       @win.werase # gives less flicker since wclear sems to refresh immed
       print_header_left( sprintf("%*s", @cols, " "))
       print_header_left(@header_left) if !@header_left.nil?
       print_header_right(sprintf("Row %d of %d ", @prow+1, @content.length))
-      @win.mvprintw(@header_row+1, 0, "%s", @colstring[@pcol..-1]);
-      #printstr(@win, @barrow, 1, "row %d of %d (N-Next P-Prev Q-Quit, G-Goto, [, ]) %s" % [@prow+1, @content.length, @message], @barcolor);
-      printstr(@win, @barrow, 1, "N-Next P-Prev Q-Quit G-Goto /-Srch [,], X-select  %s" % @message, @barcolor);
+      @win.mvprintw(@header_row+1, 0, "%s", @colstring[@pcol..-1]); # scrolls along with pcol
+      printstr(@win, @barrow, 1, "N-NextPg P-PrevPg Q-Quit G-Goto /-Srch X-select  %s" % @message, @barcolor);
       @win.refresh
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
@@ -306,7 +305,7 @@ class SqlPopup
       if res.length > 0
         @prow = res[0]
       end
-      @message = "%d matches for %s (Use ^N ^P)" % [res.length, regex]
+      @message = "%d matches for %s. ^N-Next ^P-Prev)" % [res.length, regex]
       @search_indices = res
       @search_index = 0
     end
@@ -410,7 +409,7 @@ class SqlPopup
       @toprow = @prow if @prow < @toprow
     end
     def space
-      if @prow + @rows > @content_rows
+      if @prow + @scrollatrow > @content_rows
     #    next
       else
         @prow += @scrollatrow+1 # @rows-2
@@ -477,8 +476,9 @@ class Mapper
   def press key
     $log.debug("press Got: #{key}")
     *methods = @keymap[key]
+    return if methods.nil? or methods[0].nil?
     $log.debug("Methods: #{methods}")
-   methods.each do |m|
+    methods.each do |m|
       @handler.send(m)
    end
   end
