@@ -1,12 +1,15 @@
-#!/usr/bin/ruby
+$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 
 require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'sqlite3'
+require 'lib/ver/ncurses'
+require 'lib/ver/keyboard'
+require 'lib/ver/keymap'
+require 'lib/ver/window'
 
 include Ncurses
-include Ncurses::Form
 
 class SqlPopup
 
@@ -15,6 +18,8 @@ class SqlPopup
   attr_accessor :datacolor   # color pair of data
   attr_accessor :promptcolor   # color pair or prompt
   attr_accessor :barcolor   # color pair of bottom bar
+  attr_reader :keyhandler, :window
+  attr_accessor :mode
 
   def initialize(rows=Ncurses.LINES-1, cols=Ncurses.COLS-1)
     @rows = rows
@@ -35,6 +40,7 @@ class SqlPopup
     @message = %Q{[-Start ]-End}
     @selected = []
     @stopping = false
+    @mode = :control
   end
   def estimate_column_widths
     colwidths = {}
@@ -148,9 +154,13 @@ class SqlPopup
   end
   def run_tabular
     begin
-    @win = WINDOW.new(0,0,0,0)
+    #@win = WINDOW.new(0,0,0,0)
+      layout = { :height => 0, :width => 0, :top => 0, :left => 0 }
+      @win = VER::Window.new(layout)
+      @window = @win
       # the next line will not obscure footer and header win of prev screen
-    @panel = @win.new_panel
+    #@panel = @win.new_panel
+    @panel = @win.panel
     @padrows = [(@content.length) +6, @lastrow+1].max
     @content_rows = @content.length
     @colwidths = estimate_column_widths
@@ -179,17 +189,29 @@ class SqlPopup
     @pad.prefresh(1,0, @startrow, 0, @rows-2,Ncurses.COLS-1);
 
     map_keys
+    VER::Keyboard.focus = self
+    ensure
+      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
+      Ncurses::Panel.del_panel(@padpanel) if !@padpanel.nil?   
+      @win.delwin if !@win.nil?
+    end
+    return (@selected_data || [])
+  end
+  def press(key)
+      @message="pressed: #{@mode} - %10p" % key
     # Loop through to get user requests
-    while((ch = @pad.getch()) != KEY_F1 )
+#   while((ch = @pad.getch()) != KEY_F1 )
 #     print_header_left( sprintf("%*s", @cols, " "))
 #     print_header_left(@header_left) if !@header_left.nil?
 #     @win.wrefresh
       @oldprow = @prow
       @oldwinrow = @winrow
-      c = ch.chr rescue 0
-      $log.debug("ch: %d %s" % [ch, c])
-      break if ch == ?q
-      @mapper.press(ch)
+      #c = ch.chr rescue 0
+      $log.debug("press key: %s" % key)
+#     break if ch == ?q
+      #@mapper.press(ch)
+      begin
+      @keyhandler.press(key)
 =begin
       case ch
       when ?[:      # BEGINNING
@@ -213,7 +235,7 @@ class SqlPopup
         enter
         break
       when ?q, ?\,
-        stop!
+        stop
         break
       when ?g
         handle_goto_ask
@@ -252,13 +274,11 @@ class SqlPopup
       Ncurses::Panel.update_panels
       #win.wrefresh # if i don't put this then upon return the other screen is still shown
       # till i press a key
-    end # while
-    ensure
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-      Ncurses::Panel.del_panel(@padpanel) if !@padpanel.nil?   
-      @win.delwin if !@win.nil?
+    rescue ::Exception => ex
+      $log.debug ex
+      show(ex.message)
     end
-    return (@selected_data || [])
+    #end # while
 
   end # run
 
@@ -381,9 +401,11 @@ class SqlPopup
       @pcol = 0 if @pcol < 0
     end
     def down
+      $log.debug "inside down"
       if @prow >= @content_rows-1
         Ncurses.beep
     #    next
+return
       end
       if @winrow < @scrollatrow # 20
         @winrow += 1
@@ -393,10 +415,12 @@ class SqlPopup
       @prow += 1 
     end
     def up # UP
+      $log.debug "inside up"
       if @prow <= 0
         Ncurses.beep
         @prow = 0
         #  next
+return
       else
         @prow -= 1 
       end
@@ -430,17 +454,107 @@ class SqlPopup
     def enter
       @selected_data = get_selected_data
       $log.debug("RETURN: #{@selected_data.inspect}")
-      stop!
+      stop
     end
-    def stop!
-      @stopping = true
+    def show string
+      @message = string
     end
-    def stopping? 
-      @stopping
+=begin
+    def press(key)
+      @keyhandler.press(key)
+      @message="pressed: #{@mode} - %10p" % key
+    rescue ::Exception => ex
+      $log.debug ex
+      #show(ex.message)
     end
+=end
     def map_keys
+      #@keyhandler = VER::KeyHandler.new(self)
+=begin
+      @mapper.let :insert do
+       map(/^([[:print:]])$/){ view.show(@arg) }
+       map('enter'){ view.show(:enter) }
+        map('esc'){ view.mode = :control }
+        map('C-x'){ view.mode = :control }
+        map('C-c'){ view.mode = :control }
+        map('C-q'){ stop }
+      end
+=end
+
       @mapper = Mapper.new(self)
+      @keyhandler = @mapper
+      raise "NIL" if @mapper.nil?
+      @mapper.let :control do
+
+        map('C-x C-c'){ view.down }
+        map('C-x C-x'){ view.up }
+        map('C-x q'){ view.stop }
+        map('C-x C-s'){ view.do_search }
+        map('C-s'){ view.mode = :cx }
+        map('q'){ view.stop }
+        map('space'){ view.space }
+        map('n'){ view.space }
+        map('j'){ view.down }
+        map('k'){ view.up }
+        map('p'){ view.minus }
+      map('[') { view.goto_start }
+      map(']') { view.goto_end }
+      map('-') { view.minus }
+
+      map('right') { view.right}
+      map('l') { view.right}
+      map('left') {view.left}
+      map('h') {view.left}
+      map('down') { view.down }
+      map('j') { view.down }
+      map('up') { view.up }
+      map('enter') { view.enter  }
+      map('g') { view.handle_goto_ask }
+      map('/') { view.do_search }
+      map('C-n') { view.do_search_next }
+      map('C-p') { view.do_search_prev }
+      map('x') { view.do_select }
+      map('\'') { view.do_next_selection }
+      map('"') { view.do_prev_selection }
+      map('C-e') { view.do_clear_selection }
+#        map([/^(\d)$/, 'n']){ d.times(view.space) }
+#  map([/^(\d\d?)$/, 'j']){ @arg.to_i.times {view.down};view.show("d then #@arg")}
+#  map([/^(\d\d?)$/, 'k']){ @arg.to_i.times {view.up}}
+    #map([/^(\d)$/, 'j']){ d.times(view.down) }
+#        map(['j', /^(\d)$/]){ d.times(view.down) }
+
+
+        map('C-q'){ view.stop }
+=begin
+  macro('h',       'left')
+  macro('j',       'down')
+  macro('k',       'up')
+  macro('l',       'right')
+=end
+ 
+=begin
+# allows us to do 5j, 12k, 2l etc
+        count_map(7, /^down|j$/){ @count.times{ view.down } }
+        count_map(7, /^up|k$/){ @count.times{ view.up } }
+        count_map(7, /^left|h$/){ @count.times{ view.left } }
+        count_map(7, /^right|l$/){ @count.times{ view.right } }
+  macro('e',       'j')
+        # alias ZZ to save and quit
+#       macro('Z Z', 'C-s C-q')
+#       macro('x', 'Z Z')
+#       macro('X', 'x')
+=end
+      end
+      @mapper.let :cx do
+        map('c'){ view.show(:c) }
+        map('a'){ view.show(:a) }
+        map('r'){ view.show(:r) }
+        map('q'){ view.stop }
+        map('i'){ view.mode = :control }
+      end
+      #@mapper = Mapper.new(self)
       # map keys, methods, desc=""
+=begin
       @mapper.map [?[], :goto_start
       @mapper.map  [?]], :goto_end
       @mapper.map [32,?n], :space
@@ -460,38 +574,101 @@ class SqlPopup
       @mapper.map  [?'], :do_next_selection
       @mapper.map  [?"], :do_prev_selection
       @mapper.map  [?\C-e], :do_clear_selection
+=end
       end
+    # from VER
+    def stopping?
+      @stop
+    end
+
+    # without this system hangs if unknown key presed
+    def info(message)
+      @message = message
+      # sorry, hardcoded right now...
+    end
+
+    def stop
+      @stop = true
+      throw(:close)
+    end
     ## ADD HERE
 end # class PadReader
 class Mapper
   attr_reader :keymap
+  attr_reader :view
+  attr_accessor :mode
+  attr_reader :keys
   def initialize handler
-    @handler = handler
-    @keymap = {}
+    #@handler = handler
+    @view = handler
+    @keys = {}
+    @mode = nil
+    @pendingkeys = nil
+    @prevkey = nil
   end
-  def map keys, methods, desc=""
-    $log.debug("MAP Got: #{keys.inspect} #{methods}")
-    keys.each { |key| @keymap[key]=methods }
+  def let mode, &block
+    h = Hash.new
+    @keys[mode] = h
+    @mode = mode
+    instance_eval(&block)
+    $log.debug("KEYS: #{@keys[mode].inspect}")
   end
+  def map(arg, &block)
+    if block_given?
+      # We check for cases like C-x C-c etc. Only 2 levels.
+      args = arg.split(/ +/)
+      if args.length == 2
+        @keys[@mode][args[0]] ||= {}
+        @keys[@mode][args[0]][args[1]]=block
+      else
+        # single key or control key
+        @keys[@mode][arg]=block
+      end
+    else
+      self[*args]
+    end
+  end
+
+  ## manages key pressing
+  # takes care of multiple key combos too
   def press key
     $log.debug("press Got: #{key}")
-    *methods = @keymap[key]
-    return if methods.nil? or methods[0].nil?
-    $log.debug("Methods: #{methods}")
-    methods.each do |m|
-      @handler.send(m)
-   end
+    # for a double key combination such as C-x C-c this has the set of pending keys to check against
+    if @pendingkeys != nil
+      blk = @pendingkeys[key]
+    else
+      # this is the regular single key mode
+      blk = @keys[@view.mode][key]
+    end
+    # this means this key expects more keys to follow such as C-x could
+    if blk.is_a? Hash
+      @pendingkeys = blk
+      @prevkey = key
+      return
+    end
+    if blk.nil?
+      view.info("%p not valid in %p. Try: #{@pendingkeys.keys.join(', ')}" % [key, @prevkey]) # XXX
+      return
+    end
+    # call the block
+    blk.call
+    @prevkey = nil
+    @pendingkeys = nil
   end
 end
 
   if $0 == __FILE__
     # Initialize curses
     begin
+      VER::start_ncurses
+      Ncurses.start_color();
+=begin
       stdscr = Ncurses.initscr();
       Ncurses.start_color();
       Ncurses.cbreak();
       Ncurses.noecho();
       Ncurses.keypad(stdscr, true);
+=end
 
       # Initialize few color pairs 
       Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
@@ -506,16 +683,23 @@ end
       # Un post form and free the memory
       $log = Logger.new("view.log")
       $log.level = Logger::DEBUG
+    catch(:close) do
       tp = SqlPopup.new
       tp.header_left = "Contracts"
       tp.labelcolor = 5
       tp.datacolor = 2
       tp.sql("select * from contacts ")
-    tp.labelcolor = 2
-    tp.datacolor = 5
-    tp.run_tabular
-
+      tp.labelcolor = 2
+      tp.datacolor = 5
+      tp.run_tabular
+ #     VER::Keyboard.focus = tp
+    end
+  rescue => ex
   ensure
-    Ncurses.endwin();
+    VER::stop_ncurses
+    $log.debug( ex) if ex
+    $log.debug(ex.backtrace.join("\n")) if ex
+    p ex if ex
+    p(ex.backtrace.join("\n")) if ex
   end
  end

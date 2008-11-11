@@ -1,8 +1,16 @@
 #  NCURSES APPLICATION GENERATOR #
 # 
+#  2008-11-10 23:42 
+-  should one relook at Application and Form and try to simplify.
+   Can I move app logic into forms? So only one class.
+
+   sqlview - easy way of integrating bottom_window of key mappings ?
+   - call sqlresultset viewer for that row on enter or View or something.
+
   sqlview - tabular selectable sql resultset listing.
-    - return selection to user
-    - allow him to deselect all, navigate selections.
+# - implement keyboard.rb from ver, so we get many more keys - todo for other progs
+    - return selection to user DONE but to test out.
+#    - allow him to deselect all, navigate selections.
   sqlresultsetpadviewer = allows single row per page viewing no selection.
 #  MANDATORY FIELDS CHECKING in get_current_values_as_hash
 #  fields that are mandatory - can we display them in some way. - DONE
@@ -13,13 +21,13 @@
 -  allow user to switch off highlighting and help, which is not relevant if ACTIVE is off.
 -  Application level config - DB and form header etc. No need to keep defining.
 - use a table with 2 or more keys.
-- implement keyboard.rb from ver, so we get many more keys
+#- implement keyboard.rb from ver, so we get many more keys
 #  2008-11-03 11:00 
 #   - caller app should not use instance vars in block but methods. inst var can change later.
 #     too tight coupling. DONE
 #  2008-11-02 00:31 
    - save search result/s as text or yaml
-   - check manver's code on window.rb and ncurses.rb.
+#  - check manver's code on window.rb and ncurses.rb.
 
    - @db can easily be a global variable, i think
    - currently have to mention key names each time. Can be good for a one off table, but painful

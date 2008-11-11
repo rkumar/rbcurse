@@ -1,3 +1,44 @@
+**2008-11-12 00:39**
+## sqlpopup and keymapper ##
+
+
+We have a much simpler than VER keymapper. Code is small. 
+      - Uses keyboard.rb from VER project to give us ESC and meta/alt keys.
+      - We use same syntax for configuring such as class.let :mode do etc.
+      - Provided:
+               - single keys combinations
+               - a mode with its set of keys
+               - dual keys such as C-x C-c or C-x p etc which do not change mode.
+
+frmincr200811120036.tgz
+* * *
+**2008-11-11 23:40**
+## sqlpopup our own modes and key ##
+
+allows cx mode with its keys
+but its looks okay for a mode
+for a multiple key we would prefer to say : C-c C-x
+and not create a separate context./mode.
+
+frmincr200811112339.tgz
+* * *
+**2008-11-11 23:12**
+## sqlpopup my version ##
+
+trying to build a simpler version of sqlpopup
+that i can understand. VER is pretty complex and the scope is not relevant to our 
+kind of app.
+
+frmincr200811112311.tgz
+* * *
+**2008-11-10 12:25**
+## sqlpopup ##
+
+after some minor bugfixes in space bar, and better messages
+now i will try to integrate keymap and keyboard.
+
+frmincr200811101224.tgz
+* * *
 **2008-11-09 23:50**
 ## sqlpopup out own keymapper ##
 
