@@ -8,6 +8,7 @@ require 'lib/ver/ncurses'
 require 'lib/ver/keyboard'
 require 'lib/ver/keymap'
 require 'lib/ver/window'
+require 'lib/rbcurse/orderedhash'
 
 include Ncurses
 
@@ -109,7 +110,7 @@ class SqlPopup
     db.close
     @numpadding = @content.length.to_s.length
     $log.debug("sql: #{command}")
-    $log.debug("scrollat: #{@scrollatrow}")
+#   $log.debug("scrollat: #{@scrollatrow}")
 #    $log.debug("cols: #{@columns.inspect}")
 #    $log.debug("dt: #{@datatypes.inspect}")
 #    $log.debug("row0: #{@datarows[0].inspect}")
@@ -269,7 +270,7 @@ class SqlPopup
       @win.refresh
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
-      $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
+#     $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
       @pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
       Ncurses::Panel.update_panels
       #win.wrefresh # if i don't put this then upon return the other screen is still shown
@@ -401,7 +402,7 @@ class SqlPopup
       @pcol = 0 if @pcol < 0
     end
     def down
-      $log.debug "inside down"
+#     $log.debug "inside down"
       if @prow >= @content_rows-1
         Ncurses.beep
     #    next
@@ -415,7 +416,7 @@ return
       @prow += 1 
     end
     def up # UP
-      $log.debug "inside up"
+#     $log.debug "inside up"
       if @prow <= 0
         Ncurses.beep
         @prow = 0
@@ -486,15 +487,16 @@ return
       raise "NIL" if @mapper.nil?
       @mapper.let :control do
 
-        map('C-x C-c'){ view.down }
-        map('C-x C-x'){ view.up }
-        map('C-x q'){ view.stop }
-        map('C-x C-s'){ view.do_search }
+        map('C-x', 'C-d'){ view.down }
+        map('C-x', 'C-u'){ view.up }
+        map('C-x', 'q'){ view.stop }
+        map('C-x', 'C-s'){ view.do_search }
+        map('C-x', 'C-x'){ view.do_select }
         map('C-s'){ view.mode = :cx }
         map('q'){ view.stop }
         map('space'){ view.space }
         map('n'){ view.space }
-        map('j'){ view.down }
+        map('j'){ :down }
         map('k'){ view.up }
         map('p'){ view.minus }
       map('[') { view.goto_start }
@@ -517,6 +519,7 @@ return
       map('\'') { view.do_next_selection }
       map('"') { view.do_prev_selection }
       map('C-e') { view.do_clear_selection }
+      map(/^([[:print:]])$/){ view.show("Got printable: #{@arg}") }
 #        map([/^(\d)$/, 'n']){ d.times(view.space) }
 #  map([/^(\d\d?)$/, 'j']){ @arg.to_i.times {view.down};view.show("d then #@arg")}
 #  map([/^(\d\d?)$/, 'k']){ @arg.to_i.times {view.up}}
@@ -600,32 +603,42 @@ class Mapper
   attr_reader :keys
   def initialize handler
     #@handler = handler
-    @view = handler
+    @view = handler       # caller program
     @keys = {}
-    @mode = nil
+    @mode = nil  # used when defining
     @pendingkeys = nil
-    @prevkey = nil
+    @prevkey = nil   # in case of a key sequence such as C-x C-c, will have C-x
+    @arg = nil # regex matched this key.
   end
   def let mode, &block
-    h = Hash.new
+    h = OrderedHash.new
     @keys[mode] = h
     @mode = mode
     instance_eval(&block)
     $log.debug("KEYS: #{@keys[mode].inspect}")
   end
-  def map(arg, &block)
+  def map(*args, &block)
     if block_given?
       # We check for cases like C-x C-c etc. Only 2 levels.
-      args = arg.split(/ +/)
+      #args = arg.split(/ +/)
       if args.length == 2
-        @keys[@mode][args[0]] ||= {}
+        @keys[@mode][args[0]] ||= OrderedHash.new
         @keys[@mode][args[0]][args[1]]=block
       else
         # single key or control key
-        @keys[@mode][arg]=block
+        @keys[@mode][args[0]]=block
       end
     else
-      self[*args]
+       #no block, last arg shold be a symbol
+       symb = args.pop
+       raise "If block not passed, last arg should be a method symbol" if !symb.is_a? Symbol
+       if args.length == 2
+         @keys[@mode][args[0]] ||= OrderedHash.new
+         @keys[@mode][args[0]][args[1]]=symb
+       else
+         # single key or control key
+         @keys[@mode][args[0]]=symb
+       end
     end
   end
 
@@ -638,22 +651,51 @@ class Mapper
       blk = @pendingkeys[key]
     else
       # this is the regular single key mode
-      blk = @keys[@view.mode][key]
+      #blk = @keys[@view.mode][key]
+      blk = match(key)
     end
     # this means this key expects more keys to follow such as C-x could
-    if blk.is_a? Hash
+    if blk.is_a? OrderedHash
       @pendingkeys = blk
       @prevkey = key
       return
     end
-    if blk.nil?
-      view.info("%p not valid in %p. Try: #{@pendingkeys.keys.join(', ')}" % [key, @prevkey]) # XXX
+    if blk.nil? # this should go up XXX
+      if !@pendingkeys.nil?
+        view.info("%p not valid in %p. Try: #{@pendingkeys.keys.join(', ')}" % [key, @prevkey]) # XXX
+      else
+        view.info("%p not valid in %p. " % [key, @view.mode]) 
+      end
       return
     end
-    # call the block
-    blk.call
+    # call the block or symbol - our user defined key mappings use symbols
+    if blk.is_a? Symbol
+      @view.send(blk)
+    else
+      blk.call
+    end
     @prevkey = nil
     @pendingkeys = nil
+  end
+  def match key
+#       $log.debug "MATCH #key "
+      #blk = @keys[@view.mode][key]
+    @keys[@view.mode].each_pair do |k,v|
+#     $log.debug "LOOP #{k.class}, #{k}, #{v} "
+      case k.class.to_s
+      when "String"
+        return v if k == key
+      when "Regexp"
+#       $log.debug "REGEX #key , #k, #{k.match(key)}"
+        if !k.match(key).nil?
+          @arg = key
+          return v 
+        end
+      else
+        $log.error "MATCH: Unhandled class #{k.class} "
+      end
+    end
+    return nil
   end
 end
 

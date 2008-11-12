@@ -1,3 +1,16 @@
+**2008-11-12 12:41**
+## Regexp and symbols in mappings ##
+
+In order that printables can be used had to add REGEXP in mapping.
+
+Also added symbols
+
+So now we can't search Hash normally, have to iterate. So ordered hash hadto beused.
+Tried to move to arrays, but pendingkeys would have not been possible.
+Symbols are not tested yet.
+
+frmincr200811121239.tgz
+* * *
 **2008-11-12 00:39**
 ## sqlpopup and keymapper ##
 
