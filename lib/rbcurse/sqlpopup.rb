@@ -38,10 +38,11 @@ class SqlPopup
     @data_frow = 1  # first row of data
     @padrows = Ncurses.LINES-1
     @scrollatrow = @lastrow - 4 # 2 header, 1 footer, 1 prompt 
-    @message = %Q{[-Start ]-End}
+    @message = nil
     @selected = []
     @stopping = false
     @mode = :control
+    @key_labels = get_key_labels
   end
   def estimate_column_widths
     colwidths = {}
@@ -119,7 +120,6 @@ class SqlPopup
 #    $log.debug("rows: #{@datarows.inspect}")
   end
   def do_select
-    $log.debug("CALLED SEL #{@prow}")
     if @selected.include? @prow
       @selected.delete @prow
     else
@@ -127,6 +127,10 @@ class SqlPopup
       @selected << @prow
     end
     @message = %q{ '-Next "-Prev ^E-Clear}
+    append_key_label '\'', 'NextSel'
+    append_key_label '"', 'PrevSel'
+    append_key_label 'C-e', 'ClearSel'
+    print_key_labels
 =begin
     if @selected[@prow].nil?
       @selected[@prow] = "X"
@@ -193,16 +197,19 @@ class SqlPopup
     @pad.prefresh(1,0, @startrow, 0, @rows-2,Ncurses.COLS-1);
 
     map_keys
+    print_key_labels @key_labels
     VER::Keyboard.focus = self
     ensure
       Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
       Ncurses::Panel.del_panel(@padpanel) if !@padpanel.nil?   
       @win.delwin if !@win.nil?
+      Ncurses::Panel.del_panel(@message_panel) if !@message_panel.nil?   
+      @message_win.delwin if !@message_win.nil?
     end
     return (@selected_data || [])
   end
   def press(key)
-      @message="pressed: #{@mode} - %10p" % key
+#     @message="pressed: #{@mode} - %10p" % key
     # Loop through to get user requests
 #   while((ch = @pad.getch()) != KEY_F1 )
 #     print_header_left( sprintf("%*s", @cols, " "))
@@ -244,7 +251,7 @@ class SqlPopup
       when ?g
         handle_goto_ask
       when ?/:
-        do_search
+        do_search_ask
       when ?\C-n:
         do_search_next
       when ?\C-p:
@@ -265,28 +272,31 @@ class SqlPopup
       @toprow = @prow if @prow > @toprow + @scrollatrow   
       @winrow = @prow - @toprow
 
-#     @win.werase # gives less flicker since wclear sems to refresh immed
       if @content.length - @toprow < @scrollatrow and  @toprow != @oldtoprow
-        @win.werase # gives less flicker since wclear sems to refresh immed
+        window_erase @win
       end
       print_header_left( sprintf("%*s", @cols, " "))
       print_header_left(@header_left) if !@header_left.nil?
       print_header_right(sprintf("Row %d of %d ", @prow+1, @content.length))
       @win.mvprintw(@header_row+1, 0, "%s", @colstring[@pcol..-1]); # scrolls along with pcol
-      $log.debug("y0 = #{@win.getcury}")
-      printstr(@win, @barrow, 1, "N-NextPg P-PrevPg Q-Quit G-Goto /-Srch X-select  %s" % @message, @barcolor);
+      printstr(@win, @barrow-1, Ncurses.COLS-@message.length,@message, @barcolor) if !@message.nil?
+=begin
+      if @message.nil?
+        clear_message
+      end
+=end
       @win.refresh
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
-     $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
-#    raise "winrow error " if @winrow > @prow - @toprow
-    $log.debug "winrow error " if @winrow > @prow - @toprow
+    # $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
       @pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
-      $log.debug("y = #{@win.getcury}")
       #@win.wclrtobot # gives less flicker since wclear sems to refresh immed
       Ncurses::Panel.update_panels
-      #win.wrefresh # if i don't put this then upon return the other screen is still shown
-      # till i press a key
+      if !@message.nil?
+        print_message @message 
+        @message = nil
+      end
+
     rescue ::Exception => ex
       $log.debug ex
       show(ex.message)
@@ -330,15 +340,17 @@ class SqlPopup
     #  next
     end
   end
-    def do_search
-      regex = getstring "Enter regex to search for:"
+    def do_search_ask
+      regex = getstring "Enter pattern to search for:"
       res = []
       @content.each_with_index do |row, ix| res << ix if row.grep(/#{regex}/) != [] end
-      $log.debug("RES: "+ res.inspect)
       if res.length > 0
         @prow = res[0]
+        append_key_label 'C-n', 'NextMatch'
+        append_key_label 'C-p', 'PrevMatch'
+        print_key_labels
       end
-      @message = "%d matches for %s. ^N-Next ^P-Prev)" % [res.length, regex]
+      @message = "Matched %d for %s." % [res.length, regex]
       @search_indices = res
       @search_index = 0
     end
@@ -363,7 +375,11 @@ class SqlPopup
       @prow = @search_indices[@search_index]
     end
 
-    def getstring prompt, r=@lastrow-1, c=1, maxlen = 10, color = @promptcolor
+    def putstring prompt, r=@lastrow-2, c=1, color = @promptcolor
+      clear_error @win, r, color
+      printstr(@win,r, c, prompt, color);
+    end
+    def getstring prompt, r=@lastrow-2, c=1, maxlen = 10, color = @promptcolor
       clear_error @win, r, color
       printstr(@win,r, c, prompt, color);
       ret = ''
@@ -397,6 +413,18 @@ class SqlPopup
       pad.mvprintw(r, c, "%s", string);
       pad.attroff(Ncurses.COLOR_PAIR(color))
     end
+  def print_this(win, text, color, x, y)
+    if(win == nil)
+      raise "win nil in printthis"
+    end
+    color=Ncurses.COLOR_PAIR(color);
+    win.attron(color);
+    #win.mvprintw(x, y, "%-40s" % text);
+    win.mvprintw(x, y, "%s" % text);
+    win.attroff(color);
+    win.refresh
+  end
+ 
     def goto_start
       @prow = 0
       @toprow = @prow
@@ -412,7 +440,7 @@ class SqlPopup
     end
     def right
       @pcol += 20 if @pcol + 50 < @padcols
-      @win.werase # gives less flicker since wclear sems to refresh immed
+      window_erase @win
     end
     def left
       @pcol -= 20 if @pcol > 0
@@ -509,7 +537,7 @@ return
         map('C-x', 'C-d'){ view.down }
         map('C-x', 'C-u'){ view.up }
         map('C-x', 'q'){ view.stop }
-        map('C-x', 'C-s'){ view.do_search }
+        map('C-x', 'C-s'){ view.do_search_ask }
         map('C-x', 'C-x'){ view.do_select }
         map('C-s'){ view.mode = :cx }
         map('q'){ view.stop }
@@ -531,14 +559,15 @@ return
       map('up') { view.up }
       map('enter') { view.enter  }
       map('g') { view.handle_goto_ask }
-      map('/') { view.do_search }
+      map('/') { view.do_search_ask }
       map('C-n') { view.do_search_next }
       map('C-p') { view.do_search_prev }
       map('x') { view.do_select }
       map('\'') { view.do_next_selection }
       map('"') { view.do_prev_selection }
       map('C-e') { view.do_clear_selection }
-      map(/^([[:print:]])$/){ view.show("Got printable: #{@arg}") }
+      map(/^([[:print:]])$/){ #view.show("Got printable: #{@arg}") 
+      }
 #        map([/^(\d)$/, 'n']){ d.times(view.space) }
 #  map([/^(\d\d?)$/, 'j']){ @arg.to_i.times {view.down};view.show("d then #@arg")}
 #  map([/^(\d\d?)$/, 'k']){ @arg.to_i.times {view.up}}
@@ -589,7 +618,7 @@ return
       @mapper.map  [KEY_ENTER, 10], :enter 
       @mapper.map  [?q, ?\\], :stop!
       @mapper.map  [?g], :handle_goto_ask
-      @mapper.map  [?/], :do_search
+      @mapper.map  [?/], :do_search_ask
       @mapper.map  [?\C-n], :do_search_next
       @mapper.map  [?\C-p], :do_search_prev
       @mapper.map  [?x], :do_select
@@ -612,6 +641,97 @@ return
     def stop
       @stop = true
       throw(:close)
+    end
+    def get_key_labels
+      key_labels = [
+        ['g', 'Goto'], ['/', 'Search'],
+        ['x', 'Sel'], ['C-e', 'ClrSel'],
+        ['Spc','PgDn'], ['-','PgUp']
+      ]
+      return key_labels
+    end
+    def append_key_label key, label
+      @key_labels << [key, label] if !@key_labels.include? [key, label]
+    end
+      def print_key_labels(arr = @key_labels)
+        ## paint so-called key bindings from key_labels
+        
+        posx = 0
+        even = []
+        odd = []
+        arr.each_index { |i|
+          if i % 2 == 0
+            #arr[i+1] = ['',''] if arr[i+1].nil?
+            nextarr = arr[i+1] || ['', '']
+            keyw = [arr[i][0].length, nextarr[0].length].max
+            labelw = [arr[i][1].length, nextarr[1].length].max
+
+            even << [ sprintf("%*s", keyw,  arr[i][0]), sprintf("%-*s", labelw,  arr[i][1]) ]
+            odd << [ sprintf("%*s", keyw,  nextarr[0]), sprintf("%-*s", labelw,  nextarr[1]) ]
+            $log.debug("loop even: #{even.inspect}")
+          else
+          end
+        }
+        $log.debug("even: #{even.inspect}")
+        $log.debug("odd : #{odd.inspect}")
+        posy = @barrow-1
+        print_key_labels_row(posy, posx, even)
+        posy = @barrow
+        print_key_labels_row(posy, posx, odd)
+        @win.wrefresh   # needed else secod row not shown after askchoice XXX
+      end
+      def print_key_labels_row(posy, posx, arr)
+        $footer_color_pair ||= 6
+        padding = 8
+        padding = 4 if arr.length > 5
+        padding = 0 if arr.length > 7
+        my_form_win = @win
+        print_this(@win, "%-*s" % [Ncurses.COLS," "], $footer_color_pair, posy, 0)
+        arr.each do |kl|
+          key = kl[0]
+          lab = kl[1]
+          if key !="" # don't print that white blank space for fillers
+            color_pair=2
+            x = posx +  (key.length - key.strip.length)
+            my_form_win.attron(Ncurses.COLOR_PAIR(color_pair))
+            my_form_win.mvprintw(posy, x, "%s" % kl[0].strip );
+            my_form_win.attroff(Ncurses.COLOR_PAIR(color_pair))
+          end
+          color_pair=$footer_color_pair
+          posx = posx + kl[0].length 
+          my_form_win.attron(Ncurses.COLOR_PAIR(color_pair))
+    
+          #lab = sprintf(" %s %*s" , kl[1], padding, " ");
+          lab = sprintf(" %s %s" , kl[1], " "*padding);
+          my_form_win.mvprintw(posy, posx, lab)
+          my_form_win.attroff(Ncurses.COLOR_PAIR(color_pair))
+          posx = posx +  lab.length
+      end
+    end
+    def window_erase win
+        win.werase # gives less flicker since wclear sems to refresh immed
+        print_key_labels @key_labels
+    end
+    def print_message text
+      putstring text, @lastrow-2, 1, color = @promptcolor
+    end
+
+    def oldprint_message text
+      if @message_win.nil?
+        layout = { :height => 2, :width => 0, :top => Ncurses.LINES-4, :left => 0 }
+        @message_win = VER::Window.new(layout)
+        #  @message_win = WINDOW.new(1,0,Ncurses.LINES-3,0)
+        @message_panel = @message_win.panel
+      end
+      $error_color_pair ||= 7 # 7
+      $log.debug("inside printmessage:" + text);
+      print_this(@message_win, "M:"+text, $error_color_pair, 1, 1)
+      @message_win.show
+      @message_win.wrefresh
+    end
+    def clear_message
+      @message_win.hide if !@message_win.nil?
+      clear_error @win, r=@lastrow-2, color=@promptcolor
     end
     ## ADD HERE
 end # class PadReader
