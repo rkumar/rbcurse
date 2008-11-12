@@ -1,3 +1,14 @@
+**2008-11-12 19:31**
+## flickering and key movement ##
+
+       - reduced flickering by doing werase only when absolutely nec. but this could lead
+         to some situations where clearing is not done. to keep checking.
+
+       - some errors in key movement due to wrong @window value or space etc
+         having incorrect checks. Need to keep checking.
+
+frmincr200811121929.tgz
+* * *
 **2008-11-12 12:41**
 ## Regexp and symbols in mappings ##
 

@@ -110,6 +110,8 @@ class SqlPopup
     db.close
     @numpadding = @content.length.to_s.length
     $log.debug("sql: #{command}")
+    $log.debug("content len: #{@content.length}")
+    $log.debug("content last: #{@content.last}")
 #   $log.debug("scrollat: #{@scrollatrow}")
 #    $log.debug("cols: #{@columns.inspect}")
 #    $log.debug("dt: #{@datatypes.inspect}")
@@ -138,6 +140,7 @@ class SqlPopup
     color = tf ? @selectioncolor : @datacolor
     lc = 1
     r = row0+1
+    raise "201 #{r} error #{row0} #{tf}" if r > @content_rows
     printstr(@pad, r, 0, "%-*s" % [Ncurses.COLS," "], color)
     sel = @selected.include?(row0) ? "X" : " "
     printstr(@pad, r, lc, "#{sel}%*d" % [@numpadding, idx=row0+1] , color);
@@ -206,7 +209,7 @@ class SqlPopup
 #     print_header_left(@header_left) if !@header_left.nil?
 #     @win.wrefresh
       @oldprow = @prow
-      @oldwinrow = @winrow
+      @oldtoprow = @toprow
       #c = ch.chr rescue 0
       $log.debug("press key: %s" % key)
 #     break if ch == ?q
@@ -260,18 +263,27 @@ class SqlPopup
       #@win.wclear
       @toprow = @prow if @prow < @toprow   # ensre search could be 
       @toprow = @prow if @prow > @toprow + @scrollatrow   
+      @winrow = @prow - @toprow
 
-      @win.werase # gives less flicker since wclear sems to refresh immed
+#     @win.werase # gives less flicker since wclear sems to refresh immed
+      if @content.length - @toprow < @scrollatrow and  @toprow != @oldtoprow
+        @win.werase # gives less flicker since wclear sems to refresh immed
+      end
       print_header_left( sprintf("%*s", @cols, " "))
       print_header_left(@header_left) if !@header_left.nil?
       print_header_right(sprintf("Row %d of %d ", @prow+1, @content.length))
       @win.mvprintw(@header_row+1, 0, "%s", @colstring[@pcol..-1]); # scrolls along with pcol
+      $log.debug("y0 = #{@win.getcury}")
       printstr(@win, @barrow, 1, "N-NextPg P-PrevPg Q-Quit G-Goto /-Srch X-select  %s" % @message, @barcolor);
       @win.refresh
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
-#     $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
+     $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
+#    raise "winrow error " if @winrow > @prow - @toprow
+    $log.debug "winrow error " if @winrow > @prow - @toprow
       @pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
+      $log.debug("y = #{@win.getcury}")
+      #@win.wclrtobot # gives less flicker since wclear sems to refresh immed
       Ncurses::Panel.update_panels
       #win.wrefresh # if i don't put this then upon return the other screen is still shown
       # till i press a key
@@ -388,14 +400,19 @@ class SqlPopup
     def goto_start
       @prow = 0
       @toprow = @prow
+      @winrow = 0 # 2008-11-12 16:32 
     end
     def goto_end
       @prow = @content_rows-1 
-      @toprow = @prow
-      @winrow = 0     # not putting this was cause prow < toprow !!
+      #@toprow = @prow
+      #@winrow = 0     # not putting this was cause prow < toprow !!
+      @toprow = @prow - @scrollatrow # ensure screen is filled when we show last. so clear not required
+         ## except what if very few rows
+      @winrow = @scrollatrow
     end
     def right
       @pcol += 20 if @pcol + 50 < @padcols
+      @win.werase # gives less flicker since wclear sems to refresh immed
     end
     def left
       @pcol -= 20 if @pcol > 0
@@ -409,11 +426,11 @@ class SqlPopup
 return
       end
       if @winrow < @scrollatrow # 20
-        @winrow += 1
+        @winrow += 1    # move cursor down
       else
-        @toprow += 1 
+        @toprow += 1    # scroll down a row
       end
-      @prow += 1 
+      @prow += 1        # incr pad row
     end
     def up # UP
 #     $log.debug "inside up"
@@ -434,10 +451,12 @@ return
       @toprow = @prow if @prow < @toprow
     end
     def space
-      if @prow + @scrollatrow > @content_rows
+      #if @prow + @scrollatrow+1 >= @content_rows
+      if @toprow + @scrollatrow+1 >= @content_rows
     #    next
       else
         @prow += @scrollatrow+1 # @rows-2
+      $log.debug "space pr #{@prow}"
         @toprow = @prow
       end
     end

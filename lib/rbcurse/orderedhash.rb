@@ -1,3 +1,6 @@
+## Insert order preserving hash
+# Thanks to Bill Kelly, posted on http://www.ruby-forum.com/topic/166075
+#
 class OrderedHash
   include Enumerable
 
