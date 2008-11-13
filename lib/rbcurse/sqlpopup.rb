@@ -10,6 +10,17 @@ require 'lib/ver/keymap'
 require 'lib/ver/window'
 require 'lib/rbcurse/orderedhash'
 
+##
+# given an sql statement, shows the result in a tabular format.
+# allows multiple selection of rows.
+# shows full screen, so not exactly a popup
+# Author: rkumar 2008-11-13 09:14 
+#
+# TODO: take out key labels into sep class, use ordered hash so deletion possible
+#       - remove keymapping stuff into a class
+#       - integrate keys_handled with key_lable and keymappings
+#       - think about allowing for a got_focus and lost_focus of row
+
 include Ncurses
 
 class SqlPopup
@@ -21,6 +32,8 @@ class SqlPopup
   attr_accessor :barcolor   # color pair of bottom bar
   attr_reader :keyhandler, :window
   attr_accessor :mode
+  attr_accessor :layout            # window layout, this is a hash
+  attr_accessor :show_key_labels   # boolean for whether you want key labels shown at bottom, def true
 
   def initialize(rows=Ncurses.LINES-1, cols=Ncurses.COLS-1)
     @rows = rows
@@ -43,6 +56,11 @@ class SqlPopup
     @stopping = false
     @mode = :control
     @key_labels = get_key_labels
+    @layout = { :height => 0, :width => 0, :top => 0, :left => 0 }
+    @show_key_labels = true
+    if block_given?
+      yield self
+    end
   end
   def estimate_column_widths
     colwidths = {}
@@ -119,18 +137,22 @@ class SqlPopup
 #    $log.debug("row0: #{@datarows[0].inspect}")
 #    $log.debug("rows: #{@datarows.inspect}")
   end
-  def do_select
-    if @selected.include? @prow
-      @selected.delete @prow
+  def do_select arow=@prow
+    if @selected.include? arow
+      @selected.delete arow
+      sel = " "; r = arow+1; 
+      printstr(@pad, r, col=1, "#{sel}", @datacolor);
     else
-      $log.debug("Adding #{@prow}")
-      @selected << @prow
+      $log.debug("Adding #{arow}")
+      @selected << arow
+      sel = "X"; r = arow+1; 
+      printstr(@pad, r, col=1, "#{sel}", @selectioncolor);
+      @message = %q{ '-Next "-Prev ^E-Clear}
+      append_key_label '\'', 'NextSel'
+      append_key_label '"', 'PrevSel'
+      append_key_label 'C-e', 'ClearSel'
+      print_key_labels
     end
-    @message = %q{ '-Next "-Prev ^E-Clear}
-    append_key_label '\'', 'NextSel'
-    append_key_label '"', 'PrevSel'
-    append_key_label 'C-e', 'ClearSel'
-    print_key_labels
 =begin
     if @selected[@prow].nil?
       @selected[@prow] = "X"
@@ -141,6 +163,14 @@ class SqlPopup
   end
 
   def show_focus_on_row row0, tf=true
+    color = tf ? @selectioncolor : @datacolor
+    r = row0+1 
+    return if r > @content_rows
+    @pad.mvchgat(y=r, x=1, max=-1, Ncurses::A_NORMAL, color, nil)
+#    @pad.highlight_line(color, r, 1, 50)
+#   @pad.wtouchln(r,1, 1)
+  end
+  def oldshow_focus_on_row row0, tf=true
     color = tf ? @selectioncolor : @datacolor
     lc = 1
     r = row0+1
@@ -163,8 +193,7 @@ class SqlPopup
   def run_tabular
     begin
     #@win = WINDOW.new(0,0,0,0)
-      layout = { :height => 0, :width => 0, :top => 0, :left => 0 }
-      @win = VER::Window.new(layout)
+      @win = VER::Window.new(@layout)
       @window = @win
       # the next line will not obscure footer and header win of prev screen
     #@panel = @win.new_panel
@@ -318,10 +347,7 @@ class SqlPopup
     @prow = row
   end
   def do_clear_selection
-    asel = @selected.dup
-    @selected = []
-    asel.each {|sel| show_focus_on_row(sel, false)}
-#   show_focus_on_row(@prow)
+    @selected.each {|sel| do_select(sel)}
   end
   def get_selected_data
     ret = []
@@ -653,8 +679,8 @@ return
     def append_key_label key, label
       @key_labels << [key, label] if !@key_labels.include? [key, label]
     end
-      def print_key_labels(arr = @key_labels)
-        ## paint so-called key bindings from key_labels
+    def print_key_labels(arr = @key_labels)
+      return if !@show_key_labels
         
         posx = 0
         even = []
