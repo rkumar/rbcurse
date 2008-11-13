@@ -1,3 +1,20 @@
+**2008-11-13 21:52**
+## Cleanup , Refact and polishing output ##
+
+1. cleaned up junk code
+
+2. moved classes out. made key label printer into a class
+
+3. common print modules
+
+4. common db module
+
+5. sizing of columns and formatting of titles
+
+6. align of num fields
+
+frmincr200811132151.tgz
+* * *
 **2008-11-13 10:46**
 ## highlighting ##
 
