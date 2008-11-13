@@ -26,11 +26,18 @@ module CommonIO
       pad.mvprintw(r, c, "%s", string);
       pad.attroff(Ncurses.COLOR_PAIR(color))
     end
+    ## 
+    # print a status or error message on screen 
+    # since this is being placed over the data, it gets washed off with next key stroke
     def print_message text
-      putstring text, @lastrow-2, 1, color = $promptcolor
+      r = @lastrow-2
+      clear_error @win, r, $datacolor
+      # print it in centre
+      putstring text, r , (@cols-text.length)/2, color = $promptcolor
+      #print_in_middle(@win, @lastrow-2, 0,  @cols, text, $promptcolor)
     end
     def putstring prompt, r=@lastrow-2, c=1, color = $promptcolor
-      clear_error @win, r, color
+      #clear_error @win, r, color
       printstr(@win,r, c, prompt, color);
     end
     def getstring prompt, r=@lastrow-2, c=1, maxlen = 10, color = $promptcolor
@@ -50,7 +57,8 @@ module CommonIO
       return ret
     end
     def clear_error win, r = @lastrow-2, color = $promptcolor
-      printstr(win, r, 0, "%-*s" % [Ncurses.COLS," "], color)
+      #printstr(win, r, 0, "%-*s" % [Ncurses.COLS," "], color)
+      printstr(win, r, 0, "%-*s" % [@cols," "], color)
     end
     def print_header_left(string)
       @win.attron(Ncurses.COLOR_PAIR(6))

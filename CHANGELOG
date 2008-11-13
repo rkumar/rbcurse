@@ -1,3 +1,17 @@
+**2008-11-14 00:01**
+## Fixes for smaller screens ##
+
+A lot of hardcoding for large screens
+
+     - changes in key labels
+     - changes in data and col names
+     - padrefresh
+     - bug in pressing space
+     - printing messages in centre, no more beeps please.
+Now small screens can be requested.
+
+frmincr200811140000.tgz
+* * *
 **2008-11-13 21:52**
 ## Cleanup , Refact and polishing output ##
 

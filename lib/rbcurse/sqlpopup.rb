@@ -38,6 +38,7 @@ class SqlPopup
   attr_accessor :barcolor   # color pair of bottom bar
   attr_reader :keyhandler, :window
   attr_accessor :mode
+  attr_accessor :rows, :cols
   attr_accessor :layout            # window layout, this is a hash
   attr_accessor :show_key_labels   # boolean for whether you want key labels shown at bottom, def true
 
@@ -56,14 +57,16 @@ class SqlPopup
     $selectioncolor = 4
     @barrow = @lastrow
     @data_frow = 1  # first row of data
-    @padrows = Ncurses.LINES-1
+    #@padrows = Ncurses.LINES-1    # XXX ? rows ?
+    @padrows = rows  # 2008-11-13 23:37 
     @scrollatrow = @lastrow - 4 # 2 header, 1 footer, 1 prompt 
     @message = nil
     @selected = []   # required for selection function
     @stopping = false
     @mode = :control
     @key_labels = get_key_labels
-    @layout = { :height => 0, :width => 0, :top => 0, :left => 0 }
+    #@layout = { :height => 0, :width => 0, :top => 0, :left => 0 } # XXX 2008-11-13 23:15 
+    @layout = { :height => rows+1, :width => cols, :top => 0, :left => 0 }
     @show_key_labels = true
     @klp = KeyLabelPrinter.new self, @key_labels, @barrow-1
     if block_given?
@@ -152,7 +155,8 @@ class SqlPopup
     @win.wrefresh
     show_focus_on_row(0)
     @winrow = 0 # the row on the window we are on
-    @pad.prefresh(1,0, @startrow, 0, @rows-2,Ncurses.COLS-1);
+    #@pad.prefresh(1,0, @startrow, 0, @rows-2,Ncurses.COLS-1); # XXX 2008-11-13 22:55 
+    @pad.prefresh(1,0, @startrow, 0, @rows-2, @cols-1);
 
     map_keys
     @klp.print_key_labels @key_labels if @show_key_labels 
@@ -190,7 +194,8 @@ class SqlPopup
       show_focus_on_row(@oldprow, false)
       show_focus_on_row(@prow)
     # $log.debug("tr:wr:pr #{@toprow} #{@winrow} #{@prow}")
-      @pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1) 
+      #@pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2,Ncurses.COLS-1)  # XXX
+      @pad.prefresh(@toprow+1,@pcol, @startrow,0, @rows-2, @cols-1)
       #@win.wclrtobot # gives less flicker since wclear sems to refresh immed
       Ncurses::Panel.update_panels
       if !@message.nil?
@@ -307,17 +312,20 @@ class SqlPopup
       @winrow = @scrollatrow
     end
     def right
-      @pcol += 20 if @pcol + @cols < @padcols
+      @hscrollcols ||= @cols/2
+      @pcol += @hscrollcols if @pcol + @hscrollcols < @padcols
       window_erase @win
     end
     def left
-      @pcol -= 20 if @pcol > 0
+      @hscrollcols ||= @cols/2
+      @pcol -= @hscrollcols if @pcol > 0
       @pcol = 0 if @pcol < 0
     end
     def down
 #     $log.debug "inside down"
       if @prow >= @content_rows-1
-        Ncurses.beep
+        #Ncurses.beep
+        @message = "No more rows"
         return
       end
       if @winrow < @scrollatrow # 20
@@ -329,7 +337,8 @@ class SqlPopup
     end
     def up # UP
       if @prow <= 0
-        Ncurses.beep
+        #Ncurses.beep
+        @message = "This is the first row"
         @prow = 0
         return
       else
@@ -343,17 +352,17 @@ class SqlPopup
       @toprow = @prow if @prow < @toprow
     end
     def space
-      #if @prow + @scrollatrow+1 >= @content_rows
       if @toprow + @scrollatrow+1 >= @content_rows
       else
-        @prow += @scrollatrow+1 # @rows-2
+        @toprow += @scrollatrow+1 # @rows-2 2008-11-13 23:41 put toprow here too
       $log.debug "space pr #{@prow}"
-        @toprow = @prow
+        @prow = @toprow
       end
     end
     def minus
       if @prow <= 0
-        Ncurses.beep
+        #Ncurses.beep
+        @message = "This is the first row"
         @prow = 0
         #next
       else
@@ -485,12 +494,13 @@ end # class sqlpopup
       $log.level = Logger::DEBUG
       $db = SQLite3::Database.new('../../out/testd.db')
     catch(:close) do
-      tp = SqlPopup.new
+      tp = SqlPopup.new #15, 50
       tp.header_left = "Contacts"
       $labelcolor = 5
       $datacolor = 2
       tp.sql("select * from contracts ")
- #    tp.sql("select seller_company_name, product_name, product_type_name, rate, quantity from contracts ")
+#     tp.sql("select seller_company_name, product_name, product_type_name, rate, quantity from contracts ")
+ #    tp.sql("select product_name, rate, quantity from contracts ")
       $labelcolor = 2
       $datacolor = 5
       tp.run_tabular

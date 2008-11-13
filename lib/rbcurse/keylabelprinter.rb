@@ -9,6 +9,7 @@ class KeyLabelPrinter
     @mode = mode
     @win = nil
     @row = row
+    @cols = caller.cols
   end
   def append_key_label key, label, mode=@mode
     @key_labels << [key, label] if !@key_labels.include? [key, label]
@@ -16,6 +17,7 @@ class KeyLabelPrinter
   def print_key_labels(arr = @key_labels, mode=@mode)
     #return if !@show_key_labels # XXX
     @win ||= @caller.window
+    @padding = @cols / (arr.length/2)
     posx = 0
     even = []
     odd = []
@@ -46,8 +48,10 @@ class KeyLabelPrinter
     padding = 8
     padding = 4 if arr.length > 5
     padding = 0 if arr.length > 7
+    #padding = @padding # XXX 2008-11-13 23:01 
     my_form_win = @win
-    @caller.print_this(@win, "%-*s" % [Ncurses.COLS," "], $footer_color_pair, posy, 0)
+    #@caller.print_this(@win, "%-*s" % [Ncurses.COLS," "], $footer_color_pair, posy, 0) # 2008-11-13 22:56  XXX
+    @caller.print_this(@win, "%-*s" % [@cols," "], $footer_color_pair, posy, 0)
     arr.each do |kl|
       key = kl[0]
       lab = kl[1]

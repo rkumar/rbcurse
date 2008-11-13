@@ -42,7 +42,8 @@ module DBCommon
     #   get_metadata
     @column_separator ||= "|"
 
-    min_column_width = Ncurses.COLS/@columns.length
+    #min_column_width = Ncurses.COLS/@columns.length # XXX
+    min_column_width = @cols/@columns.length
     $log.debug("MIN: #{min_column_width}")
     @user_columns = @columns if @user_columns.nil?
     fl = @user_columns.dup
@@ -88,7 +89,8 @@ module DBCommon
   end 
   def estimate_column_widths
     colwidths = {}
-    min_column_width = Ncurses.COLS/@columns.length
+    #min_column_width = Ncurses.COLS/@columns.length # XXX 2008-11-13 23:03 
+    min_column_width = @cols/@columns.length
     #@columns.each_index { |i| colwidths[i]=min_column_width }
     @content.each_index do |cix|
       break if cix >= 20
