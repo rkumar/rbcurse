@@ -1,3 +1,14 @@
+**2008-11-15 02:33**
+## rform ruby forms fields ##
+
+I am writing a simpler form and field thingie.
+I know thats awfully ambitious, but the sequence of ncurses sucks.
+
+We need to be more dynamic.
+I have made a displayable form. But need to trap some keys are kick some asss.
+
+frmincr200811150232.tgz
+* * *
 **2008-11-14 18:48**
 ## reintroduction of datasource ##
 

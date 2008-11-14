@@ -22,6 +22,7 @@ module CommonIO
   ##
   # print a string on a given window/pad, row, col, string text and color pair
     def printstr(pad, r,c,string, color=$datacolor)
+
       pad.attron(Ncurses.COLOR_PAIR(color))
       pad.mvprintw(r, c, "%s", string);
       pad.attroff(Ncurses.COLOR_PAIR(color))
