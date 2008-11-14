@@ -1,9 +1,11 @@
 #  NCURSES APPLICATION GENERATOR #
 # 
 #   2008-11-13 22:08 
+   - Keep inventory of programs, so we know which are test and which are what.
+     And whch need to be tested again when other stuff is modified.
    - call sqlpopup from another program and test. what if only one or 2 cols of data and a few rows.
      is it an overkill ? Will it actually work with smaller window.
-     Should we have a simpler program
+     Should we have a simpler program?
    - relook at the padviewer and sqlview and see if we can abstract stuff out into the module
      and use the modules. Same for the labels.
    - integrate keymap and keylabels into previous programs.

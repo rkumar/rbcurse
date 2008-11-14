@@ -13,6 +13,7 @@ require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/dbcommon'
+require 'lib/rbcurse/datasource'
 
 ##
 # given an sql statement, shows the result in a tabular format.
@@ -45,6 +46,7 @@ class SqlPopup
   def initialize(rows=Ncurses.LINES-1, cols=Ncurses.COLS-1)
     @rows = rows
     @cols = cols
+    $log.debug("ROWS: #{rows}, COLS: #{cols}")
     @startrow = 2 # 1
     $header_row = 0
     #@lastrow = Ncurses.LINES-1 # @rows-1
@@ -69,14 +71,36 @@ class SqlPopup
     @layout = { :height => rows+1, :width => cols, :top => 0, :left => 0 }
     @show_key_labels = true
     @klp = KeyLabelPrinter.new self, @key_labels, @barrow-1
+    @datasource = nil
     if block_given?
       yield self
+    end
+  end
+  def set_datasource ds
+    @datasource = ds
+    @content = ds.content
+    @columns = ds.columns
+    @datatypes = ds.datatypes
+    if !ds.column_widths.nil?
+        @column_widths = {}; total = 0;
+        ds.column_widths.each_with_index { |v, i| 
+          @column_widths[i] = v; total+=v;
+          @column_widths[ds.columns[i]] = v; 
+        }
+        @column_widths["__TOTAL__"] = total
+    end
+    raise "Bad datasource no content" if @content.nil? or @content.length == 0
+    raise "Bad datasource columns nil " if @columns.nil?
+    if @datatypes.nil?
+      @datatypes = []
+      0.upto(@columns.length) { |i| @datatypes << "" }
     end
   end
         
 
   def print_tabular_data #:yields pad, ix,  row, labelcol, datacol, column_name, column_value
     @prow = 0
+    @numpadding = @content.length.to_s.length  # how many digits the max row is: 10 is 2, 100 is 3 etc
     r = @data_frow
     lc = 1
     @pad.clear
@@ -86,11 +110,13 @@ class SqlPopup
     lc += @numpadding+1
     ## COLUMNS
     @colstring = " # "
+=begin
     @columns.each do |name|
       @colstring << sprintf(" %-*s", @column_widths[name]+1, name)
     #  printstr(@win,0, lc, "%s" % name, $labelcolor);
       lc += @column_widths[name]+1
     end
+=end
     @colstring = format_titles
     r = @data_frow
     ## DATA
@@ -103,7 +129,9 @@ class SqlPopup
         if block_given?
           yield @pad, r, lc, col
         else
-          col = sprintf("%*s", @column_widths[ix], col) if @datatypes[ix].match(/int|real/)!=nil
+          @datatypes[ix] ||= "" # ssometimes more column than expected from processes
+          @column_widths[ix] ||= col.length # ssometimes more column than expected from processes
+          col = sprintf("%*s", @column_widths[ix], col) if @datatypes[ix].match(/int|float|real/)!=nil
           printstr(@pad, r, lc, " "+col , $datacolor);
           lc += @column_widths[ix]+1
         end
@@ -132,9 +160,9 @@ class SqlPopup
     @padrows = [(@content.length) +6, @lastrow+1].max
     @content_rows = @content.length
     #@column_widths = estimate_column_widths
-    estimate_column_widths
+    estimate_column_widths if @column_widths.nil? # if user has not provided
     @padcols = @column_widths["__TOTAL__"]  +@columns.length
-    $log.debug("cols: #{@padcols} #{@columns.length}")
+    $log.debug("cols: #{@padcols} howmany#{@columns.length}")
     @pad = Ncurses.newpad(@padrows,@padcols)
     @padpanel = @pad.new_panel
     Ncurses::Panel.update_panels
@@ -494,11 +522,48 @@ end # class sqlpopup
       $log.level = Logger::DEBUG
       $db = SQLite3::Database.new('../../out/testd.db')
     catch(:close) do
+      ds = Datasource.new
+      opt = 3
+      case opt
+      when 1
+        require 'lib/rbcurse/dbdataprovider'
+        ds.extend(DBDataProvider)
+        ds.get_data("select * from contracts")
+        #ds.get_data("select product_name, rate, quantity from contracts ")
+        #ds.get_data("select seller_company_name, product_name, product_type_name, rate, quantity from contracts ")
+      when 2
+        require 'lib/rbcurse/processdataprovider'
+        ds.extend(ProcessDataProvider)
+        ds.get_data("ls -l")
+        ds.content.delete_at(0)
+        #$log.debug("process: #{ds.content.inspect}")
+        ds.columns=["Perms","Abca","Abcb","Abcd","Size","Date","Time","Filename"]
+        ds.datatypes=["","","","","int","","",""]
+        ds.column_widths = [11,4,7,7,10,12,5,50]
+      when 3
+        require 'lib/rbcurse/processdataprovider'
+        ds.extend(ProcessDataProvider)
+        ds.get_data("ps -eaf")
+        ds.columns = ds.content.delete_at(0)
+        ds.content.each do |row|
+          if row.length > 7
+            # join fields beyond 7 and remove those fields then
+            row[7] = row[7..-1].join(" ")
+            len = row.length
+            8.upto(len) {|i|  row.delete_at(8) }
+          end
+        end
+        $log.debug("process: #{ds.content.inspect}")
+        $log.debug("process: #{ds.columns.inspect}")
+        #ds.datatypes=["","","","","int","","",""]
+        #ds.column_widths = [11,4,7,7,10,12,5,50]
+      end
       tp = SqlPopup.new #15, 50
+      tp.set_datasource(ds)
       tp.header_left = "Contacts"
       $labelcolor = 5
       $datacolor = 2
-      tp.sql("select * from contracts ")
+      #tp.sql("select * from contracts ")
 #     tp.sql("select seller_company_name, product_name, product_type_name, rate, quantity from contracts ")
  #    tp.sql("select product_name, rate, quantity from contracts ")
       $labelcolor = 2

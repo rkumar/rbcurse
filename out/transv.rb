@@ -5,7 +5,7 @@ require 'rbcurse/commons1'
 require 'logger'
 require 'rbcurse/queryapplication'
 require 'rbcurse/tableapplication'
-require 'rbcurse/datasource'
+require 'rbcurse/old/datasource'
 require 'sqlite3'
 
 include Ncurses

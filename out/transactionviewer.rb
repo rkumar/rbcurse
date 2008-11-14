@@ -5,7 +5,7 @@ require 'ncurses'
 require 'commons1'
 require 'logger'
 require 'queryapplication'
-require 'datasource'
+require 'olddatasource'
 require 'sqlite3'
 
 include Ncurses
