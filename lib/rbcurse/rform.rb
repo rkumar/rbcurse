@@ -36,12 +36,16 @@ module RubyCurses
 #   attr_accessor :color
 #   attr_accessor :bgcolor
     attr_reader :field_id_incr
-    def initialize win
+    attr_accessor :padx
+    attr_accessor :pady
+    def initialize win, &block
       @window = win
       @fields = []
       @fieldnames = []
       @active_index = 0
       @field_id_incr = 0
+      @padx = @pady = 0
+      instance_eval &block if block_given?
     end
     def add_field field
       field.id = @field_id_incr
@@ -94,23 +98,32 @@ module RubyCurses
      @row, @col = @fields[index].rowcol
      $log.debug " set fc: #{@row} #{@col}"
      @window.wmove @row, @col
+     @fields[@active_index].curpos = 0
     end
     # char is fed to the current field
     def putch char
       @fields[@active_index].putch char
-      @col += 1
-      @window.wmove @row, @col
+      addcol 1
     end
     def putc c
       @fields[@active_index].putc c
-      @col += 1
+      addcol 1
+    end
+    def addcol num
+      @col += num
       @window.wmove @row, @col
     end
     def req_next_char
-      @fields[@active_index].curpos += 1
+      if @fields[@active_index].curpos < @fields[@active_index].display_length
+        @fields[@active_index].curpos += 1
+        addcol 1
+      end
     end
     def req_prev_char
-      @fields[@active_index].curpos -= 1
+      if @fields[@active_index].curpos > 0
+        @fields[@active_index].curpos -= 1
+        addcol -1
+      end
     end
 
     ## ADD HERE FORM
@@ -146,6 +159,7 @@ module RubyCurses
       @bgcolor = 0
       @color = $datacolor
       @config = {}
+      @curpos = 0
       yield self if block_given?
     end
     def putch char
@@ -216,7 +230,7 @@ if $0 == __FILE__
       @form = RubyCurses::Form.new @win
       r = 1; c = 22;
       %w[ name age company].each do |w|
-        field = RubyCurses::Field.new w, r, c, nil, 30
+        field = RubyCurses::Field.new w, r, c, type=nil, display_length=30
         field.set_label(w)
         field.set_buffer("abcd #{w} #{r}")
         @form.add_field field
@@ -227,6 +241,18 @@ if $0 == __FILE__
       @win.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @win.getch()) != KEY_F1 )
+        case ch
+        when 9
+          @form.req_next_field
+        when KEY_UP
+          @form.req_prev_field
+        when KEY_DOWN
+          @form.req_next_field
+        when KEY_LEFT
+          @form.req_prev_char
+        when KEY_RIGHT
+          @form.req_next_char
+        end
       end
       #     VER::Keyboard.focus = tp
     end
