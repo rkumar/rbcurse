@@ -7,6 +7,7 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
   *         We need something less restrictive.
   * Author: rkumar
 TODO 
+  * do we need widgets in our thign at all, why am i managing ?
   * integrate with our mapper
   * read only field
   * justified, int real charonly
@@ -66,7 +67,10 @@ module RubyCurses
       @fields << field
       @field_id_incr += 1 
       if !field.name.nil?
+        $log.debug "adding to byname: #{field.name} " 
         @by_name[field.name] = field
+      else
+        $log.debug "NOT adding to byname: #{id} " 
       end
       add_widget field
       return id
@@ -76,7 +80,7 @@ module RubyCurses
      if widget.focusable
        $log.debug "adding widget to focusabe: #{widget.name}" 
        @focusables << widget 
-       widget.order = @focusables.length-1
+       widget.zorder = @focusables.length-1
      end
      return @widgets.length-1
    end
@@ -191,25 +195,25 @@ module RubyCurses
   end
   # pls optimize this, see we could make a field focusable when program is running
   def next_focusable_field index=@active_index
-    #f = @fields.find{ |f| f.focusable and f.order >= index }
-    #f.order rescue nil
+    #f = @fields.find{ |f| f.focusable and f.zorder >= index }
+    #f.zorder rescue nil
    $log.debug "FOCUSA #{@focusables.length } " 
     if index < @focusables.length-1
       index += 1 
     else
       index = 0
     end
-    return @focusables[index].order
+    return @focusables[index].zorder
   end
   def prev_focusable_field index=@active_index
-    #f = @fields.sort{|a,b| b.order <=> a.order}.find(lambda { index }){ |f| f.focusable and f.order <= index }
-    #f.order  rescue nil
+    #f = @fields.sort{|a,b| b.zorder <=> a.zorder}.find(lambda { index }){ |f| f.focusable and f.zorder <= index }
+    #f.zorder  rescue nil
     if index > 0
       index -= 1 
     else
       index = @focusables.length-1
     end
-    return @focusables[index].order
+    return @focusables[index].zorder
   end
   def regenerate_focusables
     @focusables = []
@@ -223,7 +227,7 @@ module RubyCurses
 
   class Field
     include CommonIO
-    attr_accessor :order
+    attr_accessor :zorder
     attr_accessor :name
     attr_accessor :id
     attr_accessor :maxlen
@@ -236,6 +240,8 @@ module RubyCurses
     attr_accessor :config
     attr_accessor :values
     attr_accessor :valid_regex
+
+    attr_accessor :chars_allowed
     attr_accessor :display_length
     attr_accessor :bgcolor
     attr_accessor :color
@@ -244,12 +250,13 @@ module RubyCurses
     attr_reader :focusable
     attr_accessor :modified
     attr_reader :handler
+    attr_reader :type
 
     #def initialize name, r,c, type=:varchar, display_length=10, maxlen=-1
     def initialize form, config={}, &block
       @form = form
       @buffer = String.new
-      @type=config.fetch("type", :varchar)
+      #@type=config.fetch("type", :varchar)
       @display_length = config.fetch("display_length", 20)
       @maxlen=config.fetch("maxlen", @display_length) 
       @row = config.fetch("row", 0)
@@ -263,10 +270,25 @@ module RubyCurses
       @handler = {}
       @modified = false
       instance_eval &block if block_given?
-      @id = @order = form.add_field(self)
+      @id = @zorder = form.add_field(self)
+    end
+    def type dtype
+      case dtype.to_s.downcase
+      when 'integer'
+        @chars_allowed = /\d/ if @chars_allowed.nil?
+      when 'numeric'
+        @chars_allowed = /[\d\.]/ if @chars_allowed.nil?
+      when 'alpha'
+        @chars_allowed = /[a-zA-Z]/ if @chars_allowed.nil?
+      when 'alnum'
+        @chars_allowed = /[a-zA-Z0-9]/ if @chars_allowed.nil?
+      end
     end
     def putch char
       return -1 if !@editable or @buffer.length >= @maxlen
+      if @chars_allowed != nil
+        return if char.match(@chars_allowed).nil?
+      end
       @buffer.insert(@curpos, char)
       @curpos += 1 if @curpos < @maxlen
       @modified = true
@@ -305,10 +327,10 @@ module RubyCurses
   def set_label label
     @label = label
     label.row = @row if label.row == -1
-    label.col = @col-(name.length+1) if label.col == -1
+    label.col = @col-(label.name.length+1) if label.col == -1
   end
   def repaint
-#    $log.debug("FIELD: #{id}, #{order}, #{focusable}")
+#    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
     printval = getvalue
     printval = printval[0..display_length-1] if printval.length > display_length
     printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
@@ -326,6 +348,32 @@ module RubyCurses
     @focusable = tf
     @form.regenerate_focusables
   end
+=begin
+  def method_missing(method, *args, &block)
+    var = "@#{method.to_s.sub('?','')}"
+
+    method = method.to_s
+    $log.debug "MethodMissing: #{method} #{var} #{args[0]}" 
+    # If we were given a block or an argument, save it.
+    instance_variable_set(var, args[0]) if args[0]
+    instance_variable_set(var, block) if block_given?
+    $log.debug "MethodMissing: #{instance_variables.inspect} "
+  end
+  %w[name arow acol].each do |method|
+    define_method(method) do 
+      variable = "@#{method}"
+      return instance_variable_get(variable) 
+    end
+    define_method(method) do |string|
+      variable = "@#{method}"
+#      val = instance_variable_get(variable) || ''
+#      instance_variable_set(variable, val << string)
+      instance_variable_set(variable, string)
+    end
+  end
+=end
+
+
   # ADD HERE FIELD
   end
   class Label
@@ -350,7 +398,7 @@ module RubyCurses
       @bgcolor = config.fetch("bgcolor", 0)
       @color = config.fetch("bgcolor", $datacolor)
       @text = config.fetch("text", "NOTFOUND")
-      @name = config.fetch("name", "NOTFOUN")
+      @name = config.fetch("name", @text)
       @editable = config.fetch("editable", false)
       @focusable =  config.fetch("focusable", false)
       instance_eval &block if block_given?
@@ -395,7 +443,7 @@ module RubyCurses
   end #BUTTON
   class LButton < Label
   include CommonIO
-  attr_accessor :order  # focusable
+  attr_accessor :zorder  # focusable
   attr_accessor :curpos  # focusable
     def initialize form, config={}, &block
      config.merge!("focusable"=>true)
@@ -413,13 +461,13 @@ module RubyCurses
     def command &block
       #@command_block = block
       bind :PRESS, &block
-      $log.debug "#{name} bound PRESS"
+      $log.debug "#{text} bound PRESS"
       #instance_eval &block if block_given?
     end
     def fire
       #@form.instance_eval(&@command_block) if !@command_block.nil?
       #@command_block.call @form  if !@command_block.nil?
-      $log.debug "firing PRESS #{name}"
+      $log.debug "firing PRESS #{text}"
       fire_handler :PRESS, @form
     end
     def bind event, &blk
@@ -473,10 +521,11 @@ if $0 == __FILE__
       r = 1; c = 22;
       %w[ name age company].each do |w|
         field = RubyCurses::Field.new @form do
-          @name=w 
-          @row=r 
-          @col=c 
-          @display_length=30
+          @name =  w 
+          #name   w 
+          @row = r 
+          @col = c 
+          @display_length = 30
           set_buffer "abcd #{w}" 
           set_label RubyCurses::Label.new @form, {'text' => w}
         end
@@ -485,9 +534,13 @@ if $0 == __FILE__
 #     $log.debug("byname: #{@form.by_name.inspect}")
       @form.by_name["age"].display_length = 3
       @form.by_name["age"].maxlen = 3
+      @form.by_name["age"].set_buffer  "24"
+      @form.by_name["name"].set_buffer  "Not focusable"
+      @form.by_name["age"].chars_allowed = /\d/
+      @form.by_name["company"].type(:ALPHA)
      @form.by_name["name"].set_focusable(false)
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
-      @form.bind(:LEAVE) { |f|$log.debug "485:#{f.name} ";  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
+      @form.bind(:LEAVE) { |f|$log.debug "485:#{f.id} ";  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
       ok_button = RubyCurses::LButton.new @form do
         @text="[ OK ]"
         @name="OK"

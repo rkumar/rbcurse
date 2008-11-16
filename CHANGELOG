@@ -1,3 +1,13 @@
+**2008-11-16 19:18**
+## Field form and label ##
+
+Tried to do more of method_missing and define_method to make it dsl-ish but failed.
+Added datatype, chars_allowed and some bug-fixing.
+Need to put exit_proc.
+Now to try out a menubar.
+
+frmincr200811161916.tgz
+* * *
 **2008-11-16 03:16**
 ## Button which inherits label ##
 
