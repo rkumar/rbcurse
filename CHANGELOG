@@ -1,3 +1,87 @@
+**2008-11-18 20:41**
+## menubar working !!! ##
+
+menubar working with submenus. destroys and passes contrl back to parent on LEFT
+and goes to nezt on RIGHT.
+
+frmincr200811182040.tgz
+* * *
+**2008-11-18 19:43**
+## menubar wip printing menu on leave and enter ##
+
+1. now submenu showing , onleave onenter okay.
+
+2. only thingie left is the navigation
+
+frmincr200811181942.tgz
+* * *
+**2008-11-18 19:05**
+## menubar wip ##
+
+Now submenu is created at tright time and destroyed onleave.
+
+     1. to take care of priting of menu as a menuitem
+     2. to pass control ofkeys into the new menu
+
+frmincr200811181904.tgz
+* * *
+**2008-11-18 18:18**
+## menubar wip ##
+
+paint does not create.
+wip
+but still to look into submenu
+
+frmincr200811181818.tgz
+* * *
+**2008-11-18 16:18**
+## menubar wip ##
+
+submenu paints itself since it s on enter
+need to make some  changes ...
+fire -paint submenu
+
+frmincr200811181617.tgz
+* * *
+**2008-11-18 03:04**
+## submenu ##
+
+it is displaying now, but firing immeidately.
+also we will need to walk down it and select.
+
+frmincr200811180303.tgz
+* * *
+**2008-11-18 00:40**
+## menu bar actions etc fine ##
+
+Barring ability to hav submenu's actions are working.
+
+frmincr200811180040.tgz
+* * *
+**2008-11-17 18:51**
+## menubar wip ##
+
+its up but no actions yet.
+
+frmincr200811171851.tgz
+* * *
+**2008-11-17 03:14**
+## menu menubar menuitem interim work ##
+
+interim work in progress 
+things are showing need alignment and polishing
+actions to do
+
+frmincr200811170313.tgz
+* * *
+**2008-11-16 22:09**
+## changed key handling down to objects ##
+
+so they can take and ignore what they want
+earlier form was trying to be too intelligent.
+
+frmincr200811162208.tgz
+* * *
 **2008-11-16 19:18**
 ## Field form and label ##
 

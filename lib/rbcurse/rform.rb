@@ -7,6 +7,8 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
   *         We need something less restrictive.
   * Author: rkumar
 TODO 
+    - menu bar printing not happening in correct positiooon column
+    - on leave leaving a black area that is large.
   * do we need widgets in our thign at all, why am i managing ?
   * integrate with our mapper
   * read only field
@@ -30,6 +32,7 @@ require 'lib/rbcurse/commonio'
 #include Curses
 include Ncurses
 module RubyCurses
+  extend self
   class Form
   include CommonIO
     attr_reader :value
@@ -47,6 +50,7 @@ module RubyCurses
     attr_accessor :pady
     attr_accessor :modified
     attr_reader :by_name
+    attr_reader :menu_bar
     def initialize win, &block
       @window = win
       @fields = []
@@ -74,6 +78,10 @@ module RubyCurses
       end
       add_widget field
       return id
+    end
+    def set_menu_bar mb
+      @menu_bar = mb
+      add_widget mb
     end
    def add_widget widget
      @widgets << widget
@@ -127,62 +135,32 @@ module RubyCurses
       end
       #set_field_cursor @active_index-1
     end
-    def handle_key key
+    def on_leave f
+      return if f.nil?
+      f.on_leave if f.respond_to? :on_leave
+      fire_handler :LEAVE, f 
+    end
+    def on_enter f
+      return if f.nil?
+      f.on_enter if f.respond_to? :on_enter
+      fire_handler :ENTER, f 
     end
     def set_field_cursor index
       return if @active_index == index or index.nil?
       f = get_current_field
+      on_leave f
 
-      fire_handler :LEAVE, f if !f.nil?
       @active_index = index
       f = get_current_field
-      fire_handler :ENTER, f
+      on_enter f
      @row, @col = f.rowcol
      @window.wmove @row, @col
      f.curpos = 0
-    end
-    # char is fed to the current field
-    def putch char
-      ret = get_current_field.putch char
-      return if ret != 0
-      addcol 1
-      @modified = true
-    end
-    def delete_curr_char
-      get_current_field.delete_at
-      @modified = true
-    end
-    def delete_prev_char
-      return if get_current_field.curpos <= 0
-      get_current_field.delete_prev_char
-      addcol -1
-      @modified = true
-    end
-    def putc c
-      f = get_current_field
-      return if !f.editable
-      ret = f.putc c
-      if ret == 0
-        addcol 1 
-        @modified = true
-      end
     end
     def addcol num
       return if @col.nil? or @col == -1
       @col += num
       @window.wmove @row, @col
-    end
-    def req_next_char
-      if get_current_field.curpos < get_current_field.display_length
-        get_current_field.curpos += 1
-        addcol 1
-      end
-    end
-    def req_prev_char
-      if get_current_field.curpos > 0
-        get_current_field.curpos -= 1
-        addcol -1
-      end
     end
   def bind event, &blk
     @handler[event] = blk
@@ -220,6 +198,27 @@ module RubyCurses
     @widgets.each do |w|
       @focusables << w if w.focusable
     end
+  end
+  ## forms handle keys
+  def handle_key(ch)
+        case ch
+        when -1
+          return
+        when KEY_F2
+          #@menu_bar.show
+          @menu_bar.toggle
+          @menu_bar.handle_keys
+        when 9
+          req_next_field
+        when KEY_UP
+          req_prev_field
+        when KEY_DOWN
+          req_next_field
+        else
+          field =  get_current_field
+          handled = field.handle_key ch
+        end
+        repaint
   end
 
     ## ADD HERE FORM
@@ -297,7 +296,11 @@ module RubyCurses
 
     def putc c
       if c >= 0 and c <= 127
-        return putch c.chr
+        ret = putch c.chr
+        if ret == 0
+          addcol 1
+          set_modified 
+        end
       end
       return -1
     end
@@ -306,12 +309,6 @@ module RubyCurses
       ar = @buffer.split(//)
       ar.delete_at index
       @buffer = ar.join
-      @modified = true
-    end
-    def delete_prev_char
-      return -1 if !@editable 
-      @curpos -= 1 if @curpos > 0
-      delete_at
       @modified = true
     end
     def rowcol
@@ -373,6 +370,58 @@ module RubyCurses
   end
 =end
 
+  # field
+  def handle_key ch
+    case ch
+    when KEY_LEFT
+      req_prev_char
+    when KEY_RIGHT
+      req_next_char
+    when KEY_BACKSPACE, 127
+      delete_prev_char
+    when KEY_ENTER, 10, 13
+      if respond_to? :fire
+        fire
+      end
+    when 330
+      delete_curr_char
+    else
+      $log.debug("ch #{ch}")
+      putc ch
+    end
+
+  end
+  def req_next_char
+    if @curpos < display_length
+      @curpos += 1
+      addcol 1
+    end
+  end
+  def req_prev_char
+    if @curpos > 0
+      @curpos -= 1
+      addcol -1
+    end
+  end
+    def delete_curr_char
+      delete_at
+      set_modified 
+    end
+    def delete_prev_char
+      return -1 if !@editable 
+      return if @curpos <= 0
+      @curpos -= 1 if @curpos > 0
+      delete_at
+      set_modified 
+      addcol -1
+    end
+    def set_modified tf=true
+      @modified = tf
+      @form.modified = true if tf
+    end
+    def addcol num
+      @form.addcol num
+    end
 
   # ADD HERE FIELD
   end
@@ -402,7 +451,7 @@ module RubyCurses
       @editable = config.fetch("editable", false)
       @focusable =  config.fetch("focusable", false)
       instance_eval &block if block_given?
-      @id = form.add_widget(self)
+      @id = form.add_widget(self) if !form.nil?
     end
     def rowcol
       return @row, @col
@@ -418,30 +467,8 @@ module RubyCurses
   end
   # ADD HERE LABEL
   end
-  class Button < Field
-  include CommonIO
-    def initialize form, config={}, &block
-      super
-      @focusable = true
-      @editable = false
-      @command_block = nil
-      @buffer = @name if @buffer.nil?
-      @display_length = @buffer.length
-    end
-    def command &block
-      #@command_block = block
-      bind :PRESS, &block
-      $log.debug "#{name} bound PRESS"
-      #instance_eval &block if block_given?
-    end
-    def fire
-      #@form.instance_eval(&@command_block) if !@command_block.nil?
-      #@command_block.call @form  if !@command_block.nil?
-      $log.debug "firing PRESS #{name}"
-      fire_handler :PRESS
-    end
-  end #BUTTON
-  class LButton < Label
+  ## TODO separate Button from label
+  class Button < Label
   include CommonIO
   attr_accessor :zorder  # focusable
   attr_accessor :curpos  # focusable
@@ -458,6 +485,13 @@ module RubyCurses
 #   def focusable
 #     true
 #   end
+    def on_enter
+      $log.debug "ONENTER: "
+      @bgcolor = $reversecolor 
+    end
+    def on_leave
+      @bgcolor = $datacolor 
+    end
     def command &block
       #@command_block = block
       bind :PRESS, &block
@@ -474,12 +508,516 @@ module RubyCurses
       @handler[event] = blk
     end
     def fire_handler event, object
-      #   $log.debug "called firehander #{object}"
+      $log.debug "called firehander #{object}"
       blk = @handler[event]
       return if blk.nil?
       blk.call object
     end
+    # Button
+    def handle_key ch
+      case ch
+      when KEY_LEFT
+        @form.req_prev_field
+      when KEY_RIGHT
+        @form.req_next_field
+      when KEY_ENTER, 10, 13
+        if respond_to? :fire
+          fire
+        end
+      else
+        return -1
+      end
+    end
   end #LBUTTON
+  class MenuSeparator
+    include CommonIO
+    attr_accessor :enabled
+    attr_accessor :parent
+#   attr_accessor :window
+    attr_accessor :row
+    attr_accessor :col
+    attr_accessor :width
+    def initialize 
+      @enable = false
+    end
+    def repaint
+      printstr(@parent.window, @row, 0, "|%s|" % ("-"*@width), $reversecolor)
+    end
+    def destroy
+    end
+    def on_enter
+    end
+    def on_leave
+    end
+    def to_s
+      ""
+    end
+  end
+  class MenuItem
+    include CommonIO
+    attr_accessor :parent
+#    attr_accessor :window
+    attr_accessor :row
+    attr_accessor :col
+    attr_accessor :width
+    attr_accessor :accelerator
+    attr_accessor :enabled
+    attr_reader :text, :mnemonic
+    def initialize text, mnemonic=nil, &block
+      @text = text
+      @enabled = true
+      @mnemonic = mnemonic
+      instance_eval &block if block_given?
+    end
+    def to_s
+      "#{@text} #{@accelerator}"
+    end
+    def command *args, &block 
+      $log.debug ">>>command : #{@text} "
+      @command = block if block_given?
+      @args = args
+    end
+    def on_enter
+      $log.debug ">>>on enter menuitem : #{@text} #{@row} #{@width} "
+      highlight
+    end
+    def on_leave
+      $log.debug ">>>on leave menuitem : #{@text} "
+      highlight false
+    end
+    ## XXX it could be a menu again
+    def fire
+      $log.debug ">>>fire menuitem : #{@text} #{@command} "
+      @command.call *@args if !@command.nil?
+    end
+    def highlight tf=true
+      if tf
+        color = $datacolor
+        @parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
+      else
+        repaint
+      end
+      @parent.window.wrefresh
+    end
+    def repaint # menuitem.repaint
+      r = @row
+      printstr(@parent.window, @row, 0, "|%-*s|" % [@width, text], $reversecolor)
+      if !@accelerator.nil?
+        printstr(@parent.window, r, (@width+1)-@accelerator.length, @accelerator, $reversecolor)
+      elsif !@mnemonic.nil?
+        m = @mnemonic
+        ix = text.index(m) || text.index(m.swapcase)
+        charm = text[ix,1]
+        printstr(@parent.window, r, ix+1, charm, $datacolor) if !ix.nil?
+      end
+    end
+    def destroy
+     $log.debug "DESTRY menuitem #{@text}"
+    end
+  end
+  class Menu
+    include CommonIO
+    attr_accessor :parent
+    attr_accessor :row
+    attr_accessor :col
+    attr_accessor :width
+    attr_accessor :enabled
+    attr_reader :text
+    attr_reader :items
+    attr_reader :window
+    attr_reader :panel
+    attr_reader :current_menu
+
+    def initialize text, &block
+      @text = text
+      @items = []
+      @enabled = true
+      @current_menu = []
+      instance_eval &block if block_given?
+    end
+    def to_s
+      @text
+    end
+    # item could be menuitem or another menu
+    def add menuitem
+      @items << menuitem
+      return self
+    end
+    def insert_separator ix
+      @items.insert ix, MenuSeparator.new
+    end
+    def add_separator 
+      @items << MenuSeparator.new
+    end
+    # menu - 
+    def fire
+      $log.debug "menu fire called: #{text}  " 
+      if @window.nil?
+        #repaint
+        create_window
+        if !@parent.is_a? RubyCurses::MenuBar 
+          @parent.current_menu << self
+        end
+      else
+        ### shouod this not just show ?
+      $log.debug "menu fire called: #{text} ELSE XXX WHEN IS THIS CALLED ? 658  " 
+        @items[@active_index].fire # this should happen if selected. else selected()
+      end
+      #@action.call if !@action.nil?
+    end
+    # user has clicked down, we shoud display items
+    # DRAW menuitems
+    def repaint # menu.repaint
+      return if @items.nil? or @items.empty?
+      $log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
+      if !@parent.is_a? RubyCurses::MenuBar 
+        printstr(@parent.window, @row, 0, "|%-*s>|" % [@width-1, text], $reversecolor)
+        @parent.window.refresh
+      end
+      if @window.nil?
+        #create_window
+      else
+        @window.show
+        select_item 0
+        @window.refresh
+      end
+    end
+    def select_item ix0
+      return if @items.nil? or @items.empty?
+       $log.debug "insdie select  item :  #{ix0}" 
+      if !@active_index.nil?
+        @items[@active_index].on_leave 
+      end
+      previtem = @active_index
+      @active_index = ix0
+      if @items[ix0].enabled
+        @items[ix0].on_enter
+      else
+        $log.debug "insdie sele nxt item ENABLED FALSE :  #{ix0}" 
+        if @active_index > previtem
+          select_next_item
+        else
+          select_prev_item
+        end
+      end
+      @window.refresh
+    end
+    def select_next_item
+      return if @items.nil? or @items.empty?
+       $log.debug "insdie sele nxt item :  #{@active_index}" 
+      @active_index = -1 if @active_index.nil?
+      if @active_index < @items.length-1
+        select_item @active_index + 1
+      else
+      #  select_item 0
+      end
+    end
+    def select_prev_item
+      return if @items.nil? or @items.empty?
+       $log.debug "insdie sele prv item :  #{@active_index}" 
+      if @active_index > 0
+        select_item @active_index - 1
+      else
+      #select_item @items.length-1
+      end
+    end
+    def on_enter # menu.on_enter
+      $log.debug "menu onenter: #{text} #{@row} #{@col}  " 
+      # call parent method. XXX
+        if @parent.is_a? RubyCurses::MenuBar 
+          printstr(@parent.window, @row, @col, " %s " % text, $datacolor)
+        else
+          highlight
+        end
+        if !@window.nil? #and @parent.selected
+          $log.debug "menu onenter: #{text} calling window,show"
+          @window.show
+          select_item 0
+        elsif @parent.is_a? RubyCurses::MenuBar and  @parent.selected
+          # only on the top level do we open a window if a previous one was opened
+          $log.debug "menu onenter: #{text} calling repaint CLASS: #{@parent.class}"
+        #  repaint
+          create_window
+        end
+    end
+    def on_leave # menu.on_leave
+      $log.debug "menu onleave: #{text} #{@row} #{@col}  " 
+      # call parent method. XXX
+        if @parent.is_a? RubyCurses::MenuBar 
+          printstr(@parent.window, @row, @col, " %s " % text, $reversecolor)
+          @window.hide if !@window.nil?
+        else
+          $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col}  " 
+          # parent is a menu
+          highlight false
+          @parent.current_menu.pop
+          destroy
+        end
+    end
+    def highlight tf=true # menu
+          $log.debug "MENU SUBMENU menu highlight: #{text} #{@row} #{@col}, PW #{@parent.width}  " 
+      color = tf ? $datacolor : $reversecolor
+      #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
+      @parent.window.mvchgat(y=@row, x=1, @parent.width, Ncurses::A_NORMAL, color, nil)
+      @parent.window.wrefresh
+    end
+    def create_window # menu
+      margin = 3
+      @width = array_width @items
+      $log.debug "create window menu #{@text}: #{@row} ,#{@col},wd #{@width}   " 
+      @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+1, :left => @col } 
+      @win = VER::Window.new(@layout)
+      @window = @win
+      @win.bkgd(Ncurses.COLOR_PAIR(5));
+      @panel = @win.panel
+        printstr(@window, 0, 0, "+%s+" % ("-"*@width), $reversecolor)
+        r = 1
+        @items.each do |item|
+          #if item == :SEPARATOR
+          #  printstr(@window, r, 0, "|%s|" % ("-"*@width), $reversecolor)
+          #else
+            item.row = r
+            item.col = 0
+            item.col = @col+@width+margin # margins???
+ #         $log.debug "create window menu loop passing col : #{item.col} " 
+            item.width = @width
+            #item.window = @window
+            item.parent = self
+            item.repaint
+          #end
+          r+=1
+        end
+        printstr(@window, r, 0, "+%s+" % ("-"*@width), $reversecolor)
+      select_item 0
+      @window.refresh
+      return @window
+    end
+    def array_width a
+      longest = a.max {|a,b| a.to_s.length <=> b.to_s.length }
+      $log.debug "array width #{longest}"
+      longest.to_s.length
+    end
+    def destroy
+      $log.debug "DESTRY menu #{@text}"
+      return if @window.nil?
+      @visible = false
+      panel = @window.panel
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      @window.delwin if !@window.nil?
+      @items.each do |item|
+        #next if item == :SEPARATOR
+        item.destroy
+      end
+      @window = nil
+    end
+    # menu LEFT, RIGHT, DOWN, UP, ENTER
+    # item could be menuitem or another menu
+    #
+    def handle_key ch
+      if !@current_menu.empty?
+        cmenu = @current_menu.last
+      else 
+        cmenu = self
+      end
+      case ch
+      when KEY_DOWN
+          cmenu.select_next_item
+      when KEY_UP
+        cmenu.select_prev_item
+      when KEY_ENTER, 10, 13
+        cmenu.fire
+      when KEY_LEFT
+        if cmenu.parent.is_a? RubyCurses::Menu 
+       $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
+       $log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
+        end
+        if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
+       $log.debug " ABOU TO DESTROY DUE TO LEFT"
+          cmenu.parent.current_menu.pop
+          cmenu.destroy
+        else
+          return :UNHANDLED
+        end
+      when KEY_RIGHT
+       $log.debug "RIGHTIN MENU : "
+        if cmenu.parent.is_a? RubyCurses::Menu 
+       $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
+       $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
+        end
+        if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
+       $log.debug " ABOU TO DESTROY DUE TO RIGHT"
+          cmenu.parent.current_menu.pop
+          cmenu.destroy
+        end
+        return :UNHANDLED
+      else
+        return :UNHANDLED
+      end
+    end
+    ## menu 
+    def show # menu.show
+      $log.debug "show (menu) : #{@text} "
+      if @window.nil?
+        create_window
+      end
+        @window.show 
+        select_item 0
+    end
+  end
+  class MenuBar
+    include CommonIO
+    attr_reader :items
+    attr_reader :window
+    attr_reader :panel
+    attr_reader :selected
+    attr_accessor :visible
+    attr_accessor :active_index
+    def initialize &block
+      @window = nil
+      @active_index = 0
+      @items = []
+      @visible = false
+      @cols = Ncurses.COLS-1
+      instance_eval &block if block_given?
+    end
+    def focusable
+      false
+    end
+    def add menu
+      @items << menu
+      return self
+    end
+    def next_menu
+      $log.debug "next meu: #{@active_index}  " 
+      if @active_index < @items.length-1
+        set_menu @active_index + 1
+      else
+        set_menu 0
+      end
+    end
+    def prev_menu
+      $log.debug "prev meu: #{@active_index} " 
+      if @active_index > 0
+        set_menu @active_index-1
+      else
+        set_menu @items.length-1
+      end
+    end
+    def set_menu index
+      $log.debug "set meu: #{@active_index} #{index}" 
+      menu = @items[@active_index]
+      menu.on_leave # hide its window, if open
+      @active_index = index
+      menu = @items[@active_index]
+      menu.on_enter #display window, if previous was displayed
+      @window.wmove menu.row, menu.col
+#     menu.show
+#     menu.window.wrefresh # XXX we need this
+    end
+    # menubar LEFT, RIGHT, DOWN 
+    def handle_keys
+      @selected = false
+      set_menu 0
+      while((ch = @window.getch()) != KEY_F2 )
+       $log.debug "insdie handle_keys :  #{ch}"  if ch != -1
+        case ch
+        when KEY_DOWN
+          $log.debug "insdie keyDOWN :  #{ch}" 
+          if !@selected
+            current_menu.fire
+          else
+            current_menu.handle_key ch
+          end
+            
+          @selected = true
+        when KEY_ENTER, 10, 13
+          @selected = true
+            $log.debug "insdie ENTER :  #{current_menu}" 
+            current_menu.handle_key ch
+        when KEY_UP
+          $log.debug "insdie keyUPP :  #{ch}" 
+          current_menu.handle_key ch
+        when KEY_LEFT
+          $log.debug "insdie KEYLEFT :  #{ch}" 
+          ret = current_menu.handle_key ch
+          prev_menu if ret == :UNHANDLED
+          #display_items if @selected
+        when KEY_RIGHT
+       $log.debug "insdie KEYRIGHT :  #{ch}" 
+          ret = current_menu.handle_key ch
+          next_menu if ret == :UNHANDLED
+        else
+          next
+        end
+        Ncurses::Panel.update_panels();
+        Ncurses.doupdate();
+
+        @window.wrefresh
+      end
+      destroy  # XXX
+    end
+    def OLDdisplay_items
+      @selected = true
+      item = @items[@active_index]
+      $log.debug "key down meu: #{@active_index} #{item.text} " 
+      item.selected
+    end
+    def current_menu
+      @items[@active_index]
+    end
+    def toggle
+      @visible = !@visible
+      if !@visible
+        hide
+      else
+        show
+      end
+    end
+    def hide
+      @visible = false
+      @window.hide if !@window.nil?
+    end
+    def show
+      @visible = true
+      if @window.nil?
+        repaint  # XXX FIXME
+      else
+        @window.show 
+      end
+    end
+    ## menubar
+    def repaint
+      return if !@visible
+      @window ||= create_window
+      printstr(@window, 0, 0, "%-*s" % [@cols," "], $reversecolor)
+      c = 1; r = 0;
+      @items.each do |item|
+        item.row = r; item.col = c; item.parent = self
+        printstr(@window, r, c, " %s " % item.text, $reversecolor)
+        c += (item.text.length + 2)
+      end
+      @window.wrefresh
+    end
+    def create_window
+      @layout = { :height => 1, :width => 0, :top => 0, :left => 0 } 
+      @win = VER::Window.new(@layout)
+      @window = @win
+      @win.bkgd(Ncurses.COLOR_PAIR(5));
+      @panel = @win.panel
+      return @window
+    end
+    def destroy
+      $log.debug "DESTRY menubar "
+      @visible = false
+      panel = @window.panel
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      @window.delwin if !@window.nil?
+      @items.each do |item|
+        item.destroy
+      end
+      @window = nil
+    end
+  end # menubar
 end # modul
 
 if $0 == __FILE__
@@ -540,8 +1078,8 @@ if $0 == __FILE__
       @form.by_name["company"].type(:ALPHA)
      @form.by_name["name"].set_focusable(false)
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
-      @form.bind(:LEAVE) { |f|$log.debug "485:#{f.id} ";  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
-      ok_button = RubyCurses::LButton.new @form do
+      @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
+      ok_button = RubyCurses::Button.new @form do
         @text="[ OK ]"
         @name="OK"
         @row=10
@@ -549,45 +1087,57 @@ if $0 == __FILE__
       end
       ok_button.command { |form| form.printstr(@window, 23,45, "OK CALLED") }
       cancel_button = RubyCurses::Button.new @form do
-        @buffer="[ Cancel ]"
+        @text="[ Cancel ]"
         @row=10
         @col=28
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
+      @mb = RubyCurses::MenuBar.new
+      filemenu = RubyCurses::Menu.new "File"
+      filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
+      item.command(@form) {|form|  form.printstr(@window, 23,45, "Open CALLED"); }
+
+      filemenu.insert_separator 1
+      filemenu.add(RubyCurses::MenuItem.new "New",'N')
+      filemenu.add(RubyCurses::MenuItem.new "Save",'S')
+      filemenu.add(RubyCurses::MenuItem.new "Exit",'X')
+      @mb.add(filemenu)
+      editmenu = RubyCurses::Menu.new "Edit"
+      item = RubyCurses::MenuItem.new "Cut"
+      editmenu.add(item)
+      item.accelerator = "Ctrl-X"
+      item=RubyCurses::MenuItem.new "Copy"
+      editmenu.add(item)
+      item.accelerator = "Ctrl-C"
+      item=RubyCurses::MenuItem.new "Paste"
+      editmenu.add(item)
+      item.accelerator = "Ctrl-V"
+      @mb.add(editmenu)
+      @mb.add(menu=RubyCurses::Menu.new("Others"))
+      #item=RubyCurses::MenuItem.new "Save","S"
+      item = RubyCurses::MenuItem.new "Options"
+      menu.add(item)
+      item = RubyCurses::MenuItem.new "Config"
+      menu.add(item)
+      item = RubyCurses::MenuItem.new "Tables"
+      menu.add(item)
+      savemenu = RubyCurses::Menu.new "EditM"
+      item = RubyCurses::MenuItem.new "CutM"
+      savemenu.add(item)
+      item = RubyCurses::MenuItem.new "DeleteM"
+      savemenu.add(item)
+      item = RubyCurses::MenuItem.new "PasteM"
+      savemenu.add(item)
+      menu.add(savemenu)
+      @form.set_menu_bar  @mb
+      # END
       @form.repaint
-      @form.req_first_field
       @win.wrefresh
       Ncurses::Panel.update_panels
+      @form.req_first_field
       while((ch = @win.getch()) != KEY_F1 )
-        case ch
-        when -1
-          next
-        when 9
-          @form.req_next_field
-        when KEY_UP
-          @form.req_prev_field
-        when KEY_DOWN
-          @form.req_next_field
-        when KEY_LEFT
-          @form.req_prev_char
-        when KEY_RIGHT
-          @form.req_next_char
-        when KEY_BACKSPACE, 127
-          @form.delete_prev_char
-        when KEY_ENTER, 10, 13
-          f = @form.get_current_field
-          if f.respond_to? :fire
-            f.fire
-          end
-
-        when 330
-          @form.delete_curr_char
-        else
-          $log.debug("ch #{ch}")
-          @form.putc ch
-        end
-        @form.repaint
-      @win.wrefresh
+        @form.handle_key(ch)
+        @win.wrefresh
       end
       #     VER::Keyboard.focus = tp
     end
