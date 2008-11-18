@@ -1,3 +1,21 @@
+**2008-11-19 01:07**
+## FIELD navigation ##
+
+a small hack and we can circle and it does not cause an overflow now.
+But the focusables array was much neater and less risky.
+
+frmincr200811190106.tgz
+* * *
+**2008-11-19 00:53**
+## FIELD ##
+
+I have reworked the logic of traversal to use a loop, no extra array and no 
+recursion. 
+Only issue is i cant circle around snce it goes into a stack overflow.
+The extra array was simpler though.
+
+frmincr200811190052.tgz
+* * *
 **2008-11-18 20:41**
 ## menubar working !!! ##
 

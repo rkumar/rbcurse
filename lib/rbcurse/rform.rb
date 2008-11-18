@@ -7,9 +7,10 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
   *         We need something less restrictive.
   * Author: rkumar
 TODO 
-    - menu bar printing not happening in correct positiooon column
-    - on leave leaving a black area that is large.
+    - menu bar : what to do if adding a menu, or option later.
+      we dnt show disabld options in a way that user can know its disabled
   * do we need widgets in our thign at all, why am i managing ?
+  - Button remove inheritance fom Label
   * integrate with our mapper
   * read only field
   * justified, int real charonly
@@ -87,8 +88,8 @@ module RubyCurses
      @widgets << widget
      if widget.focusable
        $log.debug "adding widget to focusabe: #{widget.name}" 
-       @focusables << widget 
-       widget.zorder = @focusables.length-1
+#      @focusables << widget 
+#      widget.zorder = @focusables.length-1
      end
      return @widgets.length-1
    end
@@ -97,7 +98,10 @@ module RubyCurses
         f.repaint
       end
       if @row == -1
-        set_field_cursor 0
+        #set_field_cursor 0
+       $log.debug "repaint calling select field 0"
+        #select_field 0
+        req_first_field
       end
       setpos
       @window.wrefresh
@@ -106,34 +110,15 @@ module RubyCurses
      @window.wmove r,c
     end
     def get_current_field
-      #@fields[@active_index]
-      @focusables[@active_index]
-    end
-    def set_current_field index
-      raise "RRRER" if index > @fields.length
-      set_field_cursor index
+      @widgets[@active_index]
     end
     def req_first_field
-      set_field_cursor 0
+      @active_field = -1 # FIXME HACK
+      select_next_field
     end
     def req_last_field
-      #id = prev_focusable_field @fields.length-1
-      set_field_cursor @focusables.length-1
-    end
-    def req_next_field
-      if @active_index == @focusables.length-1
-        req_first_field
-      else
-        set_field_cursor @active_index+1
-      end
-    end
-    def req_prev_field
-      if @active_index == 0
-        req_last_field
-      else
-        set_field_cursor @active_index-1
-      end
-      #set_field_cursor @active_index-1
+      @active_field = -1 # FIXME HACK
+      select_prev_field
     end
     def on_leave f
       return if f.nil?
@@ -145,17 +130,65 @@ module RubyCurses
       f.on_enter if f.respond_to? :on_enter
       fire_handler :ENTER, f 
     end
-    def set_field_cursor index
-      return if @active_index == index or index.nil?
-      f = get_current_field
-      on_leave f
-
-      @active_index = index
-      f = get_current_field
-      on_enter f
-     @row, @col = f.rowcol
-     @window.wmove @row, @col
-     f.curpos = 0
+    def select_field ix0
+      return if @widgets.nil? or @widgets.empty?
+      $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
+      @active_index = ix0
+      f = @widgets[@active_index]
+      if f.focusable
+        on_enter f
+        @row, @col = f.rowcol
+        @window.wmove f.row, f.col
+        f.curpos = 0
+        @window.refresh
+      else
+        $log.debug "insdie sele nxt field ENABLED FALSE : prev #{previtem} act #{@active_index}  #{ix0}" 
+      end
+    end
+    def select_next_field
+      return if @widgets.nil? or @widgets.empty?
+       $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
+      if @active_index.nil?
+        @active_index = -1 
+      else
+        f = @widgets[@active_index]
+        on_leave f
+      end
+      index = @active_index + 1
+      index.upto(@widgets.length-1) do |i|
+        f = @widgets[i]
+        if f.focusable
+          select_field i
+          return
+        end
+      end
+      #req_first_field
+       $log.debug "insdie sele nxt field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+        @active_index = nil
+        select_next_field
+    end
+    def select_prev_field
+      return if @widgets.nil? or @widgets.empty?
+       $log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
+      if @active_index.nil?
+        @active_index = @widgets.length 
+      else
+        f = @widgets[@active_index]
+        on_leave f
+      end
+      #@active_index -= 1
+      index = @active_index - 1
+      (index).downto(0) do |i|
+        f = @widgets[i]
+        if f.focusable
+          select_field i
+          return
+        end
+      end
+       $log.debug "insdie sele prev field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+        @active_index = nil # HACK !!!
+        select_prev_field
+      #req_last_field
     end
     def addcol num
       return if @col.nil? or @col == -1
@@ -171,34 +204,6 @@ module RubyCurses
     return if blk.nil?
     blk.call object
   end
-  # pls optimize this, see we could make a field focusable when program is running
-  def next_focusable_field index=@active_index
-    #f = @fields.find{ |f| f.focusable and f.zorder >= index }
-    #f.zorder rescue nil
-   $log.debug "FOCUSA #{@focusables.length } " 
-    if index < @focusables.length-1
-      index += 1 
-    else
-      index = 0
-    end
-    return @focusables[index].zorder
-  end
-  def prev_focusable_field index=@active_index
-    #f = @fields.sort{|a,b| b.zorder <=> a.zorder}.find(lambda { index }){ |f| f.focusable and f.zorder <= index }
-    #f.zorder  rescue nil
-    if index > 0
-      index -= 1 
-    else
-      index = @focusables.length-1
-    end
-    return @focusables[index].zorder
-  end
-  def regenerate_focusables
-    @focusables = []
-    @widgets.each do |w|
-      @focusables << w if w.focusable
-    end
-  end
   ## forms handle keys
   def handle_key(ch)
         case ch
@@ -209,11 +214,11 @@ module RubyCurses
           @menu_bar.toggle
           @menu_bar.handle_keys
         when 9
-          req_next_field
+          select_next_field
         when KEY_UP
-          req_prev_field
+          select_prev_field
         when KEY_DOWN
-          req_next_field
+          select_next_field
         else
           field =  get_current_field
           handled = field.handle_key ch
@@ -343,7 +348,7 @@ module RubyCurses
   end
   def set_focusable(tf)
     @focusable = tf
-    @form.regenerate_focusables
+ #   @form.regenerate_focusables
   end
 =begin
   def method_missing(method, *args, &block)
@@ -479,6 +484,7 @@ module RubyCurses
       @editable = false
       #@command_block = nil
       @text = @name if @text.nil?
+      @text = "[ #{@text} ]"
       @display_length = @text.length
       @handler={}
     end
@@ -517,9 +523,10 @@ module RubyCurses
     def handle_key ch
       case ch
       when KEY_LEFT
-        @form.req_prev_field
+        #@form.req_prev_field
+          @form.select_prev_field
       when KEY_RIGHT
-        @form.req_next_field
+          @form.select_next_field
       when KEY_ENTER, 10, 13
         if respond_to? :fire
           fire
@@ -682,6 +689,8 @@ module RubyCurses
         @window.refresh
       end
     end
+    ##
+    # recursive if given one not enabled goes to next enabled
     def select_item ix0
       return if @items.nil? or @items.empty?
        $log.debug "insdie select  item :  #{ix0}" 
@@ -956,12 +965,6 @@ module RubyCurses
       end
       destroy  # XXX
     end
-    def OLDdisplay_items
-      @selected = true
-      item = @items[@active_index]
-      $log.debug "key down meu: #{@active_index} #{item.text} " 
-      item.selected
-    end
     def current_menu
       @items[@active_index]
     end
@@ -1080,14 +1083,14 @@ if $0 == __FILE__
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
       ok_button = RubyCurses::Button.new @form do
-        @text="[ OK ]"
+        @text="OK"
         @name="OK"
         @row=10
         @col=22
       end
       ok_button.command { |form| form.printstr(@window, 23,45, "OK CALLED") }
       cancel_button = RubyCurses::Button.new @form do
-        @text="[ Cancel ]"
+        @text="Cancel"
         @row=10
         @col=28
       end
@@ -1134,7 +1137,8 @@ if $0 == __FILE__
       @form.repaint
       @win.wrefresh
       Ncurses::Panel.update_panels
-      @form.req_first_field
+      #@form.req_first_field
+      #@form.select_field 0
       while((ch = @win.getch()) != KEY_F1 )
         @form.handle_key(ch)
         @win.wrefresh
