@@ -1,3 +1,13 @@
+**2008-11-20 01:38**
+## MessageBox ##
+
+Have made a messagebox just like links
+   - uses Button class.
+   - Not using labels etc yet. Not required. Keeping it simple.
+   
+
+frmincr200811200137.tgz
+* * *
 **2008-11-19 19:59**
 ## Widget class as super ##
 

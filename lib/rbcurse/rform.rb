@@ -83,7 +83,6 @@ module RubyCurses
       @handler = {}
       @modified = false
       super
-#     @id = @zorder = form.add_field(self) # move to widget
     end
     def type dtype
       case dtype.to_s.downcase
@@ -279,11 +278,22 @@ module RubyCurses
 #     true
 #   end
     def on_enter
-      $log.debug "ONENTER: "
-      @bgcolor = $reversecolor 
+#     @bgcolor = @highlight_background || $reversecolor 
+      $log.debug "ONENTER : #{@bgcolor} "
     end
     def on_leave
-      @bgcolor = $datacolor 
+#     @bgcolor = @bgcolor || $datacolor 
+      $log.debug "ONLEAVE : #{@bgcolor} "
+    end
+    def repaint
+        r,c = rowcol
+        @highlight_foreground ||= @color
+        bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
+        color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+        $log.debug("button repaint : r:#{r} c:#{c} col:#{color}" )
+        printstr @form.window, r, c, getvalue, color
+        @form.window.mvchgat(y=r, x=c, max=@text.length, Ncurses::A_NORMAL, bgcolor, nil)
+#     raise "error please override repaint "
     end
     def command &block
       #@command_block = block
@@ -717,6 +727,8 @@ module RubyCurses
       while((ch = @window.getch()) != KEY_F2 )
        $log.debug "insdie handle_keys :  #{ch}"  if ch != -1
         case ch
+        when -1
+          next
         when KEY_DOWN
           $log.debug "insdie keyDOWN :  #{ch}" 
           if !@selected
