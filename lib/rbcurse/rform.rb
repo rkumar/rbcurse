@@ -10,7 +10,18 @@ TODO
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
   * do we need widgets in our thign at all, why am i managing ?
-  - Button remove inheritance fom Label
+  * Field/entry
+    - show (what char to show when entry done : show '*'
+    - textvariable - bding field to a var so the var is updated
+  * Button remove inheritance fom Label
+    - width int : desiredwidth
+    - underline index
+    - foreground, bgcolor 
+    - surroundchars
+  * Label
+    - desired width
+    - textvariable , foreground, bgcolor
+  * POPUP
   * integrate with our mapper
   * read only field
   * justified, int real charonly
@@ -28,235 +39,33 @@ require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/commonio'
+require 'lib/rbcurse/rwidget'
 
 ## form needs to know order of fields esp they can be changed.
 #include Curses
 include Ncurses
 module RubyCurses
   extend self
-  class Form
-  include CommonIO
-    attr_reader :value
-    attr_reader :fields
-    attr_reader :widgets
-    attr_reader :focusables
-    attr_reader :fieldnames
-    attr_reader :current_index
-    attr_accessor :window
-    attr_accessor :row, :col
-#   attr_accessor :color
-#   attr_accessor :bgcolor
-    attr_reader :field_id_incr
-    attr_accessor :padx
-    attr_accessor :pady
-    attr_accessor :modified
-    attr_reader :by_name
-    attr_reader :menu_bar
-    def initialize win, &block
-      @window = win
-      @fields = []
-      @widgets = []
-      @by_name = {}
-      @fieldnames = []
-      @active_index = -1
-      @field_id_incr = 0
-      @padx = @pady = 0
-      @row = @col = -1
-      @handler = {}
-      @modified = false
-      @focusables = []
-      instance_eval &block if block_given?
-    end
-    def add_field field
-      id = @field_id_incr
-      @fields << field
-      @field_id_incr += 1 
-      if !field.name.nil?
-        $log.debug "adding to byname: #{field.name} " 
-        @by_name[field.name] = field
-      else
-        $log.debug "NOT adding to byname: #{id} " 
-      end
-      add_widget field
-      return id
-    end
-    def set_menu_bar mb
-      @menu_bar = mb
-      add_widget mb
-    end
-   def add_widget widget
-     @widgets << widget
-     if widget.focusable
-       $log.debug "adding widget to focusabe: #{widget.name}" 
-#      @focusables << widget 
-#      widget.zorder = @focusables.length-1
-     end
-     return @widgets.length-1
-   end
-    def repaint
-      @widgets.each do |f|
-        f.repaint
-      end
-      if @row == -1
-        #set_field_cursor 0
-       $log.debug "repaint calling select field 0"
-        #select_field 0
-        req_first_field
-      end
-      setpos
-      @window.wrefresh
-    end
-    def setpos r=@row, c=@col
-     @window.wmove r,c
-    end
-    def get_current_field
-      @widgets[@active_index]
-    end
-    def req_first_field
-      @active_field = -1 # FIXME HACK
-      select_next_field
-    end
-    def req_last_field
-      @active_field = -1 # FIXME HACK
-      select_prev_field
-    end
-    def on_leave f
-      return if f.nil?
-      f.on_leave if f.respond_to? :on_leave
-      fire_handler :LEAVE, f 
-    end
-    def on_enter f
-      return if f.nil?
-      f.on_enter if f.respond_to? :on_enter
-      fire_handler :ENTER, f 
-    end
-    def select_field ix0
-      return if @widgets.nil? or @widgets.empty?
-      $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
-      @active_index = ix0
-      f = @widgets[@active_index]
-      if f.focusable
-        on_enter f
-        @row, @col = f.rowcol
-        @window.wmove f.row, f.col
-        f.curpos = 0
-        @window.refresh
-      else
-        $log.debug "insdie sele nxt field ENABLED FALSE : prev #{previtem} act #{@active_index}  #{ix0}" 
-      end
-    end
-    def select_next_field
-      return if @widgets.nil? or @widgets.empty?
-       $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
-      if @active_index.nil?
-        @active_index = -1 
-      else
-        f = @widgets[@active_index]
-        on_leave f
-      end
-      index = @active_index + 1
-      index.upto(@widgets.length-1) do |i|
-        f = @widgets[i]
-        if f.focusable
-          select_field i
-          return
-        end
-      end
-      #req_first_field
-       $log.debug "insdie sele nxt field FAILED:  #{@active_index} WL:#{@widgets.length}" 
-        @active_index = nil
-        select_next_field
-    end
-    def select_prev_field
-      return if @widgets.nil? or @widgets.empty?
-       $log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
-      if @active_index.nil?
-        @active_index = @widgets.length 
-      else
-        f = @widgets[@active_index]
-        on_leave f
-      end
-      #@active_index -= 1
-      index = @active_index - 1
-      (index).downto(0) do |i|
-        f = @widgets[i]
-        if f.focusable
-          select_field i
-          return
-        end
-      end
-       $log.debug "insdie sele prev field FAILED:  #{@active_index} WL:#{@widgets.length}" 
-        @active_index = nil # HACK !!!
-        select_prev_field
-      #req_last_field
-    end
-    def addcol num
-      return if @col.nil? or @col == -1
-      @col += num
-      @window.wmove @row, @col
-    end
-  def bind event, &blk
-    @handler[event] = blk
-  end
-  def fire_handler event, object
-#   $log.debug "called firehander #{object}"
-    blk = @handler[event]
-    return if blk.nil?
-    blk.call object
-  end
-  ## forms handle keys
-  def handle_key(ch)
-        case ch
-        when -1
-          return
-        when KEY_F2
-          #@menu_bar.show
-          @menu_bar.toggle
-          @menu_bar.handle_keys
-        when 9
-          select_next_field
-        when KEY_UP
-          select_prev_field
-        when KEY_DOWN
-          select_next_field
-        else
-          field =  get_current_field
-          handled = field.handle_key ch
-        end
-        repaint
-  end
 
-    ## ADD HERE FORM
-  end
-
-  class Field
+  class Field < Widget
     include CommonIO
-    attr_accessor :zorder
-    attr_accessor :name
-    attr_accessor :id
-    attr_accessor :maxlen
-    attr_accessor :curpos
-    attr_accessor :row
-    attr_accessor :col
+    dsl_accessor :maxlen
     attr_reader :buffer
-    attr_accessor :label
-    attr_accessor :default
-    attr_accessor :config
-    attr_accessor :values
-    attr_accessor :valid_regex
+    dsl_accessor :label
+    dsl_accessor :default
+    dsl_accessor :values
+    dsl_accessor :valid_regex
 
-    attr_accessor :chars_allowed
-    attr_accessor :display_length
-    attr_accessor :bgcolor
-    attr_accessor :color
+    dsl_accessor :chars_allowed
+    dsl_accessor :display_length
+    dsl_accessor :bgcolor
+    dsl_accessor :color
+    dsl_accessor :shaw
     attr_reader :form
-    attr_accessor :editable
-    attr_reader :focusable
     attr_accessor :modified
     attr_reader :handler
     attr_reader :type
 
-    #def initialize name, r,c, type=:varchar, display_length=10, maxlen=-1
     def initialize form, config={}, &block
       @form = form
       @buffer = String.new
@@ -273,8 +82,8 @@ module RubyCurses
       @curpos = 0
       @handler = {}
       @modified = false
-      instance_eval &block if block_given?
-      @id = @zorder = form.add_field(self)
+      super
+#     @id = @zorder = form.add_field(self) # move to widget
     end
     def type dtype
       case dtype.to_s.downcase
@@ -315,9 +124,6 @@ module RubyCurses
       ar.delete_at index
       @buffer = ar.join
       @modified = true
-    end
-    def rowcol
-      return @row, @col
     end
     def set_buffer value
       @buffer = value
@@ -430,36 +236,20 @@ module RubyCurses
 
   # ADD HERE FIELD
   end
-  class Label
+  class Label < Widget
     include CommonIO
-    attr_accessor :text
-    attr_accessor :id
-    attr_accessor :row
-    attr_accessor :col
-    attr_accessor :config
-    attr_accessor :color
-    attr_accessor :bgcolor
-    attr_reader :form
-    attr_reader :editable
-    attr_reader :focusable
-    attr_accessor :name
-
 
     def initialize form, config={}, &block
-      @form = form
+    # @form = form
       @row = config.fetch("row",-1) 
       @col = config.fetch("col",-1) 
       @bgcolor = config.fetch("bgcolor", 0)
       @color = config.fetch("bgcolor", $datacolor)
       @text = config.fetch("text", "NOTFOUND")
       @name = config.fetch("name", @text)
-      @editable = config.fetch("editable", false)
-      @focusable =  config.fetch("focusable", false)
-      instance_eval &block if block_given?
-      @id = form.add_widget(self) if !form.nil?
-    end
-    def rowcol
-      return @row, @col
+      @editable = false
+      @focusable = false
+      super
     end
     def getvalue
       @text
@@ -473,20 +263,17 @@ module RubyCurses
   # ADD HERE LABEL
   end
   ## TODO separate Button from label
-  class Button < Label
+  class Button < Widget
   include CommonIO
-  attr_accessor :zorder  # focusable
-  attr_accessor :curpos  # focusable
     def initialize form, config={}, &block
-     config.merge!("focusable"=>true)
-      super
       @focusable = true
       @editable = false
       #@command_block = nil
+      @handler={}
+      super
       @text = @name if @text.nil?
       @text = "[ #{@text} ]"
-      @display_length = @text.length
-      @handler={}
+      @display_length = @text.length if @display_length.nil?
     end
 #   def focusable
 #     true
@@ -1062,11 +849,10 @@ if $0 == __FILE__
       r = 1; c = 22;
       %w[ name age company].each do |w|
         field = RubyCurses::Field.new @form do
-          @name =  w 
-          #name   w 
-          @row = r 
-          @col = c 
-          @display_length = 30
+          name   w 
+          row  r 
+          col  c 
+          display_length  30
           set_buffer "abcd #{w}" 
           set_label RubyCurses::Label.new @form, {'text' => w}
         end
@@ -1083,16 +869,16 @@ if $0 == __FILE__
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
       ok_button = RubyCurses::Button.new @form do
-        @text="OK"
-        @name="OK"
-        @row=10
-        @col=22
+        text "OK"
+        name "OK"
+        row 10
+        col 22
       end
       ok_button.command { |form| form.printstr(@window, 23,45, "OK CALLED") }
       cancel_button = RubyCurses::Button.new @form do
-        @text="Cancel"
-        @row=10
-        @col=28
+        text "Cancel"
+        row 10
+        col 28
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
       @mb = RubyCurses::MenuBar.new

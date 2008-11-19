@@ -1,3 +1,12 @@
+**2008-11-19 19:59**
+## Widget class as super ##
+
+Created the widget class with DSL properties
+Now all widgets extend it,
+so common functionality as well as DSLish.
+
+frmincr200811191958.tgz
+* * *
 **2008-11-19 01:07**
 ## FIELD navigation ##
 
