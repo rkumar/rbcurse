@@ -40,6 +40,7 @@ require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/rwidget'
+require 'lib/rbcurse/scrollable'
 
 ## form needs to know order of fields esp they can be changed.
 #include Curses
@@ -47,292 +48,7 @@ include Ncurses
 module RubyCurses
   extend self
 
-  class Field < Widget
-    include CommonIO
-    dsl_accessor :maxlen
-    attr_reader :buffer
-    dsl_accessor :label
-    dsl_accessor :default
-    dsl_accessor :values
-    dsl_accessor :valid_regex
 
-    dsl_accessor :chars_allowed
-    dsl_accessor :display_length
-    dsl_accessor :bgcolor
-    dsl_accessor :color
-    dsl_accessor :shaw
-    attr_reader :form
-    attr_accessor :modified
-    attr_reader :handler
-    attr_reader :type
-
-    def initialize form, config={}, &block
-      @form = form
-      @buffer = String.new
-      #@type=config.fetch("type", :varchar)
-      @display_length = config.fetch("display_length", 20)
-      @maxlen=config.fetch("maxlen", @display_length) 
-      @row = config.fetch("row", 0)
-      @col = config.fetch("col", 0)
-      @bgcolor = config.fetch("bgcolor", 0)
-      @color = config.fetch("color", $datacolor)
-      @name = config.fetch("name", nil)
-      @editable = config.fetch("editable", true)
-      @focusable = config.fetch("focusable", true)
-      @curpos = 0
-      @handler = {}
-      @modified = false
-      super
-    end
-    def type dtype
-      case dtype.to_s.downcase
-      when 'integer'
-        @chars_allowed = /\d/ if @chars_allowed.nil?
-      when 'numeric'
-        @chars_allowed = /[\d\.]/ if @chars_allowed.nil?
-      when 'alpha'
-        @chars_allowed = /[a-zA-Z]/ if @chars_allowed.nil?
-      when 'alnum'
-        @chars_allowed = /[a-zA-Z0-9]/ if @chars_allowed.nil?
-      end
-    end
-    def putch char
-      return -1 if !@editable or @buffer.length >= @maxlen
-      if @chars_allowed != nil
-        return if char.match(@chars_allowed).nil?
-      end
-      @buffer.insert(@curpos, char)
-      @curpos += 1 if @curpos < @maxlen
-      @modified = true
-      0
-    end
-
-    def putc c
-      if c >= 0 and c <= 127
-        ret = putch c.chr
-        if ret == 0
-          addcol 1
-          set_modified 
-        end
-      end
-      return -1
-    end
-    def delete_at index=@curpos
-      return -1 if !@editable 
-      ar = @buffer.split(//)
-      ar.delete_at index
-      @buffer = ar.join
-      @modified = true
-    end
-    def set_buffer value
-      @buffer = value
-    end
-    def getvalue
-      @buffer
-    end
-  #def set_label name, row=-1, col=-1, color=$datacolor, bgcolor=2
-  def set_label label
-    @label = label
-    label.row = @row if label.row == -1
-    label.col = @col-(label.name.length+1) if label.col == -1
-  end
-  def repaint
-#    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
-    printval = getvalue
-    printval = printval[0..display_length-1] if printval.length > display_length
-    printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
-    @form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
-  end
-  def bind event, &blk
-    @handler[event] = blk
-  end
-  def fire_handler event
-    blk = @handler[event]
-    return if blk.nil?
-    blk.call self
-  end
-  def set_focusable(tf)
-    @focusable = tf
- #   @form.regenerate_focusables
-  end
-=begin
-  def method_missing(method, *args, &block)
-    var = "@#{method.to_s.sub('?','')}"
-
-    method = method.to_s
-    $log.debug "MethodMissing: #{method} #{var} #{args[0]}" 
-    # If we were given a block or an argument, save it.
-    instance_variable_set(var, args[0]) if args[0]
-    instance_variable_set(var, block) if block_given?
-    $log.debug "MethodMissing: #{instance_variables.inspect} "
-  end
-  %w[name arow acol].each do |method|
-    define_method(method) do 
-      variable = "@#{method}"
-      return instance_variable_get(variable) 
-    end
-    define_method(method) do |string|
-      variable = "@#{method}"
-#      val = instance_variable_get(variable) || ''
-#      instance_variable_set(variable, val << string)
-      instance_variable_set(variable, string)
-    end
-  end
-=end
-
-  # field
-  def handle_key ch
-    case ch
-    when KEY_LEFT
-      req_prev_char
-    when KEY_RIGHT
-      req_next_char
-    when KEY_BACKSPACE, 127
-      delete_prev_char
-    when KEY_ENTER, 10, 13
-      if respond_to? :fire
-        fire
-      end
-    when 330
-      delete_curr_char
-    else
-      $log.debug("ch #{ch}")
-      putc ch
-    end
-
-  end
-  def req_next_char
-    if @curpos < display_length
-      @curpos += 1
-      addcol 1
-    end
-  end
-  def req_prev_char
-    if @curpos > 0
-      @curpos -= 1
-      addcol -1
-    end
-  end
-    def delete_curr_char
-      delete_at
-      set_modified 
-    end
-    def delete_prev_char
-      return -1 if !@editable 
-      return if @curpos <= 0
-      @curpos -= 1 if @curpos > 0
-      delete_at
-      set_modified 
-      addcol -1
-    end
-    def set_modified tf=true
-      @modified = tf
-      @form.modified = true if tf
-    end
-    def addcol num
-      @form.addcol num
-    end
-
-  # ADD HERE FIELD
-  end
-  class Label < Widget
-    include CommonIO
-
-    def initialize form, config={}, &block
-    # @form = form
-      @row = config.fetch("row",-1) 
-      @col = config.fetch("col",-1) 
-      @bgcolor = config.fetch("bgcolor", 0)
-      @color = config.fetch("bgcolor", $datacolor)
-      @text = config.fetch("text", "NOTFOUND")
-      @name = config.fetch("name", @text)
-      @editable = false
-      @focusable = false
-      super
-    end
-    def getvalue
-      @text
-    end
-  def repaint
-        r,c = rowcol
-        printstr @form.window, r, c, getvalue, color
-#        $log.debug "label : #{getvalue}, #{r}, #{c} "
-        @form.window.mvchgat(y=r, x=c, max=@text.length, Ncurses::A_NORMAL, bgcolor, nil)
-  end
-  # ADD HERE LABEL
-  end
-  ## TODO separate Button from label
-  class Button < Widget
-  include CommonIO
-    def initialize form, config={}, &block
-      @focusable = true
-      @editable = false
-      #@command_block = nil
-      @handler={}
-      super
-      @text = @name if @text.nil?
-      @text = "[ #{@text} ]"
-      @display_length = @text.length if @display_length.nil?
-    end
-#   def focusable
-#     true
-#   end
-    def on_enter
-#     @bgcolor = @highlight_background || $reversecolor 
-      $log.debug "ONENTER : #{@bgcolor} "
-    end
-    def on_leave
-#     @bgcolor = @bgcolor || $datacolor 
-      $log.debug "ONLEAVE : #{@bgcolor} "
-    end
-    def repaint
-        r,c = rowcol
-        @highlight_foreground ||= @color
-        bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
-        color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
-        $log.debug("button repaint : r:#{r} c:#{c} col:#{color}" )
-        printstr @form.window, r, c, getvalue, color
-        @form.window.mvchgat(y=r, x=c, max=@text.length, Ncurses::A_NORMAL, bgcolor, nil)
-#     raise "error please override repaint "
-    end
-    def command &block
-      #@command_block = block
-      bind :PRESS, &block
-      $log.debug "#{text} bound PRESS"
-      #instance_eval &block if block_given?
-    end
-    def fire
-      #@form.instance_eval(&@command_block) if !@command_block.nil?
-      #@command_block.call @form  if !@command_block.nil?
-      $log.debug "firing PRESS #{text}"
-      fire_handler :PRESS, @form
-    end
-    def bind event, &blk
-      @handler[event] = blk
-    end
-    def fire_handler event, object
-      $log.debug "called firehander #{object}"
-      blk = @handler[event]
-      return if blk.nil?
-      blk.call object
-    end
-    # Button
-    def handle_key ch
-      case ch
-      when KEY_LEFT
-        #@form.req_prev_field
-          @form.select_prev_field
-      when KEY_RIGHT
-          @form.select_next_field
-      when KEY_ENTER, 10, 13
-        if respond_to? :fire
-          fire
-        end
-      else
-        return -1
-      end
-    end
-  end #LBUTTON
   class MenuSeparator
     include CommonIO
     attr_accessor :enabled
@@ -678,6 +394,7 @@ module RubyCurses
     attr_reader :selected
     attr_accessor :visible
     attr_accessor :active_index
+    attr_accessor :state              # normal, selected, highlighted
     def initialize &block
       @window = nil
       @active_index = 0
@@ -820,6 +537,70 @@ module RubyCurses
       @window = nil
     end
   end # menubar
+
+  ## allow selection multi and single
+  #  use selection color for selected row.
+  class Listbox < Widget
+    include Scrollable
+    dsl_accessor :height
+    dsl_accessor :title
+    dsl_accessor :list    # the array of data to be sent by user
+    attr_reader :toprow
+    attr_reader :prow
+    attr_reader :winrow
+
+    def initialize form, config={}, &block
+      @focusable = true
+      @editable = false
+      @row = 0
+      @col = 0
+      @list = []
+      super
+      @scrollatrow = @height-2
+      @content_rows = @list.length
+      @win = @form.window
+      init_scrollable
+      print_borders
+    end
+    def insert off0, *data
+      @list.insert off0, *data
+    end
+    def print_borders
+      width = @width
+      height = @height
+      window = @form.window
+      startcol = @col 
+      startrow = @row 
+      color = $datacolor
+      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
+      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
+      printstr(window, row=startrow, col=startcol, hline, color)
+      (startrow+1).upto(startrow+height-1) do |row|
+        printstr(window, row, col=startcol, hline2, color)
+      end
+      printstr(window, startrow+height, col=startcol, hline, color)
+  
+     # @derwin = @form.window.derwin(@height, @width, @row, @col)
+     # repaint
+    end
+    ### FOR scrollable ###
+    def get_content
+      @list
+    end
+    def get_window
+      @form.window
+    end
+    ### FOR scrollable ###
+    def repaint
+      paint
+    end
+    # Listbox
+    # ^P ^N scroll up down
+    # [ ] scroll left right
+    def handle_key ch
+      scrollable_handle_key ch
+    end # handle_k listb
+  end # class listb
 end # modul
 
 if $0 == __FILE__
@@ -870,7 +651,21 @@ if $0 == __FILE__
         end
         r += 1
       end
+      $results = RubyCurses::Variable.new
+      $results.value = "Hello there"
+      var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => 22}
+        r += 1
 #     $log.debug("byname: #{@form.by_name.inspect}")
+        mylist = []
+        0.upto(100) { |v| mylist << "#{v} data" }
+        field = RubyCurses::Listbox.new @form do
+          name   "mylist" 
+          row  r 
+          col  c 
+          width 40
+          height 10
+          list mylist
+        end
       @form.by_name["age"].display_length = 3
       @form.by_name["age"].maxlen = 3
       @form.by_name["age"].set_buffer  "24"
@@ -883,13 +678,14 @@ if $0 == __FILE__
       ok_button = RubyCurses::Button.new @form do
         text "OK"
         name "OK"
-        row 10
+        row 18
         col 22
       end
-      ok_button.command { |form| form.printstr(@window, 23,45, "OK CALLED") }
+      ok_button.command { |form| $results.value = "OK PRESS:";form.printstr(@window, 23,45, "OK CALLED") }
+        #text "Cancel"
       cancel_button = RubyCurses::Button.new @form do
-        text "Cancel"
-        row 10
+        text_variable $results
+        row 18
         col 28
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
@@ -939,6 +735,7 @@ if $0 == __FILE__
       #@form.select_field 0
       while((ch = @win.getch()) != KEY_F1 )
         @form.handle_key(ch)
+       # @form.repaint
         @win.wrefresh
       end
       #     VER::Keyboard.focus = tp

@@ -1,3 +1,20 @@
+**2008-11-21 01:38**
+## Listbox ##
+
+created a scrollable listbox as a widget and put in my form.
+Also a scrollable module to include to get the functionality
+
+frmincr200811210137.tgz
+* * *
+**2008-11-20 15:58**
+## Variable ##
+
+Added custom to MessageBox
+
+Added class Variable and tested out with button and label.
+
+frmincr200811201558.tgz
+* * *
 **2008-11-20 01:38**
 ## MessageBox ##
 

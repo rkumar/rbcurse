@@ -19,11 +19,12 @@ require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/commonio'
-require 'lib/rbcurse/rform'
+#require 'lib/rbcurse/rform'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
   def method_missing(sym, *args)
+    $log.debug "METHOD MISSING : #{sym} "
     #if "#{sym}"[-1].chr=="="
     #  sym = "#{sym}"[0..-2]
     #else
@@ -60,7 +61,7 @@ module RubyCurses
   class Widget
     include CommonIO
     include DSL
-    dsl_accessor :text, :textvariable
+    dsl_accessor :text, :text_variable
     dsl_accessor :underline                        # offset of text to underline
     dsl_accessor :width                # desired width of text
     dsl_accessor :wrap_length                      # wrap length of text, if applic
@@ -108,13 +109,16 @@ module RubyCurses
       @config[param]
     end
     def getvalue
-      @text
+      @text_variable && @text_variable.value || @text
+      #@text
     end
     def repaint
         r,c = rowcol
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
-        printstr @form.window, r, c, getvalue, @color
-        @form.window.mvchgat(y=r, x=c, max=@text.length, Ncurses::A_NORMAL, @bgcolor, nil)
+        value = getvalue
+        len = @display_length || value.length
+        printstr @form.window, r, c, "%-*s" % [len, value], color
+        @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
 #     raise "error please override repaint "
     end
 
@@ -197,6 +201,8 @@ module RubyCurses
     def on_leave f
       return if f.nil?
       f.state = :NORMAL
+      # on leaving update text_variable if defined. Should happen on modified only
+      @text_variable.value = @buffer if !@text_variable.nil?
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
     end
@@ -274,6 +280,13 @@ module RubyCurses
       @col += num
       @window.wmove @row, @col
     end
+    def addrowcol row,col
+      return if @col.nil? or @col == -1
+      return if @row.nil? or @row == -1
+      @col += col
+      @row += row
+      @window.wmove @row, @col
+    end
   def bind event, &blk
     @handler[event] = blk
   end
@@ -295,29 +308,45 @@ module RubyCurses
           end
         when 9
           select_next_field
+=begin
+        # lists use up and down key for navigation internally
         when KEY_UP
           select_prev_field
         when KEY_DOWN
           select_next_field
+=end
         else
           field =  get_current_field
           handled = field.handle_key ch
+          if handled == :UNHANDLED or handled == -1
+            case ch
+            when KEY_UP
+              select_prev_field
+            when KEY_DOWN
+              select_next_field
+            end
+          end
         end
         repaint
   end
 
     ## ADD HERE FORM
   end
+
+  ##
+  # TODO wrapping message, underline char and select if button pressed
+  #
   class MessageBox
     include CommonIO
     include DSL
     dsl_accessor :title
     dsl_accessor :message
-    dsl_accessor :type
-    dsl_accessor :default_button
+    dsl_accessor :type               # :ok, :ok_cancel :yes_no :yes_no_cancel :custom
+    dsl_accessor :default_button     # TODO - currently first
     dsl_accessor :layout
+    dsl_accessor :buttons           # used if type :custom
     attr_reader :config
-    attr_reader :selected_index
+    attr_reader :selected_index     # button index selected by user
 
     def initialize aconfig={}, &block
       @config = aconfig
@@ -335,53 +364,60 @@ module RubyCurses
       print_borders
       print_title
       print_message
+      print_input
       create_buttons
       @form.repaint
       @window.wrefresh
       handle_keys
-      
+    end
+    def default_button offset0
+      @selected_index = offset0
+    end
+    ##
+    # value entered by user if type = input
+    def input_value
+      @input.buffer
     end
     def create_buttons
       case @type.to_s.downcase
       when "ok"
-        make_button "OK"
-      when "ok_cancel"
-        @bcol = center_column "[ OK ] [ Cancel ]"
-        make_button "OK"
-        make_button "Cancel"
+        make_buttons ["OK"]
+      when "ok_cancel", "input"
+        make_buttons %w[OK Cancel]
       when "yes_no"
-        @bcol = center_column "[ Yes ] [ No ]"
-        make_button "Yes"
-        make_button "No"
+        make_buttons %w[Yes No]
       when "yes_no_cancel"
-        @bcol = center_column "[ Yes ] [ No ] [Cancel]"
-        make_button "Yes"
-        make_button "No"
-        make_button "Cancel"
+        make_buttons ["Yes", "No", "Cancel"]
+      when "custom"
+        make_buttons @buttons
       else
-        @bcol = center_column "[ OK ]"
-$log.debug "BCOL : #{@bcol} "
-        make_button "OK"
+        $log.debug "No type passed for creating messagebox. Using default"
+        make_buttons ["OK"]
       end
     end
-    def make_button name
-      $log.debug "insde make button : #{@bcol} #{name}"
-      bcol = @bcol
+    def make_buttons names
+      total = names.inject(0) {|total, item| total + item.length + 4}
+      bcol = center_column total
+      $log.debug "insde make button : #{bcol},total #{total}, #{names.length}:  #{names.inspect}"
       brow = @layout[:height]-3
-      text = name
-      button = RubyCurses::Button.new @form do
-        text text
-        name name
-        row brow
-        col bcol
-        highlight_background $datacolor
-        color $reversecolor
-        bgcolor $reversecolor
+      button_ct=0
+      names.each do |bname|
+        text = bname
+        $log.debug "insde make button loop : #{bcol} #{bname}"
+        button = RubyCurses::Button.new @form do
+          text text
+          name bname
+          row brow
+          col bcol
+          highlight_background $datacolor
+          color $reversecolor
+          bgcolor $reversecolor
+        end
+        index = button_ct
+        button.command { |form| @selected_index = index; $log.debug "Pressed Button #{bname}";}
+        button_ct += 1
+        bcol += text.length+6
       end
-      index = @buttons.length
-      button.command { |form| @selected_index = index; $log.debug "Pressed Button #{name}";}
-      @buttons << button
-      @bcol += text.length+6
     end
     # message box
     def handle_keys
@@ -401,10 +437,6 @@ $log.debug "BCOL : #{@bcol} "
           break
         when 9
           @form.select_next_field
-        when KEY_UP, KEY_LEFT
-          @form.select_prev_field
-        when KEY_DOWN, KEY_RIGHT
-          @form.select_next_field
         else
           field =  @form.get_current_field
           handled = field.handle_key ch
@@ -418,6 +450,7 @@ $log.debug "BCOL : #{@bcol} "
       ensure
         destroy  # XXX
       end
+      return @selected_index
     end
     def print_borders
       width = @layout[:width]
@@ -430,21 +463,40 @@ $log.debug "BCOL : #{@bcol} "
         printstr(@window, row, col=start, hline2, color=$reversecolor)
       end
       printstr(@window, height-2, col=start, hline, color=$reversecolor)
-
     end
     def print_title title=@title
       width = @layout[:width]
       title = " "+title+" "
       printstr(@window, row=1,col=(width-title.length)/2,title, color=$normalcolor)
     end
-    def center_column text
+    def OLDcenter_column text
       width = @layout[:width]
       return (width-text.length)/2
     end
+    def center_column textlen
+      width = @layout[:width]
+      return (width-textlen)/2
+    end
     def print_message message=@message, row=nil
       row=(@layout[:height]/3) if row.nil?
+      @message_row = row
       width = @layout[:width]
-      printstr(@window, row,(width-message.length)/2,message, color=$reversecolor)
+      @message_col = (width-message.length)/2
+      @message_col = 4 if @type.to_s == "input"
+      printstr(@window, row, @message_col , message, color=$reversecolor)
+    end
+    def print_input
+      return if @type.to_s != "input"
+      r = @message_row + 1
+      c = @message_col
+      defaultvalue = @default_value || ""
+        @input = RubyCurses::Field.new @form do
+          name   "input" 
+          row  r 
+          col  c 
+          display_length  30
+          set_buffer defaultvalue
+        end
     end
     def configure(*val , &block)
       case val.size
@@ -470,6 +522,310 @@ $log.debug "BCOL : #{@bcol} "
       @window.delwin if !@window.nil?
     end
   end
+  ##
+  # TODO - test text_variable
+  class Field < Widget
+    include CommonIO
+    dsl_accessor :maxlen
+    attr_reader :buffer
+    dsl_accessor :label
+    dsl_accessor :default            # TODO use set_buffer for now
+    dsl_accessor :values             # TODO
+    dsl_accessor :valid_regex        # TODO
+
+    dsl_accessor :chars_allowed
+    dsl_accessor :display_length
+    dsl_accessor :bgcolor
+    dsl_accessor :color
+    dsl_accessor :show    # TODO
+    attr_reader :form
+    attr_accessor :modified
+    attr_reader :handler
+    attr_reader :type
+
+    def initialize form, config={}, &block
+      @form = form
+      @buffer = String.new
+      #@type=config.fetch("type", :varchar)
+      @display_length = config.fetch("display_length", 20)
+      @maxlen=config.fetch("maxlen", @display_length) 
+      @row = config.fetch("row", 0)
+      @col = config.fetch("col", 0)
+      @bgcolor = config.fetch("bgcolor", 0)
+      @color = config.fetch("color", $datacolor)
+      @name = config.fetch("name", nil)
+      @editable = config.fetch("editable", true)
+      @focusable = config.fetch("focusable", true)
+      @curpos = 0
+      @handler = {}
+      @modified = false
+      super
+    end
+    def text_variable tv
+      @text_variable = tv
+      set_buffer tv.value
+    end
+    def type dtype
+      case dtype.to_s.downcase
+      when 'integer'
+        @chars_allowed = /\d/ if @chars_allowed.nil?
+      when 'numeric'
+        @chars_allowed = /[\d\.]/ if @chars_allowed.nil?
+      when 'alpha'
+        @chars_allowed = /[a-zA-Z]/ if @chars_allowed.nil?
+      when 'alnum'
+        @chars_allowed = /[a-zA-Z0-9]/ if @chars_allowed.nil?
+      end
+    end
+    def putch char
+      return -1 if !@editable or @buffer.length >= @maxlen
+      if @chars_allowed != nil
+        return if char.match(@chars_allowed).nil?
+      end
+      @buffer.insert(@curpos, char)
+      @curpos += 1 if @curpos < @maxlen
+      @modified = true
+      0
+    end
+
+    def putc c
+      if c >= 0 and c <= 127
+        ret = putch c.chr
+        if ret == 0
+          addcol 1
+          set_modified 
+        end
+      end
+      return -1
+    end
+    def delete_at index=@curpos
+      return -1 if !@editable 
+      ar = @buffer.split(//)
+      ar.delete_at index
+      @buffer = ar.join
+      @modified = true
+    end
+    def set_buffer value
+      @buffer = value
+    end
+    def getvalue
+      @buffer
+    end
+  
+  def set_label label
+    @label = label
+    label.row = @row if label.row == -1
+    label.col = @col-(label.name.length+1) if label.col == -1
+  end
+  def repaint
+#    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
+    printval = getvalue
+    printval = printval[0..display_length-1] if printval.length > display_length
+    printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
+    @form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
+  end
+  def bind event, &blk
+    @handler[event] = blk
+  end
+  def fire_handler event
+    blk = @handler[event]
+    return if blk.nil?
+    blk.call self
+  end
+  def set_focusable(tf)
+    @focusable = tf
+ #   @form.regenerate_focusables
+  end
+
+  # field
+  def handle_key ch
+    case ch
+    when KEY_LEFT
+      req_prev_char
+    when KEY_RIGHT
+      req_next_char
+    when KEY_BACKSPACE, 127
+      delete_prev_char
+    when KEY_ENTER, 10, 13
+      if respond_to? :fire
+        fire
+      end
+    when 330
+      delete_curr_char
+    else
+      $log.debug("ch #{ch}")
+      putc ch
+    end
+
+  end
+  def req_next_char
+    if @curpos < display_length
+      @curpos += 1
+      addcol 1
+    end
+  end
+  def req_prev_char
+    if @curpos > 0
+      @curpos -= 1
+      addcol -1
+    end
+  end
+    def delete_curr_char
+      delete_at
+      set_modified 
+    end
+    def delete_prev_char
+      return -1 if !@editable 
+      return if @curpos <= 0
+      @curpos -= 1 if @curpos > 0
+      delete_at
+      set_modified 
+      addcol -1
+    end
+    def set_modified tf=true
+      @modified = tf
+      @form.modified = true if tf
+    end
+    def addcol num
+      @form.addcol num
+    end
+  # ADD HERE FIELD
+  end
+  class Variable
+    def initialize value=nil
+      @update_command = nil
+      @args = nil
+      @value = value
+    end
+    def update_command *args, &block
+      @update_command = block
+      @args = args
+    end
+    def read_command &block
+      @read_command = block
+    end
+    def value
+      $log.debug "variable value called : #{@value} "
+      @value
+    end
+    def value= val
+      $log.debug "variable value= called : #{val} "
+      @value = val
+      @update_command.call(*args) if !@update_command.nil?
+    end
+  end
+  class Label < Widget
+    include CommonIO
+
+    def initialize form, config={}, &block
+    # @form = form
+      @row = config.fetch("row",-1) 
+      @col = config.fetch("col",-1) 
+      @bgcolor = config.fetch("bgcolor", 0)
+      @color = config.fetch("bgcolor", $datacolor)
+      @text = config.fetch("text", "NOTFOUND")
+      @name = config.fetch("name", @text)
+      @editable = false
+      @focusable = false
+      super
+      $log.debug "LABEL: #{inspect}"
+    end
+    def getvalue
+      @text_variable && @text_variable.value || @text
+    end
+    def repaint
+        r,c = rowcol
+        value = getvalue
+        len = @display_length || value.length
+        printstr @form.window, r, c, "%-*s" % [len, value], color
+        $log.debug "label :#{name}, #{getvalue}, #{r}, #{c} "
+        @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
+    end
+  # ADD HERE LABEL
+  end
+  class Button < Widget
+  include CommonIO
+    def initialize form, config={}, &block
+      @focusable = true
+      @editable = false
+      @bgcolor = $datacolor 
+      @color = $datacolor 
+      #@command_block = nil
+      @handler={}
+      super
+      @text = @name if @text.nil?
+      @text = "[ #{@text} ]"
+      #@display_length = @text.length if @display_length.nil?
+    end
+#   def focusable
+#     true
+#   end
+    def on_enter
+#     @bgcolor = @highlight_background || $reversecolor 
+      $log.debug "ONENTER : #{@bgcolor} "
+    end
+    def on_leave
+#     @bgcolor = @bgcolor || $datacolor 
+      $log.debug "ONLEAVE : #{@bgcolor} "
+    end
+    def getvalue
+      if @text_variable.nil?
+        @text
+      else
+        "[ "+@text_variable.value+" ]"
+      end
+    end
+    def repaint  # button
+        r,c = rowcol
+        @highlight_foreground ||= @color
+        @highlight_background ||= $reversecolor
+        bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
+        color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+        $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
+        value = getvalue
+        len = @display_length || value.length
+        printstr @form.window, r, c, "%-*s" % [len, value], color
+        @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
+#     raise "error please override repaint "
+    end
+    def command &block
+      #@command_block = block
+      bind :PRESS, &block
+      $log.debug "#{text} bound PRESS"
+      #instance_eval &block if block_given?
+    end
+    def fire
+      #@form.instance_eval(&@command_block) if !@command_block.nil?
+      #@command_block.call @form  if !@command_block.nil?
+      $log.debug "firing PRESS #{text}"
+      fire_handler :PRESS, @form
+    end
+    def bind event, &blk
+      @handler[event] = blk
+    end
+    def fire_handler event, object
+      $log.debug "called firehander #{object}"
+      blk = @handler[event]
+      return if blk.nil?
+      blk.call object
+    end
+    # Button
+    def handle_key ch
+      case ch
+      when KEY_LEFT, KEY_UP
+        #@form.req_prev_field
+          @form.select_prev_field
+      when KEY_RIGHT, KEY_DOWN
+          @form.select_next_field
+      when KEY_ENTER, 10, 13
+        if respond_to? :fire
+          fire
+        end
+      else
+        return -1
+      end
+    end
+  end #LBUTTON
 end # modul
 
 if $0 == __FILE__
@@ -510,10 +866,16 @@ if $0 == __FILE__
       # need to pass a form, not window.
       @mb = RubyCurses::MessageBox.new do
         title "hello world"
-        message "How are you?"
-        type :yes_no_cancel
+        message "Enter your name"
+        type :custom
+        buttons %w[red green blue yellow]
+        type :input
+        default_value "rahul"
+        default_button 0
       end
       
+     $log.debug "MBOX : #{@mb.selected_index} "
+     $log.debug "MBOX : #{@mb.input_value} "
       $log.debug "AFTER CREATE : #{@form.inspect} "
 #     $log.debug "row : #{@form.row} "
 #     $log.debug "col : #{@form.col} "
