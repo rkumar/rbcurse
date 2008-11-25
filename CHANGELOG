@@ -1,3 +1,15 @@
+**2008-11-25 23:58**
+## selectable in ListBox ##
+
+added a new module selectable copying from sqlpopup
+however, this is a window and not a pad so its much more diffucult.
+
+Due to field_enter and exit, the selected row shows affter 2 movements!
+
+Clear selection not yet functioning here. But select/deselect/next sel and prev sel are working.
+
+frmincr200811252356.tgz
+* * *
 **2008-11-22 23:20**
 ## RadioButton ##
 

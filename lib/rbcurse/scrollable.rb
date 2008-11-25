@@ -95,7 +95,6 @@ module Scrollable
     @toprow = @prow if @prow > @toprow + @scrollatrow   
     @winrow = @prow - @toprow
 
-
 =begin
       if @content.length - @toprow < @scrollatrow and  @toprow != @oldtoprow
         window_erase @win
@@ -128,17 +127,33 @@ module Scrollable
   # TODO show selected row in selectedcolor
   # - if user scrolls horizontally, use column as starting point
   def paint
+   $log.debug "called paint #{@toprow} #{@prow}"
     @content = get_content
-    @content_rows = @content.length
+    @content_rows = @content.length # rows can be added at any time
+    win = get_window
     maxlen = @maxlen ||= @width-2
     0.upto(@height-2) {|r|
       if @toprow + r < @content_rows
+        row_att = @list_attribs[@toprow+r] unless @list_attribs.nil?
+        status = " "
+        bgcolor = $datacolor
+        if !row_att.nil?
+          status = row_att.fetch(:status, " ")
+          bgcolor = row_att[:bgcolor]
+        end
+        # sanitize
         content = @list[@toprow+r].chomp # don't display newline
         content.gsub!(/\t/, '  ') # don't display tab
-        content.gsub!(/[^[:print:]]/, '')
-       content = content[0..maxlen-1] if !content.nil? && content.length > maxlen # only show maxlen
-        printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [@width-(@left_margin+1),content]
+        content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+
+        content = content[0..maxlen-1] if !content.nil? && content.length > maxlen # only show maxlen
+        width = @width-(@left_margin+1)
+        printstr @form.window, @row+r+1, @col+@left_margin-1, "%s" % status if @implements_selectable
+        printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [width,content]
+       win.mvchgat(y=r+@row+1, x=@col+@left_margin, max=width, Ncurses::A_NORMAL, bgcolor, nil) unless bgcolor.nil?
+
       else
+        # clear the displayed area
         printstr @form.window, @row+r+1, @col+@left_margin, " "*(@width-(@left_margin+1))
       end
     }
@@ -148,6 +163,7 @@ module Scrollable
     @prow
   end
   def scrollable_handle_key ch
+    begin
     pre_key
     case ch
     when 32, ?\C-n
@@ -173,9 +189,13 @@ module Scrollable
         fire
       end
     else
+      post_key
       return :UNHANDLED
     end
-    post_key
+    ensure
+$log.debug "beforepostkey"
+      post_key
+    end
   end # handle_k listb
  
 end

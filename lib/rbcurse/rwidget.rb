@@ -76,7 +76,7 @@ module RubyCurses
     dsl_accessor :highlight_foreground, :highlight_background  # color init_pair
     dsl_accessor :disabled_foreground, :disabled_background  # color init_pair
     dsl_accessor :focusable, :enabled # boolean
-    dsl_accessor :row, :col
+    dsl_accessor :row, :col            # location of object
     dsl_accessor :color, :bgcolor      # normal foreground and background
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id, :zorder
@@ -84,7 +84,7 @@ module RubyCurses
     attr_reader  :config
     attr_reader  :form
     attr_accessor :state              # normal, selected, highlighted
-    attr_reader  :row_offset, :col_offset
+    attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -202,6 +202,7 @@ module RubyCurses
      end
      return @widgets.length-1
    end
+   # form
     def repaint
       @widgets.each do |f|
         f.repaint
@@ -234,6 +235,7 @@ $log.debug "setpos : #{r} #{c}"
       return if f.nil?
       f.state = :NORMAL
       # on leaving update text_variable if defined. Should happen on modified only
+      # should this not be f.text_var ... f.buffer ? XXX 2008-11-25 18:58 
       @text_variable.value = @buffer if !@text_variable.nil?
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
@@ -308,11 +310,15 @@ $log.debug "setpos : #{r} #{c}"
     end
     alias :req_next_field :select_next_field
     alias :req_prev_field :select_prev_field
+    ##
+    # move cursor by num columns
     def addcol num
       return if @col.nil? or @col == -1
       @col += num
       @window.wmove @row, @col
     end
+    ##
+    # move cursor by given rows and columns, can be negative.
     def addrowcol row,col
       return if @col.nil? or @col == -1
       return if @row.nil? or @row == -1
@@ -334,6 +340,7 @@ $log.debug "setpos : #{r} #{c}"
         case ch
         when -1
           return
+          # user should degine what key he wants to map menu bar to XXX
         when KEY_F2
           if !@menu_bar.nil?
             @menu_bar.toggle
@@ -360,7 +367,29 @@ $log.debug "setpos : #{r} #{c}"
             end
           end
         end
+        $log.debug " form before repaint"
         repaint
+  end
+  ##
+  # test program to dump data onto log
+  # The problem I face is that since widget array contains everything that should be displayed
+  # I do not know what all the user wants - what are his data entry fields. 
+  # A user could have disabled entry on some field after modification, so i can't use focusable 
+  # or editable as filters. I just dump everything?
+  # What's more, currently getvalue has been used by paint to return what needs to be displayed - 
+  # at least by label and button.
+  def dump_data
+    $log.debug " DUMPING DATA "
+    @widgets.each do |w|
+      next if w.is_a? RubyCurses::Button or w.is_a? RubyCurses::Label 
+      next if !w.is_a? RubyCurses::Widget
+      if w.respond_to? :getvalue
+        $log.debug " #{w.name} #{w.getvalue}"
+      else
+        $log.debug " #{w.name} DOES NOT RESPOND TO getvalue"
+      end
+    end
+    $log.debug " END DUMPING DATA "
   end
 
     ## ADD HERE FORM
@@ -800,7 +829,7 @@ $log.debug "setpos : #{r} #{c}"
     def repaint
         r,c = rowcol
         value = getvalue
-       $log.debug "label :#{@text}, #{value}, #{r}, #{c} "
+#      $log.debug "label :#{@text}, #{value}, #{r}, #{c} "
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
         @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)

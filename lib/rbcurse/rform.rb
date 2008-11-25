@@ -44,6 +44,7 @@ require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/scrollable'
+require 'lib/rbcurse/selectable'
 
 ## form needs to know order of fields esp they can be changed.
 #include Curses
@@ -548,6 +549,7 @@ module RubyCurses
   #  use selection color for selected row.
   class Listbox < Widget
     include Scrollable
+    include Selectable
     dsl_accessor :height
     dsl_accessor :title
     dsl_accessor :list    # the array of data to be sent by user
@@ -560,7 +562,10 @@ module RubyCurses
       @editable = false
       @row = 0
       @col = 0
+      # data of listbox
       @list = []
+      # any special attribs such as status to be printed in col1, or color (selection)
+      @list_attribs = {}
       super
       @row_offset = @col_offset = 1
       @scrollatrow = @height-2
@@ -590,22 +595,29 @@ module RubyCurses
      # @derwin = @form.window.derwin(@height, @width, @row, @col)
      # repaint
     end
-    ### FOR scrollable ###
+    ### START FOR scrollable ###
     def get_content
       @list
     end
     def get_window
       @form.window
     end
-    ### FOR scrollable ###
+    ### END FOR scrollable ###
     def repaint
       paint
+    end
+    # override widgets text
+    def getvalue
+      get_selected_data
     end
     # Listbox
     # ^P ^N scroll up down
     # [ ] scroll left right
     def handle_key ch
-      scrollable_handle_key ch
+      ret = scrollable_handle_key ch
+      if ret == :UNHANDLED
+        ret = selectable_handle_key ch
+      end
     end # handle_k listb
   end # class listb
   ## a multiline text editing widget
@@ -632,8 +644,9 @@ module RubyCurses
       super
       @row_offset = @col_offset = 1
       @orig_col = @col
+      # this does result in a blank line if we insert after creating. That's required at 
+      # present if we wish to only insert
       if @list.empty?
-        #0.upto(@height) {|i| @list << String.new }
         @list << String.new 
       end
       @scrollatrow = @height-2
@@ -700,7 +713,10 @@ module RubyCurses
     def repaint # textarea
       paint
     end
-    # Listbox
+    def getvalue
+      @list.inspect
+    end
+    # textarea
     # [ ] scroll left right
     def handle_key ch
       @buffer = @list[@prow]
@@ -1033,7 +1049,7 @@ if $0 == __FILE__
           height 10
           list mylist
         end
-        field.insert 5, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        field.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 
@@ -1041,8 +1057,12 @@ if $0 == __FILE__
           width 40
           height 20
         end
-        texta << "hello there" << "we are testing deletes in this application"
-        texta << "HELLO there" << "WE ARE testing deletes in this application"
+        texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now. "
+        texta << "Let me not defer it or neglect it, for I shall not pass this way again."
+        #texta << "hello there" << "we are testing deletes in this application"
+        #texta << "HELLO there" << "WE ARE testing deletes in this application"
+        texta << " "
+        texta << " F1 to exit. or click second button"
 
       checkbutton = CheckBox.new @form do
         text_variable $results
@@ -1069,7 +1089,7 @@ if $0 == __FILE__
         row 18
         col 22
       end
-      ok_button.command { |form| $results.value = "OK PRESS:";form.printstr(@window, 23,45, "OK CALLED") }
+      ok_button.command { |form| form.dump_data;form.printstr(@window, 23,45, "Dumped data to log") }
         #text "Cancel"
       cancel_button = Button.new @form do
         text_variable $results
