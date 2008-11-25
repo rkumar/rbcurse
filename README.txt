@@ -8,7 +8,7 @@ A small widget library written in ruby for creating ncurses
 applications.
 See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
 
-== FEATURES/PROBLEMS:
+== FEATURES
 
 * entry fields in ruby 
 * scrollable list box
@@ -18,6 +18,19 @@ See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
 * menubar 
 
 Above may be created using DSL like syntax, or hashes.
+
+== PROBLEMS
+
+* ncurses colors use color-pairs. Thus one has to select a color pair,
+  although the description of the widgets does allow for selecting
+  foreground and background color.
+
+  Some other developers like that of "sup" have done a lot of work in
+trying to work around this problem, but the code was very complex (for
+me) and I was not confident in integrating all that. In order that
+applications are light and fast, I hope to keep the behind-the-scenes
+work minimal.
+
 
 == SYNOPSIS:
 
@@ -169,9 +182,20 @@ and fields.
 * uses the window class created by "manveru" (michael) - this can be
   removed if not needed. (lib/ver/window)
 
+* in the message box sample, i am catching keys using manveru's
+  keyboard.rb. This allows me to get M-keys which i am not getting
+  otherwise. However, his module returns string for all keys, whereas
+  our applications may already expect ints. Thus, i modified it a bit
+  yesterday to return ints. You can thus remove references to it, if you
+  want to just catch the key in a loop and process. The original is
+  lib/ver/keyboard.rb and the modified is lib/ver/keyboard2.rb.
+
 == INSTALL:
 
-* currently, just unzip/untar in a folder.
+* currently, just unzip/untar in a folder. Please change the path in
+  the top line.
+
+(Please advice me how i can improve installation procedure)
 
 == LICENSE:
 
