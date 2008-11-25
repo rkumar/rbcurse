@@ -1,3 +1,82 @@
+**2008-11-22 23:20**
+## RadioButton ##
+
+Added another widget. took less than 2 mins: a radio button. Praps I should just extend CheckButton
+rather than copy. Just a couple of lines changed.
+Some bugs may have cropped up in Textarea after introduction of hard and soft returns.
+Entry was happening one col before where cursor was appearing.
+
+frmincr200811222319.tgz
+* * *
+**2008-11-22 21:50**
+## CheckBox ##
+
+Took me less than 5 mins to implement a CheckBox inheriting from button.
+
+frmincr200811222149.tgz
+* * *
+**2008-11-22 19:43**
+## textarea ##
+
+moving up characters when deleting
+soft and hard return so wrapping can be respected when deleting.
+
+frmincr200811221943.tgz
+* * *
+**2008-11-22 16:47**
+## textarea ##
+
+incoming data wrap it.
+But i do need to look at newlines and preserve. current logic loses them.
+
+frmincr200811221647.tgz
+* * *
+**2008-11-22 01:41**
+## textarea word wrap when pushing from behind ##
+
+still needs ironing out. could be some issues in rare cases.
+
+frmincr200811220140.tgz
+* * *
+**2008-11-22 00:45**
+## textarea with wrapping #1 ##
+
+wrapping as cursor exceeds border. however, not yet when we insert chars anddelete.
+
+frmincr200811220044.tgz
+* * *
+**2008-11-21 23:42**
+## textarea ##
+
+more issues in movement sorted out when end of length.
+Box showing correctly now.
+
+frmincr200811212342.tgz
+* * *
+**2008-11-21 22:16**
+## textarea with newlines ##
+
+added in newlines, and we don't print them.
+also when joining we remove.
+be careful i dont put two.
+
+frmincr200811212215.tgz
+* * *
+**2008-11-21 21:54**
+## Textarea more work on joining and spliting rows ##
+
+wip
+
+frmincr200811212153.tgz
+* * *
+**2008-11-21 17:39**
+## Textarea starting ##
+
+Have a basic textarea working
+Still very rough.
+
+frmincr200811211738.tgz
+* * *
 **2008-11-21 01:38**
 ## Listbox ##
 

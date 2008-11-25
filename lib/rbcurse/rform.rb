@@ -13,7 +13,8 @@ TODO
   * Field/entry
     - show (what char to show when entry done : show '*'
     - textvariable - bding field to a var so the var is updated
-  * Button remove inheritance fom Label
+    - int and float - range
+  * Button 
     - width int : desiredwidth
     - underline index
     - foreground, bgcolor 
@@ -21,10 +22,12 @@ TODO
   * Label
     - desired width
     - textvariable , foreground, bgcolor
-  * POPUP
-  * integrate with our mapper
+  * 
+  * integrate with our mapper TODO
   * read only field
   * justified, int real charonly
+  * use a global $message, and maybe a header message too.
+  * Make a root window/form that creates the logger colors and other things.
   * Date: 2008-11-14 23:43 
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -45,6 +48,7 @@ require 'lib/rbcurse/scrollable'
 ## form needs to know order of fields esp they can be changed.
 #include Curses
 include Ncurses
+include RubyCurses
 module RubyCurses
   extend self
 
@@ -538,7 +542,7 @@ module RubyCurses
     end
   end # menubar
 
-  ## allow selection multi and single
+  ## TODO allow selection multi and single
   #  use selection color for selected row.
   class Listbox < Widget
     include Scrollable
@@ -556,6 +560,7 @@ module RubyCurses
       @col = 0
       @list = []
       super
+      @row_offset = @col_offset = 1
       @scrollatrow = @height-2
       @content_rows = @list.length
       @win = @form.window
@@ -601,6 +606,366 @@ module RubyCurses
       scrollable_handle_key ch
     end # handle_k listb
   end # class listb
+  ## a multiline text editing widget
+  # TODO - giving data to user - adding newlines, and withog adding.
+  #  - respect newlines for incoming data
+  class TextArea < Widget
+    include Scrollable
+    dsl_accessor :height
+    dsl_accessor :title
+    dsl_accessor :list    # the array of data to be sent by user
+    dsl_accessor :maxlen    # the array of data to be sent by user
+    attr_reader :toprow
+    attr_reader :prow
+    attr_reader :winrow
+
+    def initialize form, config={}, &block
+      @focusable = true
+      @editable = true
+      @left_margin = 1
+      @row = 0
+      @col = 0
+      @show_focus = false
+      @list = []
+      super
+      @row_offset = @col_offset = 1
+      @orig_col = @col
+      if @list.empty?
+        #0.upto(@height) {|i| @list << String.new }
+        @list << String.new 
+      end
+      @scrollatrow = @height-2
+      @content_rows = @list.length
+      @win = @form.window
+      init_scrollable
+      print_borders
+      @maxlen ||= @width-2
+    end
+    def rowcol
+      $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
+      return @row+@row_offset+@winrow, @col+@col_offset
+    end
+    def insert off0, *data
+      @list.insert off0, *data
+    end
+    def wrap_text(txt, col = @maxlen)
+      $log.debug "inside wrap text for :#{txt}"
+      txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
+               "\\1\\3\n") 
+    end
+    def << data
+      if data.length > @maxlen
+        $log.debug "wrapped append for #{data}"
+        data = wrap_text data
+        $log.debug "after wrap text for :#{data}"
+        data = data.split(/\n/)
+        # we need a soft return
+        data.each {|line| @list << line+"\n"}
+        @list[-1][-1] = "\r"
+      else
+        $log.debug "normal append for #{data}"
+        data << "\r" if data[-1,1] != "\r"
+        @list << data
+      end
+      self
+    end
+    def print_borders
+      width = @width
+      height = @height
+      window = @form.window
+      startcol = @col 
+      startrow = @row 
+      color = $datacolor
+      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
+      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
+      printstr(window, row=startrow, col=startcol, hline, color)
+      (startrow+1).upto(startrow+height-1) do |row|
+        printstr(window, row, col=startcol, hline2, color)
+      end
+      printstr(window, startrow+height, col=startcol, hline, color)
+  
+     # @derwin = @form.window.derwin(@height, @width, @row, @col)
+     # repaint
+    end
+    ### FOR scrollable ###
+    def get_content
+      @list
+    end
+    def get_window
+      @form.window
+    end
+    ### FOR scrollable ###
+    def repaint # textarea
+      paint
+    end
+    # Listbox
+    # [ ] scroll left right
+    def handle_key ch
+      @buffer = @list[@prow]
+      if @buffer.nil? and @list.length == 0
+        @list << ""
+        @buffer = @list[@prow]
+      end
+      return if @buffer.nil?
+      $log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
+      if @curpos > @buffer.length
+        addcol(@buffer.length-@curpos)+1
+        @curpos = @buffer.length
+      end
+      $log.debug " after loop : curpos #{@curpos} blen: #{@buffer.length}"
+      pre_key
+      case ch
+      when ?\C-n
+        space
+      when ?\C-p
+        minus
+      when ?\C-[
+        goto_start
+      when ?\C-]
+        goto_end
+      when KEY_UP
+        #select_prev_row
+        ret = up
+        #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
+        @form.row = @row + 1 + @winrow
+      when KEY_DOWN
+        ret = down
+        #addrowcol 1,0 if ret != -1   or @winrow != @oldwinrow                  # positions the cursor down
+        @form.row = @row + 1 + @winrow
+
+        $log.debug "KEYDOWN : cp #{@curpos} #{@buffer.length} "
+        # select_next_row
+      when KEY_ENTER, 10, 13
+        # insert a blank row and append rest of this line to cursor
+        @delete_buffer = (delete_eol || "")
+        @list[@prow] << "\r"
+        $log.debug "DELETE BUFFER #{@delete_buffer}" 
+        @list.insert @prow+1, @delete_buffer 
+        @curpos = 0
+        down
+        @form.col = @orig_col + @col_offset
+        #addrowcol 1,0
+        @form.row = @row + 1 + @winrow
+      when KEY_LEFT
+        req_prev_char
+      when KEY_RIGHT
+        req_next_char
+      when KEY_BACKSPACE, 127
+        delete_prev_char
+      when 330
+        delete_curr_char
+      when ?\C-k
+        if @buffer == ""
+          delete_line
+        else
+          delete_eol
+        end
+      when ?\C-a
+        set_form_col 0
+      when ?\C-e
+        set_form_col @buffer.length
+      else
+        $log.debug("ch #{ch}")
+        putc ch
+      end
+      post_key
+    end
+    # puts cursor on correct row.
+    def set_form_row
+      @form.row = @row + 1 + @winrow
+    end
+    # set cursor on correct column
+    def set_form_col col=@cursor
+      @curpos = col
+      @form.col = @orig_col + @col_offset + @curpos
+    end
+    def do_current_row # :yields current row
+      yield @list[@prow]
+      @buffer = @list[@prow]
+    end
+    def delete_eol
+      pos = @curpos-1
+      @delete_buffer = @buffer[@curpos..-1]
+      # if pos is 0, pos-1 becomes -1, end of line!
+      @list[@prow] = pos == -1 ? "" : @buffer[0..pos]
+      $log.debug "delete EOL :pos=#{pos}, #{@delete_buffer}: row: #{@list[@prow]}:"
+      @buffer = @list[@prow]
+      req_prev_char
+      return @delete_buffer
+    end
+    def req_next_char
+      $log.debug "next char cp #{@curpos} wi: #{@width}"
+      if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
+        @curpos += 1
+        addcol 1
+      end
+    end
+    def addcol num
+      @form.addcol num
+    end
+    def addrowcol row,col
+    @form.addrowcol row, col
+  end
+  def req_prev_char
+    if @curpos > 0
+      @curpos -= 1
+      addcol -1
+    end
+  end
+  def delete_line line=@prow
+    $log.debug "called delete line"
+    @list.delete_at line
+    @buffer = @list[@prow]
+    if @buffer.nil?
+      up
+      @form.row = @row + 1 + @winrow
+    end
+  end
+    def delete_curr_char
+      delete_at
+      set_modified 
+    end
+    def delete_prev_char
+      return -1 if !@editable 
+      if @curpos <= 0
+        join_to_prev_line
+        return
+      end
+      @curpos -= 1 if @curpos > 0
+      delete_at
+      set_modified 
+      addcol -1
+    end
+    def join_to_prev_line
+      return if @prow == 0
+      prev = @list[@prow-1].chomp
+      prevlen = prev.length
+      space_left = @maxlen - prev.length
+      carry_up = @buffer[0..space_left]
+      @list[@prow-1]=prev + carry_up
+      space_left2 = @buffer[(space_left+1)..-1]
+      @list[@prow]=space_left2 #if !space_left2.nil?
+      @list[@prow] ||= ""
+      up
+      addrowcol -1,0
+      @curpos = prevlen
+      @form.col = @orig_col + @col_offset + @curpos
+#     $log.debug "carry up: nil" if carry_up.nil?
+#     $log.debug "listrow nil " if @list[@prow].nil?
+#     $log.debug "carry up: #{carry_up} prow:#{@list[@prow]}"
+    end
+    def putch char
+      return -1 if !@editable #or @buffer.length >= @maxlen
+      if @chars_allowed != nil
+        return if char.match(@chars_allowed).nil?
+      end
+      $log.debug "putch : pr:#{@prow} bu:#{@buffer} cp:#{@curpos}"
+      if @curpos >= @maxlen
+        $log.debug "INSIDE 1 putch : pr:#{@prow} bu:#{@buffer} CP:#{@curpos}"
+        ## wrap on word
+        lastchars = ""
+        lastspace = @buffer.rindex(" ")
+        if !lastspace.nil?
+          lastchars = @buffer[lastspace+1..-1]
+          @list[@prow] = @buffer[0..lastspace]
+        else
+          lastchars = ""
+        end
+        $log.debug "last sapce #{lastspace}, #{lastchars}, #{@list[@prow]} "
+        ## wrap on word
+        ret = down 
+        (append_row(lastchars) && down) if ret == -1
+        @curpos = lastchars.length # 0
+        @form.col = @orig_col + @col_offset + @curpos
+        #addrowcol 1,0                  # positions the cursor down
+        set_form_row
+        @buffer = @list[@prow]
+        $log.debug "INSIDE putch2: pr:#{@prow} bu:#{@buffer} CP:#{@curpos}"
+      elsif @buffer.length >= @maxlen
+        $log.debug "INELSE 2 putch : pr:#{@prow} bu:#{@buffer} CP:#{@curpos}"
+        if @list[@prow+1].nil? or @list[@prow+1].length >= @maxlen
+          @list.insert @prow+1, ""
+          $log.debug "created new row #{@list.length}"
+        end
+        lastchars = ""
+        lastspace = @buffer.rindex(" ")
+        if !lastspace.nil?
+          lastchars = @buffer[lastspace..-1]
+          @list[@prow] = @buffer[0..lastspace-1]
+        end
+        $log.debug "last sapce #{lastspace},#{@buffer.length},#{lastchars}, #{@list[@prow]} "
+        ## wrap on word XXX some strange behaviour stiill over here.
+        newbuff = @list[@prow+1]
+        newbuff.insert(0, lastchars) # @buffer[-1,1])
+        $log.debug "beforelast char to new row. buffer:#{@buffer}"
+        #@list[@prow] = @buffer[0..-2]
+        @buffer = @list[@prow]
+        $log.debug "moved last char to new row. buffer:#{@buffer}"
+        $log.debug "buffer len:#{@buffer.length} curpos #{@curpos} maxlen #{@maxlen} " 
+        # sometimme cursor is on a space and we;ve pushed it to next line
+        # so cursor > buffer length
+      end
+      @curpos = @buffer.length if @curpos > @buffer.length
+      @buffer.insert(@curpos, char)
+      @curpos += 1 
+      addcol 1
+      @modified = true
+      0
+    end
+    def append_row chars=""
+        $log.debug "append row sapce:#{chars}."
+      @list.insert @prow+1, chars
+    end
+
+    def putc c
+      if c >= 0 and c <= 127
+        ret = putch c.chr
+        if ret == 0
+        # addcol 1
+          set_modified 
+        end
+      end
+      return -1
+    end
+    # DELETE func
+    def delete_at index=@curpos
+      return -1 if !@editable 
+      $log.debug "dele : #{@prow} #{@buffer} #{index}"
+      @buffer.slice!(@curpos)
+      # if no newline at end of this then bring up prev character/s till maxlen
+      if @buffer[-1,1]!="\r"
+        @buffer[-1]=" " if @buffer[-1,1]=="\n"
+        if !next_line.nil? and next_line.length > 0
+          move_chars_up
+        end
+      end
+      @modified = true
+    end
+    # move up one char from next row to current, used when deleting in a line
+    # should not be called if line ends in "\r"
+    def move_char_up
+      @list[@prow] << @list[@prow+1].slice!(0)
+      delete_line(@prow+1) if next_line().length==0
+    end
+    # tries to move up as many as possible
+    # should not be called if line ends in "\r"
+    def move_chars_up
+      space_left = @maxlen - @buffer.length
+      can_move = [space_left, next_line.length].min
+      @list[@prow] << @list[@prow+1].slice!(0, can_move)
+      delete_line(@prow+1) if next_line().length==0
+    end
+    def next_line
+      @list[@prow+1]
+    end
+    def do_relative_row num
+      yield @list[@prow+num] 
+    end
+    def set_modified tf=true
+      @modified = tf
+      @form.modified = true if tf
+    end
+  end # class listb
 end # modul
 
 if $0 == __FILE__
@@ -620,7 +985,7 @@ if $0 == __FILE__
     $errorcolor = 7
     $promptcolor = $selectedcolor = 4
     $normalcolor = $datacolor = 5
-    @bottomcolor = $topcolor = 6
+    $bottomcolor = $topcolor = 6
 
     # Create the window to be associated with the form 
     # Un post form and free the memory
@@ -637,35 +1002,56 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       $labelcolor = 2
       $datacolor = 5
-      $log.debug "START  ---------"
-      @form = RubyCurses::Form.new @win
+      colors = Ncurses.COLORS
+      $log.debug "START #{colors} colors  ---------"
+      @form = Form.new @win
       r = 1; c = 22;
       %w[ name age company].each do |w|
-        field = RubyCurses::Field.new @form do
+        field = Field.new @form do
           name   w 
           row  r 
           col  c 
           display_length  30
           set_buffer "abcd #{w}" 
-          set_label RubyCurses::Label.new @form, {'text' => w}
+          set_label Label.new @form, {'text' => w}
         end
         r += 1
       end
-      $results = RubyCurses::Variable.new
-      $results.value = "Hello there"
+      $results = Variable.new
+      $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => 22}
         r += 1
-#     $log.debug("byname: #{@form.by_name.inspect}")
         mylist = []
-        0.upto(100) { |v| mylist << "#{v} data" }
-        field = RubyCurses::Listbox.new @form do
+        0.upto(100) { |v| mylist << "#{v} scrollable data" }
+        field = Listbox.new @form do
           name   "mylist" 
           row  r 
-          col  c 
+          col  1 
           width 40
           height 10
           list mylist
         end
+        field.insert 5, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        texta = TextArea.new @form do
+          name   "mytext" 
+          row  1 
+          col  52 
+          width 40
+          height 20
+        end
+        texta << "hello there" << "we are testing deletes in this application"
+        texta << "HELLO there" << "WE ARE testing deletes in this application"
+
+      checkbutton = CheckBox.new @form do
+        text_variable $results
+        #value = true
+        onvalue "selected cb"
+        offvalue "UNselected cb"
+        text "Please click me"
+        row 17
+        col 22
+      end
+
       @form.by_name["age"].display_length = 3
       @form.by_name["age"].maxlen = 3
       @form.by_name["age"].set_buffer  "24"
@@ -675,7 +1061,7 @@ if $0 == __FILE__
      @form.by_name["name"].set_focusable(false)
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
-      ok_button = RubyCurses::Button.new @form do
+      ok_button = Button.new @form do
         text "OK"
         name "OK"
         row 18
@@ -683,12 +1069,30 @@ if $0 == __FILE__
       end
       ok_button.command { |form| $results.value = "OK PRESS:";form.printstr(@window, 23,45, "OK CALLED") }
         #text "Cancel"
-      cancel_button = RubyCurses::Button.new @form do
+      cancel_button = Button.new @form do
         text_variable $results
         row 18
         col 28
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
+
+      Label.new @form, {'text' => "Select a language:", "row" => 20, "col" => 22}
+      $radio = Variable.new
+      radio1 = RadioButton.new @form do
+        text_variable $radio
+        text "ruby"
+        value "ruby"
+        row 21
+        col 22
+      end
+      radio2 = RadioButton.new @form do
+        text_variable $radio
+        text  "java"
+        value  "java"
+        row 22
+        col 22
+      end
+
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))

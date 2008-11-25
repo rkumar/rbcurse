@@ -4,6 +4,9 @@ module Scrollable
     @oldwinrow = @oldprow = @oldtoprow = 0
     @startrow = 1   # from where we start prniting, taking header row into account
     @cols = @width
+    @left_margin ||= 2
+    @show_focus = true if @show_focus.nil? 
+#   @right_margin ||= @left_margin
 #   @scrollatrow ||= @height-2
     #    raise "please define @content_rows" if @content_rows.nil?
     #    raise "please define @scrollatrow" if @scrollatrow.nil?
@@ -14,7 +17,7 @@ module Scrollable
     @winrow = 0 
   end
   def goto_end
-    @prow = @content_rows-1 
+    @prow = get_content().length-1 
     #@toprow = @prow
     #@winrow = 0     # not putting this was cause prow < toprow !!
     @toprow = @prow - @scrollatrow # ensure screen is filled when we show last. so clear not required
@@ -31,12 +34,13 @@ module Scrollable
     @pcol -= @hscrollcols if @pcol > 0
     @pcol = 0 if @pcol < 0
   end
+  # not that saving content_rows is buggy since we add rows.
   def down
     #     $log.debug "inside down"
-    if @prow >= @content_rows-1
+    if @prow >= get_content().length-1
       #Ncurses.beep
       @message = "No more rows"
-      return
+      return -1
     end
     if @winrow < @scrollatrow # 20
       @winrow += 1    # move cursor down
@@ -50,7 +54,7 @@ module Scrollable
       #Ncurses.beep
       @message = "This is the first row"
       @prow = 0
-      return
+      return -1
     else
       @prow -= 1 
     end
@@ -62,7 +66,7 @@ module Scrollable
     @toprow = @prow if @prow < @toprow
   end
   def space
-    if @toprow + @scrollatrow+1 >= @content_rows
+    if @toprow + @scrollatrow+1 >= get_content().length
     else
       @toprow += @scrollatrow+1 # @rows-2 2008-11-13 23:41 put toprow here too
       $log.debug "space pr #{@prow}"
@@ -108,7 +112,7 @@ module Scrollable
     color = tf ? $reversecolor : $datacolor
     r = row0+1 
     @datawidth ||= @width-2
-    return if r > @content_rows
+    return if r > get_content().length
     # @pad.mvchgat(y=r, x=1, max=@datawidth, Ncurses::A_NORMAL, color, nil)
     @win.mvchgat(y=r+@row, x=1+@col, max=@datawidth, Ncurses::A_NORMAL, color, nil)
   end
@@ -122,17 +126,23 @@ module Scrollable
   end
   ## call from repaint
   # TODO show selected row in selectedcolor
+  # - if user scrolls horizontally, use column as starting point
   def paint
     @content = get_content
     @content_rows = @content.length
+    maxlen = @maxlen ||= @width-2
     0.upto(@height-2) {|r|
       if @toprow + r < @content_rows
-        printstr @form.window, @row+r+1, @col+2, "%-*s" % [@width-3,@list[@toprow + r]]
+        content = @list[@toprow+r].chomp # don't display newline
+        content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/[^[:print:]]/, '')
+       content = content[0..maxlen-1] if !content.nil? && content.length > maxlen # only show maxlen
+        printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [@width-(@left_margin+1),content]
       else
-        printstr @form.window, @row+r+1, @col+2, " "*(@width-2)
+        printstr @form.window, @row+r+1, @col+@left_margin, " "*(@width-(@left_margin+1))
       end
     }
-    show_focus
+    show_focus if @show_focus
   end
   def focussed_index
     @prow

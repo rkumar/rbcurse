@@ -5,16 +5,20 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
   * Description   
 I expect to pass through this world but once. Any good therefore that I can do, or any kindness or ablities that I can show to any fellow creature, let me do it now. Let me not defer it or neglect it, for I shall not pass this way again.  
 * Author: rkumar
-TODO 
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
+TODO 
+  - repaint only what is modified
+  - save data in a hash when called for.
+  - make some methods private/protected
+  - can i get VER:Key to return ints
 
 =end
 require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'lib/ver/ncurses'
-require 'lib/ver/keyboard'
+require 'lib/ver/keyboard2'
 require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/keylabelprinter'
@@ -25,6 +29,7 @@ module DSL
 ## others may not want this, if = sent, it creates DSL and sets
   def method_missing(sym, *args)
     $log.debug "METHOD MISSING : #{sym} "
+#   raise "METH MISSING #{sym}"
     #if "#{sym}"[-1].chr=="="
     #  sym = "#{sym}"[0..-2]
     #else
@@ -51,6 +56,7 @@ class Module
       }
     }
   end
+
 end
            #$log.debug "SETTING :   @#{sym}" 
            #$log.debug "getting :  @#{sym}" 
@@ -77,10 +83,12 @@ module RubyCurses
     attr_reader  :config
     attr_reader  :form
     attr_accessor :state              # normal, selected, highlighted
+    attr_reader  :row_offset, :col_offset
     
     def initialize form, aconfig={}, &block
       @form = form
       @bgcolor = 0
+      @row_offset = @col_offset = 0
       @state = :NORMAL
       @color = $datacolor
       @config = aconfig
@@ -93,7 +101,8 @@ module RubyCurses
         instance_variable_set(var, val) 
     end
     def rowcol
-      return @row, @col
+    # $log.debug "widgte rowcol : #{@row+@row_offset}, #{@col+@col_offset}"
+      return @row+@row_offset, @col+@col_offset
     end
     def configure(*val , &block)
       case val.size
@@ -128,6 +137,27 @@ module RubyCurses
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
+  def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
+
+    case att.to_s.downcase
+    when 'underline'
+      att = Ncurses::A_UNDERLINE
+    $log.debug "UL att #{att}"
+    when 'bold'
+      att = Ncurses::A_BOLD
+    when 'blink'
+      att = Ncurses::A_BLINK
+    when 'reverse'
+      att = Ncurses::A_REVERSE
+    end
+    $log.debug "att #{att}"
+
+      #att = bold ? Ncurses::A_BLINK|Ncurses::A_BOLD : Ncurses::A_NORMAL
+#     att = bold ? Ncurses::A_BOLD : Ncurses::A_NORMAL
+      win.attron(Ncurses.COLOR_PAIR(color) | att)
+      win.mvprintw(r, c, "%s", string);
+      win.attroff(Ncurses.COLOR_PAIR(color) | att)
+  end
   end
 
   class Form
@@ -181,10 +211,11 @@ module RubyCurses
         #select_field 0
         req_first_field
       end
-      setpos
+       setpos 
       @window.wrefresh
     end
     def setpos r=@row, c=@col
+$log.debug "setpos : #{r} #{c}"
      @window.wmove r,c
     end
     def get_current_field
@@ -220,7 +251,8 @@ module RubyCurses
       if f.focusable
         on_enter f
         @row, @col = f.rowcol
-        @window.wmove f.row, f.col
+        $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
+        @window.wmove @row, @col
         f.curpos = 0
         repaint
         @window.refresh
@@ -345,12 +377,15 @@ module RubyCurses
     dsl_accessor :default_button     # TODO - currently first
     dsl_accessor :layout
     dsl_accessor :buttons           # used if type :custom
+    dsl_accessor :underlines           # offsets of each button to underline
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
+    attr_reader :window     # required for keyboard
 
     def initialize aconfig={}, &block
       @config = aconfig
       @buttons = []
+      @keys = {}
       @bcol = 5
       @selected_index = -1
       @config.each_pair { |k,v| instance_variable_set("@#{var}",v) }
@@ -376,39 +411,55 @@ module RubyCurses
     ##
     # value entered by user if type = input
     def input_value
-      @input.buffer
+      @input.buffer if !@input.nil?
     end
     def create_buttons
       case @type.to_s.downcase
       when "ok"
+        @underlines = [0]
         make_buttons ["OK"]
       when "ok_cancel", "input"
+        @underlines = [0,0]
         make_buttons %w[OK Cancel]
       when "yes_no"
+        @underlines = [0,0]
         make_buttons %w[Yes No]
       when "yes_no_cancel"
+        @underlines = [0,0,0]
         make_buttons ["Yes", "No", "Cancel"]
       when "custom"
         make_buttons @buttons
       else
         $log.debug "No type passed for creating messagebox. Using default"
+        @underlines = [0]
         make_buttons ["OK"]
       end
     end
     def make_buttons names
       total = names.inject(0) {|total, item| total + item.length + 4}
       bcol = center_column total
-      $log.debug "insde make button : #{bcol},total #{total}, #{names.length}:  #{names.inspect}"
+
       brow = @layout[:height]-3
       button_ct=0
-      names.each do |bname|
+      names.each_with_index do |bname, ix|
         text = bname
-        $log.debug "insde make button loop : #{bcol} #{bname}"
-        button = RubyCurses::Button.new @form do
+        if !@underlines.nil?
+          underline = @underlines[ix] if !@underlines.nil?
+         ch = text[underline,1].downcase()[0]
+        @keys[ch] = ix  # underlined key points to index of button
+        $log.debug "text #{text} #{text[underline,1]}   "
+        # trap the meta key also, since the box could have an input field
+         mch = ?\M-a + (ch - ?a)
+         $log.debug "mch meta : #{mch},  #{ch}"
+         @keys[mch] = ix  # underlined key points to index of button
+        end
+
+        button = Button.new @form do
           text text
           name bname
           row brow
           col bcol
+          underline underline
           highlight_background $datacolor
           color $reversecolor
           bgcolor $reversecolor
@@ -419,14 +470,26 @@ module RubyCurses
         bcol += text.length+6
       end
     end
-    # message box
+    ## message box
+    def stopping?
+      @stop
+    end
     def handle_keys
       begin
-      while((ch = @window.getch()) != KEY_F1 )
+        VER::Keyboard2.focus = self
+      ensure
+        destroy  # XXX
+      end
+      return @selected_index
+    end
+    def press ch
        $log.debug "message box handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
-          next
+          return
+        when KEY_F1
+          @stop = true
+          return
         when KEY_ENTER, 10, 13
           field =  @form.get_current_field
           if field.respond_to? :fire
@@ -434,23 +497,24 @@ module RubyCurses
           end
           $log.debug "popup ENTER : #{@selected_index} "
           $log.debug "popup ENTER :  #{field.name}" if !field.nil?
-          break
+          @stop = true
+          return
         when 9
           @form.select_next_field
         else
+          if @keys.include? ch
+           $log.debug "KEY #{ch} caught"
+            @selected_index = @keys[ch]
+            @stop = true
+            return
+          end
           field =  @form.get_current_field
           handled = field.handle_key ch
         end
         @form.repaint
         Ncurses::Panel.update_panels();
         Ncurses.doupdate();
-
         @window.wrefresh
-      end
-      ensure
-        destroy  # XXX
-      end
-      return @selected_index
     end
     def print_borders
       width = @layout[:width]
@@ -692,7 +756,7 @@ module RubyCurses
   # ADD HERE FIELD
   end
   class Variable
-    def initialize value=nil
+    def initialize value=""
       @update_command = nil
       @args = nil
       @value = value
@@ -705,7 +769,7 @@ module RubyCurses
       @read_command = block
     end
     def value
-      $log.debug "variable value called : #{@value} "
+#     $log.debug "variable value called : #{@value} "
       @value
     end
     def value= val
@@ -728,7 +792,6 @@ module RubyCurses
       @editable = false
       @focusable = false
       super
-      $log.debug "LABEL: #{inspect}"
     end
     def getvalue
       @text_variable && @text_variable.value || @text
@@ -736,9 +799,9 @@ module RubyCurses
     def repaint
         r,c = rowcol
         value = getvalue
+       $log.debug "label :#{@text}, #{value}, #{r}, #{c} "
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
-        $log.debug "label :#{name}, #{getvalue}, #{r}, #{c} "
         @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
     end
   # ADD HERE LABEL
@@ -754,7 +817,7 @@ module RubyCurses
       @handler={}
       super
       @text = @name if @text.nil?
-      @text = "[ #{@text} ]"
+#     @text = "[ #{@text} ]" # XXX
       #@display_length = @text.length if @display_length.nil?
     end
 #   def focusable
@@ -769,11 +832,8 @@ module RubyCurses
       $log.debug "ONLEAVE : #{@bgcolor} "
     end
     def getvalue
-      if @text_variable.nil?
-        @text
-      else
-        "[ "+@text_variable.value+" ]"
-      end
+      ret = @text_variable.nil? ? @text : @text_variable.value
+      "[" + ret + "]"
     end
     def repaint  # button
         r,c = rowcol
@@ -781,12 +841,17 @@ module RubyCurses
         @highlight_background ||= $reversecolor
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
         color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
-        $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
+#       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
         value = getvalue
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
         @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
-#     raise "error please override repaint "
+        if @underline != nil
+        #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
+        #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
+       # underline not working here using Ncurses. Works with highline. \e[4m
+        @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD, color, nil)
+        end
     end
     def command &block
       #@command_block = block
@@ -817,7 +882,7 @@ module RubyCurses
           @form.select_prev_field
       when KEY_RIGHT, KEY_DOWN
           @form.select_next_field
-      when KEY_ENTER, 10, 13
+      when KEY_ENTER, 10, 13, 32  # added space bar also
         if respond_to? :fire
           fire
         end
@@ -825,7 +890,157 @@ module RubyCurses
         return -1
       end
     end
-  end #LBUTTON
+  end #BUTTON
+  class CheckBox < Button
+    include CommonIO
+    # if a variable has been defined, off and on value will be set in it (default 0,1)
+    dsl_accessor :onvalue, :offvalue
+    def initialize form, config={}, &block
+      @value = false
+      super
+      create_label
+    end
+    def create_me
+      name = @name
+      row = @row
+      col = @col
+      @button = RubyCurses::Button.new @form do
+        text " "
+        name name
+        row row
+        col col
+      end
+      @button.command { |form| form.printstr(@window, 23,45, "CB CALLED") }
+      var = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
+    end
+    def getvalue
+      buttontext = @value ? "X" : " "
+      "[" + buttontext + "]"
+    end
+    def repaint
+      super
+      @label.repaint
+    end
+    def handle_key ch
+      if ch == 32
+        toggle
+      else
+        super
+      end
+    end
+    def create_label
+      row = @row
+      col = @col
+      @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
+
+    end
+    def toggle
+      @value = !@value
+      if !@text_variable.nil?
+        if @value 
+          @text_variable.value = (@onvalue || 1)
+        else
+          @text_variable.value = (@offvalue || 0)
+        end
+      end
+    end
+  end # class
+  class RadioButton < Button
+    include CommonIO
+    # if a variable has been defined, off and on value will be set in it (default 0,1)
+    dsl_accessor :value
+    def initialize form, config={}, &block
+      super
+      create_label
+    end
+    def getvalue
+      buttontext = @text_variable.value == @value ? "o" : " "
+
+      "(" + buttontext + ")"
+    end
+    def repaint
+      super
+      @label.repaint
+    end
+    def create_label
+      row = @row
+      col = @col
+      $log.debug  "LABEL text: #{@text}"
+      @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
+
+    end
+    def handle_key ch
+      if ch == 32
+        toggle
+      else
+        super
+      end
+    end
+    def toggle
+      @text_variable.value = @value
+    end
+  end # class
+  module ColorSetup
+
+    def ColorSetup.setup
+      Ncurses.start_color();
+      # Initialize few color pairs 
+      Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
+      Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
+      Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
+      Ncurses.init_pair(4, COLOR_YELLOW, COLOR_RED); # for selected item
+      Ncurses.init_pair(5, COLOR_WHITE, COLOR_BLACK); # for unselected menu items
+      Ncurses.init_pair(6, COLOR_WHITE, COLOR_BLUE); # for bottom/top bar
+      Ncurses.init_pair(7, COLOR_WHITE, COLOR_RED); # for error messages
+      # added to complete basic colors
+      Ncurses.init_pair(8, COLOR_BLUE, COLOR_BLACK); 
+      Ncurses.init_pair(9, COLOR_CYAN, COLOR_BLACK); 
+      Ncurses.init_pair(10, COLOR_MAGENTA, COLOR_BLACK); 
+      Ncurses.init_pair(11, COLOR_GREEN, COLOR_BLACK); 
+      @@FG_COLORS = {}
+      @@FG_COLORS['red']=1
+      @@FG_COLORS['black']=2
+      @@FG_COLORS['yellow']=4
+      @@FG_COLORS['white']=5
+      @@FG_COLORS['blue']=8
+      @@FG_COLORS['cyan']=9
+      @@FG_COLORS['magenta']=10
+      @@FG_COLORS['green']=11
+
+      @@BG_COLORS = {}
+      @@BG_COLORS['red']=4
+      @@BG_COLORS['black']=1
+      @@BG_COLORS['yellow']=8
+      @@BG_COLORS['white']=2
+      @@BG_COLORS['blue']=3
+      @@BG_COLORS['cyan']=10
+      @@BG_COLORS['magenta']=9
+      @@BG_COLORS['green']=11
+
+      $reversecolor = 2
+      $errorcolor = 7
+      $promptcolor = $selectedcolor = 4
+      $normalcolor = $datacolor = 5
+      $bottomcolor = $topcolor = 6
+    end
+    ##
+    # returns colorpair containing requested FG color
+    # if a numeric is passed, return the same (for back compat since we were using colorpairs
+    # earlier
+    # @param colorname e.g red, white, black
+    def ColorSetup.get_fgcolor color
+      return color if color.is_a? Fixnum
+      @@FG_COLORS[color]
+    end
+    # returns colorpair containing requested BG color
+    # if a numeric is passed, return the same (for back compat since we were using colorpairs
+    # earlier
+    # @param colorname e.g red, white, black
+    def ColorSetup.get_bgcolor color
+      return color if color.is_a? Fixnum
+      @@BG_COLORS[color]
+    end
+  end
 end # modul
 
 if $0 == __FILE__
@@ -845,7 +1060,7 @@ if $0 == __FILE__
     $errorcolor = 7
     $promptcolor = $selectedcolor = 4
     $normalcolor = $datacolor = 5
-    @bottomcolor = $topcolor = 6
+    $bottomcolor = $topcolor = 6
 
     # Create the window to be associated with the form 
     # Un post form and free the memory
@@ -865,10 +1080,12 @@ if $0 == __FILE__
       $log.debug "START  ---------"
       # need to pass a form, not window.
       @mb = RubyCurses::MessageBox.new do
-        title "hello world"
+        #title "Color selector"
+        title "Enter your name"
         message "Enter your name"
         type :custom
         buttons %w[red green blue yellow]
+        underlines [0,0,0,0]
         type :input
         default_value "rahul"
         default_button 0

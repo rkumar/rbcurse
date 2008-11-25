@@ -1,0 +1,9 @@
+## Ruby based forms, fields and widgets ##
+
+Please see the file rwidgets.rb and rform.rb for the widgets and examples.
+As of today, 25/11/2008 the above is just a few days old, please wait a bit 
+for it to be tested and integrated more into some decent examples.
+
+All the other files are my older work on an application generator using ncurses 
+form and fields.
+
