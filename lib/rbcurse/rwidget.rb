@@ -11,7 +11,8 @@ TODO
   - repaint only what is modified
   - save data in a hash when called for.
   - make some methods private/protected
-  - can i get VER:Key to return ints
+  - can i get VER:Key to return ints - DONE
+  - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
 
 =end
 require 'rubygems'

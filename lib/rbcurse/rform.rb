@@ -77,6 +77,8 @@ module RubyCurses
       ""
     end
   end
+  ##
+  # TODO : underlining and key capture 
   class MenuItem
     include CommonIO
     attr_accessor :parent
