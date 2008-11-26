@@ -122,14 +122,18 @@ module RubyCurses
       @text_variable && @text_variable.value || @text
       #@text
     end
+    ##
+    # Am making a separate method since often value for print differs from actual value
+    def getvalue_for_paint
+      getvalue
+    end
     def repaint
         r,c = rowcol
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
-        value = getvalue
+        value = getvalue_for_paint
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
         @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
-#     raise "error please override repaint "
     end
 
     def destroy
@@ -381,7 +385,9 @@ $log.debug "setpos : #{r} #{c}"
   def dump_data
     $log.debug " DUMPING DATA "
     @widgets.each do |w|
-      next if w.is_a? RubyCurses::Button or w.is_a? RubyCurses::Label 
+      # we need checkbox and radio button values
+      #next if w.is_a? RubyCurses::Button or w.is_a? RubyCurses::Label 
+      next if w.is_a? RubyCurses::Label 
       next if !w.is_a? RubyCurses::Widget
       if w.respond_to? :getvalue
         $log.debug " #{w.name} #{w.getvalue}"
@@ -631,7 +637,7 @@ $log.debug "setpos : #{r} #{c}"
     dsl_accessor :display_length
     dsl_accessor :bgcolor
     dsl_accessor :color
-    dsl_accessor :show    # TODO
+    dsl_accessor :show    # done 2008-11-26 11:21 
     attr_reader :form
     attr_accessor :modified
     attr_reader :handler
@@ -659,6 +665,9 @@ $log.debug "setpos : #{r} #{c}"
       @text_variable = tv
       set_buffer tv.value
     end
+    ##
+    # define a datatype, currently only influences chars allowed
+    # integer and float. what about allowing a minus sign? XXX
     def type dtype
       case dtype.to_s.downcase
       when 'integer'
@@ -713,7 +722,8 @@ $log.debug "setpos : #{r} #{c}"
   end
   def repaint
 #    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
-    printval = getvalue
+    printval = getvalue_for_paint
+    printval = show()*printval.length unless @show.nil?
     printval = printval[0..display_length-1] if printval.length > display_length
     printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
     @form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
@@ -828,7 +838,7 @@ $log.debug "setpos : #{r} #{c}"
     end
     def repaint
         r,c = rowcol
-        value = getvalue
+        value = getvalue_for_paint
 #      $log.debug "label :#{@text}, #{value}, #{r}, #{c} "
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
@@ -838,32 +848,31 @@ $log.debug "setpos : #{r} #{c}"
   end
   class Button < Widget
   include CommonIO
+  dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
       @bgcolor = $datacolor 
       @color = $datacolor 
+      @surround_chars = ['[', ']']
       #@command_block = nil
       @handler={}
       super
       @text = @name if @text.nil?
-#     @text = "[ #{@text} ]" # XXX
-      #@display_length = @text.length if @display_length.nil?
     end
-#   def focusable
-#     true
-#   end
     def on_enter
-#     @bgcolor = @highlight_background || $reversecolor 
-      $log.debug "ONENTER : #{@bgcolor} "
+#      $log.debug "ONENTER : #{@bgcolor} "
     end
     def on_leave
-#     @bgcolor = @bgcolor || $datacolor 
-      $log.debug "ONLEAVE : #{@bgcolor} "
+#      $log.debug "ONLEAVE : #{@bgcolor} "
     end
     def getvalue
-      ret = @text_variable.nil? ? @text : @text_variable.value
-      "[" + ret + "]"
+      @text_variable.nil? ? @text : @text_variable.value
+    end
+
+    def getvalue_for_paint
+      ret = getvalue
+      @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
         r,c = rowcol
@@ -872,7 +881,7 @@ $log.debug "setpos : #{r} #{c}"
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
         color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
 #       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
-        value = getvalue
+        value = getvalue_for_paint
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
         @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -930,21 +939,11 @@ $log.debug "setpos : #{r} #{c}"
       super
       create_label
     end
-    def create_me
-      name = @name
-      row = @row
-      col = @col
-      @button = RubyCurses::Button.new @form do
-        text " "
-        name name
-        row row
-        col col
-      end
-      @button.command { |form| form.printstr(@window, 23,45, "CB CALLED") }
-      var = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
-    end
     def getvalue
-      buttontext = @value ? "X" : " "
+      @value 
+    end
+    def getvalue_for_paint
+      buttontext = getvalue() ? "X" : " "
       "[" + buttontext + "]"
     end
     def repaint
@@ -983,9 +982,12 @@ $log.debug "setpos : #{r} #{c}"
       super
       create_label
     end
+    # all radio buttons will return the value of the selected value, not the offered value
     def getvalue
+      @text_variable.value
+    end
+    def getvalue_for_paint
       buttontext = @text_variable.value == @value ? "o" : " "
-
       "(" + buttontext + ")"
     end
     def repaint
@@ -995,7 +997,7 @@ $log.debug "setpos : #{r} #{c}"
     def create_label
       row = @row
       col = @col
-      $log.debug  "LABEL text: #{@text}"
+#     $log.debug  "LABEL text: #{@text}"
       @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
 
     end

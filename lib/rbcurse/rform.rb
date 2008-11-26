@@ -9,14 +9,12 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 TODO 
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
-  * do we need widgets in our thign at all, why am i managing ?
   * Field/entry
     - show (what char to show when entry done : show '*'
     - textvariable - bding field to a var so the var is updated
     - int and float - range
   * Button 
     - width int : desiredwidth
-    - underline index
     - foreground, bgcolor 
     - surroundchars
   * Label
@@ -611,7 +609,6 @@ module RubyCurses
       get_selected_data
     end
     # Listbox
-    # ^P ^N scroll up down
     # [ ] scroll left right
     def handle_key ch
       ret = scrollable_handle_key ch
@@ -714,7 +711,7 @@ module RubyCurses
       paint
     end
     def getvalue
-      @list.inspect
+      @list
     end
     # textarea
     # [ ] scroll left right
@@ -1024,7 +1021,7 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @win
       r = 1; c = 22;
-      %w[ name age company].each do |w|
+      %w[ name age company password].each do |w|
         field = Field.new @form do
           name   w 
           row  r 
@@ -1080,7 +1077,9 @@ if $0 == __FILE__
       @form.by_name["name"].set_buffer  "Not focusable"
       @form.by_name["age"].chars_allowed = /\d/
       @form.by_name["company"].type(:ALPHA)
-     @form.by_name["name"].set_focusable(false)
+      @form.by_name["name"].set_focusable(false)
+      @form.by_name["password"].set_buffer ""
+      @form.by_name["password"].show '*'
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
       ok_button = Button.new @form do
@@ -1095,6 +1094,7 @@ if $0 == __FILE__
         text_variable $results
         row 18
         col 28
+        surround_chars ['{','}']
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
 

@@ -50,6 +50,7 @@ module Selectable
       do_select(sel)}
   end
   def get_selected_data
+    return nil if @selected.nil?
     ret = []
     list = get_content
     @selected.each { |sel| ret << list[sel] }

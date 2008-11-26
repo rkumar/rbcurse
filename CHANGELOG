@@ -1,3 +1,15 @@
+**2008-11-26 11:49**
+## field.show ##
+
+1. implemented Field.show (password field in example will show *)
+
+2. created a method getvalue_for_paint, so that getvalue returns actual value for field
+or widget and no display stuff.
+
+3. Button. surround_chars. change the sq brackets to soething else.
+
+frmincr200811261147.tgz
+* * *
 **2008-11-25 23:58**
 ## selectable in ListBox ##
 
