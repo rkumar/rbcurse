@@ -1,3 +1,11 @@
+**2008-11-26 23:32**
+## horiz scrolling in TextView ##
+
+Textview now can scroll horiz.
+Ctrl-E and Ctrl-A behavior in cases of data exceeding width taken care of.
+
+frmincr200811262331.tgz
+* * *
 **2008-11-26 22:26**
 ## TextView and other fixes ##
 

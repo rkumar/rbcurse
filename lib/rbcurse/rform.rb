@@ -988,16 +988,16 @@ module RubyCurses
   # Intention is to be able to change content dynamically - the entire list.
   # Use set_content to set content, or just update the list attrib
   # TODO - horizontal scrolling,
-  #      - searching, goto line
+  #      - searching, goto line - DONE
   class TextView < Widget
     include Scrollable
-    dsl_accessor :height
-    dsl_accessor :title
+    dsl_accessor :height  # height of viewport
+    dsl_accessor :title   # TODO set this on top
     dsl_accessor :list    # the array of data to be sent by user
-    dsl_accessor :maxlen    # the array of data to be sent by user
-    attr_reader :toprow
-    attr_reader :prow
-    attr_reader :winrow
+    dsl_accessor :maxlen    # max len to be displayed
+    attr_reader :toprow    # the toprow in the view (offsets are 0)
+    attr_reader :prow     # the row on which cursor/focus is
+    attr_reader :winrow   # the row in the viewport/window
 
     def initialize form, config={}, &block
       @focusable = true
@@ -1122,9 +1122,18 @@ module RubyCurses
       when 330
         req_prev_char
       when ?\C-a
+        # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
+        @pcol = 0
       when ?\C-e
-        set_form_col @buffer.length
+        # take care of data that exceeds maxlen by scrolling and placing cursor at end
+        blen = @buffer.rstrip.length
+        if blen < @maxlen
+          set_form_col blen
+        else
+          @pcol = blen-@maxlen
+          set_form_col @maxlen-1
+        end
       else
         $log.debug("ch #{ch}")
       end
@@ -1143,20 +1152,25 @@ module RubyCurses
       if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
         @curpos += 1
         addcol 1
+      else
+        # XXX 2008-11-26 23:03 trying out
+        @pcol += 1 if @pcol <= @buffer.length
       end
     end
     def addcol num
       @form.addcol num
     end
     def addrowcol row,col
-    @form.addrowcol row, col
-  end
-  def req_prev_char
-    if @curpos > 0
-      @curpos -= 1
-      addcol -1
+      @form.addrowcol row, col
     end
-  end
+    def req_prev_char
+      if @curpos > 0
+        @curpos -= 1
+        addcol -1
+      elsif @pcol > 0 # XXX added 2008-11-26 23:05 
+        @pcol -= 1   
+      end
+    end
     def next_line
       @list[@prow+1]
     end

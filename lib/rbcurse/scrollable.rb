@@ -1,5 +1,5 @@
-#
-# widget that includes may define on_enter_row and on_leave_row
+# Provides the ability to scroll content, typically an array
+# widget that includes may override on_enter_row and on_leave_row
 module Scrollable
   def init_scrollable
     @toprow = @prow = @winrow = @pcol = 0
@@ -10,8 +10,6 @@ module Scrollable
     @show_focus = true if @show_focus.nil? 
 #   @right_margin ||= @left_margin
 #   @scrollatrow ||= @height-2
-    #    raise "please define @content_rows" if @content_rows.nil?
-    #    raise "please define @scrollatrow" if @scrollatrow.nil?
   end
   def goto_start
     @prow = 0
@@ -123,13 +121,15 @@ module Scrollable
     # TODO show selected row in selectedcolor
     # - if user scrolls horizontally, use column as starting point
     def paint
-      $log.debug "called paint #{@toprow} #{@prow}"
+#     $log.debug "called paint #{@toprow} #{@prow}"
       @content = get_content
       @content_rows = @content.length # rows can be added at any time
       win = get_window
       maxlen = @maxlen ||= @width-2
       0.upto(@height-2) {|r|
         if @toprow + r < @content_rows
+          # this relates to selection of a row, as yet
+          # check if any status of attribs for this row
           row_att = @list_attribs[@toprow+r] unless @list_attribs.nil?
           status = " "
           bgcolor = $datacolor
@@ -142,7 +142,15 @@ module Scrollable
           content.gsub!(/\t/, '  ') # don't display tab
           content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
 
-          content = content[0..maxlen-1] if !content.nil? && content.length > maxlen # only show maxlen
+          #content = content[0..maxlen-1] if !content.nil? && content.length > maxlen # only show maxlen
+          if !content.nil? 
+            if content.length > maxlen # only show maxlen
+              content = content[@pcol..@pcol+maxlen-1] 
+            else
+              content = content[@pcol..-1]
+            end
+          end
+
           width = @width-(@left_margin+1)
           printstr @form.window, @row+r+1, @col+@left_margin-1, "%s" % status if @implements_selectable
           printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [width,content]
@@ -189,7 +197,6 @@ module Scrollable
           return :UNHANDLED
         end
       ensure
-        $log.debug "beforepostkey"
         post_key
       end
     end # handle_k listb

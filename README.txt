@@ -2,6 +2,12 @@
 
 * http://totalrecall.blogspot.com
 
+* See latest changes on http://github.com/rkumar/rbcurse/tree/master/CHANGELOG
+
+* For a working example, execute rform.rb and rwidget.rb (exit with F1).
+
+* screenshots on blog mentioned above.
+
 == DESCRIPTION:
 
 A small widget library written in ruby for creating ncurses
