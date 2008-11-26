@@ -3,16 +3,20 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
   * Name: rwidget: base class and then popup and other derived widgets
   * $Id$
   * Description   
-I expect to pass through this world but once. Any good therefore that I can do, or any kindness or ablities that I can show to any fellow creature, let me do it now. Let me not defer it or neglect it, for I shall not pass this way again.  
-* Author: rkumar
+    Some simple light widgets for creating ncurses applications. No reliance on ncurses
+    forms and fields.
+        I expect to pass through this world but once. Any good therefore that I can do, 
+        or any kindness or ablities that I can show to any fellow creature, let me do it now. 
+        Let me not defer it or neglect it, for I shall not pass this way again.  
+  * Author: rkumar
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 TODO 
   - repaint only what is modified
   - save data in a hash when called for.
   - make some methods private/protected
-  - can i get VER:Key to return ints - DONE
   - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
+  - create a readonly Text widget using the pad that we've already done.
 
 =end
 require 'rubygems'
@@ -59,8 +63,6 @@ class Module
   end
 
 end
-           #$log.debug "SETTING :   @#{sym}" 
-           #$log.debug "getting :  @#{sym}" 
 
 include Ncurses
 module RubyCurses
@@ -92,15 +94,40 @@ module RubyCurses
       @row_offset = @col_offset = 0
       @state = :NORMAL
       @color = $datacolor
+      @handler = {}
+      @event_args = {}
       @config = aconfig
       @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
       @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
     end
+    ## got left out by mistake 2008-11-26 20:20 
+    def bind event, *args, &blk
+      $log.debug "called widget BIND #{event} #{args} "
+      @handler[event] = blk
+      @event_args[event] = args
+    end
+    ## got left out by mistake 2008-11-26 20:20 
+    def fire_handler event, object
+      $log.debug "called widget firehander #{object}, #{@event_args[event]}"
+      blk = @handler[event]
+      return if blk.nil?
+      blk.call object,  *@event_args[event]
+    end
+    ## got left out by mistake 2008-11-26 20:20 
+    def on_enter
+      fire_handler :ENTER, self
+    end
+    ## got left out by mistake 2008-11-26 20:20 
+    def on_leave
+      fire_handler :LEAVE, self
+    end
+    # private
     def variable_set var, val
         var = "@#{var}"
         instance_variable_set(var, val) 
     end
+    # private
     def rowcol
     # $log.debug "widgte rowcol : #{@row+@row_offset}, #{@col+@col_offset}"
       return @row+@row_offset, @col+@col_offset
@@ -115,18 +142,23 @@ module RubyCurses
       end
       instance_eval &block if block_given?
     end
+    ## 
+    # returns param from hash. Unused and untested. 
     def cget param
       @config[param]
     end
+    ## return the value of the widget.
+    #  In cases where selection is possible, should return selected value/s
     def getvalue
       @text_variable && @text_variable.value || @text
-      #@text
     end
     ##
     # Am making a separate method since often value for print differs from actual value
     def getvalue_for_paint
       getvalue
     end
+    ##
+    # default repaint method. Called by form for all widgets.
     def repaint
         r,c = rowcol
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
@@ -142,27 +174,27 @@ module RubyCurses
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
-  def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
+    def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
 
-    case att.to_s.downcase
-    when 'underline'
-      att = Ncurses::A_UNDERLINE
-    $log.debug "UL att #{att}"
-    when 'bold'
-      att = Ncurses::A_BOLD
-    when 'blink'
-      att = Ncurses::A_BLINK
-    when 'reverse'
-      att = Ncurses::A_REVERSE
-    end
-    $log.debug "att #{att}"
+      case att.to_s.downcase
+      when 'underline'
+        att = Ncurses::A_UNDERLINE
+        $log.debug "UL att #{att}"
+      when 'bold'
+        att = Ncurses::A_BOLD
+      when 'blink'
+        att = Ncurses::A_BLINK
+      when 'reverse'
+        att = Ncurses::A_REVERSE
+      end
+      $log.debug "att #{att}"
 
       #att = bold ? Ncurses::A_BLINK|Ncurses::A_BOLD : Ncurses::A_NORMAL
-#     att = bold ? Ncurses::A_BOLD : Ncurses::A_NORMAL
+      #     att = bold ? Ncurses::A_BOLD : Ncurses::A_NORMAL
       win.attron(Ncurses.COLOR_PAIR(color) | att)
       win.mvprintw(r, c, "%s", string);
       win.attroff(Ncurses.COLOR_PAIR(color) | att)
-  end
+    end
   end
 
   class Form
@@ -334,7 +366,7 @@ $log.debug "setpos : #{r} #{c}"
     @handler[event] = blk
   end
   def fire_handler event, object
-#   $log.debug "called firehander #{object}"
+#   $log.debug "called form firehander #{object}"
     blk = @handler[event]
     return if blk.nil?
     blk.call object
@@ -402,7 +434,7 @@ $log.debug "setpos : #{r} #{c}"
   end
 
   ##
-  # TODO wrapping message, underline char and select if button pressed
+  # TODO wrapping message
   #
   class MessageBox
     include CommonIO
@@ -658,6 +690,7 @@ $log.debug "setpos : #{r} #{c}"
       @focusable = config.fetch("focusable", true)
       @curpos = 0
       @handler = {}
+      @event_args = {}
       @modified = false
       super
     end
@@ -728,14 +761,6 @@ $log.debug "setpos : #{r} #{c}"
     printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
     @form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
   end
-  def bind event, &blk
-    @handler[event] = blk
-  end
-  def fire_handler event
-    blk = @handler[event]
-    return if blk.nil?
-    blk.call self
-  end
   def set_focusable(tf)
     @focusable = tf
  #   @form.regenerate_focusables
@@ -795,6 +820,13 @@ $log.debug "setpos : #{r} #{c}"
     end
   # ADD HERE FIELD
   end
+        ##
+        # Like Tk's TkVariable, a simple proxy that can be passed to a widget. The widget 
+        # will update the Variable. A variable can be used to link a field with a label or 
+        # some other widget.
+        # Currently it maintains a String, but it needs to be able to use a Hash or
+        # Array at least.
+        
   class Variable
     def initialize value=""
       @update_command = nil

@@ -145,7 +145,7 @@ class PadReader
     # Create the window to be associated with the form 
     # Un post form and free the memory
     pv = PadReader.new
-    pv.view_file("test.t")
+    pv.view_file("../../README.txt")
 
   ensure
     Ncurses.endwin();

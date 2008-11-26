@@ -1,3 +1,13 @@
+**2008-11-26 22:26**
+## TextView and other fixes ##
+
+Introduced a TextView widget which just shows multiline text, scrollable.
+Allows us to programmatically scroll the same.
+
+Tested and fixed LEAVE and ENTER of widgets (had forgotten that!).
+
+frmincr200811262224.tgz
+* * *
 **2008-11-26 11:49**
 ## field.show ##
 

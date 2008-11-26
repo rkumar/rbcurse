@@ -10,20 +10,15 @@ TODO
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
   * Field/entry
-    - show (what char to show when entry done : show '*'
     - textvariable - bding field to a var so the var is updated
     - int and float - range
   * Button 
     - width int : desiredwidth
-    - foreground, bgcolor 
-    - surroundchars
   * Label
     - desired width
-    - textvariable , foreground, bgcolor
   * 
   * integrate with our mapper TODO
-  * read only field
-  * justified, int real charonly
+  * justified
   * use a global $message, and maybe a header message too.
   * Make a root window/form that creates the logger colors and other things.
   * Date: 2008-11-14 23:43 
@@ -616,10 +611,17 @@ module RubyCurses
         ret = selectable_handle_key ch
       end
     end # handle_k listb
+    def on_enter_row arow
+      fire_handler :ENTER_ROW, arow
+    end
+    def on_leave_row arow
+      fire_handler :LEAVE_ROW, arow
+    end
   end # class listb
   ## a multiline text editing widget
   # TODO - giving data to user - adding newlines, and withog adding.
   #  - respect newlines for incoming data
+  #   add C-u undo cut at position
   class TextArea < Widget
     include Scrollable
     dsl_accessor :height
@@ -980,7 +982,188 @@ module RubyCurses
       @modified = tf
       @form.modified = true if tf
     end
-  end # class listb
+  end # class textarea
+  ##
+  # A viewable read only box. Can scroll. 
+  # Intention is to be able to change content dynamically - the entire list.
+  # Use set_content to set content, or just update the list attrib
+  # TODO - horizontal scrolling,
+  #      - searching, goto line
+  class TextView < Widget
+    include Scrollable
+    dsl_accessor :height
+    dsl_accessor :title
+    dsl_accessor :list    # the array of data to be sent by user
+    dsl_accessor :maxlen    # the array of data to be sent by user
+    attr_reader :toprow
+    attr_reader :prow
+    attr_reader :winrow
+
+    def initialize form, config={}, &block
+      @focusable = true
+      @editable = false
+      @left_margin = 1
+      @row = 0
+      @col = 0
+      @show_focus = false  # don't highlight row under focus
+      @list = []
+      super
+      @row_offset = @col_offset = 1
+      @orig_col = @col
+      # this does result in a blank line if we insert after creating. That's required at 
+      # present if we wish to only insert
+      @scrollatrow = @height-2
+      @content_rows = @list.length
+      @win = @form.window
+      init_scrollable
+      print_borders
+      @maxlen ||= @width-2
+    end
+    def set_content list
+      @list = list
+    end
+    ## display this row on top
+    def top_row(*val)
+      if val.empty?
+        @toprow
+      else
+        @toprow = val[0] || 0
+        @prow = val[0] || 0
+      end
+    end
+    ##
+    # returns row of first match of given regex (or nil if not found)
+    def find_first_match regex
+      @list.each_with_index do |row, ix|
+        return ix if !row.match(regex).nil?
+      end
+      return nil
+    end
+    def rowcol
+      $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
+      return @row+@row_offset+@winrow, @col+@col_offset
+    end
+    def wrap_text(txt, col = @maxlen)
+      $log.debug "inside wrap text for :#{txt}"
+      txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
+               "\\1\\3\n") 
+    end
+    def print_borders
+      width = @width
+      height = @height
+      window = @form.window
+      startcol = @col 
+      startrow = @row 
+      color = $datacolor
+      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
+      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
+      printstr(window, row=startrow, col=startcol, hline, color)
+      (startrow+1).upto(startrow+height-1) do |row|
+        printstr(window, row, col=startcol, hline2, color)
+      end
+      printstr(window, startrow+height, col=startcol, hline, color)
+  
+     # @derwin = @form.window.derwin(@height, @width, @row, @col)
+     # repaint
+    end
+    ### FOR scrollable ###
+    def get_content
+      @list
+    end
+    def get_window
+      @form.window
+    end
+    ### FOR scrollable ###
+    def repaint # textarea
+      paint
+    end
+    def getvalue
+      @list
+    end
+    # textarea
+    # [ ] scroll left right
+    def handle_key ch
+      @buffer = @list[@prow]
+      if @buffer.nil? and @list.length == 0
+        @list << ""
+        @buffer = @list[@prow]
+      end
+      return if @buffer.nil?
+      $log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
+      if @curpos > @buffer.length
+        addcol(@buffer.length-@curpos)+1
+        @curpos = @buffer.length
+      end
+      $log.debug " after loop : curpos #{@curpos} blen: #{@buffer.length}"
+      pre_key
+      case ch
+      when ?\C-n
+        space
+      when ?\C-p
+        minus
+      when ?\C-[
+        goto_start
+      when ?\C-]
+        goto_end
+      when KEY_UP
+        #select_prev_row
+        ret = up
+        #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
+        @form.row = @row + 1 + @winrow
+      when KEY_DOWN
+        ret = down
+        @form.row = @row + 1 + @winrow
+      when KEY_LEFT
+        req_prev_char
+      when KEY_RIGHT
+        req_next_char
+      when KEY_BACKSPACE, 127
+        req_prev_char
+      when 330
+        req_prev_char
+      when ?\C-a
+        set_form_col 0
+      when ?\C-e
+        set_form_col @buffer.length
+      else
+        $log.debug("ch #{ch}")
+      end
+      post_key
+    end
+    # puts cursor on correct row.
+    def set_form_row
+      @form.row = @row + 1 + @winrow
+    end
+    # set cursor on correct column
+    def set_form_col col=@cursor
+      @curpos = col
+      @form.col = @orig_col + @col_offset + @curpos
+    end
+    def req_next_char
+      if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
+        @curpos += 1
+        addcol 1
+      end
+    end
+    def addcol num
+      @form.addcol num
+    end
+    def addrowcol row,col
+    @form.addrowcol row, col
+  end
+  def req_prev_char
+    if @curpos > 0
+      @curpos -= 1
+      addcol -1
+    end
+  end
+    def next_line
+      @list[@prow+1]
+    end
+    def do_relative_row num
+      yield @list[@prow+num] 
+    end
+  end # class textview
 end # modul
 
 if $0 == __FILE__
@@ -1021,13 +1204,13 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @win
       r = 1; c = 22;
-      %w[ name age company password].each do |w|
+      %w[ name line regex password].each do |w|
         field = Field.new @form do
           name   w 
           row  r 
           col  c 
           display_length  30
-          set_buffer "abcd #{w}" 
+          set_buffer "abcd " 
           set_label Label.new @form, {'text' => w}
         end
         r += 1
@@ -1038,7 +1221,7 @@ if $0 == __FILE__
         r += 1
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
-        field = Listbox.new @form do
+        listb = Listbox.new @form do
           name   "mylist" 
           row  r 
           col  1 
@@ -1046,13 +1229,13 @@ if $0 == __FILE__
           height 10
           list mylist
         end
-        field.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 
           col  52 
           width 40
-          height 20
+          height 15
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now. "
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
@@ -1060,6 +1243,24 @@ if $0 == __FILE__
         #texta << "HELLO there" << "WE ARE testing deletes in this application"
         texta << " "
         texta << " F1 to exit. or click second button"
+
+        @textview = TextView.new @form do
+          name   "myView" 
+          row  16 
+          col  52 
+          width 40
+          height 7
+        end
+        content = File.open("../../README.txt","r").readlines
+        @textview.set_content content
+        @textview.top_row 21
+
+        # just for demo, lets scroll the text view as we scroll this.
+        listb.bind(:ENTER_ROW, @textview) { |arow, tview| tview.top_row arow }
+        
+        # just for demo, lets scroll the text view to the line you enter
+        @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(fld.getvalue.to_i) }
+        @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
 
       checkbutton = CheckBox.new @form do
         text_variable $results
@@ -1071,12 +1272,12 @@ if $0 == __FILE__
         col 22
       end
 
-      @form.by_name["age"].display_length = 3
-      @form.by_name["age"].maxlen = 3
-      @form.by_name["age"].set_buffer  "24"
+      @form.by_name["line"].display_length = 3
+      @form.by_name["line"].maxlen = 3
+      @form.by_name["line"].set_buffer  "24"
       @form.by_name["name"].set_buffer  "Not focusable"
-      @form.by_name["age"].chars_allowed = /\d/
-      @form.by_name["company"].type(:ALPHA)
+      @form.by_name["line"].chars_allowed = /\d/
+      @form.by_name["regex"].type(:ALPHA)
       @form.by_name["name"].set_focusable(false)
       @form.by_name["password"].set_buffer ""
       @form.by_name["password"].show '*'

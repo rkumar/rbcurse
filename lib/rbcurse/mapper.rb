@@ -1,3 +1,4 @@
+require 'lib/rbcurse/orderedhash'
 class Mapper
   attr_reader :keymap
   attr_reader :view
@@ -64,6 +65,7 @@ class Mapper
     end
     if blk.nil? # this should go up XXX
       if !@pendingkeys.nil?
+        # this error message to be modified if using numeric keys -- need to convert to char
         view.info("%p not valid in %p. Try: #{@pendingkeys.keys.join(', ')}" % [key, @prevkey]) # XXX
       else
         view.info("%p not valid in %p. " % [key, @view.mode]) 
@@ -87,8 +89,12 @@ class Mapper
       case k.class.to_s
       when "String"
         return v if k == key
+      when "Fixnum" # for keyboard2
+     $log.debug "FIXNUM LOOP #{k.class}, #{k}, #{v} "
+        return v if k == key
       when "Regexp"
 #       $log.debug "REGEX #key , #k, #{k.match(key)}"
+        key = key.chr if key.is_a? Fixnum
         if !k.match(key).nil?
           @arg = key
           return v 
