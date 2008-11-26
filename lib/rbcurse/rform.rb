@@ -545,6 +545,7 @@ module RubyCurses
     include Selectable
     dsl_accessor :height
     dsl_accessor :title
+    dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :list    # the array of data to be sent by user
     attr_reader :toprow
     attr_reader :prow
@@ -580,6 +581,7 @@ module RubyCurses
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
       printstr(window, row=startrow, col=startcol, hline, color)
+      print_title
       (startrow+1).upto(startrow+height-1) do |row|
         printstr(window, row, col=startcol, hline2, color)
       end
@@ -587,6 +589,9 @@ module RubyCurses
   
      # @derwin = @form.window.derwin(@height, @width, @row, @col)
      # repaint
+    end
+    def print_title
+      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
     def get_content
@@ -626,6 +631,7 @@ module RubyCurses
     include Scrollable
     dsl_accessor :height
     dsl_accessor :title
+    dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :list    # the array of data to be sent by user
     dsl_accessor :maxlen    # the array of data to be sent by user
     attr_reader :toprow
@@ -693,13 +699,15 @@ module RubyCurses
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
       printstr(window, row=startrow, col=startcol, hline, color)
+      print_title
       (startrow+1).upto(startrow+height-1) do |row|
         printstr(window, row, col=startcol, hline2, color)
       end
       printstr(window, startrow+height, col=startcol, hline, color)
   
-     # @derwin = @form.window.derwin(@height, @width, @row, @col)
-     # repaint
+    end
+    def print_title
+      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     ### FOR scrollable ###
     def get_content
@@ -992,7 +1000,8 @@ module RubyCurses
   class TextView < Widget
     include Scrollable
     dsl_accessor :height  # height of viewport
-    dsl_accessor :title   # TODO set this on top
+    dsl_accessor :title   # set this on top
+    dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :list    # the array of data to be sent by user
     dsl_accessor :maxlen    # max len to be displayed
     attr_reader :toprow    # the toprow in the view (offsets are 0)
@@ -1058,13 +1067,15 @@ module RubyCurses
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
       printstr(window, row=startrow, col=startcol, hline, color)
+      print_title
       (startrow+1).upto(startrow+height-1) do |row|
         printstr(window, row, col=startcol, hline2, color)
       end
       printstr(window, startrow+height, col=startcol, hline, color)
   
-     # @derwin = @form.window.derwin(@height, @width, @row, @col)
-     # repaint
+    end
+    def print_title
+      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     ### FOR scrollable ###
     def get_content
@@ -1242,6 +1253,8 @@ if $0 == __FILE__
           width 40
           height 10
           list mylist
+          title "A long list"
+          title_attrib 'reverse'
         end
         listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         texta = TextArea.new @form do
@@ -1250,6 +1263,8 @@ if $0 == __FILE__
           col  52 
           width 40
           height 15
+          title "Editable box"
+          title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now. "
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
@@ -1264,6 +1279,8 @@ if $0 == __FILE__
           col  52 
           width 40
           height 7
+          title "README.txt"
+          title_attrib 'bold'
         end
         content = File.open("../../README.txt","r").readlines
         @textview.set_content content

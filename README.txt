@@ -7,6 +7,7 @@
 * For a working example, execute rform.rb and rwidget.rb (exit with F1).
 
 * screenshots on blog mentioned above.
+  Sample: http://www.benegal.org/files/nc_screen_textview.png
 
 == DESCRIPTION:
 
@@ -182,11 +183,46 @@ and fields.
      $log.debug "MBOX : #{@mb.selected_index} "
      $log.debug "MBOX : #{@mb.input_value} "
 
+=== create a read-only scrollable view of data
+ 
+        @textview = TextView.new @form do
+          name   "myView" 
+          row  16 
+          col  52 
+          width 40
+          height 7
+        end
+        content = File.open("../../README.txt","r").readlines
+        @textview.set_content content
+
+        ## set it to point to row 21
+        @textview.top_row 21
+
+
+        # lets scroll the text view as we scroll the listbox
+
+        listb.bind(:ENTER_ROW, @textview) { |arow, tview| tview.top_row arow }
+        
+        # lets scroll the text view to the line you enter in the numeric
+        # field
+        @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(fld.getvalue.to_i) }
+
+        # lets scroll the text view to the first match of the regex you
+        # enter
+        @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
+
 == REQUIREMENTS:
 
+* ruby 1.8.7    (not compatible with 1.9)
+
 * ncurses-ruby
+
+(following is provided with source)
+
 * uses the window class created by "manveru" (michael) - this can be
   removed if not needed. (lib/ver/window)
+  It is provided with this package, and has some alterations from the
+  original.
 
 * in the message box sample, i am catching keys using manveru's
   keyboard.rb. This allows me to get M-keys which i am not getting

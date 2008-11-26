@@ -176,6 +176,7 @@ module RubyCurses
     end
     def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
 
+      att = Ncurses::A_NORMAL if att.nil?
       case att.to_s.downcase
       when 'underline'
         att = Ncurses::A_UNDERLINE
