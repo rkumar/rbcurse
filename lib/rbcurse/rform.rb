@@ -314,6 +314,7 @@ module RubyCurses
       @window.refresh
       return @window
     end
+    # private
     def array_width a
       longest = a.max {|a,b| a.to_s.length <=> b.to_s.length }
       $log.debug "array width #{longest}"
@@ -367,14 +368,31 @@ module RubyCurses
        $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
-       $log.debug " ABOU TO DESTROY DUE TO RIGHT"
+          $log.debug " ABOU TO DESTROY DUE TO RIGHT"
           cmenu.parent.current_menu.pop
           cmenu.destroy
         end
         return :UNHANDLED
       else
-        return :UNHANDLED
+        ret = check_mnemonics cmenu, ch
+        return ret
       end
+    end
+    ##
+    # checks given key against current menu's items and fires key if 
+    # added on 2008-11-27 12:07 
+    def check_mnemonics cmenu, ch
+#     $log.debug "inside check_mnemonics #{ch}"
+      key = ch.chr.downcase rescue ""
+      cmenu.items.each do |item|
+        next if !item.respond_to? :mnemonic or item.mnemonic.nil?
+#       $log.debug "inside check_mnemonics #{item.mnemonic}"
+        if key == item.mnemonic.downcase
+          item.fire
+          return 0
+        end
+      end
+      return :UNHANDLED
     end
     ## menu 
     def show # menu.show
@@ -441,8 +459,9 @@ module RubyCurses
     def handle_keys
       @selected = false
       set_menu 0
+      catch(:menubarclose) do
       while((ch = @window.getch()) != KEY_F2 )
-       $log.debug "insdie handle_keys :  #{ch}"  if ch != -1
+       $log.debug "menuubar inside handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
           next
@@ -457,28 +476,35 @@ module RubyCurses
           @selected = true
         when KEY_ENTER, 10, 13
           @selected = true
-            $log.debug "insdie ENTER :  #{current_menu}" 
+            $log.debug " mb insdie ENTER :  #{current_menu}" 
             current_menu.handle_key ch
         when KEY_UP
-          $log.debug "insdie keyUPP :  #{ch}" 
+          $log.debug " mb insdie keyUPP :  #{ch}" 
           current_menu.handle_key ch
         when KEY_LEFT
-          $log.debug "insdie KEYLEFT :  #{ch}" 
+          $log.debug " mb insdie KEYLEFT :  #{ch}" 
           ret = current_menu.handle_key ch
           prev_menu if ret == :UNHANDLED
           #display_items if @selected
         when KEY_RIGHT
-       $log.debug "insdie KEYRIGHT :  #{ch}" 
+          $log.debug " mb insdie KEYRIGHT :  #{ch}" 
           ret = current_menu.handle_key ch
           next_menu if ret == :UNHANDLED
         else
-          next
+          $log.debug " mb insdie ELSE :  #{ch}" 
+          ret = current_menu.handle_key ch
+          if ret == :UNHANDLED
+            Ncurses.beep 
+          else
+            break  # we handled a menu action, close menubar
+          end
         end
         Ncurses::Panel.update_panels();
         Ncurses.doupdate();
 
         @window.wrefresh
       end
+      end # catch
       destroy  # XXX
     end
     def current_menu
@@ -1198,8 +1224,8 @@ if $0 == __FILE__
     Ncurses.start_color();
     # Initialize few color pairs 
     Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
-    Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
-    Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
+    Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE); # reverse
+    Ncurses.init_pair(3, COLOR_GREEN, COLOR_BLACK);
     Ncurses.init_pair(4, COLOR_YELLOW, COLOR_RED); # for selected item
     Ncurses.init_pair(5, COLOR_WHITE, COLOR_BLACK); # for unselected menu items
     Ncurses.init_pair(6, COLOR_WHITE, COLOR_BLUE); # for bottom/top bar
@@ -1296,9 +1322,9 @@ if $0 == __FILE__
       checkbutton = CheckBox.new @form do
         text_variable $results
         #value = true
-        onvalue "selected cb"
+        onvalue "Selected cb   "
         offvalue "UNselected cb"
-        text "Please click me"
+        text "A checkbox"
         row 17
         col 22
       end
@@ -1317,25 +1343,29 @@ if $0 == __FILE__
       ok_button = Button.new @form do
         text "OK"
         name "OK"
-        row 18
+        row 24
         col 22
+        underline 0
       end
       ok_button.command { |form| form.dump_data;form.printstr(@window, 23,45, "Dumped data to log") }
-        #text "Cancel"
+
       cancel_button = Button.new @form do
-        text_variable $results
-        row 18
+        #text_variable $results
+        text "Cancel"
+        row 24
         col 28
+        underline 1
         surround_chars ['{','}']
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
 
-      Label.new @form, {'text' => "Select a language:", "row" => 20, "col" => 22}
+      Label.new @form, {'text' => "Select a language:", "row" => 20, "col" => 22, "color"=>3}
       $radio = Variable.new
       radio1 = RadioButton.new @form do
         text_variable $radio
         text "ruby"
         value "ruby"
+        color 1
         row 21
         col 22
       end
@@ -1355,7 +1385,8 @@ if $0 == __FILE__
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
       filemenu.add(RubyCurses::MenuItem.new "Save",'S')
-      filemenu.add(RubyCurses::MenuItem.new "Exit",'X')
+      filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
+      item.command() {throw(:close)}
       @mb.add(filemenu)
       editmenu = RubyCurses::Menu.new "Edit"
       item = RubyCurses::MenuItem.new "Cut"

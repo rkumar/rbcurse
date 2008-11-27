@@ -859,7 +859,7 @@ $log.debug "setpos : #{r} #{c}"
       @row = config.fetch("row",-1) 
       @col = config.fetch("col",-1) 
       @bgcolor = config.fetch("bgcolor", 0)
-      @color = config.fetch("bgcolor", $datacolor)
+      @color = config.fetch("color", $datacolor)
       @text = config.fetch("text", "NOTFOUND")
       @name = config.fetch("name", @text)
       @editable = false
@@ -872,10 +872,10 @@ $log.debug "setpos : #{r} #{c}"
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
-#      $log.debug "label :#{@text}, #{value}, #{r}, #{c} "
+      $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} "
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
-        @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
+        #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
     end
   # ADD HERE LABEL
   end
@@ -994,6 +994,7 @@ $log.debug "setpos : #{r} #{c}"
       row = @row
       col = @col
       @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
+      @label.color = @color unless @color.nil?
 
     end
     def toggle
@@ -1025,6 +1026,8 @@ $log.debug "setpos : #{r} #{c}"
     end
     def repaint
       super
+      #@label.color = @color unless @color.nil?
+      @label.color(@color) unless @color.nil?
       @label.repaint
     end
     def create_label
@@ -1032,6 +1035,7 @@ $log.debug "setpos : #{r} #{c}"
       col = @col
 #     $log.debug  "LABEL text: #{@text}"
       @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
+      @label.color(@color) unless @color.nil?
 
     end
     def handle_key ch

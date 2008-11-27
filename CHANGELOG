@@ -1,3 +1,11 @@
+**2008-11-27 12:13**
+## menubar hotkey ##
+
+Done handling of hotkey/mnemonic in menu
+and closing of menubar when action complete
+
+frmincr200811271212.tgz
+* * *
 **2008-11-27 00:24**
 ## Titles in all scrollable views. ##
 
