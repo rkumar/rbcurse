@@ -529,7 +529,7 @@ module RubyCurses
           row brow
           col bcol
           underline underline
-          highlight_background $datacolor
+          highlight_background $datacolor 
           color $reversecolor
           bgcolor $reversecolor
         end
@@ -886,11 +886,11 @@ module RubyCurses
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
-      @bgcolor = $datacolor 
-      @color = $datacolor 
       #@command_block = nil
       @handler={}
       super
+      @bgcolor ||= $datacolor 
+      @color ||= $datacolor 
       @surround_chars ||= ['[', ']'] 
       @text = @name if @text.nil?
     end
@@ -910,20 +910,20 @@ module RubyCurses
     end
     def repaint  # button
         r,c = rowcol
-        @highlight_foreground ||= @color
-        @highlight_background ||= $reversecolor
+        @highlight_foreground ||= $reversecolor
+        @highlight_background ||= 0
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
         color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
-#       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
+        $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
         value = getvalue_for_paint
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
-        @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
+#       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         if @underline != nil
         #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
         #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
        # underline not working here using Ncurses. Works with highline. \e[4m
-        @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD, color, nil)
+          @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD, color, nil)
         end
     end
     def command &block
@@ -965,29 +965,23 @@ module RubyCurses
     end
   end #BUTTON
   ##
-  # A checkbox, may be selected or unselected
-  class CheckBox < Button
+  # A button that may be switched off an on. Does not fire.
+  # To be extended by RadioButton and checkbox.
+  class ToggleButton < Button
     include CommonIO
-    # if a variable has been defined, off and on value will be set in it (default 0,1)
     dsl_accessor :onvalue, :offvalue
+    dsl_accessor :value
     dsl_accessor :surround_chars 
     def initialize form, config={}, &block
-      @value = false
-      @surround_chars ||= ['[', ']']
       super
-      create_label
+      @value ||= false
     end
     def getvalue
-      @value 
+      @value ? @onvalue : @offvalue
     end
     def getvalue_for_paint
-      buttontext = getvalue() ? "X" : " "
+      buttontext = getvalue()
       @surround_chars[0] + buttontext + @surround_chars[1]
-    end
-    def repaint
-      super
-      @label.color(@color) unless @color.nil?
-      @label.repaint
     end
     def handle_key ch
       if ch == 32
@@ -995,13 +989,6 @@ module RubyCurses
       else
         super
       end
-    end
-    def create_label
-      row = @row
-      col = @col
-      @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
-      @label.color = @color unless @color.nil?
-
     end
     def toggle
       @value = !@value
@@ -1015,13 +1002,30 @@ module RubyCurses
     end
   end # class
   ##
+  # A checkbox, may be selected or unselected
+  class CheckBox < ToggleButton
+    include CommonIO
+    # if a variable has been defined, off and on value will be set in it (default 0,1)
+    def initialize form, config={}, &block
+      super
+      @surround_chars ||= ['[', ']']
+      @value ||= false
+    end
+    def getvalue
+      @value 
+    end
+    def getvalue_for_paint
+      buttontext = getvalue() ? "X" : " "
+      @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+    end
+  end # class
+  ##
   # A selectable button that has a text value. It is based on a Variable that
   # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
   # 2008-11-27 18:45 just made this inherited from Checkbox
-  class RadioButton < CheckBox
+  class RadioButton < ToggleButton
     include CommonIO
     # if a variable has been defined, off and on value will be set in it (default 0,1)
-    dsl_accessor :value
     def initialize form, config={}, &block
       @surround_chars = ['(', ')'] if @surround_chars.nil?
       super
@@ -1032,12 +1036,14 @@ module RubyCurses
     end
     def getvalue_for_paint
       buttontext = @text_variable.value == @value ? "o" : " "
-      @surround_chars[0] + buttontext + @surround_chars[1]
+      @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
     end
     def toggle
       @text_variable.value = @value
     end
   end # class
+
+
   module ColorSetup
 
     def ColorSetup.setup

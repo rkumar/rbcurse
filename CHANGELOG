@@ -1,3 +1,20 @@
+**2008-11-27 20:11**
+## ToggleButton ##
+
+Now a togglebutton class that is extended by Radio and checkbox
+Togglebutton is itself a toggleable button.
+
+frmincr200811272010.tgz
+* * *
+**2008-11-27 18:54**
+## extended radiobutton from checkbox ##
+
+to reduce code.
+Now i am thinkig both shuold extend one class. My ole Swing book gaves me a cool
+name to call it. ToggleButton!
+
+frmincr200811271853.tgz
+* * *
 **2008-11-27 12:13**
 ## menubar hotkey ##
 

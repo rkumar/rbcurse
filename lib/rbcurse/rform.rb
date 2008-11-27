@@ -1338,6 +1338,13 @@ if $0 == __FILE__
         row 17
         col 22
       end
+      togglebutton = ToggleButton.new @form do
+        value  true
+        onvalue  "Selected  "
+        offvalue "Unselected"
+        row 18
+        col 22
+      end
 
       @form.by_name["line"].display_length = 3
       @form.by_name["line"].maxlen = 3
