@@ -505,7 +505,7 @@ module RubyCurses
         @window.wrefresh
       end
       end # catch
-      destroy  # XXX
+      destroy  # Note that we destroy the menu bar upon exit
     end
     def current_menu
       @items[@active_index]
@@ -564,8 +564,8 @@ module RubyCurses
     end
   end # menubar
 
-  ## TODO allow selection multi and single
-  #  use selection color for selected row.
+  ## TODO allow selection multi and single DONE multi, not yet single
+  #  use selection color for selected row. DONE
   class Listbox < Widget
     include Scrollable
     include Selectable
@@ -811,6 +811,9 @@ module RubyCurses
         else
           delete_eol
         end
+      when ?\C-u
+        # added 2008-11-27 12:43  paste delete buffer into insertion point
+        @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
       when ?\C-a
         set_form_col 0
       when ?\C-e
@@ -865,7 +868,7 @@ module RubyCurses
   end
   def delete_line line=@prow
     $log.debug "called delete line"
-    @list.delete_at line
+    @delete_buffer = @list.delete_at line
     @buffer = @list[@prow]
     if @buffer.nil?
       up
