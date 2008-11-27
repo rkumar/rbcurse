@@ -20,7 +20,7 @@ See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
 * entry fields in ruby 
 * scrollable list box
 * multi-line editable area
-* radio and check buttons
+* togglebutton, radio and check buttons
 * message box
 * menubar 
 
