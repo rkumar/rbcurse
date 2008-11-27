@@ -20,7 +20,8 @@ module Scrollable
     @prow = get_content().length-1 
     #@toprow = @prow
     #@winrow = 0     # not putting this was cause prow < toprow !!
-    @toprow = @prow - @scrollatrow # ensure screen is filled when we show last. so clear not required
+    @toprow = @prow - @scrollatrow   # ensure screen is filled when we show last. so clear not required
+    @toprow = 0 if @toprow < 0
     ## except what if very few rows
     @winrow = @scrollatrow
   end
@@ -67,6 +68,8 @@ module Scrollable
   end
   def space
     if @toprow + @scrollatrow+1 >= get_content().length
+      # so cursor goes to last line
+      @prow +=  get_content().length - @prow - 1 # XXX 2008-11-27 14:18 
     else
       @toprow += @scrollatrow+1 # @rows-2 2008-11-13 23:41 put toprow here too
       $log.debug "space pr #{@prow}"

@@ -768,8 +768,11 @@ module RubyCurses
       case ch
       when ?\C-n
         space
+        @form.row = @row + 1 + @winrow
       when ?\C-p
         minus
+        @form.row = @row + 1 + @winrow
+        $log.debug "KEY minus : cp #{@curpos} #{@form.row} "
       when ?\C-[
         goto_start
       when ?\C-]
@@ -823,6 +826,8 @@ module RubyCurses
         putc ch
       end
       post_key
+      # XXX 2008-11-27 13:57 trying out
+      set_form_row
     end
     # puts cursor on correct row.
     def set_form_row
@@ -1120,8 +1125,8 @@ module RubyCurses
     def getvalue
       @list
     end
-    # textarea
-    # [ ] scroll left right
+    # textview
+    # [ ] scroll left right DONE
     def handle_key ch
       @buffer = @list[@prow]
       if @buffer.nil? and @list.length == 0
@@ -1178,6 +1183,8 @@ module RubyCurses
         $log.debug("ch #{ch}")
       end
       post_key
+      # XXX 2008-11-27 13:57 trying out
+      set_form_row
     end
     # puts cursor on correct row.
     def set_form_row

@@ -254,7 +254,7 @@ module RubyCurses
       @window.wrefresh
     end
     def setpos r=@row, c=@col
-$log.debug "setpos : #{r} #{c}"
+      $log.debug "setpos : #{r} #{c}"
      @window.wmove r,c
     end
     def get_current_field
@@ -872,7 +872,7 @@ $log.debug "setpos : #{r} #{c}"
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
-      $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} "
+#     $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} "
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
