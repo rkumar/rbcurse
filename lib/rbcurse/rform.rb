@@ -72,7 +72,7 @@ module RubyCurses
     end
   end
   ##
-  # TODO : underlining and key capture 
+  # TODO : underlining and key capture - DONE
   class MenuItem
     include CommonIO
     attr_accessor :parent
@@ -1029,7 +1029,7 @@ module RubyCurses
   # A viewable read only box. Can scroll. 
   # Intention is to be able to change content dynamically - the entire list.
   # Use set_content to set content, or just update the list attrib
-  # TODO - horizontal scrolling,
+  # TODO - horizontal scrolling, DONE
   #      - searching, goto line - DONE
   class TextView < Widget
     include Scrollable

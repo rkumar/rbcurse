@@ -659,22 +659,23 @@ module RubyCurses
   # TODO - test text_variable
   class Field < Widget
     include CommonIO
-    dsl_accessor :maxlen
-    attr_reader :buffer
-    dsl_accessor :label
+    dsl_accessor :maxlen             # maximum length allowed into field
+    attr_reader :buffer              # actual buffer being used for storage
+    dsl_accessor :label              # label of field
     dsl_accessor :default            # TODO use set_buffer for now
     dsl_accessor :values             # TODO
     dsl_accessor :valid_regex        # TODO
 
-    dsl_accessor :chars_allowed
-    dsl_accessor :display_length
-    dsl_accessor :bgcolor
+    dsl_accessor :chars_allowed      # regex, what characters to allow, will ignore all else
+    dsl_accessor :display_length     # how much to display
+    dsl_accessor :bgcolor            # cannot be used currently
     dsl_accessor :color
-    dsl_accessor :show    # done 2008-11-26 11:21 
+    dsl_accessor :show               # what charactr to show for each char entered (password field)
     attr_reader :form
-    attr_accessor :modified
-    attr_reader :handler
-    attr_reader :type
+    attr_accessor :modified          # boolean, value modified or not
+    attr_reader :handler             # event handler
+    attr_reader :type                # datatype of field, currently only sets chars_allowed
+    attr_reader :curpos              # cursor position in buffer current
 
     def initialize form, config={}, &block
       @form = form
@@ -689,9 +690,9 @@ module RubyCurses
       @name = config.fetch("name", nil)
       @editable = config.fetch("editable", true)
       @focusable = config.fetch("focusable", true)
-      @curpos = 0
+      @curpos = 0                  # current cursor position in buffer
       @handler = {}
-      @event_args = {}
+      @event_args = {}             # arguments passed at time of binding, to use when firing event
       @modified = false
       super
     end
@@ -825,7 +826,7 @@ module RubyCurses
         # Like Tk's TkVariable, a simple proxy that can be passed to a widget. The widget 
         # will update the Variable. A variable can be used to link a field with a label or 
         # some other widget.
-        # Currently it maintains a String, but it needs to be able to use a Hash or
+        # TODO: Currently it maintains a String, but it needs to be able to use a Hash or
         # Array at least.
         
   class Variable
@@ -887,10 +888,10 @@ module RubyCurses
       @editable = false
       @bgcolor = $datacolor 
       @color = $datacolor 
-      @surround_chars = ['[', ']']
       #@command_block = nil
       @handler={}
       super
+      @surround_chars ||= ['[', ']'] 
       @text = @name if @text.nil?
     end
     def on_enter
@@ -963,12 +964,16 @@ module RubyCurses
       end
     end
   end #BUTTON
+  ##
+  # A checkbox, may be selected or unselected
   class CheckBox < Button
     include CommonIO
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     dsl_accessor :onvalue, :offvalue
+    dsl_accessor :surround_chars 
     def initialize form, config={}, &block
       @value = false
+      @surround_chars ||= ['[', ']']
       super
       create_label
     end
@@ -977,10 +982,11 @@ module RubyCurses
     end
     def getvalue_for_paint
       buttontext = getvalue() ? "X" : " "
-      "[" + buttontext + "]"
+      @surround_chars[0] + buttontext + @surround_chars[1]
     end
     def repaint
       super
+      @label.color(@color) unless @color.nil?
       @label.repaint
     end
     def handle_key ch
@@ -1008,13 +1014,17 @@ module RubyCurses
       end
     end
   end # class
-  class RadioButton < Button
+  ##
+  # A selectable button that has a text value. It is based on a Variable that
+  # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
+  # 2008-11-27 18:45 just made this inherited from Checkbox
+  class RadioButton < CheckBox
     include CommonIO
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     dsl_accessor :value
     def initialize form, config={}, &block
+      @surround_chars = ['(', ')'] if @surround_chars.nil?
       super
-      create_label
     end
     # all radio buttons will return the value of the selected value, not the offered value
     def getvalue
@@ -1022,28 +1032,7 @@ module RubyCurses
     end
     def getvalue_for_paint
       buttontext = @text_variable.value == @value ? "o" : " "
-      "(" + buttontext + ")"
-    end
-    def repaint
-      super
-      #@label.color = @color unless @color.nil?
-      @label.color(@color) unless @color.nil?
-      @label.repaint
-    end
-    def create_label
-      row = @row
-      col = @col
-#     $log.debug  "LABEL text: #{@text}"
-      @label = RubyCurses::Label.new @form, {'text' => @text, "row" => row, "col" => col+5}
-      @label.color(@color) unless @color.nil?
-
-    end
-    def handle_key ch
-      if ch == 32
-        toggle
-      else
-        super
-      end
+      @surround_chars[0] + buttontext + @surround_chars[1]
     end
     def toggle
       @text_variable.value = @value
