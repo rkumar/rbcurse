@@ -84,7 +84,7 @@ module RubyCurses
     attr_accessor :id, :zorder
     attr_accessor :curpos              # cursor position inside object
     attr_reader  :config
-    attr_reader  :form
+    attr_accessor  :form              # made accessor 2008-11-27 22:32 so menu can set
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
     
@@ -909,13 +909,14 @@ module RubyCurses
       @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
+        $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = rowcol
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
         color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
-        $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} ")
         value = getvalue_for_paint
+        $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
         len = @display_length || value.length
         printstr @form.window, r, c, "%-*s" % [len, value], color
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -1012,9 +1013,11 @@ module RubyCurses
       @value ||= false
     end
     def getvalue
+      $log.debug " iside CHECKBOX getvalue"
       @value 
     end
     def getvalue_for_paint
+      $log.debug " iside CHECKBOX getvalue for paint"
       buttontext = getvalue() ? "X" : " "
       @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
     end

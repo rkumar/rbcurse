@@ -82,7 +82,7 @@ module RubyCurses
     attr_accessor :width
     attr_accessor :accelerator
     attr_accessor :enabled
-    attr_reader :text, :mnemonic
+    attr_accessor :text, :mnemonic  # changed reader to accessor 
     def initialize text, mnemonic=nil, &block
       @text = text
       @enabled = true
@@ -347,7 +347,7 @@ module RubyCurses
           cmenu.select_next_item
       when KEY_UP
         cmenu.select_prev_item
-      when KEY_ENTER, 10, 13
+      when KEY_ENTER, 10, 13, 32 # added 32 2008-11-27 23:50 
         cmenu.fire
       when KEY_LEFT
         if cmenu.parent.is_a? RubyCurses::Menu 
@@ -474,7 +474,7 @@ module RubyCurses
           end
             
           @selected = true
-        when KEY_ENTER, 10, 13
+        when KEY_ENTER, 10, 13, 32
           @selected = true
             $log.debug " mb insdie ENTER :  #{current_menu}" 
             current_menu.handle_key ch
@@ -1225,6 +1225,52 @@ module RubyCurses
       yield @list[@prow+num] 
     end
   end # class textview
+  class CheckBoxMenuItem < MenuItem
+    include DSL
+    attr_reader :checkbox
+    def initialize text, mnemonic=nil, &block
+      @checkbox = CheckBox.new nil
+      @checkbox.text text
+      super
+    end
+    def onvalue
+      @checkbox.onvalue onvalue
+    end
+    def offvalue
+      @checkbox.onvalue offvalue
+    end
+   def text=(t) # stack level too deep if no = .????
+    @checkbox.text t
+   end
+    def to_s
+      "    #{text} "
+    end
+    def getvalue
+      checkbox.getvalue
+    end
+    def getvalue_for_paint
+      $log.debug " DOES it come here ?"
+      "|%-*s|" % [@width, checkbox.getvalue_for_paint]
+    end
+    def fire
+      checkbox.toggle
+      repaint
+      highlight true
+    end
+    def repaint
+      printstr(@parent.window, row, 0, getvalue_for_paint, $reversecolor)
+      parent.window.wrefresh
+    end
+    def method_missing(sym, *args)
+      if checkbox.respond_to? sym
+        $log.debug("calling CHECKBOXMENU #{sym} called #{args[0]}")
+        checkbox.send(sym, args)
+      else
+        $log.error("ERROR CHECKBOXMENU #{sym} called")
+      end
+    end
+
+  end
 end # modul
 
 if $0 == __FILE__
@@ -1340,8 +1386,8 @@ if $0 == __FILE__
       end
       togglebutton = ToggleButton.new @form do
         value  true
-        onvalue  "Selected  "
-        offvalue "Unselected"
+        onvalue  "Toggle Me  "
+        offvalue "Untoggled  "
         row 18
         col 22
       end
@@ -1404,6 +1450,15 @@ if $0 == __FILE__
       filemenu.add(RubyCurses::MenuItem.new "Save",'S')
       filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
       item.command() {throw(:close)}
+      # experimental cbmi - ugly since cb is a component in it
+      # how to pass value elsewhere ? XXX
+      item = RubyCurses::CheckBoxMenuItem.new "CheckMe"
+#     item.onvalue="On"
+#     item.offvalue="Off"
+     #item.checkbox.text "Labelcb"
+     #item.text="Labelcb"
+    
+      filemenu.add(item)
       @mb.add(filemenu)
       editmenu = RubyCurses::Menu.new "Edit"
       item = RubyCurses::MenuItem.new "Cut"

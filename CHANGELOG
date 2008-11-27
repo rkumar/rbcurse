@@ -1,3 +1,15 @@
+**2008-11-28 00:30**
+## CheckBoxMenuItem ##
+
+Implemented a checkbox menu item, works but i am not pleased, quite dirty.
+
+Widgets are tied to a form, for ease of construction.
+In the case of menus they are not, and menus print in a different manner.
+
+Submenu should also have been a class, perhaps. 
+
+frmincr200811280026.tgz
+* * *
 **2008-11-27 20:11**
 ## ToggleButton ##
 
