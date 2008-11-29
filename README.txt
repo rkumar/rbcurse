@@ -32,11 +32,10 @@ Above may be created using DSL like syntax, or hashes.
   although the description of the widgets does allow for selecting
   foreground and background color.
 
-  Some other developers like that of "sup" have done a lot of work in
-trying to work around this problem, but the code was very complex (for
-me) and I was not confident in integrating all that. In order that
-applications are light and fast, I hope to keep the behind-the-scenes
-work minimal.
+  2008-11-30 01:00  : I have just put a simple fix for this in place. 
+  Colors and attributes may be defined for widgets at any time in human
+ terms: 'black', 'red' etc. Being tested and cleaned up. See rform.rb
+for demo (radiobuttons, checkbox).
 
 
 == SYNOPSIS:
