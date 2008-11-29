@@ -28,6 +28,7 @@ require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/commonio'
+require 'lib/rbcurse/colormap'
 #require 'lib/rbcurse/rform'
 
 module DSL
@@ -67,6 +68,7 @@ end
 include Ncurses
 module RubyCurses
   extend self
+  include ColorMap
   class Widget
     include CommonIO
     include DSL
@@ -80,6 +82,7 @@ module RubyCurses
     dsl_accessor :focusable, :enabled # boolean
     dsl_accessor :row, :col            # location of object
     dsl_accessor :color, :bgcolor      # normal foreground and background
+    dsl_accessor :attr                 # attribute bold, normal, reverse
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id, :zorder
     attr_accessor :curpos              # cursor position inside object
@@ -90,10 +93,11 @@ module RubyCurses
     
     def initialize form, aconfig={}, &block
       @form = form
-      @bgcolor = 0
+      @bgcolor ||=  "black" # 0
       @row_offset = @col_offset = 0
       @state = :NORMAL
-      @color = $datacolor
+      @color ||= "white" # $datacolor
+      @attr = nil
       @handler = {}
       @event_args = {}
       @config = aconfig
@@ -164,8 +168,14 @@ module RubyCurses
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
         value = getvalue_for_paint
         len = @display_length || value.length
-        printstr @form.window, r, c, "%-*s" % [len, value], color
-        @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
+        if @bgcolor.is_a? String and @color.is_a? String
+          acolor = ColorMap.get_color(@color, @bgcolor)
+        else
+          acolor = $datacolor
+        end
+        @form.window.printstring r, c, "%-*s" % [len, value], acolor, @attr
+        # next line should be in same color but only have @att so we can change att is nec
+        #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
     end
 
     def destroy
@@ -685,8 +695,8 @@ module RubyCurses
       @maxlen=config.fetch("maxlen", @display_length) 
       @row = config.fetch("row", 0)
       @col = config.fetch("col", 0)
-      @bgcolor = config.fetch("bgcolor", 0)
-      @color = config.fetch("color", $datacolor)
+      @bgcolor = config.fetch("bgcolor", $def_bg_color)
+      @color = config.fetch("color", $def_fg_color)
       @name = config.fetch("name", nil)
       @editable = config.fetch("editable", true)
       @focusable = config.fetch("focusable", true)
@@ -760,8 +770,14 @@ module RubyCurses
     printval = getvalue_for_paint
     printval = show()*printval.length unless @show.nil?
     printval = printval[0..display_length-1] if printval.length > display_length
-    printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
-    @form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
+        if @bgcolor.is_a? String and @color.is_a? String
+          acolor = ColorMap.get_color(@color, @bgcolor)
+        else
+          acolor = $datacolor
+        end
+    #printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
+    @form.window.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attrs
+    #@form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
   end
   def set_focusable(tf)
     @focusable = tf
@@ -836,6 +852,7 @@ module RubyCurses
       @value = value
     end
     def update_command *args, &block
+      $log.debug "update command set #{args}"
       @update_command = block
       @args = args
     end
@@ -849,7 +866,7 @@ module RubyCurses
     def value= val
       $log.debug "variable value= called : #{val} "
       @value = val
-      @update_command.call(*args) if !@update_command.nil?
+      @update_command.call(self, *@args) if !@update_command.nil?
     end
   end
   class Label < Widget
@@ -859,8 +876,8 @@ module RubyCurses
     # @form = form
       @row = config.fetch("row",-1) 
       @col = config.fetch("col",-1) 
-      @bgcolor = config.fetch("bgcolor", 0)
-      @color = config.fetch("color", $datacolor)
+      @bgcolor = config.fetch("bgcolor", $def_bg_color)
+      @color = config.fetch("color", $def_fg_color)
       @text = config.fetch("text", "NOTFOUND")
       @name = config.fetch("name", @text)
       @editable = false
@@ -873,9 +890,14 @@ module RubyCurses
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
-#     $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} "
         len = @display_length || value.length
-        printstr @form.window, r, c, "%-*s" % [len, value], color
+        if @bgcolor.is_a? String and @color.is_a? String
+          acolor = ColorMap.get_color(@color, @bgcolor)
+        else
+          acolor = $datacolor
+        end
+     $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
+        @form.window.printstring r, c, "%-*s" % [len, value], acolor,@attrs
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
     end
   # ADD HERE LABEL
@@ -915,10 +937,13 @@ module RubyCurses
         @highlight_background ||= 0
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
         color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+        if bgcolor.is_a? String and color.is_a? String
+          color = ColorMap.get_color(color, bgcolor)
+        end
         value = getvalue_for_paint
         $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
         len = @display_length || value.length
-        printstr @form.window, r, c, "%-*s" % [len, value], color
+        @form.window.printstring r, c, "%-*s" % [len, value], color, @attrs
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         if @underline != nil
         #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
@@ -1045,84 +1070,16 @@ module RubyCurses
       @text_variable.value = @value
     end
   end # class
-
-
-  module ColorSetup
-    def ColorSetup.get_color_const colorstring
-        Ncurses.const_get "COLOR_#{colorstring.upcase}"
-    end
-    def ColorSetup.install_color fgc, bgc
-        fg = ColorSetup.get_color_const fgc
-        bg = ColorSetup.get_color_const bgc
-        Ncurses.init_pair(@color_id+1, fg, bg);
-        $color_map[fgc, bgc] = @color_id+1
-        return @color+1
-    end
-    def ColorSetup.get_color fgc, bgc
-      if $color_map.include? [fgc, bgc]
-        return $color_map.[fgc, bgc]
-      else
-        return ColorSetup.install_color fgc, bgc
-    end
-
-    def ColorSetup.setup
-      @color_id = 0
-      $color_map = {}
-      Ncurses.start_color();
-      # Initialize few color pairs 
-      $def_fg_color = "white"   # pls set these 2 for your application
-      $def_bg_color = "black"
-      #COLORS = [COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE, 
-      #     COLOR_MAGENTA, COLOR_CYAN, COLOR_WHITE]
-      COLORS = %w[black red green yellow blue magenta cyan white]
-
-      # make foreground colors
-      bg = ColorSetup.get_color_const $def_bg_color
-      COLORS[0...COLORS.size].each_with_index do |color, i|
-        next if color == $def_bg_color
-        ColorSetup.install_color color, $def_bg_color
-      end
-      $reversecolor = ColorSetup.get_color $def_bg_color, $def_fg_color
-      
-      $errorcolor = ColorSetup.get_color 'white', 'red'
-      $promptcolor = $selectedcolor = ColorSetup.install_color 'yellow', 'red'
-      $normalcolor = $datacolor = ColorSetup.get_color 'white', 'black'
-      $bottomcolor = $topcolor = ColorSetup.get_color 'white', 'blue'
-    end
-
-=begin
-      Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
-      Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
-      Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
-      Ncurses.init_pair(4, COLOR_YELLOW, COLOR_RED); # for selected item
-      Ncurses.init_pair(5, COLOR_WHITE, COLOR_BLACK); # for unselected menu items
-      Ncurses.init_pair(6, COLOR_WHITE, COLOR_BLUE); # for bottom/top bar
-      Ncurses.init_pair(7, COLOR_WHITE, COLOR_RED); # for error messages
-      # added to complete basic colors
-      Ncurses.init_pair(8, COLOR_BLUE, COLOR_BLACK); 
-      Ncurses.init_pair(9, COLOR_CYAN, COLOR_BLACK); 
-      Ncurses.init_pair(10, COLOR_MAGENTA, COLOR_BLACK); 
-      Ncurses.init_pair(11, COLOR_GREEN, COLOR_BLACK); 
-=end
-    ##
-    # returns colorpair containing requested FG color
-    # if a numeric is passed, return the same (for back compat since we were using colorpairs
-    # earlier
-    # @param colorname e.g red, white, black
-    def ColorSetup.get_fgcolor color
-      return color if color.is_a? Fixnum
-      @@FG_COLORS[color]
-    end
-    # returns colorpair containing requested BG color
-    # if a numeric is passed, return the same (for back compat since we were using colorpairs
-    # earlier
-    # @param colorname e.g red, white, black
-    def ColorSetup.get_bgcolor color
-      return color if color.is_a? Fixnum
-      @@BG_COLORS[color]
-    end
+  def self.startup
+    VER::start_ncurses
+    $log = Logger.new("view.log")
+    $log.level = Logger::DEBUG
+    Colormap.setup
   end
-end # modul
+
+end # module
+
+
 
 if $0 == __FILE__
   # Initialize curses

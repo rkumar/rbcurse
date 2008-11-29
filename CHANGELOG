@@ -1,3 +1,20 @@
+**2008-11-30 00:58**
+## friendly colors - under testing ##
+
+Have implemented human friendly colors for foreground and background
+Tested out on some widgets but not all. Need to totally test and clean code.
+Is functioning. See radio buttons and their label, see checkbox which makes the label bold.
+
+frmincr200811300056.tgz
+* * *
+**2008-11-29 21:10**
+## experimental Colormap to make color definitions easy ##
+
+Added a Colormap module that helps create and retrieve colors by human names
+so we can define colors in widgets without reference to color_pairs.
+
+frmincr200811292109.tgz
+* * *
 **2008-11-28 00:30**
 ## CheckBoxMenuItem ##
 

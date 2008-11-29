@@ -23,7 +23,7 @@ module VER
       Ncurses::keypad(@window, true)
     end
     def self.root_window(layout = { :height => 0, :width => 0, :top => 0, :left => 0 })
-      VER::start_ncurses
+      #VER::start_ncurses
       @layout = layout
       @window = Window.new(@layout)
       @window.wrefresh

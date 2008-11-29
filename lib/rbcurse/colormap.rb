@@ -1,33 +1,41 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
-module Colormap
-  def Colormap.get_color_const colorstring
+module ColorMap
+  ## private
+  # returns a color constant for a human color string
+  def ColorMap.get_color_const colorstring
     Ncurses.const_get "COLOR_#{colorstring.upcase}"
   end
-  def Colormap.install_color fgc, bgc
-      $log.debug " install_color found #{fgc} #{@bgc} "
+  ## private
+  # creates a new color pair, puts in color map and returns color_pair
+  # number
+  def ColorMap.install_color fgc, bgc
+#      $log.debug " install_color found #{fgc} #{@bgc} "
       @color_id += 1
-    fg = Colormap.get_color_const fgc
-    bg = Colormap.get_color_const bgc
+    fg = ColorMap.get_color_const fgc
+    bg = ColorMap.get_color_const bgc
     Ncurses.init_pair(@color_id, fg, bg);
     $color_map[[fgc, bgc]] = @color_id
     return @color_id
   end
-  def Colormap.get_color fgc, bgc=$def_bg_color
+  ## public
+  # returns a color_pair for a given foreground and background color
+  def ColorMap.get_color fgc, bgc=$def_bg_color
     if $color_map.include? [fgc, bgc]
-      $log.debug " get_color found #{fgc} #{@bgc} "
+#      $log.debug " get_color found #{fgc} #{@bgc} "
       return $color_map[[fgc, bgc]]
     else
-      $log.debug " get_color NOT found #{fgc} #{@bgc} "
-      return Colormap.install_color fgc, bgc
+#      $log.debug " get_color NOT found #{fgc} #{@bgc} "
+      return ColorMap.install_color fgc, bgc
     end
   end
-  def Colormap.colors
+  def ColorMap.colors
     @@colors
   end
 
-  def Colormap.setup
+  ## public
+  # setup color map at start of application
+  def ColorMap.setup
     @color_id = 0
     $color_map = {}
     Ncurses.start_color();
@@ -39,17 +47,19 @@ module Colormap
     @@colors = %w[black red green yellow blue magenta cyan white]
 
     # make foreground colors
-    bg = Colormap.get_color_const $def_bg_color
+    bg = ColorMap.get_color_const $def_bg_color
     @@colors[0...@@colors.size].each_with_index do |color, i|
       next if color == $def_bg_color
-      Colormap.install_color color, $def_bg_color
+      ColorMap.install_color color, $def_bg_color
     end
-    $reversecolor = Colormap.get_color $def_bg_color, $def_fg_color
+    $reversecolor = ColorMap.get_color $def_bg_color, $def_fg_color
 
-    $errorcolor = Colormap.get_color 'white', 'red'
-    $promptcolor = $selectedcolor = Colormap.get_color('yellow', 'red')
-    $normalcolor = $datacolor = Colormap.get_color('white', 'black')
-    $bottomcolor = $topcolor = Colormap.get_color('white', 'blue')
+    $errorcolor = ColorMap.get_color 'white', 'red'
+    $promptcolor = $selectedcolor = ColorMap.get_color('yellow', 'red')
+    $normalcolor = $datacolor = ColorMap.get_color('white', 'black')
+    $bottomcolor = $topcolor = ColorMap.get_color('white', 'blue')
+
+#    $log.debug " colormap SETUP: #{$datacolor} #{$reversecolor} "
   end
 
 end # modul
@@ -58,23 +68,23 @@ require 'logger'
 #require 'lib/ver/ncurses'
 require 'lib/ver/window'
 include Ncurses
-include Colormap
+include ColorMap
   # Initialize curses
   begin
     @window = VER::Window.root_window
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
-    Colormap.setup
+    ColorMap.setup
 
     # Create the window to be associated with the form 
     # Un post form and free the memory
 
     catch(:close) do
-      $log.debug "START  ---------"
+#      $log.debug "START  ---------"
       # need to pass a form, not window.
       r = 1; c = 2; i=0
       attr = Ncurses::A_NORMAL
-      @window.printstring  20, c, "press 0-9 to change BG color,  F1/q to quit. r-everse, n-ormal,b-old ", Colormap.get_color('white')
+      @window.printstring  20, c, "press 0-9 to change BG color,  F1/q to quit. r-everse, n-ormal,b-old ", ColorMap.get_color('white')
 
       
 
@@ -92,17 +102,17 @@ include Colormap
           attr |= Ncurses::A_UNDERLINE
         else
         i = ch.chr.to_i
-        i = 1 if i > Colormap::colors.length-1
+        i = 1 if i > ColorMap::colors.length-1
         end
-        bg = Colormap::colors[i]
+        bg = ColorMap::colors[i]
     @@colors = %w[black red green yellow blue magenta cyan white]
-      @window.printstring  r, c, "%-40s" % "red #{bg}      ", Colormap.get_color('red',bg) , attr
-      @window.printstring  2, c, "%-40s" % "blue #{bg}      ", Colormap.get_color('blue',bg) , attr
-      @window.printstring  3, c, "%-40s" % "white #{bg}      ", Colormap.get_color('white',bg) , attr
-      @window.printstring  4, c, "%-40s" % "green #{bg}      ", Colormap.get_color('green',bg) , attr
-      @window.printstring  5, c, "%-40s" % "cyan #{bg}      ", Colormap.get_color('cyan',bg) , attr
-      @window.printstring  6, c, "%-40s" % "magenta #{bg}      ", Colormap.get_color('magenta',bg) , attr
-      @window.printstring  7, c, "black #{bg}      ", Colormap.get_color('black',bg) , attr
+      @window.printstring  r, c, "%-40s" % "red #{bg}      ", ColorMap.get_color('red',bg) , attr
+      @window.printstring  2, c, "%-40s" % "blue #{bg}      ", ColorMap.get_color('blue',bg) , attr
+      @window.printstring  3, c, "%-40s" % "white #{bg}      ", ColorMap.get_color('white',bg) , attr
+      @window.printstring  4, c, "%-40s" % "green #{bg}      ", ColorMap.get_color('green',bg) , attr
+      @window.printstring  5, c, "%-40s" % "cyan #{bg}      ", ColorMap.get_color('cyan',bg) , attr
+      @window.printstring  6, c, "%-40s" % "magenta #{bg}      ", ColorMap.get_color('magenta',bg) , attr
+      @window.printstring  7, c, "black #{bg}      ", ColorMap.get_color('black',bg) , attr
         @window.wrefresh
       end
       #     VER::Keyboard.focus = tp
@@ -116,7 +126,7 @@ include Colormap
       VER::stop_ncurses
     p ex if ex
     p(ex.backtrace.join("\n")) if ex
-    $log.debug( ex) if ex
-    $log.debug(ex.backtrace.join("\n")) if ex
+#    $log.debug( ex) if ex
+#    $log.debug(ex.backtrace.join("\n")) if ex
   end
 end

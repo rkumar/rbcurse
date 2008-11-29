@@ -38,6 +38,7 @@ require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/scrollable'
 require 'lib/rbcurse/selectable'
+#require 'lib/rbcurse/colormap'
 
 ## form needs to know order of fields esp they can be changed.
 #include Curses
@@ -290,7 +291,7 @@ module RubyCurses
       @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+1, :left => @col } 
       @win = VER::Window.new(@layout)
       @window = @win
-      @win.bkgd(Ncurses.COLOR_PAIR(5));
+      @win.bkgd(Ncurses.COLOR_PAIR($datacolor));
       @panel = @win.panel
         printstr(@window, 0, 0, "+%s+" % ("-"*@width), $reversecolor)
         r = 1
@@ -1274,11 +1275,16 @@ module RubyCurses
 end # modul
 
 if $0 == __FILE__
-  # Initialize curses
+
   begin
-    VER::start_ncurses
-    Ncurses.start_color();
+  # Initialize curses
+    VER::start_ncurses  # this is initializing colors via ColorMap.setup
+    $log = Logger.new("view.log")
+    $log.level = Logger::DEBUG
+
+    @window = VER::Window.root_window
     # Initialize few color pairs 
+=begin
     Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
     Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE); # reverse
     Ncurses.init_pair(3, COLOR_GREEN, COLOR_BLACK);
@@ -1292,24 +1298,22 @@ if $0 == __FILE__
     $normalcolor = $datacolor = 5
     $bottomcolor = $topcolor = 6
 
+=end
     # Create the window to be associated with the form 
     # Un post form and free the memory
-    $log = Logger.new("view.log")
-    $log.level = Logger::DEBUG
 
     catch(:close) do
-      @layout = { :height => 0, :width => 0, :top => 0, :left => 0 } 
-      @win = VER::Window.new(@layout)
-      @window = @win
-      @win.bkgd(Ncurses.COLOR_PAIR(5));
-      @panel = @win.panel
-      @win.wrefresh
-      Ncurses::Panel.update_panels
-      $labelcolor = 2
-      $datacolor = 5
+#     @layout = { :height => 0, :width => 0, :top => 0, :left => 0 } 
+#     @win = VER::Window.new(@layout)
+#     @win.bkgd(Ncurses.COLOR_PAIR(5));
+#     @panel = @win.panel
+#     @win.wrefresh
+#     Ncurses::Panel.update_panels
+#     $labelcolor = 2
+#     $datacolor = 5
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors  ---------"
-      @form = Form.new @win
+      @form = Form.new @window
       r = 1; c = 22;
       %w[ name line regex password].each do |w|
         field = Field.new @form do
@@ -1380,7 +1384,7 @@ if $0 == __FILE__
         #value = true
         onvalue "Selected cb   "
         offvalue "UNselected cb"
-        text "A checkbox"
+        text "A checkbox BOLD ME"
         row 17
         col 22
       end
@@ -1401,6 +1405,8 @@ if $0 == __FILE__
       @form.by_name["name"].set_focusable(false)
       @form.by_name["password"].set_buffer ""
       @form.by_name["password"].show '*'
+      @form.by_name["password"].color 'red'
+      @form.by_name["password"].bgcolor 'blue'
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
       ok_button = Button.new @form do
@@ -1422,20 +1428,22 @@ if $0 == __FILE__
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
 
-      Label.new @form, {'text' => "Select a language:", "row" => 20, "col" => 22, "color"=>3}
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 20, "col" => 22, "color"=>"cyan"}
       $radio = Variable.new
+      $radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| $log.debug " TV VAL: #{cb.value} "; attrs =  cb.value ? 'bold' : nil; label.attrs(attrs)}
       radio1 = RadioButton.new @form do
         text_variable $radio
-        text "ruby"
-        value "ruby"
+        text "red"
+        value "red"
         color 1
         row 21
         col 22
       end
       radio2 = RadioButton.new @form do
         text_variable $radio
-        text  "java"
-        value  "java"
+        text  "green"
+        value  "green"
         row 22
         col 22
       end
@@ -1490,14 +1498,14 @@ if $0 == __FILE__
       @form.set_menu_bar  @mb
       # END
       @form.repaint
-      @win.wrefresh
+      @window.wrefresh
       Ncurses::Panel.update_panels
       #@form.req_first_field
       #@form.select_field 0
-      while((ch = @win.getch()) != KEY_F1 )
+      while((ch = @window.getch()) != KEY_F1 )
         @form.handle_key(ch)
        # @form.repaint
-        @win.wrefresh
+        @window.wrefresh
       end
       #     VER::Keyboard.focus = tp
     end
@@ -1505,7 +1513,7 @@ if $0 == __FILE__
   ensure
       Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
       Ncurses::Panel.del_panel(@padpanel) if !@padpanel.nil?   
-      @win.delwin if !@win.nil?
+      @window.delwin if !@window.nil?
     VER::stop_ncurses
     p ex if ex
     p(ex.backtrace.join("\n")) if ex

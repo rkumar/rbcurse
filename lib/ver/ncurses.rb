@@ -1,4 +1,6 @@
+require 'lib/rbcurse/colormap'
 module VER
+include ColorMap
   module_function
 
   # Setup ncurses, nicely documented by the curses manpages
@@ -12,7 +14,7 @@ module VER
 
 #    Color.start if Ncurses.has_colors?
       Ncurses.start_color();
-
+      ColorMap.setup # added by RK 2008-11-30 00:48 
     # The keypad option enables the keypad of the user's terminal.
     # If enabled (bf is TRUE), the user can press a function key (such as an
     # arrow key) and wgetch returns a single value representing the function
