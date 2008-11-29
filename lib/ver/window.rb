@@ -1,3 +1,4 @@
+require 'lib/ver/ncurses'
 module VER
   # Responsibilities:
   # * Interface to Ncurses::WINDOW and Ncurses::Panel
@@ -20,6 +21,14 @@ module VER
       @panel = Ncurses::Panel.new_panel(@window)
 
       Ncurses::keypad(@window, true)
+    end
+    def self.root_window(layout = { :height => 0, :width => 0, :top => 0, :left => 0 })
+      VER::start_ncurses
+      @layout = layout
+      @window = Window.new(@layout)
+      @window.wrefresh
+      Ncurses::Panel.update_panels
+      return @window
     end
 
     def resize_with(layout)
@@ -180,6 +189,47 @@ module VER
 
     def visible?
       @visible
+    end
+    ##
+    #added by rk 2008-11-29 18:48 
+    #to see if we can clean up from within
+    def destroy
+      # typically the ensure block should have this
+      # @panel = @window.panel if @window
+      #Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
+      #@window.delwin if !@window.nil?
+
+      #@panel = @window.panel if @window
+      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
+      @window.delwin if !@window.nil?
+    end
+    ## 
+    # added by rk 2008-11-29 19:01 
+    # I usually use this, not the others ones here
+    # @param  r - row
+    # @param  c - col
+    # @param string - text to print
+    # @param color - color pair
+    # @ param att - ncurses attribute: normal, bold, reverse, blink,
+    # underline
+    def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
+
+      att = Ncurses::A_NORMAL if att.nil?
+      case att.to_s.downcase
+      when 'underline'
+        att = Ncurses::A_UNDERLINE
+        $log.debug "UL att #{att}"
+      when 'bold'
+        att = Ncurses::A_BOLD
+      when 'blink'
+        att = Ncurses::A_BLINK    # unlikely to work
+      when 'reverse'
+        att = Ncurses::A_REVERSE    # unlikely to work
+      end
+
+      attron(Ncurses.COLOR_PAIR(color) | att)
+      mvprintw(r, c, "%s", string);
+      attroff(Ncurses.COLOR_PAIR(color) | att)
     end
   end
 end

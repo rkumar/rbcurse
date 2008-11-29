@@ -16,7 +16,7 @@ TODO
   - save data in a hash when called for.
   - make some methods private/protected
   - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
-  - create a readonly Text widget using the pad that we've already done.
+
 
 =end
 require 'rubygems'
@@ -1048,10 +1048,49 @@ module RubyCurses
 
 
   module ColorSetup
+    def ColorSetup.get_color_const colorstring
+        Ncurses.const_get "COLOR_#{colorstring.upcase}"
+    end
+    def ColorSetup.install_color fgc, bgc
+        fg = ColorSetup.get_color_const fgc
+        bg = ColorSetup.get_color_const bgc
+        Ncurses.init_pair(@color_id+1, fg, bg);
+        $color_map[fgc, bgc] = @color_id+1
+        return @color+1
+    end
+    def ColorSetup.get_color fgc, bgc
+      if $color_map.include? [fgc, bgc]
+        return $color_map.[fgc, bgc]
+      else
+        return ColorSetup.install_color fgc, bgc
+    end
 
     def ColorSetup.setup
+      @color_id = 0
+      $color_map = {}
       Ncurses.start_color();
       # Initialize few color pairs 
+      $def_fg_color = "white"   # pls set these 2 for your application
+      $def_bg_color = "black"
+      #COLORS = [COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE, 
+      #     COLOR_MAGENTA, COLOR_CYAN, COLOR_WHITE]
+      COLORS = %w[black red green yellow blue magenta cyan white]
+
+      # make foreground colors
+      bg = ColorSetup.get_color_const $def_bg_color
+      COLORS[0...COLORS.size].each_with_index do |color, i|
+        next if color == $def_bg_color
+        ColorSetup.install_color color, $def_bg_color
+      end
+      $reversecolor = ColorSetup.get_color $def_bg_color, $def_fg_color
+      
+      $errorcolor = ColorSetup.get_color 'white', 'red'
+      $promptcolor = $selectedcolor = ColorSetup.install_color 'yellow', 'red'
+      $normalcolor = $datacolor = ColorSetup.get_color 'white', 'black'
+      $bottomcolor = $topcolor = ColorSetup.get_color 'white', 'blue'
+    end
+
+=begin
       Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
       Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
       Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
@@ -1064,32 +1103,7 @@ module RubyCurses
       Ncurses.init_pair(9, COLOR_CYAN, COLOR_BLACK); 
       Ncurses.init_pair(10, COLOR_MAGENTA, COLOR_BLACK); 
       Ncurses.init_pair(11, COLOR_GREEN, COLOR_BLACK); 
-      @@FG_COLORS = {}
-      @@FG_COLORS['red']=1
-      @@FG_COLORS['black']=2
-      @@FG_COLORS['yellow']=4
-      @@FG_COLORS['white']=5
-      @@FG_COLORS['blue']=8
-      @@FG_COLORS['cyan']=9
-      @@FG_COLORS['magenta']=10
-      @@FG_COLORS['green']=11
-
-      @@BG_COLORS = {}
-      @@BG_COLORS['red']=4
-      @@BG_COLORS['black']=1
-      @@BG_COLORS['yellow']=8
-      @@BG_COLORS['white']=2
-      @@BG_COLORS['blue']=3
-      @@BG_COLORS['cyan']=10
-      @@BG_COLORS['magenta']=9
-      @@BG_COLORS['green']=11
-
-      $reversecolor = 2
-      $errorcolor = 7
-      $promptcolor = $selectedcolor = 4
-      $normalcolor = $datacolor = 5
-      $bottomcolor = $topcolor = 6
-    end
+=end
     ##
     # returns colorpair containing requested FG color
     # if a numeric is passed, return the same (for back compat since we were using colorpairs
