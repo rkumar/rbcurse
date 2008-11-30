@@ -952,21 +952,27 @@ module RubyCurses
           @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD, color, nil)
         end
     end
+    # XXX FIXME always store args also
     def command &block
       #@command_block = block
       bind :PRESS, &block
       $log.debug "#{text} bound PRESS"
       #instance_eval &block if block_given?
     end
+    ## XXX FIXME
+    # to return self and args when firing
     def fire
       #@form.instance_eval(&@command_block) if !@command_block.nil?
       #@command_block.call @form  if !@command_block.nil?
       $log.debug "firing PRESS #{text}"
       fire_handler :PRESS, @form
     end
+    ## XXX bind args always
     def bind event, &blk
       @handler[event] = blk
     end
+    ## XXX FIXME
+    # to return self and args when firing
     def fire_handler event, object
       $log.debug "called firehander #{object}"
       blk = @handler[event]

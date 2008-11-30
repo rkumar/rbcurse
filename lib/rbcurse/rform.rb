@@ -109,7 +109,7 @@ module RubyCurses
     ## XXX it could be a menu again
     def fire
       $log.debug ">>>fire menuitem : #{@text} #{@command} "
-      @command.call *@args if !@command.nil?
+      @command.call self, *@args if !@command.nil?
     end
     def highlight tf=true
       if tf
@@ -1250,11 +1250,11 @@ module RubyCurses
       checkbox.getvalue
     end
     def getvalue_for_paint
-      $log.debug " DOES it come here ?"
       "|%-*s|" % [@width, checkbox.getvalue_for_paint]
     end
     def fire
       checkbox.toggle
+      super
       repaint
       highlight true
     end
@@ -1451,7 +1451,7 @@ if $0 == __FILE__
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
-      item.command(@form) {|form|  form.printstr(@window, 23,45, "Open CALLED"); }
+      item.command(@form) {|it, form|  form.printstr(@window, 23,45, "Open CALLED"); }
 
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
@@ -1465,6 +1465,8 @@ if $0 == __FILE__
 #     item.offvalue="Off"
      #item.checkbox.text "Labelcb"
      #item.text="Labelcb"
+      # in next line, an explicit repaint is required since label is on another form.
+      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : nil; label.attrs(att); label.repaint}
     
       filemenu.add(item)
       @mb.add(filemenu)
