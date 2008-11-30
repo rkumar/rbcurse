@@ -22,7 +22,7 @@ See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
 * multi-line editable area
 * togglebutton, radio and check buttons
 * message box
-* menubar 
+* menubar - with submenu and CheckBoxMenuItem
 
 Above may be created using DSL like syntax, or hashes.
 
@@ -35,7 +35,7 @@ Above may be created using DSL like syntax, or hashes.
   2008-11-30 01:00  : I have just put a simple fix for this in place. 
   Colors and attributes may be defined for widgets at any time in human
  terms: 'black', 'red' etc. Being tested and cleaned up. See rform.rb
-for demo (radiobuttons, checkbox).
+for demo (radiobuttons, checkbox, checkboxmenuitem).
 
 
 == SYNOPSIS:
@@ -124,6 +124,9 @@ and fields.
       @form.by_name["company"].type(:ALPHA)
       @form.by_name["name"].set_focusable(false)
 
+      @form.by_name["password"].color 'red'
+      @form.by_name["password"].bgcolor 'blue'
+
 === bind events to forms, and fields
 
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
@@ -148,19 +151,22 @@ and fields.
 
 === create radio buttons
 
-      Label.new @form, {'text' => "Select a language:", "row" => 20, "col" => 22}
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 20,
+          "col" => 22, "color"=> "cyan"}
       $radio = Variable.new
       radio1 = RadioButton.new @form do
         text_variable $radio
-        text "ruby"
-        value "ruby"
+        text "red"
+        value "red"
+        color "red"
         row 21
         col 22
       end
       radio2 = RadioButton.new @form do
         text_variable $radio
-        text  "java"
-        value  "java"
+        text  "green"
+        value  "green"
+        color "green"
         row 22
         col 22
       end
@@ -209,6 +215,25 @@ and fields.
         # lets scroll the text view to the first match of the regex you
         # enter
         @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
+
+        # change the value of colorlabel to the selected radiobutton
+        # (red or green)
+
+        $radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
+
+        # change the attribute of colorlabel to bold or normal
+
+        $results.update_command(colorlabel,checkbutton) {|tv, label, cb| 
+            attrs =  cb.value ? 'bold' : nil; label.attrs(attrs)}
+
+      # during menu creation, create a checkboxmenuitem
+
+      item = RubyCurses::CheckBoxMenuItem.new "CheckMe"
+
+      # when selected, make colorlabel attribute reverse.
+
+      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' :
+          nil; label.attrs(att); label.repaint}
 
 == REQUIREMENTS:
 

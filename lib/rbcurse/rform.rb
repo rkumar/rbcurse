@@ -1431,12 +1431,12 @@ if $0 == __FILE__
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 20, "col" => 22, "color"=>"cyan"}
       $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| $log.debug " TV VAL: #{cb.value} "; attrs =  cb.value ? 'bold' : nil; label.attrs(attrs)}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attrs(attrs)}
       radio1 = RadioButton.new @form do
         text_variable $radio
         text "red"
         value "red"
-        color 1
+        color "red"
         row 21
         col 22
       end
@@ -1444,6 +1444,7 @@ if $0 == __FILE__
         text_variable $radio
         text  "green"
         value  "green"
+        color "green"
         row 22
         col 22
       end
