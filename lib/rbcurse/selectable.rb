@@ -12,10 +12,11 @@ module Selectable
     @selected ||= []
     if @selected.include? arow
       @selected.delete arow
-      @list_attribs[arow] = {:status=> nil, :bgcolor => nil}
+      @list_attribs[arow] = {:status=> " ", :bgcolor => nil}
      sel = " "; color = $datacolor
     else
-      $log.debug("Adding #{arow}")
+      $log.debug("Adding #{arow} #{@multiple}")
+      do_clear_selection if !@multiple
       @selected << arow
       # 2008-11-25 21:00 added this just to see if it make things better
       @list_attribs[arow] = {:status=> 'X', :bgcolor => $selectedcolor}
@@ -30,6 +31,7 @@ module Selectable
       $log.debug "return visual #{arow-@toprow} "
       return arow-@toprow
     end
+      $log.debug "return visual NIL #{arow-@toprow} "
     nil
   end
   def do_next_selection
@@ -46,7 +48,9 @@ module Selectable
   end
 # FIXME not clearing properly
   def do_clear_selection
+    $log.debug " CALLED clear_sel "
     @selected.each {|sel| 
+      $log.debug " CLAER for #{sel}"
       do_select(sel)}
   end
   def get_selected_data

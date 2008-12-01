@@ -461,6 +461,7 @@ module RubyCurses
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
+    dsl_accessor :list_select_multiple  # true or false allow multiple selection
 
     def initialize aconfig={}, &block
       @config = aconfig
@@ -664,6 +665,8 @@ module RubyCurses
         end
       when "list"
         list = @list
+        multiple = @list_select_multiple 
+        $log.debug " value of multiple #{multiple}"
         @listbox = RubyCurses::Listbox.new @form do
           name   "input" 
           row  r 
@@ -676,6 +679,7 @@ module RubyCurses
           list  list
           display_length  30
           set_buffer defaultvalue
+          multiple multiple
         end
       end
     end
@@ -1114,7 +1118,7 @@ module RubyCurses
       @text_variable.value = @value
     end
   end # class
-  ## TODO allow selection multi and single DONE multi, not yet single
+  ## TODO allow selection multi and single DONE multi, not yet single - DONE
   #  use selection color for selected row. DONE
   class Listbox < Widget
     require 'lib/rbcurse/scrollable'
@@ -1128,6 +1132,7 @@ module RubyCurses
     attr_reader :toprow
     attr_reader :prow
     attr_reader :winrow
+    dsl_accessor :multiple # allow multiple select or not
 
     def initialize form, config={}, &block
       @focusable = true
@@ -1142,6 +1147,7 @@ module RubyCurses
       @row_offset = @col_offset = 1
       @scrollatrow = @height -2
       @content_rows = @list.length
+
       @win = @form.window
       init_scrollable
       print_borders
@@ -1242,7 +1248,8 @@ if $0 == __FILE__
   #     underlines [0,0,0,0]
   #     type :input
        type :list
-       list %w[john tim lee wong rahul edward]
+       list %w[john tim lee wong rahul edward why chad andy]
+       list_select_multiple true
   
         default_value "rahul"
         default_button 0
