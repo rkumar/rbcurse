@@ -461,7 +461,7 @@ module RubyCurses
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
-    dsl_accessor :list_select_multiple  # true or false allow multiple selection
+    dsl_accessor :list_select_mode  # true or false allow multiple selection
 
     def initialize aconfig={}, &block
       @config = aconfig
@@ -665,8 +665,9 @@ module RubyCurses
         end
       when "list"
         list = @list
-        multiple = @list_select_multiple 
-        $log.debug " value of multiple #{multiple}"
+        select_mode = @list_select_mode 
+        default_values = @default_values
+        $log.debug " value of select_mode #{select_mode}"
         @listbox = RubyCurses::Listbox.new @form do
           name   "input" 
           row  r 
@@ -679,7 +680,8 @@ module RubyCurses
           list  list
           display_length  30
           set_buffer defaultvalue
-          multiple multiple
+          select_mode select_mode
+          default_values default_values
         end
       end
     end
@@ -1132,7 +1134,9 @@ module RubyCurses
     attr_reader :toprow
     attr_reader :prow
     attr_reader :winrow
-    dsl_accessor :multiple # allow multiple select or not
+    dsl_accessor :select_mode # allow multiple select or not
+    dsl_accessor :listvariable
+    dsl_accessor :default_values  # array of default values
 
     def initialize form, config={}, &block
       @focusable = true
@@ -1147,10 +1151,18 @@ module RubyCurses
       @row_offset = @col_offset = 1
       @scrollatrow = @height -2
       @content_rows = @list.length
-
+      @select_mode ||= 'multiple'
       @win = @form.window
       init_scrollable
       print_borders
+      select_default_values
+    end
+    def select_default_values
+      return if @default_values.nil?
+      @default_values.each do |val|
+        row = @list.index val
+        do_select(row) unless row.nil?
+      end
     end
     def insert off0, *data
       @list.insert off0, *data
@@ -1247,11 +1259,12 @@ if $0 == __FILE__
   #     buttons %w[red green blue yellow]
   #     underlines [0,0,0,0]
   #     type :input
+  #     default_value "rahul"
        type :list
        list %w[john tim lee wong rahul edward why chad andy]
-       list_select_multiple true
+       list_select_mode 'multiple'
+      default_values %w[ lee why ]
   
-        default_value "rahul"
         default_button 0
       end
       

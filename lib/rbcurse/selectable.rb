@@ -15,8 +15,8 @@ module Selectable
       @list_attribs[arow] = {:status=> " ", :bgcolor => nil}
      sel = " "; color = $datacolor
     else
-      $log.debug("Adding #{arow} #{@multiple}")
-      do_clear_selection if !@multiple
+      $log.debug("Adding #{arow} #{@select_mode}")
+      do_clear_selection if @select_mode != 'multiple'
       @selected << arow
       # 2008-11-25 21:00 added this just to see if it make things better
       @list_attribs[arow] = {:status=> 'X', :bgcolor => $selectedcolor}
