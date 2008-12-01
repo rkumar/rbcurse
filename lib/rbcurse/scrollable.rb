@@ -139,8 +139,8 @@ module Scrollable
     # - if user scrolls horizontally, use column as starting point
     def paint
 #     $log.debug "called paint #{@toprow} #{@prow}"
-      @content = get_content
-      @content_rows = @content.length # rows can be added at any time
+      list  = get_content
+      @content_rows = list .length # rows can be added at any time
       win = get_window
       maxlen = @maxlen ||= @width-2
       if @bgcolor.is_a? String and @color.is_a? String
@@ -162,7 +162,7 @@ module Scrollable
             bgcolor = row_att[:bgcolor]
           end
           # sanitize
-          content = @list[@toprow+r].chomp # don't display newline
+          content = list[@toprow+r].chomp # don't display newline
           content.gsub!(/\t/, '  ') # don't display tab
           content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
 

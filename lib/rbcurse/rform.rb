@@ -1251,17 +1251,20 @@ if $0 == __FILE__
         r += 1
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
+        $listdata = Variable.new mylist
         listb = Listbox.new @form do
           name   "mylist" 
           row  r 
           col  1 
           width 40
           height 10
-          list mylist
+#         list mylist
+          list_variable $listdata
           title "A long list"
           title_attrib 'reverse'
         end
-        listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        $listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 
@@ -1335,7 +1338,9 @@ if $0 == __FILE__
         col 22
         underline 0
       end
-      ok_button.command { |form| form.dump_data;form.printstr(@window, 23,45, "Dumped data to log") }
+      ok_button.command { |form| form.dump_data;form.printstr(@window, 23,45, "Dumped data to log") 
+        $listdata.value.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
+      }
 
       cancel_button = Button.new @form do
         #text_variable $results

@@ -16,6 +16,7 @@ TODO
   - save data in a hash when called for.
   - make some methods private/protected
   - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
+  - Can key bindings be abstracted so they can be inherited /reused.
 
 
 =end
@@ -895,14 +896,16 @@ module RubyCurses
       @args = nil
       @value = value
     end
+    ##
+    # trigger to call whenever a value is updated
     def update_command *args, &block
       $log.debug "update command set #{args}"
       @update_command = block
       @args = args
     end
-    def read_command &block
-      @read_command = block
-    end
+#   def read_command &block
+#     @read_command = block
+#   end
     def value
 #     $log.debug "variable value called : #{@value} "
       @value
@@ -911,6 +914,16 @@ module RubyCurses
       $log.debug "variable value= called : #{val} "
       @value = val
       @update_command.call(self, *@args) if !@update_command.nil?
+    end
+    ##
+    # since we could put a hash or array in as @value
+    def method_missing(sym, *args)
+      if @value.respond_to? sym
+        $log.debug("MISSING calling variable  #{sym} called #{args[0]}")
+        @value.send(sym, args)
+      else
+        $log.error("ERROR VARIABLE MISSING #{sym} called")
+      end
     end
   end
   class Label < Widget
@@ -1122,6 +1135,7 @@ module RubyCurses
   end # class
   ## TODO allow selection multi and single DONE multi, not yet single - DONE
   #  use selection color for selected row. DONE
+  #  2008-12-01 23:05 add a list_variable
   class Listbox < Widget
     require 'lib/rbcurse/scrollable'
     require 'lib/rbcurse/selectable'
@@ -1135,7 +1149,7 @@ module RubyCurses
     attr_reader :prow
     attr_reader :winrow
     dsl_accessor :select_mode # allow multiple select or not
-    dsl_accessor :listvariable
+    dsl_accessor :list_variable   # a variable values are shown from this
     dsl_accessor :default_values  # array of default values
 
     def initialize form, config={}, &block
@@ -1153,6 +1167,7 @@ module RubyCurses
       @content_rows = @list.length
       @select_mode ||= 'multiple'
       @win = @form.window
+      @list = @list_variable.value unless @list_variable.nil?
       init_scrollable
       print_borders
       select_default_values
@@ -1197,7 +1212,8 @@ module RubyCurses
     end
     ### START FOR scrollable ###
     def get_content
-      @list
+      #@list 2008-12-01 23:13 
+      @list_variable && @list_variable.value || @list 
     end
     def get_window
       @form.window
@@ -1263,7 +1279,7 @@ if $0 == __FILE__
        type :list
        list %w[john tim lee wong rahul edward why chad andy]
        list_select_mode 'multiple'
-      default_values %w[ lee why ]
+       default_values %w[ lee why ]
   
         default_button 0
       end
