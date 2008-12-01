@@ -57,18 +57,24 @@ module Selectable
     return ret
   end
   def selectable_handle_key ch
-    case ch
-    when ?x
-      do_select
-    when ?'
-$log.debug "insdie next selection"
-      do_next_selection
-    when ?"
-$log.debug "insdie prev selection"
-      do_prev_selection
-    when ?\C-e
-      do_clear_selection
+    begin
+      case ch
+      when ?x, 32
+        do_select
+      when ?'
+        $log.debug "insdie next selection"
+        do_next_selection
+      when ?"
+        $log.debug "insdie prev selection"
+        do_prev_selection
+      when ?\C-e
+        do_clear_selection
+      else
+        return :UNHANDLED
+      end
+    ensure
+      post_key
     end
-    post_key
+    0
   end
 end

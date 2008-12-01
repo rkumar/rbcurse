@@ -8,6 +8,7 @@ module Scrollable
     @cols = @width
     @left_margin ||= 2
     @show_focus = true if @show_focus.nil? 
+
 #   @right_margin ||= @left_margin
 #   @scrollatrow ||= @height-2
   end
@@ -105,19 +106,32 @@ module Scrollable
     end
 
     end
-    def show_focus_on_row row0, tf=true
-      color = tf ? $reversecolor : $datacolor
+  ##
+  # caution, this now uses winrow not prow
+    def show_focus_on_row row0, _prow, tf=true
+     # color = tf ? $reversecolor : $datacolor
+      # if cursor on row, reverse else normal
+      attr = tf ? Ncurses::A_REVERSE : Ncurses::A_NORMAL
+      color = @color_pair
       r = row0+1 
+      #check if row is selected or not
+      row_att = @list_attribs[_prow] unless @list_attribs.nil?
+      if !row_att.nil?
+        status = row_att.fetch(:status, " ")
+        attr1 = row_att[:bgcolor] 
+        color = attr1 unless attr1.nil?
+      end
       @datawidth ||= @width-2
       return if r > get_content().length
-      @win.mvchgat(y=r+@row, x=1+@col, max=@datawidth, Ncurses::A_NORMAL, color, nil)
+      @win.mvchgat(y=r+@row, x=1+@col, max=@datawidth, attr, color, nil)
     end
-    # after repaint
+    ##
+    # unfocus the previous row cursor was on
+    # and put focus on currrent row
+    # Called after repaint
     def show_focus
-      #show_focus_on_row(@oldprow, false)
-      #show_focus_on_row(@prow)
-      show_focus_on_row(@oldwinrow, false)
-      show_focus_on_row(@winrow)
+      show_focus_on_row(@oldwinrow, @oldprow, false)
+      show_focus_on_row(@winrow, @prow, true)
       # printstr @form.window, 23, 10, @prow
     end
     ## call from repaint
@@ -129,13 +143,20 @@ module Scrollable
       @content_rows = @content.length # rows can be added at any time
       win = get_window
       maxlen = @maxlen ||= @width-2
+      if @bgcolor.is_a? String and @color.is_a? String
+        acolor = ColorMap.get_color(@color, @bgcolor)
+      else
+        acolor = $datacolor
+      end
+      @color_pair = acolor
       0.upto(@height-2) {|r|
         if @toprow + r < @content_rows
           # this relates to selection of a row, as yet
           # check if any status of attribs for this row
           row_att = @list_attribs[@toprow+r] unless @list_attribs.nil?
           status = " "
-          bgcolor = $datacolor
+          #bgcolor = $datacolor
+          bgcolor = nil
           if !row_att.nil?
             status = row_att.fetch(:status, " ")
             bgcolor = row_att[:bgcolor]
@@ -155,8 +176,9 @@ module Scrollable
           end
 
           width = @width-(@left_margin+1)
-          printstr @form.window, @row+r+1, @col+@left_margin-1, "%s" % status if @implements_selectable
-          printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [width,content]
+          @form.window.printstring @row+r+1, @col+@left_margin-1, "%s" % status, acolor, @attr if @implements_selectable
+          #printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [width,content]
+          @form.window.printstring  @row+r+1, @col+@left_margin, "%-*s" % [width,content], acolor, @attr
           win.mvchgat(y=r+@row+1, x=@col+@left_margin, max=width, Ncurses::A_NORMAL, bgcolor, nil) unless bgcolor.nil?
 
         else
@@ -174,7 +196,9 @@ module Scrollable
       begin
         pre_key
         case ch
-        when 32, ?\C-n
+        when ?\C-n
+          space
+        when 32
           space
         when ?\C-p
           minus

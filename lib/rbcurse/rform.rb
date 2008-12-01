@@ -7,6 +7,7 @@ $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
   *         We need something less restrictive.
   * Author: rkumar
 TODO 
+    * add_menu should set parent and other details.
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
   * Field/entry
@@ -21,6 +22,9 @@ TODO
   * justified
   * use a global $message, and maybe a header message too.
   * Make a root window/form that creates the logger colors and other things.
+  * Make a TabbedPane, ScrollPane, ItemList
+  * messagebox with checkboxes, radio buttons etc
+  --------
   * Date: 2008-11-14 23:43 
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -565,95 +569,10 @@ module RubyCurses
     end
   end # menubar
 
-  ## TODO allow selection multi and single DONE multi, not yet single
-  #  use selection color for selected row. DONE
-  class Listbox < Widget
-    include Scrollable
-    include Selectable
-    dsl_accessor :height
-    dsl_accessor :title
-    dsl_accessor :title_attrib   # bold, reverse, normal
-    dsl_accessor :list    # the array of data to be sent by user
-    attr_reader :toprow
-    attr_reader :prow
-    attr_reader :winrow
-
-    def initialize form, config={}, &block
-      @focusable = true
-      @editable = false
-      @row = 0
-      @col = 0
-      # data of listbox
-      @list = []
-      # any special attribs such as status to be printed in col1, or color (selection)
-      @list_attribs = {}
-      super
-      @row_offset = @col_offset = 1
-      @scrollatrow = @height-2
-      @content_rows = @list.length
-      @win = @form.window
-      init_scrollable
-      print_borders
-    end
-    def insert off0, *data
-      @list.insert off0, *data
-    end
-    def print_borders
-      width = @width
-      height = @height
-      window = @form.window
-      startcol = @col 
-      startrow = @row 
-      color = $datacolor
-      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
-      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
-      printstr(window, row=startrow, col=startcol, hline, color)
-      print_title
-      (startrow+1).upto(startrow+height-1) do |row|
-        printstr(window, row, col=startcol, hline2, color)
-      end
-      printstr(window, startrow+height, col=startcol, hline, color)
-  
-     # @derwin = @form.window.derwin(@height, @width, @row, @col)
-     # repaint
-    end
-    def print_title
-      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
-    end
-    ### START FOR scrollable ###
-    def get_content
-      @list
-    end
-    def get_window
-      @form.window
-    end
-    ### END FOR scrollable ###
-    def repaint
-      paint
-    end
-    # override widgets text
-    def getvalue
-      get_selected_data
-    end
-    # Listbox
-    # [ ] scroll left right
-    def handle_key ch
-      ret = scrollable_handle_key ch
-      if ret == :UNHANDLED
-        ret = selectable_handle_key ch
-      end
-    end # handle_k listb
-    def on_enter_row arow
-      fire_handler :ENTER_ROW, arow
-    end
-    def on_leave_row arow
-      fire_handler :LEAVE_ROW, arow
-    end
-  end # class listb
   ## a multiline text editing widget
   # TODO - giving data to user - adding newlines, and withog adding.
   #  - respect newlines for incoming data
-  #   add C-u undo cut at position
+  #   add C-u undo cut at position - DONE
   class TextArea < Widget
     include Scrollable
     dsl_accessor :height

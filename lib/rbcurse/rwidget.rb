@@ -446,6 +446,7 @@ module RubyCurses
 
   ##
   # TODO wrapping message
+  # dimensions of window should be derived on content
   #
   class MessageBox
     include CommonIO
@@ -469,7 +470,17 @@ module RubyCurses
       @selected_index = -1
       @config.each_pair { |k,v| instance_variable_set("@#{var}",v) }
       instance_eval &block if block_given?
-      layout(10,60, 10, 20) if @layout.nil? 
+      if @layout.nil? 
+        case @type.to_s
+        when "input"
+          layout(10,60, 10, 20) 
+        when "list"
+          height = [5, @list.length].min 
+          layout(10+height, 60, 5, 20)
+        else
+          layout(10,60, 10, 20) 
+        end
+      end
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
       @window.bkgd(Ncurses.COLOR_PAIR(@bgcolor || $reversecolor));
@@ -490,14 +501,15 @@ module RubyCurses
     ##
     # value entered by user if type = input
     def input_value
-      @input.buffer if !@input.nil?
+      return @input.buffer if !@input.nil?
+      return @listbox.getvalue if !@listbox.nil?
     end
     def create_buttons
       case @type.to_s.downcase
       when "ok"
         @underlines = [0]
         make_buttons ["OK"]
-      when "ok_cancel", "input"
+      when "ok_cancel", "input", "list"
         @underlines = [0,0]
         make_buttons %w[OK Cancel]
       when "yes_no"
@@ -566,7 +578,7 @@ module RubyCurses
         case ch
         when -1
           return
-        when KEY_F1
+        when KEY_F1, 27, ?\C-q   # 27/ESC does not come here since gobbled by keyboard.rb
           @stop = true
           return
         when KEY_ENTER, 10, 13
@@ -621,18 +633,28 @@ module RubyCurses
       return (width-textlen)/2
     end
     def print_message message=@message, row=nil
-      row=(@layout[:height]/3) if row.nil?
+      case @type.to_s
+      when "input" 
+        row=(@layout[:height]/3) if row.nil?
+        @message_col = 4
+      when "list" 
+        row=3
+        @message_col = 4 
+      else
+        row=(@layout[:height]/3) if row.nil?
+        @message_col = (width-message.length)/2
+      end
       @message_row = row
       width = @layout[:width]
-      @message_col = (width-message.length)/2
-      @message_col = 4 if @type.to_s == "input"
       printstr(@window, row, @message_col , message, color=$reversecolor)
     end
     def print_input
-      return if @type.to_s != "input"
+      #return if @type.to_s != "input"
       r = @message_row + 1
       c = @message_col
       defaultvalue = @default_value || ""
+      case @type.to_s 
+      when "input"
         @input = RubyCurses::Field.new @form do
           name   "input" 
           row  r 
@@ -640,6 +662,22 @@ module RubyCurses
           display_length  30
           set_buffer defaultvalue
         end
+      when "list"
+        list = @list
+        @listbox = RubyCurses::Listbox.new @form do
+          name   "input" 
+          row  r 
+          col  c 
+#         attr 'reverse'
+          color 'black'
+          bgcolor 'white'
+          width 30
+          height 6
+          list  list
+          display_length  30
+          set_buffer defaultvalue
+        end
+      end
     end
     def configure(*val , &block)
       case val.size
@@ -1076,11 +1114,105 @@ module RubyCurses
       @text_variable.value = @value
     end
   end # class
+  ## TODO allow selection multi and single DONE multi, not yet single
+  #  use selection color for selected row. DONE
+  class Listbox < Widget
+    require 'lib/rbcurse/scrollable'
+    require 'lib/rbcurse/selectable'
+    include Scrollable
+    include Selectable
+    dsl_accessor :height
+    dsl_accessor :title
+    dsl_accessor :title_attrib   # bold, reverse, normal
+    dsl_accessor :list    # the array of data to be sent by user
+    attr_reader :toprow
+    attr_reader :prow
+    attr_reader :winrow
+
+    def initialize form, config={}, &block
+      @focusable = true
+      @editable = false
+      @row = 0
+      @col = 0
+      # data of listbox
+      @list = []
+      # any special attribs such as status to be printed in col1, or color (selection)
+      @list_attribs = {}
+      super
+      @row_offset = @col_offset = 1
+      @scrollatrow = @height -2
+      @content_rows = @list.length
+      @win = @form.window
+      init_scrollable
+      print_borders
+    end
+    def insert off0, *data
+      @list.insert off0, *data
+    end
+    def print_borders
+      width = @width
+      height = @height
+      window = @form.window
+      startcol = @col 
+      startrow = @row 
+      #color = $datacolor
+      if @bgcolor.is_a? String and @color.is_a? String
+        acolor = ColorMap.get_color(@color, @bgcolor)
+      else
+        acolor = $datacolor
+      end
+      @color_pair = acolor
+      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
+      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
+      printstr(window, row=startrow, col=startcol, hline, acolor)
+      print_title
+      (startrow+1).upto(startrow+height-1) do |row|
+        printstr(window, row, col=startcol, hline2, acolor)
+      end
+      printstr(window, startrow+height, col=startcol, hline, acolor)
+  
+     # @derwin = @form.window.derwin(@height, @width, @row, @col)
+     # repaint
+    end
+    def print_title
+      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+    end
+    ### START FOR scrollable ###
+    def get_content
+      @list
+    end
+    def get_window
+      @form.window
+    end
+    ### END FOR scrollable ###
+    def repaint
+      paint
+    end
+    # override widgets text
+    def getvalue
+      get_selected_data
+    end
+    # Listbox
+    # [ ] scroll left right
+    # if selectable is on, then spacebar will select, as will 'x'
+    # otherwise spacebar pages, as does C-n
+    def handle_key ch
+      ret = selectable_handle_key ch
+      if ret == :UNHANDLED
+        ret = scrollable_handle_key ch
+      end
+    end # handle_k listb
+    def on_enter_row arow
+      fire_handler :ENTER_ROW, arow
+    end
+    def on_leave_row arow
+      fire_handler :LEAVE_ROW, arow
+    end
+  end # class listb
   def self.startup
     VER::start_ncurses
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
-    Colormap.setup
   end
 
 end # module
@@ -1090,54 +1222,34 @@ end # module
 if $0 == __FILE__
   # Initialize curses
   begin
-    VER::start_ncurses
-    Ncurses.start_color();
-    # Initialize few color pairs 
-    Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK);
-    Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE);
-    Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE);
-    Ncurses.init_pair(4, COLOR_YELLOW, COLOR_RED); # for selected item
-    Ncurses.init_pair(5, COLOR_WHITE, COLOR_BLACK); # for unselected menu items
-    Ncurses.init_pair(6, COLOR_WHITE, COLOR_BLUE); # for bottom/top bar
-    Ncurses.init_pair(7, COLOR_WHITE, COLOR_RED); # for error messages
-    $reversecolor = 2
-    $errorcolor = 7
-    $promptcolor = $selectedcolor = 4
-    $normalcolor = $datacolor = 5
-    $bottomcolor = $topcolor = 6
-
-    # Create the window to be associated with the form 
-    # Un post form and free the memory
+    # XXX update with new color and kb
+    VER::start_ncurses  # this is initializing colors via ColorMap.setup
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
 
+    @window = VER::Window.root_window
+
+
     catch(:close) do
-      @layout = { :height => 0, :width => 0, :top => 0, :left => 0 } 
-      @win = VER::Window.new(@layout)
-      @window = @win
-      @win.bkgd(Ncurses.COLOR_PAIR(5));
-      @panel = @win.panel
-      @win.wrefresh
-      Ncurses::Panel.update_panels
-      $labelcolor = 2
-      $datacolor = 5
       $log.debug "START  ---------"
       # need to pass a form, not window.
       @mb = RubyCurses::MessageBox.new do
         #title "Color selector"
         title "Enter your name"
         message "Enter your name"
-        type :custom
-        buttons %w[red green blue yellow]
-        underlines [0,0,0,0]
-        type :input
+  #     type :custom
+  #     buttons %w[red green blue yellow]
+  #     underlines [0,0,0,0]
+  #     type :input
+       type :list
+       list %w[john tim lee wong rahul edward]
+  
         default_value "rahul"
         default_button 0
       end
       
-     $log.debug "MBOX : #{@mb.selected_index} "
-     $log.debug "MBOX : #{@mb.input_value} "
-      $log.debug "AFTER CREATE : #{@form.inspect} "
+     $log.debug "MBOX :selected index #{@mb.selected_index} "
+     $log.debug "MBOX :input val #{@mb.input_value} "
 #     $log.debug "row : #{@form.row} "
 #     $log.debug "col : #{@form.col} "
 #     $log.debug "Config : #{@form.config.inspect} "
@@ -1153,15 +1265,17 @@ if $0 == __FILE__
 #     $log.debug "config : #{@form.config.inspect} "
 #     $log.debug "row : #{@form.configure('row')} "
       #$log.debug "mrgods : #{@form.public_methods.sort.inspect}"
-      while((ch = @win.getch()) != KEY_F1 )
-        @win.wrefresh
+      while((ch = @window.getch()) != KEY_F1 )
+        @window.wrefresh
       end
       #     VER::Keyboard.focus = tp
     end
   rescue => ex
   ensure
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-      @win.delwin if !@win.nil?
+    @window.destroy unless @window.nil?
+#   @panel = @window.panel unless @window.nil?
+#   Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
+#   @window.delwin if !@window.nil?
     VER::stop_ncurses
     p ex if ex
     p(ex.backtrace.join("\n")) if ex
