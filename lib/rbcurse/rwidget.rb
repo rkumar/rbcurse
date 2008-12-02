@@ -17,6 +17,7 @@ TODO
   - make some methods private/protected
   - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
   - Can key bindings be abstracted so they can be inherited /reused.
+  - some kind of CSS style sheet.
 
 
 =end
@@ -207,6 +208,14 @@ module RubyCurses
       win.mvprintw(r, c, "%s", string);
       win.attroff(Ncurses.COLOR_PAIR(color) | att)
     end
+    # in those rare cases where we create widget without a form, and later give it to 
+    # some other program which sets the form. Dirty, we should perhaps create widgets
+    # without forms, and add explicitly. 
+    def set_form form
+      raise "Form is nil in set_form" if form.nil?
+      @form = form
+      @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
+    end
   end
 
   class Form
@@ -250,7 +259,8 @@ module RubyCurses
      end
      return @widgets.length-1
    end
-   # form
+   # form repaint
+   # to be called at some interval, such as after each keypress.
     def repaint
       @widgets.each do |f|
         f.repaint
@@ -262,7 +272,7 @@ module RubyCurses
         req_first_field
       end
        setpos 
-      @window.wrefresh
+       @window.wrefresh
     end
     def setpos r=@row, c=@col
       $log.debug "setpos : #{r} #{c}"
@@ -479,6 +489,9 @@ module RubyCurses
         when "list"
           height = [5, @list.length].min 
           layout(10+height, 60, 5, 20)
+        when "field_list"
+          height = @field_list.length
+          layout(10+height, 60, 5, 20)
         else
           layout(10,60, 10, 20) 
         end
@@ -488,6 +501,7 @@ module RubyCurses
       @window.bkgd(Ncurses.COLOR_PAIR(@bgcolor || $reversecolor));
       @panel = @window.panel
       Ncurses::Panel.update_panels
+      process_field_list
       print_borders
       print_title
       print_message
@@ -496,6 +510,14 @@ module RubyCurses
       @form.repaint
       @window.wrefresh
       handle_keys
+    end
+    ##
+    # takes care of a field list sent in
+    def process_field_list
+      return if @field_list.nil? or @field_list.length == 0
+      @field_list.each do |f|
+        f.set_form @form
+      end
     end
     def default_button offset0
       @selected_index = offset0
@@ -511,7 +533,7 @@ module RubyCurses
       when "ok"
         @underlines = [0]
         make_buttons ["OK"]
-      when "ok_cancel", "input", "list"
+      when "ok_cancel", "input", "list", "field_list"
         @underlines = [0,0]
         make_buttons %w[OK Cancel]
       when "yes_no"
@@ -635,6 +657,8 @@ module RubyCurses
       return (width-textlen)/2
     end
     def print_message message=@message, row=nil
+      @message_row = @message_col = 2
+      return if message.nil?
       case @type.to_s
       when "input" 
         row=(@layout[:height]/3) if row.nil?
@@ -1267,6 +1291,9 @@ if $0 == __FILE__
     catch(:close) do
       $log.debug "START  ---------"
       # need to pass a form, not window.
+      choice = 2
+      case choice
+      when 1:
       @mb = RubyCurses::MessageBox.new do
         #title "Color selector"
         title "Enter your name"
@@ -1283,6 +1310,88 @@ if $0 == __FILE__
   
         default_button 0
       end
+    when 2:
+      field_list = []
+        titlelabel = RubyCurses::Label.new nil, {'text' => 'URL', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
+      field_list << titlelabel
+        field = RubyCurses::Field.new nil do
+          name   "url" 
+          row  3 
+          col  10
+          display_length  30
+          set_buffer "http://"
+          set_label titlelabel
+        end
+      checkbutton = RubyCurses::CheckBox.new nil do
+       # text_variable $results
+        #value = true
+        onvalue "Selected cb   "
+        offvalue "UNselected cb"
+          color 'black'
+          bgcolor 'white'
+        text "No frames"
+        row 4
+        col 4
+      end
+      field_list << field
+      field_list << checkbutton
+      checkbutton = RubyCurses::CheckBox.new nil do
+       # text_variable $results
+        value  true
+        color 'black'
+        bgcolor 'white'
+        text "Use HTTP/1.0"
+        row 5
+        col 4
+      end
+      field_list << checkbutton
+      checkbutton = RubyCurses::CheckBox.new nil do
+       # text_variable $results
+        color 'black'
+        bgcolor 'white'
+        text "Use passive FTP"
+        row 6
+        col 4
+      end
+      field_list << checkbutton
+      titlelabel = RubyCurses::Label.new nil, {'text' => 'Language', 'row'=>8, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
+      field_list << titlelabel
+      $radio = RubyCurses::Variable.new
+      #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
+      radio1 = RubyCurses::RadioButton.new nil do
+        text_variable $radio
+        text "ruby"
+        value "ruby"
+        color "red"
+        bgcolor 'white'
+        row 9
+        col 4
+      end
+      radio2 = RubyCurses::RadioButton.new nil do
+        text_variable $radio
+        text  "python"
+        value  "python"
+        color "blue"
+        bgcolor 'white'
+        row 10
+        col 4
+      end
+      field_list << radio1
+      field_list << radio2
+      @mb = RubyCurses::MessageBox.new do
+        #title "Color selector"
+        title "HTTP Configuration"
+  #     message "Enter your name"
+  #     type :custom
+  #     buttons %w[red green blue yellow]
+  #     underlines [0,0,0,0]
+  #     type :input
+  #     default_value "rahul"
+       type :field_list
+       field_list field_list
+       default_button 0
+      end
+    end 
       
      $log.debug "MBOX :selected index #{@mb.selected_index} "
      $log.debug "MBOX :input val #{@mb.input_value} "
