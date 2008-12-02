@@ -509,7 +509,9 @@ module RubyCurses
       end
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
-      @window.bkgd(Ncurses.COLOR_PAIR(@bgcolor || $reversecolor));
+      #@window.bkgd(Ncurses.COLOR_PAIR(@bgcolor || $reversecolor));
+      @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
+      @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
       process_field_list
@@ -655,7 +657,8 @@ module RubyCurses
       hline2 = "|%s|" % [ " "*(width-((start+1)*2)) ]
       printstr(@window, row=1, col=start, hline, color=$reversecolor)
       (start).upto(height-2) do |row|
-        printstr(@window, row, col=start, hline2, color=$reversecolor)
+        #printstr(@window, row, col=start, hline2, color=$reversecolor)
+        @window.printstring row, col=start, hline2, color=$normalcolor, A_REVERSE
       end
       printstr(@window, height-2, col=start, hline, color=$reversecolor)
     end
@@ -1062,7 +1065,7 @@ module RubyCurses
         #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
         #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
        # underline not working here using Ncurses. Works with highline. \e[4m
-          @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD, color, nil)
+          @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
     # XXX FIXME always store args also
