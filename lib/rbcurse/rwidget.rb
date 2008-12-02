@@ -216,6 +216,17 @@ module RubyCurses
       @form = form
       @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
     end
+    # puts cursor on correct row.
+    def set_form_row
+      raise "empty todo widget"
+    #  @form.row = @row + 1 + @winrow
+      @form.row = @row + 1 
+    end
+    # set cursor on correct column
+    def set_form_col col=@cursor
+      @curpos = col
+      @form.col = @col + @col_offset + @curpos
+    end
   end
 
   class Form
@@ -617,14 +628,19 @@ module RubyCurses
         when 9
           @form.select_next_field
         else
-          if @keys.include? ch
-           $log.debug "KEY #{ch} caught"
-            @selected_index = @keys[ch]
-            @stop = true
-            return
-          end
+          # fields must return unhandled else we will miss hotkeys. 
+          # On messageboxes, often if no edit field, then O and C are hot.
           field =  @form.get_current_field
           handled = field.handle_key ch
+
+          if handled == :UNHANDLED
+            if @keys.include? ch
+              $log.debug "KEY #{ch} caught"
+              @selected_index = @keys[ch]
+              @stop = true
+              return
+            end
+          end
         end
         @form.repaint
         Ncurses::Panel.update_panels();
@@ -868,11 +884,27 @@ module RubyCurses
       end
     when 330
       delete_curr_char
-    else
+    when ?\C-a
+      set_form_col 0
+    when ?\C-e
+      set_form_col @buffer.length
+    when ?\C-k
+      delete_eol
+    when ?\C-u
+      @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
+    when 32..126
       $log.debug("ch #{ch}")
       putc ch
+    else
+      return :UNHANDLED
     end
-
+  end
+  def delete_eol
+    pos = @curpos-1
+    @delete_buffer = @buffer[@curpos..-1]
+    # if pos is 0, pos-1 becomes -1, end of line!
+    @buffer = pos == -1 ? "" : @buffer[0..pos]
+    return @delete_buffer
   end
   def req_next_char
     if @curpos < display_length
@@ -1073,7 +1105,7 @@ module RubyCurses
           fire
         end
       else
-        return -1
+        return :UNHANDLED
       end
     end
   end #BUTTON
@@ -1259,6 +1291,7 @@ module RubyCurses
       if ret == :UNHANDLED
         ret = scrollable_handle_key ch
       end
+      return ret
     end # handle_k listb
     def on_enter_row arow
       fire_handler :ENTER_ROW, arow
