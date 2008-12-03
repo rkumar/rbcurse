@@ -71,6 +71,9 @@ include Ncurses
 module RubyCurses
   extend self
   include ColorMap
+    class FieldValidationException < RuntimeError
+    end
+
   class Widget
     include CommonIO
     include DSL
@@ -339,7 +342,13 @@ module RubyCurses
         @active_index = -1 
       else
         f = @widgets[@active_index]
-        on_leave f
+        begin
+          on_leave f
+        rescue => err
+         $log.debug " caught EXCEPTION #{err}"
+         Ncurses.beep
+         return
+        end
       end
       index = @active_index + 1
       index.upto(@widgets.length-1) do |i|
@@ -361,7 +370,13 @@ module RubyCurses
         @active_index = @widgets.length 
       else
         f = @widgets[@active_index]
-        on_leave f
+        begin
+          on_leave f
+        rescue => err
+         $log.debug " cauGHT EXCEPTION #{err}"
+         Ncurses.beep
+         return
+        end
       end
       #@active_index -= 1
       index = @active_index - 1
@@ -836,9 +851,7 @@ module RubyCurses
     end
     def delete_at index=@curpos
       return -1 if !@editable 
-      ar = @buffer.split(//)
-      ar.delete_at index
-      @buffer = ar.join
+      @buffer.slice!(index,1)
       @modified = true
     end
     def set_buffer value
@@ -939,6 +952,21 @@ module RubyCurses
     end
     def addcol num
       @form.addcol num
+    end
+    # upon leaving a field
+    # returns false if value not valid as per values or valid_regex
+    def on_leave
+      value = getvalue
+      valid = true
+      if !@values.nil?
+        valid = @values.include? value
+        raise FieldValidationException, "Field value not in values: #{@values}" unless valid
+      end
+      if !@valid_regex.nil?
+        valid = @valid_regex.match(value)
+        raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
+      end
+      return valid
     end
   # ADD HERE FIELD
   end
@@ -1192,9 +1220,9 @@ module RubyCurses
       @text_variable.value = @value
     end
   end # class
-  ## TODO allow selection multi and single DONE multi, not yet single - DONE
-  #  use selection color for selected row. DONE
-  #  2008-12-01 23:05 add a list_variable
+  ## 
+  # scrollable, selectable list of items
+  #  
   class Listbox < Widget
     require 'lib/rbcurse/scrollable'
     require 'lib/rbcurse/selectable'

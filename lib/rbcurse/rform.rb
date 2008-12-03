@@ -23,7 +23,7 @@ TODO
   * use a global $message, and maybe a header message too.
   * Make a root window/form that creates the logger colors and other things.
   * Make a TabbedPane, ScrollPane, ItemList
-  * messagebox with checkboxes, radio buttons etc
+  
   --------
   * Date: 2008-11-14 23:43 
   * License:
@@ -572,7 +572,7 @@ module RubyCurses
   ## a multiline text editing widget
   # TODO - giving data to user - adding newlines, and withog adding.
   #  - respect newlines for incoming data
-  #   add C-u undo cut at position - DONE
+  #   
   class TextArea < Widget
     include Scrollable
     dsl_accessor :height
@@ -949,7 +949,7 @@ module RubyCurses
   # A viewable read only box. Can scroll. 
   # Intention is to be able to change content dynamically - the entire list.
   # Use set_content to set content, or just update the list attrib
-  # TODO - horizontal scrolling, DONE
+  # TODO - 
   #      - searching, goto line - DONE
   class TextView < Widget
     include Scrollable
@@ -1324,11 +1324,13 @@ if $0 == __FILE__
       @form.by_name["name"].set_buffer  "Not focusable"
       @form.by_name["line"].chars_allowed = /\d/
       @form.by_name["regex"].type(:ALPHA)
+      @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/)
       @form.by_name["name"].set_focusable(false)
       @form.by_name["password"].set_buffer ""
       @form.by_name["password"].show '*'
       @form.by_name["password"].color 'red'
       @form.by_name["password"].bgcolor 'blue'
+      @form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
       ok_button = Button.new @form do

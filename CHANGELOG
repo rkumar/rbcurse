@@ -1,3 +1,12 @@
+**2008-12-03 20:13**
+## Field accepts values() and valid_regex() ##
+
+Restrict entry to values
+
+Validate field against valid_regex.
+
+frmincr200812032012.tgz
+* * *
 **2008-12-01 18:34**
 ## Messagebox takes list ##
 

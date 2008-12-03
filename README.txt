@@ -28,15 +28,7 @@ Above may be created using DSL like syntax, or hashes.
 
 == PROBLEMS
 
-* ncurses colors use color-pairs. Thus one has to select a color pair,
-  although the description of the widgets does allow for selecting
-  foreground and background color.
-
-  2008-11-30 01:00  : I have just put a simple fix for this in place. 
-  Colors and attributes may be defined for widgets at any time in human
- terms: 'black', 'red' etc. Being tested and cleaned up. See rform.rb
-for demo (radiobuttons, checkbox, checkboxmenuitem).
-
+* 
 
 == SYNOPSIS:
 
@@ -126,6 +118,13 @@ and fields.
 
       @form.by_name["password"].color 'red'
       @form.by_name["password"].bgcolor 'blue'
+
+      # restrict entry to some values
+      password.values(%w[ scotty tiger secret qwerty])
+
+      # validation using ruby's regular expressions
+
+      field.valid_regex(/^[A-Z]\d+/)
 
 === bind events to forms, and fields
 
