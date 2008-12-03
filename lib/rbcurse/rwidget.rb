@@ -279,6 +279,10 @@ module RubyCurses
       @widgets.each do |f|
         f.repaint
       end
+      @window.clear_error
+      @window.print_status_message $status_message unless $status_message.nil?
+      @window.print_error_message $error_message unless $error_message.nil?
+      $error_message = $status_message = nil
       if @row == -1
         #set_field_cursor 0
        $log.debug "repaint calling select field 0"
@@ -346,6 +350,7 @@ module RubyCurses
           on_leave f
         rescue => err
          $log.debug " caught EXCEPTION #{err}"
+         $error_message = "#{err}"
          Ncurses.beep
          return
         end
@@ -776,13 +781,13 @@ module RubyCurses
     attr_reader :buffer              # actual buffer being used for storage
     dsl_accessor :label              # label of field
     dsl_accessor :default            # TODO use set_buffer for now
-    dsl_accessor :values             # TODO
-    dsl_accessor :valid_regex        # TODO
+    dsl_accessor :values             # validate against provided list
+    dsl_accessor :valid_regex        # validate against regular expression
 
     dsl_accessor :chars_allowed      # regex, what characters to allow, will ignore all else
     dsl_accessor :display_length     # how much to display
-    dsl_accessor :bgcolor            # cannot be used currently
-    dsl_accessor :color
+    dsl_accessor :bgcolor            # background color 'red' 'black' 'cyan' etc
+    dsl_accessor :color              # foreground colors from Ncurses COLOR_xxxx
     dsl_accessor :show               # what charactr to show for each char entered (password field)
     attr_reader :form
     attr_accessor :modified          # boolean, value modified or not

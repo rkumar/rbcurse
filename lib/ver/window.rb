@@ -19,6 +19,7 @@ module VER
 
       @window = Ncurses::WINDOW.new(height, width, top, left)
       @panel = Ncurses::Panel.new_panel(@window)
+      $error_message_row = $status_message_row = Ncurses.LINES-1
 
       Ncurses::keypad(@window, true)
     end
@@ -230,6 +231,22 @@ module VER
       attron(Ncurses.COLOR_PAIR(color) | att)
       mvprintw(r, c, "%s", string);
       attroff(Ncurses.COLOR_PAIR(color) | att)
+    end
+    def print_error_message text=$error_message
+      r = $error_message_row || Ncurses.LINES-1
+       $log.debug "got ERROR MEASSAGE #{text} row #{r} "
+      clear_error r, $datacolor
+      # print it in centre
+      printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
+    end
+    def print_status_message text=$status_message
+      r = $status_message_row || Ncurses.LINES-1
+      clear_error r, $datacolor
+      # print it in centre
+      printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
+    end
+    def clear_error r = $error_message_row, color = $datacolor
+      printstring(r, 0, "%-*s" % [Ncurses.COLS," "], color)
     end
   end
 end
