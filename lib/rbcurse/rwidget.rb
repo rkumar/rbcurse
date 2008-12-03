@@ -118,9 +118,9 @@ module RubyCurses
     end
     ## got left out by mistake 2008-11-26 20:20 
     def fire_handler event, object
-      $log.debug "called widget firehander #{object}, #{@event_args[event]}"
       blk = @handler[event]
       return if blk.nil?
+      $log.debug "called widget firehander #{object}, #{@event_args[event]}"
       blk.call object,  *@event_args[event]
     end
     ## got left out by mistake 2008-11-26 20:20 
@@ -129,6 +129,7 @@ module RubyCurses
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_leave
+      $log.debug " O LEAVE"
       fire_handler :LEAVE, self
     end
     # private
@@ -324,13 +325,13 @@ module RubyCurses
     end
     def select_field ix0
       return if @widgets.nil? or @widgets.empty?
-      $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
+#     $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
       @active_index = ix0
       f = @widgets[@active_index]
       if f.focusable
         on_enter f
         @row, @col = f.rowcol
-        $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
+#       $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
         @window.wmove @row, @col
         f.curpos = 0
         repaint
@@ -341,7 +342,7 @@ module RubyCurses
     end
     def select_next_field
       return if @widgets.nil? or @widgets.empty?
-       $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
+#      $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?
         @active_index = -1 
       else
@@ -370,7 +371,7 @@ module RubyCurses
     end
     def select_prev_field
       return if @widgets.nil? or @widgets.empty?
-       $log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
+#      $log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?
         @active_index = @widgets.length 
       else
@@ -456,7 +457,7 @@ module RubyCurses
             end
           end
         end
-        $log.debug " form before repaint"
+#       $log.debug " form before repaint"
         repaint
   end
   ##
@@ -961,17 +962,19 @@ module RubyCurses
     # upon leaving a field
     # returns false if value not valid as per values or valid_regex
     def on_leave
-      value = getvalue
+      $log.debug " FIELD ON LEAVE"
+      val = getvalue
       valid = true
       if !@values.nil?
-        valid = @values.include? value
-        raise FieldValidationException, "Field value not in values: #{@values}" unless valid
+        valid = @values.include? val
+        raise FieldValidationException, "Field value #{val} not in values: #{@values}" unless valid
       end
       if !@valid_regex.nil?
-        valid = @valid_regex.match(value)
+        valid = @valid_regex.match(val)
         raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
       end
-      return valid
+      super
+      #return valid
     end
   # ADD HERE FIELD
   end
@@ -1045,7 +1048,7 @@ module RubyCurses
         else
           acolor = $datacolor
         end
-     $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
+#    $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
         @form.window.printstring r, c, "%-*s" % [len, value], acolor,@attrs
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
     end
@@ -1080,7 +1083,7 @@ module RubyCurses
       @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
-        $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+#       $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = rowcol
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
@@ -1090,7 +1093,7 @@ module RubyCurses
           color = ColorMap.get_color(color, bgcolor)
         end
         value = getvalue_for_paint
-        $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
+#       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
         len = @display_length || value.length
         @form.window.printstring r, c, "%-*s" % [len, value], color, @attrs
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -1193,11 +1196,11 @@ module RubyCurses
       @value ||= false
     end
     def getvalue
-      $log.debug " iside CHECKBOX getvalue"
+#     $log.debug " iside CHECKBOX getvalue"
       @value 
     end
     def getvalue_for_paint
-      $log.debug " iside CHECKBOX getvalue for paint"
+#     $log.debug " iside CHECKBOX getvalue for paint"
       buttontext = getvalue() ? "X" : " "
       @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
     end

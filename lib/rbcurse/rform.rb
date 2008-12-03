@@ -1298,7 +1298,7 @@ if $0 == __FILE__
         listb.bind(:ENTER_ROW, @textview) { |arow, tview| tview.top_row arow }
         
         # just for demo, lets scroll the text view to the line you enter
-        @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(fld.getvalue.to_i) }
+        @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| raise(FieldValidationException, "#{fld.getvalue.to_i} Outside range 1,200") if fld.getvalue.to_i >200; tv.top_row(fld.getvalue.to_i) }
         @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
 
       checkbutton = CheckBox.new @form do
