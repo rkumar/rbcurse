@@ -24,6 +24,8 @@ module Selectable
     end
     # remember to erase these skidmarks when the user scrolls
     printstr win, @row+1+visual_index, @col+@left_margin-1, sel, color unless visual_index.nil?
+    # fire ListComboSelect event, added TODO to test out.
+    fire_handler :LIST_COMBO_SELECT, arow
   end
   ## is the row in view, if so, return index, else nil
   def row_visual_index arow

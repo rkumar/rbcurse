@@ -1,4 +1,3 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 =begin
   * Name: rwidget: base class and then popup and other derived widgets
   * $Id$
@@ -1230,6 +1229,13 @@ module RubyCurses
   end # class
   ## 
   # scrollable, selectable list of items
+  # TODO Add events for item add/remove and selection change
+  #  added event LIST_COMBO_SELECT fired whenever a select/deselect is done.
+  #    - I do not know how this works in Tk so only the name is copied..
+  #    - @selected contains indices of selected objects.
+  #    - currently the first argument of event is row (the row selected/deselected). Should it
+  #    be the object.
+  #    - this event could change when range selection is allowed.
   #  
   class Listbox < Widget
     require 'lib/rbcurse/scrollable'
@@ -1346,157 +1352,3 @@ module RubyCurses
   end
 
 end # module
-
-
-
-if $0 == __FILE__
-  # Initialize curses
-  begin
-    # XXX update with new color and kb
-    VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("view.log")
-    $log.level = Logger::DEBUG
-
-    @window = VER::Window.root_window
-
-
-    catch(:close) do
-      $log.debug "START  ---------"
-      # need to pass a form, not window.
-      choice = 2
-      case choice
-      when 1:
-      @mb = RubyCurses::MessageBox.new do
-        #title "Color selector"
-        title "Enter your name"
-        message "Enter your name"
-  #     type :custom
-  #     buttons %w[red green blue yellow]
-  #     underlines [0,0,0,0]
-  #     type :input
-  #     default_value "rahul"
-       type :list
-       list %w[john tim lee wong rahul edward why chad andy]
-       list_select_mode 'multiple'
-       default_values %w[ lee why ]
-  
-        default_button 0
-      end
-    when 2:
-      field_list = []
-        titlelabel = RubyCurses::Label.new nil, {'text' => 'URL', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
-      field_list << titlelabel
-        field = RubyCurses::Field.new nil do
-          name   "url" 
-          row  3 
-          col  10
-          display_length  30
-          set_buffer "http://"
-          set_label titlelabel
-        end
-      checkbutton = RubyCurses::CheckBox.new nil do
-       # text_variable $results
-        #value = true
-        onvalue "Selected cb   "
-        offvalue "UNselected cb"
-          color 'black'
-          bgcolor 'white'
-        text "No frames"
-        row 4
-        col 4
-      end
-      field_list << field
-      field_list << checkbutton
-      checkbutton = RubyCurses::CheckBox.new nil do
-       # text_variable $results
-        value  true
-        color 'black'
-        bgcolor 'white'
-        text "Use HTTP/1.0"
-        row 5
-        col 4
-      end
-      field_list << checkbutton
-      checkbutton = RubyCurses::CheckBox.new nil do
-       # text_variable $results
-        color 'black'
-        bgcolor 'white'
-        text "Use passive FTP"
-        row 6
-        col 4
-      end
-      field_list << checkbutton
-      titlelabel = RubyCurses::Label.new nil, {'text' => 'Language', 'row'=>8, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
-      field_list << titlelabel
-      $radio = RubyCurses::Variable.new
-      #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
-      radio1 = RubyCurses::RadioButton.new nil do
-        text_variable $radio
-        text "ruby"
-        value "ruby"
-        color "red"
-        bgcolor 'white'
-        row 9
-        col 4
-      end
-      radio2 = RubyCurses::RadioButton.new nil do
-        text_variable $radio
-        text  "python"
-        value  "python"
-        color "blue"
-        bgcolor 'white'
-        row 10
-        col 4
-      end
-      field_list << radio1
-      field_list << radio2
-      @mb = RubyCurses::MessageBox.new do
-        #title "Color selector"
-        title "HTTP Configuration"
-  #     message "Enter your name"
-  #     type :custom
-  #     buttons %w[red green blue yellow]
-  #     underlines [0,0,0,0]
-  #     type :input
-  #     default_value "rahul"
-       type :field_list
-       field_list field_list
-       default_button 0
-      end
-    end 
-      
-     $log.debug "MBOX :selected index #{@mb.selected_index} "
-     $log.debug "MBOX :input val #{@mb.input_value} "
-#     $log.debug "row : #{@form.row} "
-#     $log.debug "col : #{@form.col} "
-#     $log.debug "Config : #{@form.config.inspect} "
-#     @form.configure "row", 23
-#     @form.configure "col", 83
-#     $log.debug "row : #{@form.row} "
-#     x = @form.row
-#    @form.depth   21
-#    @form.depth = 22
-#    @form.depth   24
-#    @form.depth = 25
-#     $log.debug "col : #{@form.col} "
-#     $log.debug "config : #{@form.config.inspect} "
-#     $log.debug "row : #{@form.configure('row')} "
-      #$log.debug "mrgods : #{@form.public_methods.sort.inspect}"
-      while((ch = @window.getch()) != KEY_F1 )
-        @window.wrefresh
-      end
-      #     VER::Keyboard.focus = tp
-    end
-  rescue => ex
-  ensure
-    @window.destroy unless @window.nil?
-#   @panel = @window.panel unless @window.nil?
-#   Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-#   @window.delwin if !@window.nil?
-    VER::stop_ncurses
-    p ex if ex
-    p(ex.backtrace.join("\n")) if ex
-    $log.debug( ex) if ex
-    $log.debug(ex.backtrace.join("\n")) if ex
-  end
-end
