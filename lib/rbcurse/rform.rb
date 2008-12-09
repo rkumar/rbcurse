@@ -612,6 +612,7 @@ module RubyCurses
     end
     def insert off0, *data
       @list.insert off0, *data
+      fire_handler :CHANGE, self  # 2008-12-09 14:56 
     end
     def wrap_text(txt, col = @maxlen)
       $log.debug "inside wrap text for :#{txt}"
@@ -719,6 +720,7 @@ module RubyCurses
         @form.col = @orig_col + @col_offset
         #addrowcol 1,0
         @form.row = @row + 1 + @winrow
+        fire_handler :CHANGE, self  # 2008-12-09 14:56 
       when KEY_LEFT
         req_prev_char
       when KEY_RIGHT
@@ -769,6 +771,7 @@ module RubyCurses
       $log.debug "delete EOL :pos=#{pos}, #{@delete_buffer}: row: #{@list[@prow]}:"
       @buffer = @list[@prow]
       req_prev_char
+      fire_handler :CHANGE, self  # 2008-12-09 14:56 
       return @delete_buffer
     end
     def req_next_char
@@ -798,6 +801,7 @@ module RubyCurses
       up
       @form.row = @row + 1 + @winrow
     end
+    fire_handler :CHANGE, self  # 2008-12-09 14:56 
   end
     def delete_curr_char
       delete_at
@@ -888,6 +892,7 @@ module RubyCurses
       @curpos += 1 
       addcol 1
       @modified = true
+      fire_handler :CHANGE, self  # 2008-12-09 14:56 
       0
     end
     def append_row chars=""
@@ -918,6 +923,7 @@ module RubyCurses
         end
       end
       @modified = true
+      fire_handler :CHANGE, self  # 2008-12-09 14:56 
     end
     # move up one char from next row to current, used when deleting in a line
     # should not be called if line ends in "\r"
