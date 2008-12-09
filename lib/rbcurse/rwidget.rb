@@ -94,6 +94,7 @@ module RubyCurses
     attr_accessor  :form              # made accessor 2008-11-27 22:32 so menu can set
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
+    dsl_accessor :visible # boolean     # 2008-12-09 11:29 
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -230,6 +231,20 @@ module RubyCurses
       @curpos = col
       @form.col = @col + @col_offset + @curpos
     end
+    def hide
+      @visible = false
+    end
+    def show
+      @visible = true
+    end
+    def remove
+      @form.remove_widget(self)
+    end
+    def move row, col
+      @row = row
+      @col = col
+    end
+    ## ADD HERE WIDGET
   end
 
   class Form
@@ -261,22 +276,29 @@ module RubyCurses
       @menu_bar = mb
       add_widget mb
     end
-   def add_widget widget
+    def add_widget widget
       if widget.respond_to? :name and !widget.name.nil?
-        $log.debug "adding to byname: #{widget.name} " 
+        #       $log.debug "adding to byname: #{widget.name} " 
         @by_name[widget.name] = widget
       end
-      $log.debug "adding to widgets: #{widget.class} " 
-     @widgets << widget
-     if widget.focusable
-#      $log.debug "adding widget to focusabe: #{widget.name}" 
+
+      @widgets << widget
+      return @widgets.length-1
+   end
+    # remove a widget
+    #  added 2008-12-09 12:18 
+   def remove_widget widget
+     if widget.respond_to? :name and !widget.name.nil?
+       $log.debug "removing from byname: #{widget.name} " 
+       @by_name.delete(widget.name)
      end
-     return @widgets.length-1
+     @widgets.delete widget
    end
    # form repaint
    # to be called at some interval, such as after each keypress.
     def repaint
       @widgets.each do |f|
+        next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
       end
       @window.clear_error
@@ -292,6 +314,9 @@ module RubyCurses
        setpos 
        @window.wrefresh
     end
+    ## 
+    # move cursor to where the fields row and col are
+    # private
     def setpos r=@row, c=@col
       $log.debug "setpos : #{r} #{c}"
      @window.wmove r,c
@@ -841,6 +866,7 @@ module RubyCurses
       @buffer.insert(@curpos, char)
       @curpos += 1 if @curpos < @maxlen
       @modified = true
+      fire_handler :CHANGE, self    # 2008-12-09 14:51 
       0
     end
 
@@ -858,6 +884,7 @@ module RubyCurses
       return -1 if !@editable 
       @buffer.slice!(index,1)
       @modified = true
+      fire_handler :CHANGE, self    # 2008-12-09 14:51 
     end
     def set_buffer value
       @buffer = value
@@ -925,6 +952,7 @@ module RubyCurses
     @delete_buffer = @buffer[@curpos..-1]
     # if pos is 0, pos-1 becomes -1, end of line!
     @buffer = pos == -1 ? "" : @buffer[0..pos]
+    fire_handler :CHANGE, self    # 2008-12-09 14:51 
     return @delete_buffer
   end
   def req_next_char
