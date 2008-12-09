@@ -612,7 +612,7 @@ module RubyCurses
     end
     def insert off0, *data
       @list.insert off0, *data
-      fire_handler :CHANGE, self  # 2008-12-09 14:56 
+      # fire_handler :CHANGE, self  # 2008-12-09 14:56  NOT SURE
     end
     def wrap_text(txt, col = @maxlen)
       $log.debug "inside wrap text for :#{txt}"
@@ -720,7 +720,7 @@ module RubyCurses
         @form.col = @orig_col + @col_offset
         #addrowcol 1,0
         @form.row = @row + 1 + @winrow
-        fire_handler :CHANGE, self  # 2008-12-09 14:56 
+        #fire_handler :CHANGE, self  # 2008-12-09 14:56 
       when KEY_LEFT
         req_prev_char
       when KEY_RIGHT
@@ -738,6 +738,7 @@ module RubyCurses
       when ?\C-u
         # added 2008-11-27 12:43  paste delete buffer into insertion point
         @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
+        fire_handler :CHANGE, self  # 2008-12-09 14:56 
       when ?\C-a
         set_form_col 0
       when ?\C-e

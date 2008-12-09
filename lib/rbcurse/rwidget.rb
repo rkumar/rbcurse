@@ -244,6 +244,12 @@ module RubyCurses
       @row = row
       @col = col
     end
+    ##
+    # moves focus to this field
+    # XXX we must look into running on_leave of previous field
+    def focus
+      @form.select_field @id
+    end
     ## ADD HERE WIDGET
   end
 
@@ -347,6 +353,9 @@ module RubyCurses
       f.on_enter if f.respond_to? :on_enter
       fire_handler :ENTER, f 
     end
+    ##
+    # puts focus on the given field/widget index
+    # XXX if called externally will not run a on_leave of previous field
     def select_field ix0
       return if @widgets.nil? or @widgets.empty?
 #     $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
@@ -1176,7 +1185,7 @@ module RubyCurses
     end
   end #BUTTON
   ##
-  # A button that may be switched off an on. Does not fire.
+  # A button that may be switched off an on. 
   # To be extended by RadioButton and checkbox.
   class ToggleButton < Button
     include CommonIO
@@ -1190,6 +1199,12 @@ module RubyCurses
     def getvalue
       @value ? @onvalue : @offvalue
     end
+    ##
+    # is the button on or off
+    # added 2008-12-09 19:05 
+    def checked?
+      @value
+    end
     def getvalue_for_paint
       buttontext = getvalue()
       @surround_chars[0] + buttontext + @surround_chars[1]
@@ -1201,8 +1216,16 @@ module RubyCurses
         super
       end
     end
+    ##
+    # toggle the button value
     def toggle
-      @value = !@value
+      checked(!@value)
+    end
+    ##
+    # set the value to true or false
+    # user may programmatically want to check or uncheck
+    def checked tf
+      @value = tf
       if !@text_variable.nil?
         if @value 
           @text_variable.value = (@onvalue || 1)
@@ -1210,12 +1233,15 @@ module RubyCurses
           @text_variable.value = (@offvalue || 0)
         end
       end
+      # call fire of button class 2008-12-09 17:49 
+      fire
     end
   end # class
   ##
   # A checkbox, may be selected or unselected
   class CheckBox < ToggleButton
     include CommonIO
+    dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
       super
@@ -1229,7 +1255,11 @@ module RubyCurses
     def getvalue_for_paint
 #     $log.debug " iside CHECKBOX getvalue for paint"
       buttontext = getvalue() ? "X" : " "
-      @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+      if @align_right
+        "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+      else
+        @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+      end
     end
   end # class
   ##
@@ -1238,6 +1268,7 @@ module RubyCurses
   # 2008-11-27 18:45 just made this inherited from Checkbox
   class RadioButton < ToggleButton
     include CommonIO
+    dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
       @surround_chars = ['(', ')'] if @surround_chars.nil?
@@ -1249,10 +1280,26 @@ module RubyCurses
     end
     def getvalue_for_paint
       buttontext = @text_variable.value == @value ? "o" : " "
-      @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+      if @align_right
+        "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+      else
+        @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+      end
     end
     def toggle
       @text_variable.value = @value
+      # call fire of button class 2008-12-09 17:49 
+      fire
+    end
+    ##
+    # ideally this should not be used. But implemented for completeness.
+    # it is recommended to toggle some other radio button than to uncheck this.
+    def checked tf
+      if tf
+        toggle
+      elsif !@text_variable.nil? and @text_variable == @value
+        @text_variable = nil
+      end
     end
   end # class
   ## 
