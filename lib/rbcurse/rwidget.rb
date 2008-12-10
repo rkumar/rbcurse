@@ -129,7 +129,6 @@ module RubyCurses
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_leave
-      $log.debug " O LEAVE"
       fire_handler :LEAVE, self
     end
     # private
@@ -658,8 +657,10 @@ module RubyCurses
     end
     def handle_keys
       begin
+        $log.debug " keyhandler is now messagebox "
         VER::Keyboard2.focus = self
       ensure
+        $log.debug " destroy of is now messagebox "
         destroy  # XXX
       end
       return @selected_index
@@ -930,11 +931,15 @@ module RubyCurses
   def handle_key ch
     case ch
     when KEY_LEFT
-      req_prev_char
+      cursor_backward
     when KEY_RIGHT
-      req_next_char
+      cursor_forward
     when KEY_BACKSPACE, 127
       delete_prev_char
+    when KEY_UP
+      @form.select_prev_field
+    when KEY_DOWN
+      @form.select_next_field
     when KEY_ENTER, 10, 13
       if respond_to? :fire
         fire
@@ -942,9 +947,9 @@ module RubyCurses
     when 330
       delete_curr_char
     when ?\C-a
-      set_form_col 0
+      cursor_home 
     when ?\C-e
-      set_form_col @buffer.length
+      cursor_end 
     when ?\C-k
       delete_eol
     when ?\C-u
@@ -956,6 +961,16 @@ module RubyCurses
       return :UNHANDLED
     end
   end
+  ## 
+  # position cursor at start of field
+  def cursor_home
+    set_form_col 0
+  end
+  ##
+  # goto end of field, "end" is a keyword so could not use it.
+  def cursor_end
+    set_form_col @buffer.length
+  end
   def delete_eol
     pos = @curpos-1
     @delete_buffer = @buffer[@curpos..-1]
@@ -964,13 +979,13 @@ module RubyCurses
     fire_handler :CHANGE, self    # 2008-12-09 14:51 
     return @delete_buffer
   end
-  def req_next_char
-    if @curpos < display_length
+  def cursor_forward
+    if @curpos < @buffer.length  # display_length -> prevent crashes if person tries entering
       @curpos += 1
       addcol 1
     end
   end
-  def req_prev_char
+  def cursor_backward
     if @curpos > 0
       @curpos -= 1
       addcol -1
@@ -1420,6 +1435,185 @@ module RubyCurses
       fire_handler :LEAVE_ROW, arow
     end
   end # class listb
+
+  class PopupList
+    include CommonIO
+    include DSL
+    dsl_accessor :title
+    dsl_accessor :message
+    dsl_accessor :layout
+    attr_reader :config
+    attr_reader :selected_index     # button index selected by user
+    attr_reader :window     # required for keyboard
+    dsl_accessor :list_select_mode  # true or false allow multiple selection
+    dsl_accessor :relative_to
+
+    def initialize aconfig={}, &block
+      @config = aconfig
+      @bcol = 5
+      @selected_index = -1
+      @config.each_pair { |k,v| instance_variable_set("@#{var}",v) }
+      instance_eval &block if block_given?
+      if !@relative_to.nil?
+        layout = @relative_to.form.window.layout
+
+        @row = @row + layout[:top]
+        @col = @col + layout[:left]
+      end
+          height = [5, @list.length].min 
+          layout(2+height, @width+4, @row, @col)
+      @window = VER::Window.new(@layout)
+      @form = RubyCurses::Form.new @window
+      @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
+      @window.wrefresh
+      @panel = @window.panel
+      Ncurses::Panel.update_panels
+      @message_row = @message_col = 2
+#     print_borders
+#     print_title
+#      print_message
+      print_input
+#      create_buttons
+      @form.repaint
+      @window.wrefresh
+      handle_keys
+    end
+    ##
+    def input_value
+      return @listbox.getvalue if !@listbox.nil?
+    end
+    ## message box
+    def stopping?
+      @stop
+    end
+    def handle_keys
+      begin
+        $log.debug " keyhandler is now popup list"
+        #VER::Keyboard2.focus = self
+        while((ch = @window.getch()) != 999 )
+          case ch
+          when -1
+            next
+          else
+            press ch
+            break if @stop
+          end
+        end
+      ensure
+        $log.debug " destroyof is now popup list"
+        destroy  # XXX
+      end
+      return 0 #@selected_index
+    end
+    def press ch
+       $log.debug "popup handle_keys :  #{ch}"  if ch != -1
+        case ch
+        when -1
+          return
+        when KEY_F1, 27, ?\C-q   # 27/ESC does not come here since gobbled by keyboard.rb
+          @stop = true
+          return
+        when KEY_ENTER, 10, 13
+          $log.debug "popup handle_keys :  ENTER"
+          field =  @form.get_current_field
+          if field.respond_to? :fire
+            field.fire
+          end
+        # $log.debug "popup ENTER : #{@selected_index} "
+        # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
+          @stop = true
+          return
+        when 9
+          @form.select_next_field
+        else
+          # fields must return unhandled else we will miss hotkeys. 
+          # On messageboxes, often if no edit field, then O and C are hot.
+          field =  @form.get_current_field
+          handled = field.handle_key ch
+
+          if handled == :UNHANDLED
+              @stop = true
+              return
+          end
+        end
+        @form.repaint
+        Ncurses::Panel.update_panels();
+        Ncurses.doupdate();
+        @window.wrefresh
+    end
+    def print_borders
+      width = @layout[:width]
+      height = @layout[:height]
+      start = 2
+      hline = "+%s+" % [ "-"*(width-((start+1)*2)) ]
+      hline2 = "|%s|" % [ " "*(width-((start+1)*2)) ]
+      printstr(@window, row=1, col=start, hline, color=$reversecolor)
+      (start).upto(height-2) do |row|
+        #printstr(@window, row, col=start, hline2, color=$reversecolor)
+        @window.printstring row, col=start, hline2, color=$normalcolor, A_REVERSE
+      end
+      printstr(@window, height-2, col=start, hline, color=$reversecolor)
+    end
+    def print_title title=@title
+      width = @layout[:width]
+      title = " "+title+" "
+      printstr(@window, row=1,col=(width-title.length)/2,title, color=$normalcolor)
+    end
+    def center_column textlen
+      width = @layout[:width]
+      return (width-textlen)/2
+    end
+    def print_input
+      #return if @type.to_s != "input"
+      r = @message_row + 1
+      c = @message_col
+      r = c = 0
+      width = @layout[:width]
+      defaultvalue = @default_value || ""
+        list = @list
+        select_mode = @list_select_mode 
+        default_values = @default_values
+        @listbox = RubyCurses::Listbox.new @form do
+          name   "input" 
+          row  r 
+          col  c 
+#         attr 'reverse'
+          color 'black'
+          bgcolor 'cyan'
+          width width
+          height 6
+          list  list
+          display_length  30
+          set_buffer defaultvalue
+          select_mode select_mode
+          default_values default_values
+        end
+    end
+    def configure(*val , &block)
+      case val.size
+      when 1
+        return @config[val[0]]
+      when 2
+        @config[val[0]] = val[1]
+        instance_variable_set("@#{val[0]}", val[1]) 
+      end
+      instance_eval &block if block_given?
+    end
+    def cget param
+      @config[param]
+    end
+
+    def layout(height=0, width=0, top=0, left=0)
+      @layout = { :height => height, :width => width, :top => top, :left => left } 
+    end
+    def destroy
+      $log.debug "DESTROY : widget"
+      panel = @window.panel
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      @window.delwin if !@window.nil?
+    end
+  end # class PopupList
+
   def self.startup
     VER::start_ncurses
     $log = Logger.new("view.log")

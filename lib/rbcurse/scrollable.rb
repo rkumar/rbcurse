@@ -67,7 +67,7 @@ module Scrollable
     end
     @toprow = @prow if @prow < @toprow
   end
-  def space
+  def scroll_forward
     if @toprow + @scrollatrow+1 >= get_content().length
       # so cursor goes to last line
       @prow +=  get_content().length - @prow - 1 # XXX 2008-11-27 14:18 
@@ -77,7 +77,7 @@ module Scrollable
       @prow = @toprow
     end
   end
-  def minus
+  def scroll_backward
     if @prow <= 0
       @message = "This is the first row"
       @prow = 0
@@ -197,11 +197,11 @@ module Scrollable
         pre_key
         case ch
         when ?\C-n
-          space
+          scroll_forward
         when 32
-          space
+          scroll_forward
         when ?\C-p
-          minus
+          scroll_backward
         when ?0
           goto_start
         when ?9

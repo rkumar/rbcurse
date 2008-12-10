@@ -53,6 +53,7 @@ module ColorMap
       ColorMap.install_color color, $def_bg_color
     end
     $reversecolor = ColorMap.get_color $def_bg_color, $def_fg_color
+    $popupcolor = ColorMap.get_color 'cyan', $def_fg_color
 
     $errorcolor = ColorMap.get_color 'white', 'red'
     $promptcolor = $selectedcolor = ColorMap.get_color('yellow', 'red')

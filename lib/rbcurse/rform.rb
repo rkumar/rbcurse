@@ -687,16 +687,16 @@ module RubyCurses
       pre_key
       case ch
       when ?\C-n
-        space
+        scroll_forward
         @form.row = @row + 1 + @winrow
       when ?\C-p
-        minus
+        scroll_backward
         @form.row = @row + 1 + @winrow
         $log.debug "KEY minus : cp #{@curpos} #{@form.row} "
       when ?\C-[
-        goto_start
+        cursor_start
       when ?\C-]
-        goto_end
+        cursor_end
       when KEY_UP
         #select_prev_row
         ret = up
@@ -722,9 +722,9 @@ module RubyCurses
         @form.row = @row + 1 + @winrow
         #fire_handler :CHANGE, self  # 2008-12-09 14:56 
       when KEY_LEFT
-        req_prev_char
+        cursor_backward
       when KEY_RIGHT
-        req_next_char
+        cursor_forward
       when KEY_BACKSPACE, 127
         delete_prev_char
       when 330
@@ -771,11 +771,11 @@ module RubyCurses
       @list[@prow] = pos == -1 ? "" : @buffer[0..pos]
       $log.debug "delete EOL :pos=#{pos}, #{@delete_buffer}: row: #{@list[@prow]}:"
       @buffer = @list[@prow]
-      req_prev_char
+      cursor_backward
       fire_handler :CHANGE, self  # 2008-12-09 14:56 
       return @delete_buffer
     end
-    def req_next_char
+    def cursor_forward
       $log.debug "next char cp #{@curpos} wi: #{@width}"
       if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
         @curpos += 1
@@ -788,7 +788,7 @@ module RubyCurses
     def addrowcol row,col
     @form.addrowcol row, col
   end
-  def req_prev_char
+  def cursor_backward
     if @curpos > 0
       @curpos -= 1
       addcol -1
@@ -1069,13 +1069,13 @@ module RubyCurses
       pre_key
       case ch
       when ?\C-n
-        space
+        scroll_forward
       when ?\C-p
-        minus
+        scroll_backward
       when ?\C-[
-        goto_start
+        cursor_start
       when ?\C-]
-        goto_end
+        cursor_end
       when KEY_UP
         #select_prev_row
         ret = up
@@ -1085,13 +1085,13 @@ module RubyCurses
         ret = down
         @form.row = @row + 1 + @winrow
       when KEY_LEFT
-        req_prev_char
+        cursor_backward
       when KEY_RIGHT
-        req_next_char
+        cursor_forward
       when KEY_BACKSPACE, 127
-        req_prev_char
+        cursor_backward
       when 330
-        req_prev_char
+        cursor_backward
       when ?\C-a
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
@@ -1121,7 +1121,7 @@ module RubyCurses
       @curpos = col
       @form.col = @orig_col + @col_offset + @curpos
     end
-    def req_next_char
+    def cursor_forward
       if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
         @curpos += 1
         addcol 1
@@ -1136,7 +1136,7 @@ module RubyCurses
     def addrowcol row,col
       @form.addrowcol row, col
     end
-    def req_prev_char
+    def cursor_backward
       if @curpos > 0
         @curpos -= 1
         addcol -1
