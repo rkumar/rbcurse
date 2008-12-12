@@ -139,9 +139,9 @@ module VER
     # ALT combinations also send a 27 before the actual key
     # Please test with above combinations before using on your terminal
     # added by rkumar 2008-12-12 23:07 
-    def getchar win
+    def getchar 
       while 1 
-        ch = win.getch
+        ch = getch
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
           if @stack.first == 27
