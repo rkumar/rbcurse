@@ -192,6 +192,7 @@ module Scrollable
     def focussed_index
       @prow
     end
+    alias :current_index :focussed_index
     def scrollable_handle_key ch
       begin
         pre_key

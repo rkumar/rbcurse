@@ -73,6 +73,25 @@ module RubyCurses
     class FieldValidationException < RuntimeError
     end
 
+    module EventHandler
+      ##
+      # bind an event to a block, optional args will also be passed when calling
+      def bind event, *args, &blk
+        $log.debug "called EventHandler BIND #{event} #{args} "
+        @handler ||= {}
+        @event_args ||= {}
+        @handler[event] = blk
+        @event_args[event] = args
+      end
+    
+      # e.g. fire_handler :ENTER, self
+      def fire_handler event, object
+        blk = @handler[event]
+        return if blk.nil?
+        $log.debug "called Eventhandler firehander #{object}, #{@event_args[event]}"
+        blk.call object,  *@event_args[event]
+      end
+    end
   class Widget
     include CommonIO
     include DSL
@@ -112,7 +131,7 @@ module RubyCurses
     end
     ## got left out by mistake 2008-11-26 20:20 
     def bind event, *args, &blk
-      $log.debug "called widget BIND #{event} #{args} "
+      $log.debug "called widget #{id} BIND #{event} #{args} "
       @handler[event] = blk
       @event_args[event] = args
     end
@@ -1436,51 +1455,57 @@ module RubyCurses
     end
   end # class listb
 
+  ##
+  # pops up a list of values for selection
+  # 2008-12-10
   class PopupList
-    include CommonIO
+#   include CommonIO
     include DSL
+    include RubyCurses::EventHandler
     dsl_accessor :title
-    dsl_accessor :message
     dsl_accessor :layout
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
     dsl_accessor :list_select_mode  # true or false allow multiple selection
-    dsl_accessor :relative_to
+    dsl_accessor :relative_to   # a widget, if given row and col are relative to widgets windows 
+                                # layout
+    dsl_accessor :max_visible_items   # how many to display
+    dsl_accessor :list_config       # hash with values for the list to use
 
     def initialize aconfig={}, &block
       @config = aconfig
-      @bcol = 5
+#     @bcol = 5
       @selected_index = -1
+      @list_config ||= {}
       @config.each_pair { |k,v| instance_variable_set("@#{var}",v) }
       instance_eval &block if block_given?
+      # get widgets absolute coords
       if !@relative_to.nil?
         layout = @relative_to.form.window.layout
-
         @row = @row + layout[:top]
         @col = @col + layout[:left]
       end
-          height = [5, @list.length].min 
-          layout(2+height, @width+4, @row, @col)
+      @height = [@max_visible_items || 10, @list.length].min 
+      layout(2+height, @width+4, @row, @col)
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
       @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
-      @message_row = @message_col = 2
+#     @message_row = @message_col = 2
 #     print_borders
 #     print_title
-#      print_message
       print_input
-#      create_buttons
       @form.repaint
       @window.wrefresh
       handle_keys
     end
     ##
     def input_value
-      return @listbox.getvalue if !@listbox.nil?
+      #return @listbox.getvalue if !@listbox.nil?
+      return @listbox.focussed_index if !@listbox.nil?
     end
     ## message box
     def stopping?
@@ -1488,7 +1513,6 @@ module RubyCurses
     end
     def handle_keys
       begin
-        $log.debug " keyhandler is now popup list"
         #VER::Keyboard2.focus = self
         while((ch = @window.getch()) != 999 )
           case ch
@@ -1500,7 +1524,6 @@ module RubyCurses
           end
         end
       ensure
-        $log.debug " destroyof is now popup list"
         destroy  # XXX
       end
       return 0 #@selected_index
@@ -1514,17 +1537,13 @@ module RubyCurses
           @stop = true
           return
         when KEY_ENTER, 10, 13
-          $log.debug "popup handle_keys :  ENTER"
-          field =  @form.get_current_field
-          if field.respond_to? :fire
-            field.fire
-          end
+          fire_handler :PRESS, @listbox.focussed_index
         # $log.debug "popup ENTER : #{@selected_index} "
         # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
           return
         when 9
-          @form.select_next_field
+          @form.select_next_field ## XXX
         else
           # fields must return unhandled else we will miss hotkeys. 
           # On messageboxes, often if no edit field, then O and C are hot.
@@ -1541,50 +1560,28 @@ module RubyCurses
         Ncurses.doupdate();
         @window.wrefresh
     end
-    def print_borders
-      width = @layout[:width]
-      height = @layout[:height]
-      start = 2
-      hline = "+%s+" % [ "-"*(width-((start+1)*2)) ]
-      hline2 = "|%s|" % [ " "*(width-((start+1)*2)) ]
-      printstr(@window, row=1, col=start, hline, color=$reversecolor)
-      (start).upto(height-2) do |row|
-        #printstr(@window, row, col=start, hline2, color=$reversecolor)
-        @window.printstring row, col=start, hline2, color=$normalcolor, A_REVERSE
-      end
-      printstr(@window, height-2, col=start, hline, color=$reversecolor)
-    end
-    def print_title title=@title
-      width = @layout[:width]
-      title = " "+title+" "
-      printstr(@window, row=1,col=(width-title.length)/2,title, color=$normalcolor)
-    end
-    def center_column textlen
-      width = @layout[:width]
-      return (width-textlen)/2
-    end
     def print_input
-      #return if @type.to_s != "input"
-      r = @message_row + 1
-      c = @message_col
       r = c = 0
       width = @layout[:width]
+      height = @height
       defaultvalue = @default_value || ""
         list = @list
         select_mode = @list_select_mode 
         default_values = @default_values
-        @listbox = RubyCurses::Listbox.new @form do
+        @list_config['color'] ||= 'black'
+        @list_config['bgcolor'] ||= 'cyan'
+        @listbox = RubyCurses::Listbox.new @form, @list_config do
           name   "input" 
           row  r 
           col  c 
 #         attr 'reverse'
-          color 'black'
-          bgcolor 'cyan'
+#         color 'black'
+#         bgcolor 'cyan'
           width width
-          height 6
+          height height
           list  list
           display_length  30
-          set_buffer defaultvalue
+#         set_buffer defaultvalue
           select_mode select_mode
           default_values default_values
         end
@@ -1607,7 +1604,7 @@ module RubyCurses
       @layout = { :height => height, :width => width, :top => top, :left => left } 
     end
     def destroy
-      $log.debug "DESTROY : widget"
+      $log.debug "DESTROY : popuplist "
       panel = @window.panel
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?

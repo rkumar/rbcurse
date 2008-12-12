@@ -13,6 +13,30 @@ include Ncurses
 include Ncurses::Form
 
 
+# returns control, alt, alt+ctrl, alt+control+shift etc
+def getchar win
+  while 1 
+    ch = win.getch
+    if ch == -1
+      if @stack.first == 27
+        @stack.clear
+        return 27
+      end
+      @stack.clear
+      next
+    end
+    if @stack.first == 27
+      ch = 128 + ch
+      @stack.clear
+      return ch
+    end
+    if ch == 27
+      @stack << 27
+      next
+    end
+    return ch
+  end
+end
 def update_struct(fldname, value)
   @current[fldname]=value
 end
@@ -108,8 +132,10 @@ rt_hashes = YAML::load( File.open( 'gen1.yml' ) )
 begin
   stdscr = Ncurses.initscr();
   Ncurses.start_color();
-  Ncurses.cbreak();
+  Ncurses.raw();
   Ncurses.keypad(stdscr, true);
+  Ncurses::halfdelay(tenths = 10)
+
   Ncurses.noecho();
   trap("INT") {  }
 
@@ -474,8 +500,12 @@ begin
   stdscr.refresh();
 
   # Loop through to get user requests unless 147 == alt Q
-  while((ch = my_form_win.getch()) )
+  @stack =  []
+  #while((ch = my_form_win.getch()) )
+  while((ch = getchar(my_form_win)))
     case ch
+    when -1
+      next
     when KEY_DOWN
       # Go to next field */
       my_form.form_driver(REQ_VALIDATION);
@@ -500,7 +530,7 @@ begin
 
     when KEY_BACKSPACE,127
       my_form.form_driver(REQ_DEL_PREV);
-    when 153 # alt-h XXX
+    when KEY_F1, ?\M-h
       helpproc.call
     when 24  # c-x
       saveproc.call
@@ -508,7 +538,7 @@ begin
       # save method
     when 25  # c-y
       print_status(stdscr,"SAVE as YAML");
-    when 147 # alt-Q alt-q
+    when ?\C-q, ?\C-w # alt-Q alt-q
       if form_changed? == true
         print_status(stdscr,"Form was changed. Wish to save?")
         yn=''
@@ -528,8 +558,8 @@ begin
     else
 
       # If this is a normal character, it gets Printed    
-      #      stdscr.mvprintw(Ncurses.LINES - 2, 18, "["+ch.to_s+"]");
-      #stdscr.mvprintw(Ncurses.LINES - 2, 18, "[%3d, %c]", ch, ch);
+      stdscr.mvprintw(Ncurses.LINES - 2, 18, "["+ch.to_s+"]");
+      stdscr.mvprintw(Ncurses.LINES - 1, 18, "[%3d, %c] %s   ", ch, ch, @stack.inspect);
       #stdscr.mvprintw(Ncurses.LINES - 1, 18, "C-x Save");
 
       stdscr.refresh();

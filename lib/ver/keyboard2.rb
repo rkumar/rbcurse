@@ -30,7 +30,8 @@ module VER
         #break if VER.stopping?
         $log.debug("char: #{char} stakc: #{@stack.inspect}") if char != Ncurses::ERR
         if char == Ncurses::ERR # timeout or signal
-          @focus.press('esc') if @stack == [ESC]
+          #@focus.press('esc') if @stack == [ESC]
+          @focus.press(ESC) if @stack == [ESC]
           @stack.clear
         elsif ready = resolve(char)
 $log.debug("char: #{char} ready: #{ready}")
@@ -44,6 +45,7 @@ $log.debug("char: #{char} ready: #{ready}")
     end
 
     def resolve(char)
+      $log.debug("char: #{char} resolve") if char == ESC
       @stack << char
 
       if @stack.first == ESC

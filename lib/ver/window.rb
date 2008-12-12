@@ -22,6 +22,7 @@ module VER
       $error_message_row = $status_message_row = Ncurses.LINES-1
 
       Ncurses::keypad(@window, true)
+      @stack = []
     end
     def self.root_window(layout = { :height => 0, :width => 0, :top => 0, :left => 0 })
       #VER::start_ncurses
@@ -134,6 +135,37 @@ module VER
       3 # is C-c
     end
 
+    # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
+    # ALT combinations also send a 27 before the actual key
+    # Please test with above combinations before using on your terminal
+    # added by rkumar 2008-12-12 23:07 
+    def getchar win
+      while 1 
+        ch = win.getch
+        if ch == -1
+          # the returns escape 27 if no key followed it, so its SLOW if you want only esc
+          if @stack.first == 27
+            @stack.clear
+            return 27
+          end
+          @stack.clear
+          next
+        end
+        # this is the ALT combination
+        if @stack.first == 27
+          ch = 128 + ch
+          @stack.clear
+          return ch
+        end
+        # append a 27 to stack, actually one can use a flag too
+        if ch == 27
+          @stack << 27
+          next
+        end
+        return ch
+      end
+    end
+
     def clear
       # return unless visible?
       move 0, 0
@@ -232,19 +264,22 @@ module VER
       mvprintw(r, c, "%s", string);
       attroff(Ncurses.COLOR_PAIR(color) | att)
     end
+    # added by rk 2008-11-29 19:01 
     def print_error_message text=$error_message
       r = $error_message_row || Ncurses.LINES-1
-       $log.debug "got ERROR MEASSAGE #{text} row #{r} "
+      $log.debug "got ERROR MEASSAGE #{text} row #{r} "
       clear_error r, $datacolor
       # print it in centre
       printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
     end
+    # added by rk 2008-11-29 19:01 
     def print_status_message text=$status_message
       r = $status_message_row || Ncurses.LINES-1
       clear_error r, $datacolor
       # print it in centre
       printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
     end
+    # added by rk 2008-11-29 19:01 
     def clear_error r = $error_message_row, color = $datacolor
       printstring(r, 0, "%-*s" % [Ncurses.COLS," "], color)
     end

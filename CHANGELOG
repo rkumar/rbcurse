@@ -1,3 +1,19 @@
+**2008-12-11 22:32**
+## Popuplist in action ##
+
+sample of popuplist called whenever cursor falls in User field.
+Pressing Enter passes the value.
+
+frmincr200812112231.tgz
+* * *
+**2008-12-11 01:27**
+## class PopupList ##
+
+wip but almost done.
+pops up a list which can be selected from.
+
+frmincr200812110126.tgz
+* * *
 **2008-12-03 20:13**
 ## Field accepts values() and valid_regex() ##
 
