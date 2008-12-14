@@ -145,7 +145,7 @@ begin
   # just in case user does not specify, I need some defaults
   Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK)
   Ncurses.init_pair(2, COLOR_BLACK, COLOR_WHITE)
-  Ncurses.init_pair(3, COLOR_BLACK, COLOR_BLUE)
+  Ncurses.init_pair(3, COLOR_BLACK, COLOR_CYAN)
   
   # Initialize few color pairs 
 #  Ncurses.init_pair(1, COLOR_RED, COLOR_BLACK)

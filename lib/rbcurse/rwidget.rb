@@ -282,8 +282,10 @@ module RubyCurses
     attr_accessor :padx
     attr_accessor :pady
     attr_accessor :modified
+    attr_accessor :active_index
     attr_reader :by_name   # hash containing widgets by name for retrieval
     attr_reader :menu_bar
+    attr_accessor :navigation_policy  # :CYCLICAL will cycle around. Needed to move to other tabs
     def initialize win, &block
       @window = win
       @widgets = []
@@ -294,6 +296,7 @@ module RubyCurses
       @handler = {}
       @modified = false
       @focusable = true
+      @navigation_policy ||= :CYCLICAL
       instance_eval &block if block_given?
     end
     def set_menu_bar mb
@@ -331,7 +334,7 @@ module RubyCurses
       $error_message = $status_message = nil
       if @row == -1
         #set_field_cursor 0
-       $log.debug "repaint calling select field 0"
+       $log.debug "form repaint calling select field 0"
         #select_field 0
         req_first_field
       end
@@ -342,18 +345,18 @@ module RubyCurses
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-      $log.debug "setpos : #{r} #{c}"
+     # $log.debug "setpos : #{r} #{c}"
      @window.wmove r,c
     end
     def get_current_field
       @widgets[@active_index]
     end
     def req_first_field
-      @active_field = -1 # FIXME HACK
+      @active_index = -1 # FIXME HACK
       select_next_field
     end
     def req_last_field
-      @active_field = -1 # FIXME HACK
+      @active_index = nil 
       select_prev_field
     end
     def on_leave f
@@ -391,9 +394,12 @@ module RubyCurses
         $log.debug "insdie sele nxt field ENABLED FALSE : prev #{previtem} act #{@active_index}  #{ix0}" 
       end
     end
+    # put focus on next field
+    # will cycle by default, unless navigation policy not :CYCLICAL
+    # in which case returns :NO_NEXT_FIELD.
     def select_next_field
       return if @widgets.nil? or @widgets.empty?
-#      $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
+      #$log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?
         @active_index = -1 
       else
@@ -416,13 +422,22 @@ module RubyCurses
         end
       end
       #req_first_field
-       $log.debug "insdie sele nxt field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+      #$log.debug "insdie sele nxt field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+      ## added on 2008-12-14 18:27 so we can skip to another form/tab
+      if @navigation_policy == :CYCLICAL
         @active_index = nil
         select_next_field
+      else
+        return :NO_NEXT_FIELD
+      end
     end
+    ##
+    # put focus on previous field
+    # will cycle by default, unless navigation policy not :CYCLICAL
+    # in which case returns :NO_PREV_FIELD.
     def select_prev_field
       return if @widgets.nil? or @widgets.empty?
-#      $log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
+      #$log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?
         @active_index = @widgets.length 
       else
@@ -435,7 +450,7 @@ module RubyCurses
          return
         end
       end
-      #@active_index -= 1
+
       index = @active_index - 1
       (index).downto(0) do |i|
         f = @widgets[i]
@@ -444,10 +459,14 @@ module RubyCurses
           return
         end
       end
-       $log.debug "insdie sele prev field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+      # $log.debug "insdie sele prev field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+      ## added on 2008-12-14 18:27 so we can skip to another form/tab
+      if @navigation_policy == :CYCLICAL
         @active_index = nil # HACK !!!
         select_prev_field
-      #req_last_field
+      else
+        return :NO_PREV_FIELD
+      end
     end
     alias :req_next_field :select_next_field
     alias :req_prev_field :select_prev_field
@@ -477,6 +496,9 @@ module RubyCurses
     blk.call object
   end
   ## forms handle keys
+  # mainly traps tab and backtab to navigate between widgets.
+  # I know some widgets will want to use tab, e.g edit boxes for entering a tab
+  #  or for completion.
   def handle_key(ch)
         case ch
         when -1
@@ -488,17 +510,15 @@ module RubyCurses
             @menu_bar.handle_keys
           end
         when 9
-          select_next_field
-=begin
-        # lists use up and down key for navigation internally
-        when KEY_UP
-          select_prev_field
-        when KEY_DOWN
-          select_next_field
-=end
+          ret = select_next_field
+          return ret if ret == :NO_NEXT_FIELD
+        when 353 ## backtab added 2008-12-14 18:41 
+          ret = select_prev_field
+          return ret if ret == :NO_PREV_FIELD
         else
           field =  get_current_field
           handled = field.handle_key ch
+          # some widgets like textarea and list handle up and down
           if handled == :UNHANDLED or handled == -1
             case ch
             when KEY_UP
