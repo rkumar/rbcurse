@@ -23,6 +23,8 @@ See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
 * togglebutton, radio and check buttons
 * message box
 * menubar - with submenu and CheckBoxMenuItem
+* popup list
+* tabbedpane
 
 Above may be created using DSL like syntax, or hashes.
 

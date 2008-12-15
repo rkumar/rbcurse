@@ -21,6 +21,62 @@ include RubyCurses
 module RubyCurses
   extend self
 
+  # TODO : okay the hotkeys wont work from the tabbed forms. Need to
+  # work that out.
+  # Hotkeys should be defined with ampersand. 
+  #
+  # Multiple independent overlapping forms using the tabbed metaphor.
+  class TabbedButton < RubyCurses::RadioButton
+    def getvalue_for_paint
+      @text
+      #buttontext = @text_variable.value == @value ? "x" : " "
+      #if @align_right
+      #  "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+      #else
+      #  @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+      #end
+    end
+    def repaint  # tabbedbutton
+#       $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+        r,c = rowcol
+        attribs = @attrs
+        @highlight_foreground ||= $reversecolor
+        @highlight_background ||= 0
+        _state = @state
+        _state = :SELECTED if @text_variable.value == @value 
+        case _state
+        when :HIGHLIGHTED
+          bgcolor = @highlight_background
+          color = @highlight_foreground
+          bgcolor =  @bgcolor
+          color =  @color
+          attribs = Ncurses::A_BOLD
+        when :SELECTED
+          bgcolor =  @bgcolor
+          color =  @color
+          attribs = Ncurses::A_REVERSE
+        else
+          bgcolor =  @bgcolor
+          color =  @color
+        end
+        #bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
+        #color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+        if bgcolor.is_a? String and color.is_a? String
+          color = ColorMap.get_color(color, bgcolor)
+        end
+        value = getvalue_for_paint
+#       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
+        len = @display_length || value.length
+        @form.window.printstring r, c, "%-*s" % [len, value], color, attribs
+#       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
+        if @underline != nil
+        #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
+        #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
+       # underline not working here using Ncurses. Works with highline. \e[4m
+          @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+        end
+    end
+  end
   class TabbedPane
     include DSL
     include EventHandler
@@ -85,11 +141,14 @@ module RubyCurses
       col = 1
       @buttons = []
       ## create a button for each tab
+      $tabradio = Variable.new
       @tabs.each do |tab|
         text = tab.text
-        @buttons << RubyCurses::Button.new(@form) do
+        @buttons << RubyCurses::TabbedButton.new(@form) do
+          text_variable $tabradio
           text text
           name text
+          value text
           row 1
           col col
           underline 0
@@ -166,7 +225,11 @@ module RubyCurses
         @current_form.window.wrefresh
         @window.refresh
       end
+      destroy
+    end
+    def destroy
       @window.destroy
+      @forms.each { |f| w = f.window; w.destroy unless w.nil? }
     end
 
     ##
