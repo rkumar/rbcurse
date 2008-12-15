@@ -495,6 +495,30 @@ module RubyCurses
     return if blk.nil?
     blk.call object
   end
+  ##
+  # bind an action to a key, required if you create a button which has a hotkey
+  # or a field to be focussed on a key, or any other user defined action based on key
+  # e.g. bind_key ?\C-x, object, block
+  def bind_key keycode, *args, &blk
+    $log.debug "called bind_key BIND #{keycode} #{args} "
+    @key_handler ||= {}
+    @key_args ||= {}
+    @key_handler[keycode] = blk
+    @key_args[keycode] = args
+  end
+
+  # e.g. process_key ch, self
+  # returns UNHANDLED if no block for it
+  # after form handles basic keys, it gives unhandled key to current field, if current field returns
+  # unhandled, then it checks this map.
+  def process_key keycode, object
+    return :UNHANDLED if @key_handler.nil?
+    blk = @key_handler[keycode]
+    return :UNHANDLED if blk.nil?
+    $log.debug "called process_key #{object}, #{@key_args[keycode]}"
+    blk.call object,  *@key_args[keycode]
+    0
+  end
   ## forms handle keys
   # mainly traps tab and backtab to navigate between widgets.
   # I know some widgets will want to use tab, e.g edit boxes for entering a tab
@@ -525,6 +549,9 @@ module RubyCurses
               select_prev_field
             when KEY_DOWN
               select_next_field
+            else
+              ret = process_key ch, self
+              return :UNHANDLED if ret == :UNHANDLED
             end
           end
         end
@@ -731,7 +758,8 @@ module RubyCurses
 
           if handled == :UNHANDLED
             if @keys.include? ch
-              $log.debug "KEY #{ch} caught"
+              ## XXX I should be firing the button also
+              $log.debug "KEY #{ch} caught - PLS FIRE THE BUTTON"
               @selected_index = @keys[ch]
               @stop = true
               return
@@ -1151,12 +1179,24 @@ module RubyCurses
       @focusable = true
       @editable = false
       #@command_block = nil
-      @handler={}
+      @handler={} # event handler
       super
       @bgcolor ||= $datacolor 
       @color ||= $datacolor 
       @surround_chars ||= ['[', ']'] 
       @text = @name if @text.nil?
+      bind_hotkey
+    end
+    # bind hotkey to form keys. added 2008-12-15 20:19 
+    # use ampersand in name or underline
+    def bind_hotkey
+      return if @underline.nil? or @form.nil?
+      _value = @text
+      $log.debug " bind hot #{_value} #{@underline}"
+      ch = _value[@underline,1].downcase()[0] ## XXX 1.9 
+      # meta key 
+      mch = ?\M-a + (ch - ?a)
+      @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
     def on_enter
 #      $log.debug "ONENTER : #{@bgcolor} "
@@ -1344,6 +1384,11 @@ module RubyCurses
       @text_variable.value = @value
       # call fire of button class 2008-12-09 17:49 
       fire
+    end
+    # added for bindkeys since that calls fire, not toggle - XXX i don't like this
+    def fire
+      @text_variable.value = @value
+      super
     end
     ##
     # ideally this should not be used. But implemented for completeness.

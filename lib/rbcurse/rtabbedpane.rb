@@ -29,13 +29,10 @@ module RubyCurses
   class TabbedButton < RubyCurses::RadioButton
     def getvalue_for_paint
       @text
-      #buttontext = @text_variable.value == @value ? "x" : " "
-      #if @align_right
-      #  "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
-      #else
-      #  @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
-      #end
     end
+    ## 
+    # highlight abd selected colors and attribs should perhaps be in a
+    # structure, so user can override easily
     def repaint  # tabbedbutton
 #       $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = rowcol
@@ -73,7 +70,8 @@ module RubyCurses
         #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
         #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
        # underline not working here using Ncurses. Works with highline. \e[4m
-          @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+          # changed +1 to +0 on 2008-12-15 21:23 pls check.
+          @form.window.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
   end
@@ -221,6 +219,11 @@ module RubyCurses
             @current_form.req_last_field
             end
           end
+        when :UNHANDLED
+          $log.debug " unhandled in tabbed pane #{ch}"
+          ret = @form.process_key ch, field
+          @form.repaint
+          #return :UNHANDLED if ret == :UNHANDLED
         end
         @current_form.window.wrefresh
         @window.refresh
