@@ -21,9 +21,8 @@ include RubyCurses
 module RubyCurses
   extend self
 
-  # TODO : okay the hotkeys wont work from the tabbed forms. Need to
-  # work that out.
-  # Hotkeys should be defined with ampersand. 
+  # TODO :  insert_tab, remove_tab, disable/hide tab
+  # Hotkeys should be defined with ampersand, too.
   #
   # Multiple independent overlapping forms using the tabbed metaphor.
   class TabbedButton < RubyCurses::RadioButton

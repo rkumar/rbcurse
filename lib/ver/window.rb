@@ -142,6 +142,7 @@ module VER
     def getchar 
       while 1 
         ch = getch
+        $log.debug " GOT: #{ch}" if ch != -1
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
           if @stack.first == 27

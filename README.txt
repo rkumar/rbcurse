@@ -14,6 +14,7 @@
 A small widget library written in ruby for creating ncurses
 applications.
 See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
+Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 
 == FEATURES
 
@@ -25,6 +26,7 @@ See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
 * menubar - with submenu and CheckBoxMenuItem
 * popup list
 * tabbedpane
+* combobox
 
 Above may be created using DSL like syntax, or hashes.
 

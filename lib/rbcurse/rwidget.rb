@@ -76,12 +76,12 @@ module RubyCurses
     module EventHandler
       ##
       # bind an event to a block, optional args will also be passed when calling
-      def bind event, *args, &blk
-        $log.debug "called EventHandler BIND #{event} #{args} "
+      def bind event, *xargs, &blk
+        $log.debug "called EventHandler BIND #{event}, args:#{xargs} "
         @handler ||= {}
         @event_args ||= {}
         @handler[event] = blk
-        @event_args[event] = args
+        @event_args[event] = xargs
       end
     
       # e.g. fire_handler :ENTER, self
@@ -487,6 +487,7 @@ module RubyCurses
       @window.wmove @row, @col
     end
   def bind event, &blk
+   $log.debug "called form bind #{event} PLEASE ADD args here"
     @handler[event] = blk
   end
   def fire_handler event, object
@@ -555,7 +556,7 @@ module RubyCurses
             end
           end
         end
-#       $log.debug " form before repaint"
+       $log.debug " form before repaint"
         repaint
   end
   ##
@@ -963,6 +964,8 @@ module RubyCurses
       @modified = true
       fire_handler :CHANGE, self    # 2008-12-09 14:51 
     end
+    ## 
+    # should this do a dup ??
     def set_buffer value
       @buffer = value
     end
@@ -1027,6 +1030,7 @@ module RubyCurses
     else
       return :UNHANDLED
     end
+    0 # 2008-12-16 23:05 without this -1 was going back so no repaint
   end
   ## 
   # position cursor at start of field
@@ -1080,12 +1084,12 @@ module RubyCurses
     # upon leaving a field
     # returns false if value not valid as per values or valid_regex
     def on_leave
-      $log.debug " FIELD ON LEAVE"
       val = getvalue
+      $log.debug " FIELD ON LEAVE:#{val}. #{@values.inspect}"
       valid = true
       if !@values.nil?
         valid = @values.include? val
-        raise FieldValidationException, "Field value #{val} not in values: #{@values}" unless valid
+        raise FieldValidationException, "Field value (#{val}) not in values: #{@values.join(',')}" unless valid
       end
       if !@valid_regex.nil?
         valid = @valid_regex.match(val)
