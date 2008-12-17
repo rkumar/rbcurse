@@ -86,9 +86,10 @@ module RubyCurses
     
       # e.g. fire_handler :ENTER, self
       def fire_handler event, object
+        return if @handler.nil?
         blk = @handler[event]
         return if blk.nil?
-        $log.debug "called Eventhandler firehander #{object}, #{@event_args[event]}"
+        $log.debug "called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{@event_args[event]}"
         blk.call object,  *@event_args[event]
       end
     end
@@ -408,6 +409,7 @@ module RubyCurses
           on_leave f
         rescue => err
          $log.debug " caught EXCEPTION #{err}"
+         $log.debug(err.backtrace.join("\n")) 
          $error_message = "#{err}"
          Ncurses.beep
          return
@@ -611,7 +613,7 @@ module RubyCurses
       @keys = {}
       @bcol = 5
       @selected_index = -1
-      @config.each_pair { |k,v| instance_variable_set("@#{var}",v) }
+      @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
       if @layout.nil? 
         case @type.to_s
@@ -1404,7 +1406,93 @@ module RubyCurses
         @text_variable = nil
       end
     end
-  end # class
+  end # class radio
+  ##
+  # When an event is fired by Listbox, contents are changed, then this object will be passed 
+  # to trigger
+  # shamelessly plugged from a legacy language best unnamed
+  # type is CONTENTS_CHANGED, INTERVAL_ADDED, INTERVAL_REMOVED
+  class ListDataEvent
+    attr_accessor :index0, :index1, :source, :type
+    def initialize index0, index1, source, type
+      @index0 = index0
+      @index1 = index1
+      @source = source
+      @type = type
+    end
+    def to_s
+      "#{@type.to_s}, #{@source}, #{@index0}, #{@index1}"
+    end
+    def inspect
+      "#{@type.to_s}, #{@source}, #{@index0}, #{@index1}"
+    end
+  end
+  # http://www.java2s.com/Code/JavaAPI/javax.swing.event/ListDataEventCONTENTSCHANGED.htm
+  # should we extend array of will that open us to misuse
+  class ListDataModel
+    include Enumerable
+    include RubyCurses::EventHandler
+    def initialize anarray
+      @list = anarray.dup
+    end
+    # not sure how to do this
+    def each 
+      @list.each { |item| yield item }
+    end
+    #def <=>(anarray)
+    #  super
+    #end
+    def index obj
+      @list.index(obj)
+    end
+    def length ; @list.length; end
+
+    def insert off0, *data
+      @list.insert off0, *data
+      lde = ListDataEvent.new(off0, off0+data.length, self, :INTERVAL_ADDED)
+      fire_handler :LIST_DATA_EVENT, lde
+    end
+    def append data
+      @list << data
+      lde = ListDataEvent.new(@list.length-1, @list.length-1, self, :INTERVAL_ADDED)
+      fire_handler :LIST_DATA_EVENT, lde
+    end
+    def update off0, data
+      @list[off0] = data
+      lde = ListDataEvent.new(off0, off0, self, :CONTENTS_CHANGED)
+      fire_handler :LIST_DATA_EVENT, lde
+    end
+    def []=(off0, data)
+      update off0, data
+    end
+    def [](off0)
+      @list[off0]
+    end
+    def delete_at off0
+      @list.delete off0
+      lde = ListDataEvent.new(off0, off0, self, :INTERVAL_REMOVED)
+      fire_handler :LIST_DATA_EVENT, lde
+    end
+    def remove_all
+      @list = []
+      lde = ListDataEvent.new(0, 0, self, :INTERVAL_REMOVED)
+      fire_handler :LIST_DATA_EVENT, lde
+    end
+    def delete obj
+      off0 = @list.index obj
+      return if off0.nil?
+      @list.delete off0
+      lde = ListDataEvent.new(off0, off0, self, :INTERVAL_REMOVED)
+      fire_handler :LIST_DATA_EVENT, lde
+    end
+    def include?(obj)
+      return @list.include?(obj)
+    end
+    def values
+      @list.dup
+    end
+    alias :to_array :values
+  end
   ## 
   # scrollable, selectable list of items
   # TODO Add events for item add/remove and selection change
@@ -1423,7 +1511,7 @@ module RubyCurses
     dsl_accessor :height
     dsl_accessor :title
     dsl_accessor :title_attrib   # bold, reverse, normal
-    dsl_accessor :list    # the array of data to be sent by user
+#   dsl_accessor :list    # the array of data to be sent by user
     attr_reader :toprow
     attr_reader :prow
     attr_reader :winrow
@@ -1446,20 +1534,27 @@ module RubyCurses
       @content_rows = @list.length
       @select_mode ||= 'multiple'
       @win = @form.window
-      @list = @list_variable.value unless @list_variable.nil?
+      #     XXX have to deal with a list_variable too
+ #     @list = @list_variable.value unless @list_variable.nil?
       init_scrollable
       print_borders
       select_default_values
     end
+    def list alist=nil
+      return @list if alist.nil?
+      @list = RubyCurses::ListDataModel.new(alist)
+    end
+    def list_data_model ldm
+      raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
+      @list = ldm
+    end
+
     def select_default_values
       return if @default_values.nil?
       @default_values.each do |val|
         row = @list.index val
         do_select(row) unless row.nil?
       end
-    end
-    def insert off0, *data
-      @list.insert off0, *data
     end
     def print_borders
       width = @width
@@ -1532,6 +1627,7 @@ module RubyCurses
     include DSL
     include RubyCurses::EventHandler
     dsl_accessor :title
+    dsl_accessor :row, :col, :height
     dsl_accessor :layout
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
@@ -1540,15 +1636,15 @@ module RubyCurses
     dsl_accessor :relative_to   # a widget, if given row and col are relative to widgets windows 
                                 # layout
     dsl_accessor :max_visible_items   # how many to display
-    dsl_accessor :list_config       # hash with values for the list to use
+    dsl_accessor :list_config       # hash with values for the list to use 
 
     def initialize aconfig={}, &block
       @config = aconfig
-#     @bcol = 5
       @selected_index = -1
       @list_config ||= {}
-      @config.each_pair { |k,v| instance_variable_set("@#{var}",v) }
+      @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
+      @list_config.each_pair { |k,v| $log.debug " lc: #{k}, #{v} ";  instance_variable_set("@#{k}",v) }
       # get widgets absolute coords
       if !@relative_to.nil?
         layout = @relative_to.form.window.layout
@@ -1556,7 +1652,7 @@ module RubyCurses
         @col = @col + layout[:left]
       end
       @height = [@max_visible_items || 10, @list.length].min 
-      layout(2+height, @width+4, @row, @col)
+      layout(1+height, @width+4, @row, @col) # changed 2 to 1, 2008-12-17 13:48 
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
       @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
@@ -1571,6 +1667,14 @@ module RubyCurses
       @window.wrefresh
       handle_keys
     end
+    def list alist=nil
+      return @list if alist.nil?
+      @list = ListDataModel.new(alist)
+    end
+    def list_data_model ldm
+      raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
+      @list = ldm
+    end
     ##
     def input_value
       #return @listbox.getvalue if !@listbox.nil?
@@ -1582,8 +1686,7 @@ module RubyCurses
     end
     def handle_keys
       begin
-        #VER::Keyboard2.focus = self
-        while((ch = @window.getch()) != 999 )
+        while((ch = @window.getchar()) != 999 )
           case ch
           when -1
             next
@@ -1597,6 +1700,8 @@ module RubyCurses
       end
       return 0 #@selected_index
     end
+    ##
+    # TODO get next match for key
     def press ch
        $log.debug "popup handle_keys :  #{ch}"  if ch != -1
         case ch
@@ -1644,11 +1749,9 @@ module RubyCurses
           row  r 
           col  c 
 #         attr 'reverse'
-#         color 'black'
-#         bgcolor 'cyan'
           width width
           height height
-          list  list
+          list_data_model  list
           display_length  30
 #         set_buffer defaultvalue
           select_mode select_mode
