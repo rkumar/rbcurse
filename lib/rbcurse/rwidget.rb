@@ -1452,7 +1452,7 @@ module RubyCurses
 
     def insert off0, *data
       @list.insert off0, *data
-      lde = ListDataEvent.new(off0, off0+data.length, self, :INTERVAL_ADDED)
+      lde = ListDataEvent.new(off0, off0+data.length-1, self, :INTERVAL_ADDED)
       fire_handler :LIST_DATA_EVENT, lde
     end
     def append data

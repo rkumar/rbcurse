@@ -270,11 +270,16 @@ module Scrollable
       total = get_content().length
       @prow = arow
       # next line is not perfect.
-      @toprow = (@prow/@scrollatrow) * @scrollatrow
+      sar = @scrollatrow + 1
+      mod = @prow % sar
+      #div = mod==0? (@prow/@scrollatrow)-1 : @prow/@scrollatrow
+      #div = 0 if div< 0
+      #@toprow = div * @scrollatrow 
+      @toprow = (@prow / sar) * sar
       $log.debug " set_focus called with #{@prow} #{@scrollatrow} #{@toprow}"
 
-      if total - @toprow < @scrollatrow
-        @toprow = (total - @scrollatrow) -1
+      if total - @toprow < sar
+        @toprow = (total - sar) 
       end
       @winrow = @prow - @toprow
     end

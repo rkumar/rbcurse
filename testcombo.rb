@@ -40,12 +40,12 @@ if $0 == __FILE__
         display_length 10
         editable false
         list mylist
-        set_label Label.new @form, {'text' => "Combo"}
+        set_label Label.new @form, {'text' => "Non-edit Combo"}
         list_config 'color' => 'yellow', 'bgcolor'=>'red', 'max_visible_items' => 6
       end
       r+=1
       $results = Variable.new
-      $results.value = "Event"
+      $results.value = "Event:"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => 22, "col" => 2}
       policies = [:NO_INSERT, :INSERT_AT_TOP, :INSERT_AT_BOTTOM, 
         :INSERT_AT_CURRENT, :INSERT_BEFORE_CURRENT, :INSERT_AFTER_CURRENT]
@@ -68,6 +68,9 @@ if $0 == __FILE__
         end
         r+=1
       end
+
+      @help = "Use UP and DOWN to navigate values, alt-DOWN for popup, TAB / BACKTAB between fields. F1-quit"
+      RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
 
       @form.repaint
       @window.wrefresh
