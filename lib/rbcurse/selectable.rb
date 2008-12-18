@@ -65,7 +65,7 @@ module Selectable
   def selectable_handle_key ch
     begin
       case ch
-      when ?x, 32
+      when ?;, 32  # x no more selecting since we now jump to row matching char 2008-12-18 13:13 
         do_select
       when ?'
         $log.debug "insdie next selection"

@@ -1492,7 +1492,27 @@ module RubyCurses
       @list.dup
     end
     alias :to_array :values
-  end
+    def next_match char
+      start = @current_index
+      start.upto(@list.length-1) do |ix|
+        if @list[ix][0,1] == char
+          return @list[ix] unless @list[ix] == @buffer
+        end
+        @current_index += 1
+      end
+      ## could not find, start from zero
+      @current_index = 0
+      start = [@list.length()-1, start].min
+      0.upto(start) do |ix|
+        if @list[ix][0,1] == char
+          return @list[ix] unless @list[ix] == @buffer
+        end
+        @current_index += 1
+      end
+      @current_index = [@list.length()-1, @current_index].min
+      return nil
+    end
+  end # class ListDataModel
   ## 
   # scrollable, selectable list of items
   # TODO Add events for item add/remove and selection change
@@ -1608,6 +1628,10 @@ module RubyCurses
       ret = selectable_handle_key ch
       if ret == :UNHANDLED
         ret = scrollable_handle_key ch
+        if ret == :UNHANDLED
+          lch = ch.chr.downcase
+           
+        end
       end
       return ret
     end # handle_k listb
@@ -1644,7 +1668,7 @@ module RubyCurses
       @list_config ||= {}
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
-      @list_config.each_pair { |k,v| $log.debug " lc: #{k}, #{v} ";  instance_variable_set("@#{k}",v) }
+      @list_config.each_pair { |k,v|  instance_variable_set("@#{k}",v) }
       # get widgets absolute coords
       if !@relative_to.nil?
         layout = @relative_to.form.window.layout
@@ -1680,7 +1704,7 @@ module RubyCurses
       #return @listbox.getvalue if !@listbox.nil?
       return @listbox.focussed_index if !@listbox.nil?
     end
-    ## message box
+    ## popuplist
     def stopping?
       @stop
     end

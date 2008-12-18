@@ -123,7 +123,7 @@ module Scrollable
       end
       @datawidth ||= @width-2
       return if r > get_content().length
-      @win.mvchgat(y=r+@row, x=1+@col, max=@datawidth, attr, color, nil)
+      @form.window.mvchgat(y=r+@row, x=1+@col, max=@datawidth, attr, color, nil)
     end
     ##
     # unfocus the previous row cursor was on
@@ -140,7 +140,7 @@ module Scrollable
     def paint
 #     $log.debug "called paint #{@toprow} #{@prow}"
       list  = get_content
-      @content_rows = list .length # rows can be added at any time
+      @content_rows = list.length # rows can be added at any time
       win = get_window
       maxlen = @maxlen ||= @width-2
       if @bgcolor.is_a? String and @color.is_a? String
@@ -221,12 +221,42 @@ module Scrollable
           if respond_to? :fire
             fire
           end
+        when ?A..?Z, ?a..?z
+          ret = set_selection_for_char ch.chr
         else
-          return :UNHANDLED
+          return :UNHANDLED #if ret == -1
         end
       ensure
         post_key
       end
     end # handle_k listb
+    ##
+    # finds the next match for the char pressed
+    # returning the index
+    def next_match char
+      data = get_content
+      row = focussed_index
+      currval = data[row].chomp
+      row.upto(data.length-1) do |ix|
+        val = data[ix].chomp
+        if val[0,1] == char and val != currval
+          return ix
+        end
+      end
+      0.upto(row) do |ix|
+        val = data[ix].chomp
+        if val[0,1] == char and val != currval
+          return ix
+        end
+      end
+      return -1
+    end
+    ##
+    # sets the selection to the next row starting with char
+    def set_selection_for_char char
+      ix = next_match char
+      @prow = ix if ix != -1
+      return ix
+    end
 
   end
