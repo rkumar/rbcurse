@@ -95,9 +95,11 @@ module Scrollable
   end
   # prior to repaint. but after keypress
   def post_key
+    $log.debug "1 post_key w:#{@winrow} p:#{@prow} t:#{@toprow}"
     @toprow = @prow if @prow < @toprow   # ensre search could be 
     @toprow = @prow if @prow > @toprow + @scrollatrow   
     @winrow = @prow - @toprow
+    $log.debug "2 post_key w:#{@winrow} p:#{@prow} t:#{@toprow}"
     # wont work first time - added 2008-11-26 20:56 
     if @oldprow != @prow
      $log.debug "going to call on leave and on enter"
@@ -131,6 +133,7 @@ module Scrollable
     # Called after repaint
     def show_focus
       show_focus_on_row(@oldwinrow, @oldprow, false)
+      $log.debug " calling SHOW_FOC with #{@winrow} and #{@prow}"
       show_focus_on_row(@winrow, @prow, true)
       # printstr @form.window, 23, 10, @prow
     end
@@ -138,7 +141,7 @@ module Scrollable
     # TODO show selected row in selectedcolor
     # - if user scrolls horizontally, use column as starting point
     def paint
-#     $log.debug "called paint #{@toprow} #{@prow}"
+      $log.debug "called paint t:#{@toprow} p:#{@prow} w:#{@winrow}"
       list  = get_content
       @content_rows = list.length # rows can be added at any time
       win = get_window
@@ -230,7 +233,7 @@ module Scrollable
         post_key
       end
     end # handle_k listb
-    ##
+    ## 2008-12-18 18:03 
     # finds the next match for the char pressed
     # returning the index
     def next_match char
@@ -251,12 +254,29 @@ module Scrollable
       end
       return -1
     end
-    ##
+    ## 2008-12-18 18:03 
     # sets the selection to the next row starting with char
     def set_selection_for_char char
       ix = next_match char
       @prow = ix if ix != -1
       return ix
+    end
+    ##
+    # 2008-12-18 18:05 
+    # set focus on given index
+    def set_focus_on arow
+      $log.debug " set_focus called with #{arow}"
+      return if arow > get_content().length-1 or arow < 0
+      total = get_content().length
+      @prow = arow
+      # next line is not perfect.
+      @toprow = (@prow/@scrollatrow) * @scrollatrow
+      $log.debug " set_focus called with #{@prow} #{@scrollatrow} #{@toprow}"
+
+      if total - @toprow < @scrollatrow
+        @toprow = (total - @scrollatrow) -1
+      end
+      @winrow = @prow - @toprow
     end
 
   end

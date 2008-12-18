@@ -75,6 +75,7 @@ module RubyCurses
     #url_list= @values
     #@list = RubyCurses::ListDataModel.new(@list)
     dm = @list
+    dm.selected_item = @current_index
     poprow = @row+1
     popcol = @col
     dlength = @display_length

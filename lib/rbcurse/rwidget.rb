@@ -1432,16 +1432,19 @@ module RubyCurses
   class ListDataModel
     include Enumerable
     include RubyCurses::EventHandler
+    attr_accessor :selected_item
+
     def initialize anarray
       @list = anarray.dup
     end
-    # not sure how to do this
+    # not sure how to do this XXX 
     def each 
       @list.each { |item| yield item }
     end
-    #def <=>(anarray)
-    #  super
-    #end
+    # not sure how to do this XXX 
+    def <=>(other)
+      @list <=> other
+    end
     def index obj
       @list.index(obj)
     end
@@ -1492,26 +1495,6 @@ module RubyCurses
       @list.dup
     end
     alias :to_array :values
-    def next_match char
-      start = @current_index
-      start.upto(@list.length-1) do |ix|
-        if @list[ix][0,1] == char
-          return @list[ix] unless @list[ix] == @buffer
-        end
-        @current_index += 1
-      end
-      ## could not find, start from zero
-      @current_index = 0
-      start = [@list.length()-1, start].min
-      0.upto(start) do |ix|
-        if @list[ix][0,1] == char
-          return @list[ix] unless @list[ix] == @buffer
-        end
-        @current_index += 1
-      end
-      @current_index = [@list.length()-1, @current_index].min
-      return nil
-    end
   end # class ListDataModel
   ## 
   # scrollable, selectable list of items
@@ -1558,7 +1541,10 @@ module RubyCurses
  #     @list = @list_variable.value unless @list_variable.nil?
       init_scrollable
       print_borders
-      select_default_values
+      # next 2 lines carry a redundancy
+      select_default_values   
+      # when the combo box has a certain row in focus, the popup should have the same row in focus
+      set_focus_on @list.selected_item
     end
     def list alist=nil
       return @list if alist.nil?
@@ -1629,8 +1615,6 @@ module RubyCurses
       if ret == :UNHANDLED
         ret = scrollable_handle_key ch
         if ret == :UNHANDLED
-          lch = ch.chr.downcase
-           
         end
       end
       return ret

@@ -30,13 +30,16 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       r = 1; c = 30;
+      mylist = []
+      0.upto(100) { |i| mylist << i.to_s }
       combo = ComboBox.new @form do
         name "combo"
         row r
         col c
+        bgcolor 'red'
         display_length 10
         editable false
-        list %w[scotty tiger secret pass torvalds qwerty quail toiletry]
+        list mylist
         set_label Label.new @form, {'text' => "Combo"}
         list_config 'color' => 'yellow', 'bgcolor'=>'red', 'max_visible_items' => 6
       end
