@@ -2,8 +2,9 @@
 # give the ability to a list, to allow for selection of rows.
 #
 module Selectable
+  SELECT_CHAR = '>'
   # @param index of row in list, offset 0
-  # This puts an X character on the first col of the selected row
+  # This puts an > character on the first col of the selected row
   def do_select arow=@prow
     @implements_selectable = true
     win = get_window
@@ -19,8 +20,8 @@ module Selectable
       do_clear_selection if @select_mode != 'multiple'
       @selected << arow
       # 2008-11-25 21:00 added this just to see if it make things better
-      @list_attribs[arow] = {:status=> 'X', :bgcolor => $selectedcolor}
-     sel = "X"; color = $selectedcolor
+      @list_attribs[arow] = {:status=> SELECT_CHAR, :bgcolor => $selectedcolor}
+     sel = SELECT_CHAR; color = $selectedcolor
     end
     # remember to erase these skidmarks when the user scrolls
     printstr win, @row+1+visual_index, @col+@left_margin-1, sel, color unless visual_index.nil?

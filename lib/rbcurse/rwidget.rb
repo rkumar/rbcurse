@@ -726,10 +726,16 @@ module RubyCurses
     end
     def handle_keys
       begin
-        $log.debug " keyhandler is now messagebox "
-        VER::Keyboard2.focus = self
+        while((ch = @window.getchar()) != 999 )
+          case ch
+          when -1
+            next
+          else
+            press ch
+            break if @stop
+          end
+        end
       ensure
-        $log.debug " destroy of is now messagebox "
         destroy  # XXX
       end
       return @selected_index

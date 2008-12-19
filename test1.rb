@@ -6,11 +6,9 @@ require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'lib/ver/ncurses'
-require 'lib/ver/keyboard'
 require 'lib/ver/window'
-require 'lib/rbcurse/mapper'
+#require 'lib/rbcurse/mapper'
 #require 'lib/rbcurse/keylabelprinter'
-#require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/rwidget'
 
 if $0 == __FILE__
@@ -21,11 +19,11 @@ if $0 == __FILE__
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
 
-    @window = VER::Window.root_window
+#    @window = VER::Window.root_window
 
 
     catch(:close) do
-      $log.debug "START  ---------"
+      $log.debug "START  MESSAGE BOX TEST ---------"
       # need to pass a form, not window.
       choice = 2
       case choice
@@ -116,7 +114,6 @@ if $0 == __FILE__
       field_list << radio2
       field.bind(:ENTER) do |f|   
         listconfig = {'bgcolor' => 'blue', 'color' => 'white'}
-        url_list= %w[john tim lee wong rahul edward _why chad andy]
         url_list= RubyCurses::ListDataModel.new(%w[john tim lee wong rahul edward _why chad andy])
         pl = RubyCurses::PopupList.new do
 #         title "Enter URL "
@@ -166,17 +163,13 @@ if $0 == __FILE__
 #     $log.debug "config : #{@form.config.inspect} "
 #     $log.debug "row : #{@form.configure('row')} "
       #$log.debug "mrgods : #{@form.public_methods.sort.inspect}"
-      while((ch = @window.getchar()) != KEY_F1 )
-        @window.wrefresh
-      end
-      #     VER::Keyboard.focus = tp
+      #while((ch = @window.getchar()) != ?q )
+      #  @window.wrefresh
+      #end
     end
   rescue => ex
   ensure
     @window.destroy unless @window.nil?
-#   @panel = @window.panel unless @window.nil?
-#   Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-#   @window.delwin if !@window.nil?
     VER::stop_ncurses
     p ex if ex
     p(ex.backtrace.join("\n")) if ex
