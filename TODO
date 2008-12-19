@@ -7,7 +7,14 @@ However, that uses the ncurses fields and forms. After creating fields in ruby, 
 
 This todo relates to rbcurse, our own ruby fields, forms, widgets and application related goodies.
 
+MUST DO:
+========
+1. popup lists/combo lists: only ENTER Closes
+   - if single selection, only ENTER selects, no space etc.
+   otherwise if listbox is in a form, allow selection, even single, with space or ;
+
 Thoughts:
+=========
 
 - widget - hotkey on label puts focus on that field, on using hotkey
 

@@ -1,5 +1,7 @@
 # Provides the ability to scroll content, typically an array
 # widget that includes may override on_enter_row and on_leave_row
+# This was essentially copied and modifed from the pad scroller
+# i think i can redo it and make it much simpler XXX
 module Scrollable
   def init_scrollable
     @toprow = @prow = @winrow = @pcol = 0
@@ -95,11 +97,11 @@ module Scrollable
   end
   # prior to repaint. but after keypress
   def post_key
-    $log.debug "1 post_key w:#{@winrow} p:#{@prow} t:#{@toprow}"
+#    $log.debug "1 post_key w:#{@winrow} p:#{@prow} t:#{@toprow}"
     @toprow = @prow if @prow < @toprow   # ensre search could be 
     @toprow = @prow if @prow > @toprow + @scrollatrow   
     @winrow = @prow - @toprow
-    $log.debug "2 post_key w:#{@winrow} p:#{@prow} t:#{@toprow}"
+#    $log.debug "2 post_key w:#{@winrow} p:#{@prow} t:#{@toprow}"
     # wont work first time - added 2008-11-26 20:56 
     if @oldprow != @prow
      $log.debug "going to call on leave and on enter"
@@ -133,15 +135,14 @@ module Scrollable
     # Called after repaint
     def show_focus
       show_focus_on_row(@oldwinrow, @oldprow, false)
-      $log.debug " calling SHOW_FOC with #{@winrow} and #{@prow}"
       show_focus_on_row(@winrow, @prow, true)
       # printstr @form.window, 23, 10, @prow
     end
     ## call from repaint
-    # TODO show selected row in selectedcolor
+    # TODO i can simplif, i think
     # - if user scrolls horizontally, use column as starting point
     def paint
-      $log.debug "called paint t:#{@toprow} p:#{@prow} w:#{@winrow}"
+      #$log.debug "called paint t:#{@toprow} p:#{@prow} w:#{@winrow}"
       list  = get_content
       @content_rows = list.length # rows can be added at any time
       win = get_window
@@ -180,7 +181,6 @@ module Scrollable
 
           width = @width-(@left_margin+1)
           @form.window.printstring @row+r+1, @col+@left_margin-1, "%s" % status, acolor, @attr if @implements_selectable
-          #printstr @form.window, @row+r+1, @col+@left_margin, "%-*s" % [width,content]
           @form.window.printstring  @row+r+1, @col+@left_margin, "%-*s" % [width,content], acolor, @attr
           win.mvchgat(y=r+@row+1, x=@col+@left_margin, max=width, Ncurses::A_NORMAL, bgcolor, nil) unless bgcolor.nil?
 
@@ -265,18 +265,11 @@ module Scrollable
     # 2008-12-18 18:05 
     # set focus on given index
     def set_focus_on arow
-      $log.debug " set_focus called with #{arow}"
       return if arow > get_content().length-1 or arow < 0
       total = get_content().length
       @prow = arow
-      # next line is not perfect.
       sar = @scrollatrow + 1
-      mod = @prow % sar
-      #div = mod==0? (@prow/@scrollatrow)-1 : @prow/@scrollatrow
-      #div = 0 if div< 0
-      #@toprow = div * @scrollatrow 
       @toprow = (@prow / sar) * sar
-      $log.debug " set_focus called with #{@prow} #{@scrollatrow} #{@toprow}"
 
       if total - @toprow < sar
         @toprow = (total - sar) 

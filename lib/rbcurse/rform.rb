@@ -1106,7 +1106,7 @@ module RubyCurses
           set_form_col @maxlen-1
         end
       else
-        $log.debug("ch #{ch}")
+        $log.debug("TEXTVIEW XXX ch #{ch}")
       end
       post_key
       # XXX 2008-11-27 13:57 trying out

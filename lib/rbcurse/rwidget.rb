@@ -7,7 +7,7 @@
         I expect to pass through this world but once. Any good therefore that I can do, 
         or any kindness or ablities that I can show to any fellow creature, let me do it now. 
         Let me not defer it or neglect it, for I shall not pass this way again.  
-  * Author: rkumar
+  * Author: rkumar (arunachalesha)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 TODO 
@@ -880,6 +880,7 @@ module RubyCurses
   end
   ##
   # TODO - test text_variable
+  #   - scrolling in field horizontal
   class Field < Widget
     include CommonIO
     dsl_accessor :maxlen             # maximum length allowed into field
@@ -917,6 +918,7 @@ module RubyCurses
       @handler = {}
       @event_args = {}             # arguments passed at time of binding, to use when firing event
       @modified = false
+      @pcol = 0   # needed for horiz scrolling
       super
     end
     def text_variable tv
@@ -950,11 +952,18 @@ module RubyCurses
       0
     end
 
+    ##
+    # TODO : sending c>=0 allows control chars to go. Should be >= ?A i think.
     def putc c
       if c >= 0 and c <= 127
         ret = putch c.chr
         if ret == 0
-          addcol 1
+          if addcol(1) == -1  # if can't go forward, try scrolling
+            # scroll if exceeding display len but less than max len
+            if @curpos > @display_length and @curpos <= @maxlen
+              @pcol += 1 if @pcol < @display_length 
+            end
+          end
           set_modified 
         end
       end
@@ -963,6 +972,7 @@ module RubyCurses
     def delete_at index=@curpos
       return -1 if !@editable 
       @buffer.slice!(index,1)
+      $log.debug " delete at #{index}: #{@buffer.length}: #{@buffer}"
       @modified = true
       fire_handler :CHANGE, self    # 2008-12-09 14:51 
     end
@@ -984,15 +994,21 @@ module RubyCurses
 #    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
     printval = getvalue_for_paint
     printval = show()*printval.length unless @show.nil?
-    printval = printval[0..display_length-1] if printval.length > display_length
-        if @bgcolor.is_a? String and @color.is_a? String
-          acolor = ColorMap.get_color(@color, @bgcolor)
-        else
-          acolor = $datacolor
-        end
-    #printstr @form.window, row, col, sprintf("%-*s", display_length, printval), color
+    #XXX
+    if !printval.nil? 
+      if printval.length > display_length # only show maxlen
+        printval = printval[@pcol..@pcol+display_length-1] 
+      else
+        printval = printval[@pcol..-1]
+      end
+    end
+    #printval = printval[0..display_length-1] if printval.length > display_length
+    if @bgcolor.is_a? String and @color.is_a? String
+      acolor = ColorMap.get_color(@color, @bgcolor)
+    else
+      acolor = $datacolor
+    end
     @form.window.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attrs
-    #@form.window.mvchgat(y=row, x=col, max=display_length, Ncurses::A_NORMAL, bgcolor, nil)
   end
   def set_focusable(tf)
     @focusable = tf
@@ -1038,11 +1054,21 @@ module RubyCurses
   # position cursor at start of field
   def cursor_home
     set_form_col 0
+    @pcol = 0
   end
   ##
   # goto end of field, "end" is a keyword so could not use it.
   def cursor_end
-    set_form_col @buffer.length
+        blen = @buffer.rstrip.length
+        if blen < @display_length
+          set_form_col blen
+        else
+          @pcol = blen-@display_length
+          set_form_col @display_length-1
+        end
+        @curpos = blen # HACK XXX
+    $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+    #set_form_col @buffer.length
   end
   def delete_eol
     pos = @curpos-1
@@ -1053,16 +1079,32 @@ module RubyCurses
     return @delete_buffer
   end
   def cursor_forward
-    if @curpos < @buffer.length  # display_length -> prevent crashes if person tries entering
+    if @curpos < @buffer.length 
+      if addcol(1)==-1  # go forward if you can, else scroll
+        @pcol += 1 if @pcol < @display_length 
+      end
       @curpos += 1
-      addcol 1
     end
+    $log.debug " crusor FORWARD cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
   end
   def cursor_backward
     if @curpos > 0
       @curpos -= 1
+      if @pcol > 0 and @form.col == @col + @col_offset
+        @pcol -= 1
+      end
+      addcol -1
+    elsif @pcol > 0 # XXX added 2008-11-26 23:05 
+      @pcol -= 1   
+    end
+    $log.debug " crusor back cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+=begin
+# this is perfect if not scrolling, but now needs changes
+    if @curpos > 0
+      @curpos -= 1
       addcol -1
     end
+=end
   end
     def delete_curr_char
       delete_at
@@ -1081,6 +1123,17 @@ module RubyCurses
       @form.modified = true if tf
     end
     def addcol num
+      if num < 0
+        if @form.col <= @col + @col_offset
+          $log.debug " error trying to cursor back #{@form.col}"
+          return -1
+        end
+      elsif num > 0
+        if @form.col >= @col + @col_offset + @display_length
+          $log.debug " error trying to cursor forward #{@form.col}"
+          return -1
+        end
+      end
       @form.addcol num
     end
     # upon leaving a field
@@ -1519,7 +1572,7 @@ module RubyCurses
     attr_reader :prow
     attr_reader :winrow
     dsl_accessor :select_mode # allow multiple select or not
-    dsl_accessor :list_variable   # a variable values are shown from this
+#   dsl_accessor :list_variable   # a variable values are shown from this
     dsl_accessor :default_values  # array of default values
 
     def initialize form, config={}, &block
@@ -1544,11 +1597,16 @@ module RubyCurses
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
-      set_focus_on @list.selected_item
+      set_focus_on (@list.selected_item || 0)
     end
     def list alist=nil
       return @list if alist.nil?
       @list = RubyCurses::ListDataModel.new(alist)
+    end
+    def list_variable alist=nil
+      return @list if alist.nil?
+      $log.debug " creating ldm from lv #{alist.value.length}"
+      @list = RubyCurses::ListDataModel.new(alist.value)
     end
     def list_data_model ldm
       raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
