@@ -9,16 +9,18 @@ This todo relates to rbcurse, our own ruby fields, forms, widgets and applicatio
 
 MUST DO:
 ========
-- Define key for menu bar when creating, and set that to form. Currently, hardcoded.
 
-1. popup lists/combo lists: only ENTER Closes
-   - if single selection, only ENTER selects, no space etc.
-   otherwise if listbox is in a form, allow selection, even single, with space or ;
+- remove commonio.rb references from widget
+
+1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 
 2. cleanup scrollable code esp repaint method.
 
 Thoughts:
 =========
+
+- filechooser
+- quick dialogs for alert, confirm, etc
 
 - widget - hotkey on label puts focus on that field, on using hotkey
 

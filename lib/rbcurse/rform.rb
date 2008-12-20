@@ -52,7 +52,6 @@ module RubyCurses
 
 
   class MenuSeparator
-    include CommonIO
     attr_accessor :enabled
     attr_accessor :parent
 #   attr_accessor :window
@@ -63,7 +62,7 @@ module RubyCurses
       @enable = false
     end
     def repaint
-      printstr(@parent.window, @row, 0, "|%s|" % ("-"*@width), $reversecolor)
+      @parent.window.printstring( @row, 0, "|%s|" % ("-"*@width), $reversecolor)
     end
     def destroy
     end
@@ -78,7 +77,6 @@ module RubyCurses
   ##
   # TODO : underlining and key capture - DONE
   class MenuItem
-    include CommonIO
     attr_accessor :parent
 #    attr_accessor :window
     attr_accessor :row
@@ -125,14 +123,14 @@ module RubyCurses
     end
     def repaint # menuitem.repaint
       r = @row
-      printstr(@parent.window, @row, 0, "|%-*s|" % [@width, text], $reversecolor)
+      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], $reversecolor)
       if !@accelerator.nil?
-        printstr(@parent.window, r, (@width+1)-@accelerator.length, @accelerator, $reversecolor)
+        @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, $reversecolor)
       elsif !@mnemonic.nil?
         m = @mnemonic
         ix = text.index(m) || text.index(m.swapcase)
         charm = text[ix,1]
-        printstr(@parent.window, r, ix+1, charm, $datacolor) if !ix.nil?
+        @parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
       end
     end
     def destroy
@@ -140,7 +138,6 @@ module RubyCurses
     end
   end
   class Menu
-    include CommonIO
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
@@ -195,7 +192,7 @@ module RubyCurses
       return if @items.nil? or @items.empty?
       $log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
       if !@parent.is_a? RubyCurses::MenuBar 
-        printstr(@parent.window, @row, 0, "|%-*s>|" % [@width-1, text], $reversecolor)
+        @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, text], $reversecolor)
         @parent.window.refresh
       end
       if @window.nil?
@@ -251,7 +248,7 @@ module RubyCurses
       $log.debug "menu onenter: #{text} #{@row} #{@col}  " 
       # call parent method. XXX
         if @parent.is_a? RubyCurses::MenuBar 
-          printstr(@parent.window, @row, @col, " %s " % text, $datacolor)
+          @parent.window.printstring( @row, @col, " %s " % text, $datacolor)
         else
           highlight
         end
@@ -270,7 +267,7 @@ module RubyCurses
       $log.debug "menu onleave: #{text} #{@row} #{@col}  " 
       # call parent method. XXX
         if @parent.is_a? RubyCurses::MenuBar 
-          printstr(@parent.window, @row, @col, " %s " % text, $reversecolor)
+          @parent.window.printstring( @row, @col, " %s " % text, $reversecolor)
           @window.hide if !@window.nil?
         else
           $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col}  " 
@@ -296,11 +293,11 @@ module RubyCurses
       @window = @win
       @win.bkgd(Ncurses.COLOR_PAIR($datacolor));
       @panel = @win.panel
-        printstr(@window, 0, 0, "+%s+" % ("-"*@width), $reversecolor)
+        @window.printstring( 0, 0, "+%s+" % ("-"*@width), $reversecolor)
         r = 1
         @items.each do |item|
           #if item == :SEPARATOR
-          #  printstr(@window, r, 0, "|%s|" % ("-"*@width), $reversecolor)
+          #  @window.printstring( r, 0, "|%s|" % ("-"*@width), $reversecolor)
           #else
             item.row = r
             item.col = 0
@@ -313,7 +310,7 @@ module RubyCurses
           #end
           r+=1
         end
-        printstr(@window, r, 0, "+%s+" % ("-"*@width), $reversecolor)
+        @window.printstring( r, 0, "+%s+" % ("-"*@width), $reversecolor)
       select_item 0
       @window.refresh
       return @window
@@ -413,7 +410,6 @@ module RubyCurses
   # Currently, I am adding this to a form. But should this not be application specific ?
   # It should popup no matter which window you are on ?? XXX
   class MenuBar
-    include CommonIO
     attr_reader :items
     attr_reader :window
     attr_reader :panel
@@ -544,11 +540,11 @@ module RubyCurses
     def repaint
       return if !@visible
       @window ||= create_window
-      printstr(@window, 0, 0, "%-*s" % [@cols," "], $reversecolor)
+      @window.printstring( 0, 0, "%-*s" % [@cols," "], $reversecolor)
       c = 1; r = 0;
       @items.each do |item|
         item.row = r; item.col = c; item.parent = self
-        printstr(@window, r, c, " %s " % item.text, $reversecolor)
+        @window.printstring( r, c, " %s " % item.text, $reversecolor)
         c += (item.text.length + 2)
       end
       @window.wrefresh
@@ -650,16 +646,16 @@ module RubyCurses
       color = $datacolor
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
-      printstr(window, row=startrow, col=startcol, hline, color)
+      window.printstring( row=startrow, col=startcol, hline, color)
       print_title
       (startrow+1).upto(startrow+height-1) do |row|
-        printstr(window, row, col=startcol, hline2, color)
+        window.printstring(row, col=startcol, hline2, color)
       end
-      printstr(window, startrow+height, col=startcol, hline, color)
+      window.printstring(startrow+height, col=startcol, hline, color)
   
     end
     def print_title
-      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     ### FOR scrollable ###
     def get_content
@@ -1032,16 +1028,16 @@ module RubyCurses
       color = $datacolor
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
-      printstr(window, row=startrow, col=startcol, hline, color)
+      window.printstring(row=startrow, col=startcol, hline, color)
       print_title
       (startrow+1).upto(startrow+height-1) do |row|
-        printstr(window, row, col=startcol, hline2, color)
+        window.printstring( row, col=startcol, hline2, color)
       end
-      printstr(window, startrow+height, col=startcol, hline, color)
+      window.printstring( startrow+height, col=startcol, hline, color)
   
     end
     def print_title
-      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     ### FOR scrollable ###
     def get_content
@@ -1190,7 +1186,7 @@ module RubyCurses
       highlight true
     end
     def repaint
-      printstr(@parent.window, row, 0, getvalue_for_paint, $reversecolor)
+      @parent.window.printstring( row, 0, getvalue_for_paint, $reversecolor)
       parent.window.wrefresh
     end
     def method_missing(sym, *args)

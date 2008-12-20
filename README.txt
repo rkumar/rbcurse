@@ -30,16 +30,34 @@ Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 
 Above may be created using DSL like syntax, or hashes.
 
-== PROBLEMS
+== PROBLEMS, ISSUES
 
-* 
+
+== Terminal related issues.
+
+* Some terminals may not show underlines (e.g screen).
+
+* Some terminals (xterm-color) do not process Function keys, avoid declaring F1 etc if
+  unsure of client terminals. 
+
+* To use ALT/META keys on a Mac OS X, in Terminal preferences, under
+  Keyboard, select
+  "use Option as Meta key". All hotkeys are automatically, ALT combinations.
+
+* Some screens do not display window background color under spaces.
+  This is okay under "screen" but not under "xterm". You will notice
+  this in the message box samples.
+
+I am developing and testing under "screen" under OS X Leopard.
 
 == SYNOPSIS:
 
 See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
+For test programs, see test1, test2, testcombo etc in root folder.
 
 This depends only on "window" provided by ncurses. Does not use forms
-and fields.
+and fields. Minor changes and improvements may have happened to sample
+code below. See test programs for latest, working code.
 
 === create a window and a form based on window
 
@@ -249,20 +267,16 @@ and fields.
 * uses the window class created by "manveru" (michael) - this can be
   removed if not needed. (lib/ver/window)
   It is provided with this package, and has some alterations from the
-  original.
+  original. I have added a method getchar() which traps and returns
+  ALT/META, META+CTRL, META+SHIFT+CONTROL, ALT+Fn etc. 
 
-* in the message box sample, i am catching keys using manveru's
-  keyboard.rb. This allows me to get M-keys which i am not getting
-  otherwise. However, his module returns string for all keys, whereas
-  our applications may already expect ints. Thus, i modified it a bit
-  yesterday to return ints. You can thus remove references to it, if you
-  want to just catch the key in a loop and process. The original is
-  lib/ver/keyboard.rb and the modified is lib/ver/keyboard2.rb.
+  So basically do not remove it unless you have very different
+  requirements.
 
 == INSTALL:
 
 * currently, just unzip/untar in a folder. Please change the path in
-  the top line.
+  the top line of the test programs.
 
 (Please advice me how i can improve installation procedure)
 

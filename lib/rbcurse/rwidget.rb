@@ -94,7 +94,6 @@ module RubyCurses
       end
     end
   class Widget
-    include CommonIO
     include DSL
     dsl_accessor :text, :text_variable
     dsl_accessor :underline                        # offset of text to underline
@@ -273,7 +272,6 @@ module RubyCurses
   end
 
   class Form
-  include CommonIO
     attr_reader :value
     attr_reader :widgets
     attr_accessor :window
@@ -606,7 +604,6 @@ module RubyCurses
   # dimensions of window should be derived on content
   #
   class MessageBox
-    include CommonIO
     include DSL
     dsl_accessor :title
     dsl_accessor :message
@@ -623,7 +620,7 @@ module RubyCurses
     def initialize aconfig={}, &block
       @config = aconfig
       @buttons = []
-      @keys = {}
+      #@keys = {}
       @bcol = 5
       @selected_index = -1
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
@@ -706,16 +703,8 @@ module RubyCurses
       button_ct=0
       names.each_with_index do |bname, ix|
         text = bname
-        if !@underlines.nil?
-          underline = @underlines[ix] if !@underlines.nil?
-         ch = text[underline,1].downcase()[0]
-        @keys[ch] = ix  # underlined key points to index of button
-        $log.debug "text #{text} #{text[underline,1]}   "
-        # trap the meta key also, since the box could have an input field
-         mch = ?\M-a + (ch - ?a)
-         $log.debug "mch meta : #{mch},  #{ch}"
-         @keys[mch] = ix  # underlined key points to index of button
-        end
+        # now that buttons register hotkeys with form, we don't need this hack - removed @keys
+        underline = @underlines[ix] if !@underlines.nil?
 
         button = Button.new @form do
           text text
@@ -728,7 +717,7 @@ module RubyCurses
           bgcolor $reversecolor
         end
         index = button_ct
-        button.command { |form| @selected_index = index; $log.debug "Pressed Button #{bname}";}
+        button.command { |form| @selected_index = index; @stop = true; $log.debug "Pressed Button #{bname}";}
         button_ct += 1
         bcol += text.length+6
       end
@@ -758,7 +747,7 @@ module RubyCurses
         case ch
         when -1
           return
-        when KEY_F1, 27, ?\C-q   # 27/ESC does not come here since gobbled by keyboard.rb
+        when KEY_F1, 27, ?\C-q   
           @stop = true
           return
         when KEY_ENTER, 10, 13
@@ -779,13 +768,7 @@ module RubyCurses
           handled = field.handle_key ch
 
           if handled == :UNHANDLED
-            if @keys.include? ch
-              ## XXX I should be firing the button also
-              $log.debug "KEY #{ch} caught - PLS FIRE THE BUTTON"
-              @selected_index = @keys[ch]
-              @stop = true
-              return
-            end
+            ret = @form.process_key ch, self ## trying out trigger button
           end
         end
         @form.repaint
@@ -799,17 +782,16 @@ module RubyCurses
       start = 2
       hline = "+%s+" % [ "-"*(width-((start+1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((start+1)*2)) ]
-      printstr(@window, row=1, col=start, hline, color=$reversecolor)
+      @window.printstring(row=1, col=start, hline, color=$reversecolor)
       (start).upto(height-2) do |row|
-        #printstr(@window, row, col=start, hline2, color=$reversecolor)
         @window.printstring row, col=start, hline2, color=$normalcolor, A_REVERSE
       end
-      printstr(@window, height-2, col=start, hline, color=$reversecolor)
+      @window.printstring(height-2, col=start, hline, color=$reversecolor)
     end
     def print_title title=@title
       width = @layout[:width]
       title = " "+title+" "
-      printstr(@window, row=1,col=(width-title.length)/2,title, color=$normalcolor)
+      @window.printstring(row=1,col=(width-title.length)/2,title, color=$normalcolor)
     end
     def OLDcenter_column text
       width = @layout[:width]
@@ -835,7 +817,7 @@ module RubyCurses
       end
       @message_row = row
       width = @layout[:width]
-      printstr(@window, row, @message_col , message, color=$reversecolor)
+      @window.printstring( row, @message_col , message, color=$reversecolor)
     end
     def print_input
       #return if @type.to_s != "input"
@@ -902,7 +884,6 @@ module RubyCurses
   # TODO - test text_variable
   #   - scrolling in field horizontal
   class Field < Widget
-    include CommonIO
     dsl_accessor :maxlen             # maximum length allowed into field
     attr_reader :buffer              # actual buffer being used for storage
     dsl_accessor :label              # label of field
@@ -1218,7 +1199,6 @@ module RubyCurses
     end
   end
   class Label < Widget
-    include CommonIO
 
     def initialize form, config={}, &block
     # @form = form
@@ -1251,13 +1231,13 @@ module RubyCurses
   # ADD HERE LABEL
   end
   class Button < Widget
-  include CommonIO
   dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
       #@command_block = nil
       @handler={} # event handler
+      @event_args ||= {}
       super
       @bgcolor ||= $datacolor 
       @color ||= $datacolor 
@@ -1312,38 +1292,34 @@ module RubyCurses
           @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
-    # XXX FIXME always store args also
-    def command &block
-      #@command_block = block
-      bind :PRESS, &block
+    ## command of button (invoked on press, hotkey, space)
+    # added args 2008-12-20 19:22 
+    def command *args, &block
+      bind :PRESS, *args, &block
       $log.debug "#{text} bound PRESS"
-      #instance_eval &block if block_given?
     end
-    ## XXX FIXME
-    # to return self and args when firing
+    ## fires PRESS event of button
     def fire
-      #@form.instance_eval(&@command_block) if !@command_block.nil?
-      #@command_block.call @form  if !@command_block.nil?
       $log.debug "firing PRESS #{text}"
       fire_handler :PRESS, @form
     end
-    ## XXX bind args always
-    def bind event, &blk
+    ## args added on 2008-12-20 21:08 
+    def bind event, *args, &blk
       @handler[event] = blk
+      @event_args[event] = args
     end
-    ## XXX FIXME
-    # to return self and args when firing
+    ## args added on 2008-12-20 21:08 
+    # fires event for button
     def fire_handler event, object
       $log.debug "called firehander #{object}"
       blk = @handler[event]
       return if blk.nil?
-      blk.call object
+      blk.call object, *@event_args[event]
     end
     # Button
     def handle_key ch
       case ch
       when KEY_LEFT, KEY_UP
-        #@form.req_prev_field
           @form.select_prev_field
       when KEY_RIGHT, KEY_DOWN
           @form.select_next_field
@@ -1360,7 +1336,6 @@ module RubyCurses
   # A button that may be switched off an on. 
   # To be extended by RadioButton and checkbox.
   class ToggleButton < Button
-    include CommonIO
     dsl_accessor :onvalue, :offvalue
     dsl_accessor :value
     dsl_accessor :surround_chars 
@@ -1412,7 +1387,6 @@ module RubyCurses
   ##
   # A checkbox, may be selected or unselected
   class CheckBox < ToggleButton
-    include CommonIO
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
@@ -1439,7 +1413,6 @@ module RubyCurses
   # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
   # 2008-11-27 18:45 just made this inherited from Checkbox
   class RadioButton < ToggleButton
-    include CommonIO
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
@@ -1653,12 +1626,12 @@ module RubyCurses
       @color_pair = acolor
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
-      printstr(window, row=startrow, col=startcol, hline, acolor)
+      window.printstring( row=startrow, col=startcol, hline, acolor)
       print_title
       (startrow+1).upto(startrow+height-1) do |row|
-        printstr(window, row, col=startcol, hline2, acolor)
+        window.printstring( row, col=startcol, hline2, acolor)
       end
-      printstr(window, startrow+height, col=startcol, hline, acolor)
+      window.printstring( startrow+height, col=startcol, hline, acolor)
   
      # @derwin = @form.window.derwin(@height, @width, @row, @col)
      # repaint
@@ -1707,7 +1680,6 @@ module RubyCurses
   # pops up a list of values for selection
   # 2008-12-10
   class PopupList
-#   include CommonIO
     include DSL
     include RubyCurses::EventHandler
     dsl_accessor :title

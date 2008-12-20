@@ -257,13 +257,12 @@ module VER
       case att.to_s.downcase
       when 'underline'
         att = Ncurses::A_UNDERLINE
-        $log.debug "UL att #{att}"
       when 'bold'
         att = Ncurses::A_BOLD
       when 'blink'
         att = Ncurses::A_BLINK    # unlikely to work
       when 'reverse'
-        att = Ncurses::A_REVERSE    # unlikely to work
+        att = Ncurses::A_REVERSE    
       end
 
       attron(Ncurses.COLOR_PAIR(color) | att)

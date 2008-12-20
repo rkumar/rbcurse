@@ -1,3 +1,10 @@
+**2008-12-20 22:05**
+## Removed CommonIO includes ##
+
+replaced with @window.printstring
+
+frmincr200812202204.tgz
+* * *
 **2008-12-20 13:23**
 ## toggle_key for menu bar ##
 

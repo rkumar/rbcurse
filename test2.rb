@@ -200,7 +200,7 @@ if $0 == __FILE__
         col 22
         underline 0
       end
-      ok_button.command { |form| form.dump_data;form.printstr(@window, 25,45, "Dumped data to log") 
+      ok_button.command { |form| form.dump_data;form.window.printstring(25,45, "Dumped data to log",1) 
         $listdata.value.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
@@ -212,7 +212,7 @@ if $0 == __FILE__
         underline 1
         surround_chars ['{','}']
       end
-      cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
+      cancel_button.command { |form| form.window.printstring(23,45, "Cancel CALLED",1); throw(:close); }
       filemenu.add(item)
       @mb.add(filemenu)
       editmenu = RubyCurses::Menu.new "Edit"
