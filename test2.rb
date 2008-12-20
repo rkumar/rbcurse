@@ -242,19 +242,18 @@ if $0 == __FILE__
       item = RubyCurses::MenuItem.new "PasteM"
       savemenu.add(item)
       menu.add(savemenu)
+      # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
+      @mb.toggle_key = KEY_F2
       @form.set_menu_bar  @mb
       # END
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      #@form.req_first_field
-      #@form.select_field 0
       while((ch = @window.getchar()) != KEY_F1 )
         @form.handle_key(ch)
         #@form.repaint
         @window.wrefresh
       end
-      #     VER::Keyboard.focus = tp
     end
   rescue => ex
   ensure

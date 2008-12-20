@@ -9,9 +9,13 @@ This todo relates to rbcurse, our own ruby fields, forms, widgets and applicatio
 
 MUST DO:
 ========
+- Define key for menu bar when creating, and set that to form. Currently, hardcoded.
+
 1. popup lists/combo lists: only ENTER Closes
    - if single selection, only ENTER selects, no space etc.
    otherwise if listbox is in a form, allow selection, even single, with space or ;
+
+2. cleanup scrollable code esp repaint method.
 
 Thoughts:
 =========
@@ -20,7 +24,6 @@ Thoughts:
 
 - Action classes (like Java swing) which can be passed to a menu, button, or key. Also, disabling will disable for all.
 
-- Define key for menu bar when creating, and set that to form. Currently, hardcoded.
 
 - toolbar ?
 

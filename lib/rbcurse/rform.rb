@@ -408,6 +408,10 @@ module RubyCurses
         select_item 0
     end
   end
+  ##
+  # An application related menubar.
+  # Currently, I am adding this to a form. But should this not be application specific ?
+  # It should popup no matter which window you are on ?? XXX
   class MenuBar
     include CommonIO
     attr_reader :items
@@ -417,6 +421,7 @@ module RubyCurses
     attr_accessor :visible
     attr_accessor :active_index
     attr_accessor :state              # normal, selected, highlighted
+    attr_accessor :toggle_key              # key used to popup, should be set prior to attaching to form
     def initialize &block
       @window = nil
       @active_index = 0
@@ -462,9 +467,10 @@ module RubyCurses
     # menubar LEFT, RIGHT, DOWN 
     def handle_keys
       @selected = false
+      @toggle_key ||= 27 # default switch off with ESC, if nothing else defined
       set_menu 0
       catch(:menubarclose) do
-      while((ch = @window.getch()) != KEY_F2 )
+      while((ch = @window.getchar()) != @toggle_key )
        $log.debug "menuubar inside handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1

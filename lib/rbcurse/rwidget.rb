@@ -300,13 +300,32 @@ module RubyCurses
       @navigation_policy ||= :CYCLICAL
       instance_eval &block if block_given?
     end
+    ##
+    # set this menubar as the form's menu bar.
+    # also bind the toggle_key for popping up.
+    # Should this not be at application level ?
     def set_menu_bar mb
       @menu_bar = mb
       add_widget mb
+      mb.toggle_key ||= 27 # ESC
+      if !mb.toggle_key.nil?
+        ch = mb.toggle_key
+        bind_key(ch) do |_form| 
+          if !@menu_bar.nil?
+            @menu_bar.toggle
+            @menu_bar.handle_keys
+          end
+        end
+      end
     end
+    ##
+    # Add given widget to widget list and returns an incremental id.
+    # Adding to widgets, results in it being painted, and focussed.
+    # removing a widget and adding can give the same ID's, however at this point we are not 
+    # really using ID. But need to use an incremental int in future.
     def add_widget widget
+      # this help to access widget by a name
       if widget.respond_to? :name and !widget.name.nil?
-        #       $log.debug "adding to byname: #{widget.name} " 
         @by_name[widget.name] = widget
       end
 
@@ -530,12 +549,6 @@ module RubyCurses
         case ch
         when -1
           return
-          # user should degine what key he wants to map menu bar to XXX
-        when KEY_F2
-          if !@menu_bar.nil?
-            @menu_bar.toggle
-            @menu_bar.handle_keys
-          end
         when 9
           ret = select_next_field
           return ret if ret == :NO_NEXT_FIELD
@@ -736,7 +749,7 @@ module RubyCurses
           end
         end
       ensure
-        destroy  # XXX
+        destroy  
       end
       return @selected_index
     end
@@ -1000,7 +1013,6 @@ module RubyCurses
 #    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
     printval = getvalue_for_paint
     printval = show()*printval.length unless @show.nil?
-    #XXX
     if !printval.nil? 
       if printval.length > display_length # only show maxlen
         printval = printval[@pcol..@pcol+display_length-1] 
@@ -1100,7 +1112,7 @@ module RubyCurses
         @pcol -= 1
       end
       addcol -1
-    elsif @pcol > 0 # XXX added 2008-11-26 23:05 
+    elsif @pcol > 0 #  added 2008-11-26 23:05 
       @pcol -= 1   
     end
     $log.debug " crusor back cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
@@ -1596,7 +1608,6 @@ module RubyCurses
       @content_rows = @list.length
       @select_mode ||= 'multiple'
       @win = @form.window
-      #     XXX have to deal with a list_variable too
  #     @list = @list_variable.value unless @list_variable.nil?
       init_scrollable
       print_borders
@@ -1611,7 +1622,6 @@ module RubyCurses
     end
     def list_variable alist=nil
       return @list if alist.nil?
-      $log.debug " creating ldm from lv #{alist.value.length}"
       @list = RubyCurses::ListDataModel.new(alist.value)
     end
     def list_data_model ldm
@@ -1768,7 +1778,7 @@ module RubyCurses
           end
         end
       ensure
-        destroy  # XXX
+        destroy  
       end
       return 0 #@selected_index
     end
@@ -1789,7 +1799,7 @@ module RubyCurses
           @stop = true
           return
         when 9
-          @form.select_next_field ## XXX
+          @form.select_next_field 
         else
           # fields must return unhandled else we will miss hotkeys. 
           # On messageboxes, often if no edit field, then O and C are hot.

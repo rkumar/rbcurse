@@ -154,6 +154,11 @@ module VER
         end
         # this is the ALT combination
         if @stack.first == 27
+          # experimental. 2 escapes in quick succession to make exit faster
+          if ch == 27
+            @stack.clear
+            return ch
+          end
           ch = 128 + ch
           @stack.clear
           return ch
