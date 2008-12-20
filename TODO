@@ -10,7 +10,7 @@ This todo relates to rbcurse, our own ruby fields, forms, widgets and applicatio
 MUST DO:
 ========
 
-- remove commonio.rb references from widget
+- remove commonio.rb references from widget - DONE 2008-12-20 22:13 
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 

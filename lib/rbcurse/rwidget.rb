@@ -24,19 +24,14 @@ require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'lib/ver/ncurses'
-require 'lib/ver/keyboard2'
 require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
-require 'lib/rbcurse/keylabelprinter'
-require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/colormap'
-#require 'lib/rbcurse/rform'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
   def method_missing(sym, *args)
-    $log.debug "METHOD MISSING : #{sym} "
-#   raise "METH MISSING #{sym}"
+    $log.debug "METHOD MISSING : #{sym} #{self} "
     #if "#{sym}"[-1].chr=="="
     #  sym = "#{sym}"[0..-2]
     #else
@@ -208,6 +203,7 @@ module RubyCurses
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
+    # @ deprecated pls call windows method
     def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
 
       att = Ncurses::A_NORMAL if att.nil?
@@ -266,7 +262,9 @@ module RubyCurses
     # moves focus to this field
     # XXX we must look into running on_leave of previous field
     def focus
-      @form.select_field @id
+      if @form.validate_field != -1
+        @form.select_field @id
+      end
     end
     ## ADD HERE WIDGET
   end
@@ -382,7 +380,7 @@ module RubyCurses
       f.state = :NORMAL
       # on leaving update text_variable if defined. Should happen on modified only
       # should this not be f.text_var ... f.buffer ? XXX 2008-11-25 18:58 
-      @text_variable.value = @buffer if !@text_variable.nil?
+      #f.text_variable.value = f.buffer if !f.text_variable.nil? # 2008-12-20 23:36 
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
     end
@@ -409,8 +407,24 @@ module RubyCurses
         repaint
         @window.refresh
       else
-        $log.debug "insdie sele nxt field ENABLED FALSE : prev #{previtem} act #{@active_index}  #{ix0}" 
+        $log.debug "insdie sele nxt field ENABLED FALSE :   act #{@active_index} ix0 #{ix0}" 
       end
+    end
+    ##
+    # run validate_field on a field, usually whatevers current
+    # before transferring control
+    # We should try to automate this so developer does not have to remember to call it.
+    def validate_field f=@widgets[@active_index]
+      begin
+        on_leave f
+      rescue => err
+        $log.debug "form: validate_field caught EXCEPTION #{err}"
+        $log.debug(err.backtrace.join("\n")) 
+        $error_message = "#{err}"
+        Ncurses.beep
+        return -1
+      end
+      return 0
     end
     # put focus on next field
     # will cycle by default, unless navigation policy not :CYCLICAL
@@ -990,6 +1004,7 @@ module RubyCurses
     @label = label
     label.row = @row if label.row == -1
     label.col = @col-(label.name.length+1) if label.col == -1
+    label.label_for(self)
   end
   def repaint
 #    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
@@ -1199,6 +1214,8 @@ module RubyCurses
     end
   end
   class Label < Widget
+    #dsl_accessor :label_for   # related field or buddy
+    dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
 
     def initialize form, config={}, &block
     # @form = form
@@ -1215,6 +1232,26 @@ module RubyCurses
     def getvalue
       @text_variable && @text_variable.value || @text
     end
+    def label_for field
+      @label_for = field
+      $log.debug " label for: #{@label_for}"
+      bind_hotkey
+    end
+
+    def bind_hotkey
+      if !@mnemonic.nil?
+        ch = @mnemonic.downcase()[0]   ## FIXME 1.9
+        # meta key 
+        mch = ?\M-a + (ch - ?a)
+        if @label_for.is_a? RubyCurses::Button and @label_for.respond_to? :fire
+          @form.bind_key(mch, @label_for) { |_form, _butt| _butt.fire }
+        else
+          $log.debug " bind_hotkey label for: #{@label_for}"
+          @form.bind_key(mch, @label_for) { |_form, _field| _field.focus }
+        end
+      end
+    end
+
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
@@ -1224,8 +1261,12 @@ module RubyCurses
         else
           acolor = $datacolor
         end
-#    $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
+        #    $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
         @form.window.printstring r, c, "%-*s" % [len, value], acolor,@attrs
+        if !@mnemonic.nil?
+          ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
+          @form.window.mvchgat(y=r, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
+        end
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
     end
   # ADD HERE LABEL
@@ -1386,6 +1427,7 @@ module RubyCurses
   end # class
   ##
   # A checkbox, may be selected or unselected
+  # TODO hotkey should work here too.
   class CheckBox < ToggleButton
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)

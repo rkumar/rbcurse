@@ -186,7 +186,7 @@ module Scrollable
 
         else
           # clear the displayed area
-          printstr @form.window, @row+r+1, @col+@left_margin, " "*(@width-(@left_margin+1))
+          @form.window.printstring @row+r+1, @col+@left_margin, " "*(@width-(@left_margin+1)), acolor
         end
       }
       show_focus if @show_focus

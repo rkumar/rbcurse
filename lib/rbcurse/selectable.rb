@@ -24,7 +24,7 @@ module Selectable
      sel = SELECT_CHAR; color = $selectedcolor
     end
     # remember to erase these skidmarks when the user scrolls
-    printstr win, @row+1+visual_index, @col+@left_margin-1, sel, color unless visual_index.nil?
+    win.printstring @row+1+visual_index, @col+@left_margin-1, sel, color unless visual_index.nil?
     # fire ListComboSelect event, added TODO to test out.
     fire_handler :LIST_COMBO_SELECT, arow
   end

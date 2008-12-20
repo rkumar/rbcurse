@@ -30,14 +30,15 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       r = 1; c = 22;
-      %w[ name line regex password].each do |w|
+      mnemonics = %w[ n l r p]
+      %w[ name line regex password].each_with_index do |w,i|
         field = Field.new @form do
           name   w 
           row  r 
           col  c 
           display_length  30
           set_buffer "abcd " 
-          set_label Label.new @form, {'text' => w}
+          set_label Label.new @form, {'text' => w, 'mnemonic'=> mnemonics[i]}
         end
         r += 1
       end
@@ -154,7 +155,7 @@ if $0 == __FILE__
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
 
-      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan"}
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
       $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attrs(attrs)}
@@ -174,6 +175,7 @@ if $0 == __FILE__
         row 23
         col 22
       end
+      colorlabel.label_for radio1
 
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
