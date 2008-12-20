@@ -870,6 +870,7 @@ module RubyCurses
           set_buffer defaultvalue
           select_mode select_mode
           default_values default_values
+          is_popup false
         end
       end
     end
@@ -1592,6 +1593,7 @@ module RubyCurses
     dsl_accessor :select_mode # allow multiple select or not
 #   dsl_accessor :list_variable   # a variable values are shown from this
     dsl_accessor :default_values  # array of default values
+    dsl_accessor :is_popup       # if it is in a popup and single select, selection closes
 
     def initialize form, config={}, &block
       @focusable = true
@@ -1794,6 +1796,7 @@ module RubyCurses
           return
         when KEY_ENTER, 10, 13
           fire_handler :PRESS, @listbox.focussed_index
+          # since Listbox is handling enter, COMBO_SELECT will not be fired
         # $log.debug "popup ENTER : #{@selected_index} "
         # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
@@ -1838,6 +1841,7 @@ module RubyCurses
 #         set_buffer defaultvalue
           select_mode select_mode
           default_values default_values
+          is_popup true
         end
     end
     def configure(*val , &block)

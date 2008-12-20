@@ -63,19 +63,25 @@ module Selectable
     @selected.each { |sel| ret << list[sel] }
     return ret
   end
+  ##
+  # XXX in case of single selection popup, only ENTER selects and it closes too firing PRESS.
+  # in case of multiple selection and popup, space selects and fires COMBO_SELECT, but enter closes and fires 
+  # a different event, PRESS. This needs to be regularized.
   def selectable_handle_key ch
     begin
       case ch
       when ?;, 32  # x no more selecting since we now jump to row matching char 2008-12-18 13:13 
+        return if is_popup and @select_mode == 'single' # not allowing select this way since there will be a difference 
+        # between pressing ENTER and space. Enter is trapped by Listbox!
         do_select
       when ?'
         $log.debug "insdie next selection"
-        do_next_selection
+        do_next_selection if @select_mode == 'multiple'
       when ?"
         $log.debug "insdie prev selection"
-        do_prev_selection
+        do_prev_selection if @select_mode == 'multiple'
       when ?\C-e
-        do_clear_selection
+        do_clear_selection if @select_mode == 'multiple'
       else
         return :UNHANDLED
       end

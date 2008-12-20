@@ -1,5 +1,9 @@
 # this is a test program, tests out messageboxes. type F1 to exit
 #  2008-12-17 22:13 tried out the listdatamodel
+#  Certain terminals are not displaying background colors correctly.
+#  TERM=screen does but does not show UNDERLINES.
+#  TERM=xterm-color does but does not trap F1, f2 etc
+#  TERM=xterm does not but other things are fine.
 #
 $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
