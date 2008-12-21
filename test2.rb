@@ -1,4 +1,5 @@
 $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+# this program tests out various widgets.
 require 'rubygems'
 require 'ncurses'
 require 'logger'
