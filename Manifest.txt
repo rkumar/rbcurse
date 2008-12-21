@@ -1,7 +1,0 @@
-History.txt
-Manifest.txt
-README.txt
-Rakefile
-bin/rbcurse
-lib/rbcurse.rb
-test/test_rbcurse.rb
