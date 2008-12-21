@@ -269,6 +269,11 @@ module RubyCurses
     ## ADD HERE WIDGET
   end
 
+  ##
+  #
+  # TODO: we don't have an event for when form is entered and exited.
+  # Current ENTER and LEAVE are for when any widgt is entered, so a common event can be put for all widgets
+  # in one place.
   class Form
     attr_reader :value
     attr_reader :widgets
@@ -524,7 +529,7 @@ module RubyCurses
     @handler[event] = blk
   end
   def fire_handler event, object
-#   $log.debug "called form firehander #{object}"
+    $log.debug "called form firehander #{object}"
     blk = @handler[event]
     return if blk.nil?
     blk.call object
@@ -1290,9 +1295,11 @@ module RubyCurses
     # use ampersand in name or underline
     def bind_hotkey
       return if @underline.nil? or @form.nil?
-      _value = @text
+      _value = @text || getvalue # hack for Togglebutton FIXME
+      #_value = getvalue
       $log.debug " bind hot #{_value} #{@underline}"
       ch = _value[@underline,1].downcase()[0] ## XXX 1.9 
+      @mnemonic = _value[@underline,1]
       # meta key 
       mch = ?\M-a + (ch - ?a)
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
@@ -1330,7 +1337,8 @@ module RubyCurses
         #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
         #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
        # underline not working here using Ncurses. Works with highline. \e[4m
-          @form.window.mvchgat(y=r, x=c+@underline+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+          uline = value.index(@mnemonic)
+          @form.window.mvchgat(y=r, x=c+uline, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
     ## command of button (invoked on press, hotkey, space)
@@ -1407,7 +1415,12 @@ module RubyCurses
     ##
     # toggle the button value
     def toggle
+      fire
+    end
+    def fire
       checked(!@value)
+    #  fire_handler :PRESS, @form
+      super
     end
     ##
     # set the value to true or false
@@ -1422,7 +1435,6 @@ module RubyCurses
         end
       end
       # call fire of button class 2008-12-09 17:49 
-      fire
     end
   end # class
   ##

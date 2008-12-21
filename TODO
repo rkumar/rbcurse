@@ -12,6 +12,9 @@ MUST DO:
 
 - remove commonio.rb references from widget - DONE 2008-12-20 22:13 
 
+- widget - hotkey on label puts focus on that field, on using hotkey - DONE
+  But start using mnemonic for button etc,i/o underline.
+
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 
 2. cleanup scrollable code esp repaint method.
@@ -22,7 +25,6 @@ Thoughts:
 - filechooser
 - quick dialogs for alert, confirm, etc
 
-- widget - hotkey on label puts focus on that field, on using hotkey
 
 - Action classes (like Java swing) which can be passed to a menu, button, or key. Also, disabling will disable for all.
 

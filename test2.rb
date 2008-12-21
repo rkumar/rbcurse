@@ -106,13 +106,15 @@ if $0 == __FILE__
         text "A checkbox BOLD ME"
         row 17
         col 22
+        underline 11 
       end
       togglebutton = ToggleButton.new @form do
         value  true
-        onvalue  "Toggle Me  "
-        offvalue "Untoggled  "
+        onvalue  "Toggle Down  "
+        offvalue "Toggle Up    "
         row 18
         col 22
+        underline 0
       end
       combo = ComboBox.new @form do
         name "combo"
@@ -152,8 +154,10 @@ if $0 == __FILE__
       @form.by_name["password"].color 'red'
       @form.by_name["password"].bgcolor 'blue'
       @form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
-      @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
-      @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
+
+      # a form level event, whenever any widget is focussed
+      @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}
+      @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor   if f.respond_to? :label}
 
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new
@@ -174,6 +178,7 @@ if $0 == __FILE__
         color "green"
         row 23
         col 22
+        underline 0  
       end
       colorlabel.label_for radio1
 
