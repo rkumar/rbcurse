@@ -115,7 +115,9 @@ module RubyCurses
     def highlight tf=true
       if tf
         color = $datacolor
-        @parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
+        #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
+        # above line did not work in vt100, 200 terminals, next works.
+        @parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_REVERSE, $reversecolor, nil)
       else
         repaint
       end
@@ -280,8 +282,11 @@ module RubyCurses
     def highlight tf=true # menu
           $log.debug "MENU SUBMENU menu highlight: #{text} #{@row} #{@col}, PW #{@parent.width}  " 
       color = tf ? $datacolor : $reversecolor
+      att = tf ? Ncurses::A_REVERSE : Ncurses::A_NORMAL
       #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
-      @parent.window.mvchgat(y=@row, x=1, @parent.width, Ncurses::A_NORMAL, color, nil)
+      #@parent.window.mvchgat(y=@row, x=1, @parent.width, Ncurses::A_NORMAL, color, nil)
+      # above line did not work with vt100/vt200 next does
+      @parent.window.mvchgat(y=@row, x=1, @parent.width, att, $reversecolor, nil)
       @parent.window.wrefresh
     end
     def create_window # menu
