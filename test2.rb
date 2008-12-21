@@ -182,7 +182,7 @@ if $0 == __FILE__
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
-      item.command(@form) {|it, form|  form.printstr(@window, 23,45, "Open CALLED"); }
+      item.command(@form) {|it, form|  form.window.printstring(25,45, "Open CALLED    ",2); }
 
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')

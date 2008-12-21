@@ -170,12 +170,12 @@ module VER
             return ch
           end
           # possible F1..F3 on xterm-color
-          if ch == 79
-            $log.debug " got 27, 79, waiting for one more"
+          if ch == 79 or ch == 91
+            $log.debug " got 27, #{ch}, waiting for one more"
             @stack << ch
             next
           end
-          $log.debug "stack SIZE  #{@stack.size} ch: #{ch}"
+          $log.debug "stack SIZE  #{@stack.size}, #{@stack.inspect}, ch: #{ch}"
           if @stack == [27,79]
             # xterm-color
             case ch
@@ -190,6 +190,11 @@ module VER
             end
             @stack.clear
             return ch
+          elsif @stack == [27, 91]
+            if ch == 90
+              @stack.clear
+              return 353 # backtab
+            end
           end
           # the usual Meta combos. (alt)
           ch = 128 + ch
