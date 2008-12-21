@@ -1087,7 +1087,7 @@ module RubyCurses
           set_form_col @display_length-1
         end
         @curpos = blen # HACK XXX
-    $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+  #  $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
     #set_form_col @buffer.length
   end
   def delete_eol
@@ -1105,7 +1105,7 @@ module RubyCurses
       end
       @curpos += 1
     end
-    $log.debug " crusor FORWARD cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+   # $log.debug " crusor FORWARD cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
   end
   def cursor_backward
     if @curpos > 0
@@ -1117,7 +1117,7 @@ module RubyCurses
     elsif @pcol > 0 #  added 2008-11-26 23:05 
       @pcol -= 1   
     end
-    $log.debug " crusor back cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+ #   $log.debug " crusor back cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
 =begin
 # this is perfect if not scrolling, but now needs changes
     if @curpos > 0
@@ -1145,12 +1145,12 @@ module RubyCurses
     def addcol num
       if num < 0
         if @form.col <= @col + @col_offset
-          $log.debug " error trying to cursor back #{@form.col}"
+         # $log.debug " error trying to cursor back #{@form.col}"
           return -1
         end
       elsif num > 0
         if @form.col >= @col + @col_offset + @display_length
-          $log.debug " error trying to cursor forward #{@form.col}"
+      #    $log.debug " error trying to cursor forward #{@form.col}"
           return -1
         end
       end

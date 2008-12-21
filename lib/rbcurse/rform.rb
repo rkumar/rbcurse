@@ -680,12 +680,12 @@ module RubyCurses
         @buffer = @list[@prow]
       end
       return if @buffer.nil?
-      $log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
+      #$log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
       if @curpos > @buffer.length
         addcol(@buffer.length-@curpos)+1
         @curpos = @buffer.length
       end
-      $log.debug " after loop : curpos #{@curpos} blen: #{@buffer.length}"
+      #$log.debug " after loop : curpos #{@curpos} blen: #{@buffer.length}"
       pre_key
       case ch
       when ?\C-n
@@ -746,7 +746,7 @@ module RubyCurses
       when ?\C-e
         set_form_col @buffer.length
       else
-        $log.debug("ch #{ch}")
+        $log.debug(" textarea ch #{ch}")
         putc ch
       end
       post_key

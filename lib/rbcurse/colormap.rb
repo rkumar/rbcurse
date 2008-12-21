@@ -89,7 +89,7 @@ include ColorMap
 
       
 
-      while((ch = @window.getch()) != KEY_F1 )
+      while((ch = @window.getchar()) != KEY_F1 )
         next if ch == -1
         break if ch == ?q
         case ch

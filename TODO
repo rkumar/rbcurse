@@ -19,12 +19,22 @@ MUST DO:
 
 2. cleanup scrollable code esp repaint method.
 
+3. Field and TextArea: OVERWRITE mode, 
+   FIELD justification mode (after tabout), 
+   FIELD - auto_skip (after reaching end), 
+   NULL_ALLOWED -upon leaving don't validate if true
+
+4. Label - JUSTIFY (e.g. if numeric field)
+
+Widget - event LEAVE and CHANGED should be separate. Currently validations happen on LEAVE.
+
 Thoughts:
 =========
 
 - filechooser
 - quick dialogs for alert, confirm, etc
 
+- simple date widget YYYY-MM-DD using 3 fields
 
 - Action classes (like Java swing) which can be passed to a menu, button, or key. Also, disabling will disable for all.
 

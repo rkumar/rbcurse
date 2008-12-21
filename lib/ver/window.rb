@@ -142,12 +142,22 @@ module VER
     def getchar 
       while 1 
         ch = getch
-        $log.debug " GOT: #{ch}" if ch != -1
+        $log.debug "window getchar() GOT: #{ch}" if ch != -1
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
           if @stack.first == 27
-            @stack.clear
-            return 27
+            $log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
+            case @stack.size
+            when 1
+              @stack.clear
+              return 27
+            when 2 # basically a ALT-O, this will be really slow since it waits for -1
+              ch = 128 + @stack.last
+              @stack.clear
+              return ch
+            when 3
+              $log.debug " SHOULD NOT COME HERE getchar()"
+            end
           end
           @stack.clear
           next
@@ -159,6 +169,29 @@ module VER
             @stack.clear
             return ch
           end
+          # possible F1..F3 on xterm-color
+          if ch == 79
+            $log.debug " got 27, 79, waiting for one more"
+            @stack << ch
+            next
+          end
+          $log.debug "stack SIZE  #{@stack.size} ch: #{ch}"
+          if @stack == [27,79]
+            # xterm-color
+            case ch
+            when 80
+              ch = KEY_F1
+            when 81
+              ch = KEY_F2
+            when 82
+              ch = KEY_F3
+            when 83
+              ch = KEY_F4
+            end
+            @stack.clear
+            return ch
+          end
+          # the usual Meta combos. (alt)
           ch = 128 + ch
           @stack.clear
           return ch
