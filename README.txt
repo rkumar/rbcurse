@@ -7,7 +7,7 @@
 * For a working example, execute rform.rb and rwidget.rb (exit with F1).
 
 * screenshots on blog mentioned above.
-  Sample: http://www.benegal.org/files/nc_screen_textview.png
+  Sample: http://www.benegal.org/files/nc_screenshot_122108.png
 
 == DESCRIPTION:
 
@@ -45,7 +45,7 @@ Above may be created using DSL like syntax, or hashes.
   "use Option as Meta key". All hotkeys are automatically, ALT combinations.
 
 * Some screens do not display window background color under spaces.
-  This is okay under "screen" but not under "xterm". You will notice
+  This is okay under "screen" and "xterm-color" but not under "xterm". You will notice
   this in the message box samples.
 
 I am developing and testing under "screen" under OS X Leopard.
