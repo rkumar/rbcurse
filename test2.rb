@@ -168,7 +168,9 @@ if $0 == __FILE__
 
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new(1)
-      $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; message_label.color tv.value}
+      $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
+      $radio.update_command() {|tv|  message_label.color tv.value}
+
       $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
       align.bind(:CHANGED) {|fld| message_label.justify fld.getvalue}
       radio1 = RadioButton.new @form do

@@ -75,21 +75,30 @@ module RubyCurses
         $log.debug "called EventHandler BIND #{event}, args:#{xargs} "
         @handler ||= {}
         @event_args ||= {}
-        @handler[event] = blk
-        @event_args[event] = xargs
+        #@handler[event] = blk
+        #@event_args[event] = xargs
+        @handler[event] ||= []
+        @handler[event] << blk
+        @event_args[event] ||= []
+        @event_args[event] << xargs
       end
     
       # e.g. fire_handler :ENTER, self
       def fire_handler event, object
         return if @handler.nil?
-        blk = @handler[event]
-        return if blk.nil?
-        $log.debug "called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{@event_args[event]}"
-        blk.call object,  *@event_args[event]
+        #blk = @handler[event]
+        ablk = @handler[event]
+        aeve = @event_args[event]
+        return if ablk.nil?
+        ablk.each_with_index do |blk, ix|
+          $log.debug "called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+          blk.call object,  *aeve[ix]
+        end
       end
     end
   class Widget
     include DSL
+    include EventHandler
     dsl_accessor :text, :text_variable
     dsl_accessor :underline                        # offset of text to underline
     dsl_accessor :width                # desired width of text
@@ -129,13 +138,13 @@ module RubyCurses
       @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
     end
     ## got left out by mistake 2008-11-26 20:20 
-    def bind event, *args, &blk
+    def OLDbind event, *args, &blk
       $log.debug "called widget #{id} #{self} BIND #{event} #{args} "
       @handler[event] = blk
       @event_args[event] = args
     end
     ## got left out by mistake 2008-11-26 20:20 
-    def fire_handler event, object
+    def OLDfire_handler event, object
       blk = @handler[event]
       return if blk.nil?
       $log.debug "called widget firehander #{self}, o=#{object}, arg: #{@event_args[event]}"
@@ -279,6 +288,7 @@ module RubyCurses
   # Current ENTER and LEAVE are for when any widgt is entered, so a common event can be put for all widgets
   # in one place.
   class Form
+    include EventHandler
     attr_reader :value
     attr_reader :widgets
     attr_accessor :window
@@ -535,11 +545,11 @@ module RubyCurses
       @row += row
       @window.wmove @row, @col
     end
-  def bind event, &blk
+  def oldbind event, &blk
    $log.debug "called form bind #{event} PLEASE ADD args here"
     @handler[event] = blk
   end
-  def fire_handler event, object
+  def oldfire_handler event, object
     $log.debug "called form firehandler #{self}, #{event}, #{object}"
     blk = @handler[event]
     return if blk.nil?
@@ -1205,16 +1215,16 @@ module RubyCurses
         
   class Variable
     def initialize value=""
-      @update_command = nil
-      @args = nil
+      @update_command = []
+      @args = []
       @value = value
     end
     ##
     # trigger to call whenever a value is updated
     def update_command *args, &block
       $log.debug "Variable: update command set #{args}"
-      @update_command = block
-      @args = args
+      @update_command << block
+      @args << args
     end
 #   def read_command &block
 #     @read_command = block
@@ -1226,7 +1236,11 @@ module RubyCurses
     def value= val
       $log.debug "variable value= called : #{val} "
       @value = val
-      @update_command.call(self, *@args) if !@update_command.nil?
+      #@update_command.call(self, *@args) if !@update_command.nil?
+      return if @update_command.nil?
+      @update_command.each_with_index do |comm, ix|
+        comm.call(self, *@args[ix]) unless comm.nil?
+      end
     end
     ##
     # since we could put a hash or array in as @value
@@ -1384,13 +1398,13 @@ module RubyCurses
       fire_handler :PRESS, @form
     end
     ## args added on 2008-12-20 21:08 
-    def bind event, *args, &blk
+    def obind event, *args, &blk
       @handler[event] = blk
       @event_args[event] = args
     end
     ## args added on 2008-12-20 21:08 
     # fires event for button
-    def fire_handler event, object
+    def ofire_handler event, object
       $log.debug "called firehander #{object}"
       blk = @handler[event]
       return if blk.nil?
