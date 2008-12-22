@@ -719,6 +719,7 @@ module RubyCurses
         $log.debug "KEYDOWN : cp #{@curpos} #{@buffer.length} "
         # select_next_row
       when KEY_ENTER, 10, 13
+        return -1 unless @editable
         # insert a blank row and append rest of this line to cursor
         @delete_buffer = (delete_eol || "")
         @list[@prow] << "\r"
@@ -735,14 +736,24 @@ module RubyCurses
       when KEY_RIGHT
         cursor_forward
       when KEY_BACKSPACE, 127
-        delete_prev_char
+        if @editable
+          delete_prev_char 
+          #fire_handler :CHANGE, self  # 2008-12-22 15:23 
+        end
       when 330
-        delete_curr_char
+        if @editable
+          delete_curr_char 
+          #fire_handler :CHANGE, self  # 2008-12-22 15:23 
+        end
       when ?\C-k
-        if @buffer == ""
-          delete_line
-        else
-          delete_eol
+        if @editable
+          if @buffer == ""
+            delete_line 
+            #fire_handler :CHANGE, self  # 2008-12-22 15:23 
+          else
+            delete_eol 
+            #fire_handler :CHANGE, self  # 2008-12-22 15:23 
+          end
         end
       when ?\C-u
         # added 2008-11-27 12:43  paste delete buffer into insertion point
@@ -774,6 +785,7 @@ module RubyCurses
       @buffer = @list[@prow]
     end
     def delete_eol
+      return -1 unless @editable
       pos = @curpos-1
       @delete_buffer = @buffer[@curpos..-1]
       # if pos is 0, pos-1 becomes -1, end of line!
@@ -804,6 +816,7 @@ module RubyCurses
     end
   end
   def delete_line line=@prow
+    return -1 unless @editable
     $log.debug "called delete line"
     @delete_buffer = @list.delete_at line
     @buffer = @list[@prow]
@@ -814,6 +827,7 @@ module RubyCurses
     fire_handler :CHANGE, self  # 2008-12-09 14:56 
   end
     def delete_curr_char
+      return -1 unless @editable
       delete_at
       set_modified 
     end
@@ -829,6 +843,7 @@ module RubyCurses
       addcol -1
     end
     def join_to_prev_line
+      return -1 unless @editable
       return if @prow == 0
       prev = @list[@prow-1].chomp
       prevlen = prev.length
@@ -932,7 +947,8 @@ module RubyCurses
           move_chars_up
         end
       end
-      @modified = true
+      #@modified = true 2008-12-22 15:31 
+      set_modified true
       fire_handler :CHANGE, self  # 2008-12-09 14:56 
     end
     # move up one char from next row to current, used when deleting in a line

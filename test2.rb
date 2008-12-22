@@ -95,7 +95,8 @@ if $0 == __FILE__
         @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| raise(FieldValidationException, "#{fld.getvalue.to_i} Outside range 1,200") if fld.getvalue.to_i >200; tv.top_row(fld.getvalue.to_i) }
         @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
         @form.by_name["regex"].bind(:CHANGED) { |fld| 
-          @form.window.printstring(25,45, "REGEX CHANGED!!! #{fld.getvalue}   ",3); }
+          @form.window.printstring(24,45, "REGEX CHANGED!!! #{fld.getvalue}   ",3); 
+          $message.value =  "REGEX CHANGED!!! #{fld.getvalue}   " }
 
       checkbutton = CheckBox.new @form do
         text_variable $results
@@ -115,15 +116,15 @@ if $0 == __FILE__
         col 22
         underline 0
       end
-      combo = ComboBox.new @form do
+      align = ComboBox.new @form do
         name "combo"
         row 19
         col 22
         display_length 10
         editable false
-        list %w[scotty tiger secret pass torvalds qwerty quail toiletry]
-        set_label Label.new @form, {'text' => "Combo"}
-        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'max_visible_items' => 6
+        list %w[left right center]
+        set_label Label.new @form, {'text' => "Align", "mnemonic"=>"I"}
+        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'max_visible_items' => 3
       end
       combo1 = ComboBox.new @form do
         name "combo1"
@@ -159,10 +160,14 @@ if $0 == __FILE__
       @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor   if f.respond_to? :label}
 
+      $message = Variable.new
+      $message.value = "Message Comes Here"
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 26, "col" => 1, "display_length" => 80}
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
-      $radio = Variable.new
-      $radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs)}
+      $radio = Variable.new(1)
+      $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; message_label.color tv.value}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
+      align.bind(:CHANGED) {|fld| message_label.justify fld.getvalue}
       radio1 = RadioButton.new @form do
         text_variable $radio
         text "red"
@@ -207,7 +212,7 @@ if $0 == __FILE__
         col 22
         underline 0
       end
-      ok_button.command { |form| form.dump_data;form.window.printstring(25,45, "Dumped data to log",1) 
+      ok_button.command { |form| form.dump_data; $message.value = "Dumped data to log file"
         $listdata.value.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
@@ -220,6 +225,8 @@ if $0 == __FILE__
         surround_chars ['{','}']
       end
       cancel_button.command { |form| form.window.printstring(23,45, "Cancel CALLED",1); throw(:close); }
+
+
       filemenu.add(item)
       @mb.add(filemenu)
       editmenu = RubyCurses::Menu.new "Edit"

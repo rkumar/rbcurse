@@ -394,8 +394,9 @@ module RubyCurses
       #f.text_variable.value = f.buffer if !f.text_variable.nil? # 2008-12-20 23:36 
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
-      ## to test XXX
-      if f.respond_to? :editable and f.editable and f.modified
+      ## to test XXX in combo boxes the box may not be editable by be modified by selection.
+      if f.respond_to? :editable and f.modified
+        $log.debug " Form about to fire CHANGED for #{f} "
         f.fire_handler(:CHANGED, f) 
       end
     end
@@ -822,10 +823,6 @@ module RubyCurses
       title = " "+title+" "
       @window.printstring(row=1,col=(width-title.length)/2,title, color=$normalcolor)
     end
-    def OLDcenter_column text
-      width = @layout[:width]
-      return (width-text.length)/2
-    end
     def center_column textlen
       width = @layout[:width]
       return (width-textlen)/2
@@ -910,8 +907,10 @@ module RubyCurses
     end
   end
   ##
+  # Text edit field
+  # To get value use getvalue() 
   # TODO - test text_variable
-  #   - scrolling in field horizontal
+  #  
   class Field < Widget
     dsl_accessor :maxlen             # maximum length allowed into field
     attr_reader :buffer              # actual buffer being used for storage
@@ -1058,7 +1057,7 @@ module RubyCurses
     when KEY_RIGHT
       cursor_forward
     when KEY_BACKSPACE, 127
-      delete_prev_char
+      delete_prev_char if @editable
     when KEY_UP
       @form.select_prev_field
     when KEY_DOWN
@@ -1068,13 +1067,13 @@ module RubyCurses
         fire
       end
     when 330
-      delete_curr_char
+      delete_curr_char if @editable
     when ?\C-a
       cursor_home 
     when ?\C-e
       cursor_end 
     when ?\C-k
-      delete_eol
+      delete_eol if @editable
     when ?\C-u
       @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
     when 32..126
@@ -1106,6 +1105,7 @@ module RubyCurses
     #set_form_col @buffer.length
   end
   def delete_eol
+    return -1 unless @editable
     pos = @curpos-1
     @delete_buffer = @buffer[@curpos..-1]
     # if pos is 0, pos-1 becomes -1, end of line!
@@ -1142,6 +1142,7 @@ module RubyCurses
 =end
   end
     def delete_curr_char
+      return -1 unless @editable
       delete_at
       set_modified 
     end
@@ -1211,7 +1212,7 @@ module RubyCurses
     ##
     # trigger to call whenever a value is updated
     def update_command *args, &block
-      $log.debug "update command set #{args}"
+      $log.debug "Variable: update command set #{args}"
       @update_command = block
       @args = args
     end
@@ -1231,7 +1232,7 @@ module RubyCurses
     # since we could put a hash or array in as @value
     def method_missing(sym, *args)
       if @value.respond_to? sym
-        $log.debug("MISSING calling variable  #{sym} called #{args[0]}")
+        $log.debug("MISSING calling Variable  #{sym} called #{args[0]}")
         @value.send(sym, args)
       else
         $log.error("ERROR VARIABLE MISSING #{sym} called")
@@ -1241,9 +1242,10 @@ module RubyCurses
   class Label < Widget
     #dsl_accessor :label_for   # related field or buddy
     dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
+    dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
 
     def initialize form, config={}, &block
-    # @form = form
+  
       @row = config.fetch("row",-1) 
       @col = config.fetch("col",-1) 
       @bgcolor = config.fetch("bgcolor", $def_bg_color)
@@ -1253,16 +1255,20 @@ module RubyCurses
       @editable = false
       @focusable = false
       super
+      @justify ||= :left
     end
     def getvalue
       @text_variable && @text_variable.value || @text
     end
     def label_for field
       @label_for = field
-      $log.debug " label for: #{@label_for}"
+      #$log.debug " label for: #{@label_for}"
       bind_hotkey
     end
 
+    ##
+    # for a button, fire it when label invoked without changing focus
+    # for other widgets, attempt to change focus to that field
     def bind_hotkey
       if !@mnemonic.nil?
         ch = @mnemonic.downcase()[0]   ## FIXME 1.9
@@ -1286,8 +1292,12 @@ module RubyCurses
         else
           acolor = $datacolor
         end
-        #    $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
-        @form.window.printstring r, c, "%-*s" % [len, value], acolor,@attr
+        #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} "
+        str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
+        if @justify.to_sym == :center
+          c = (@display_length - value.length)/2
+        end
+        @form.window.printstring r, c, str % [len, value], acolor,@attr
         if !@mnemonic.nil?
           ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
           @form.window.mvchgat(y=r, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)

@@ -59,9 +59,11 @@ module RubyCurses
       when KEY_UP  # show previous value
         @current_index -= 1 if @current_index > 0
         set_buffer @list[@current_index].dup
+        set_modified(true) 
       when KEY_DOWN  # show previous value
         @current_index += 1 if @current_index < @list.length()-1
         set_buffer @list[@current_index].dup
+        set_modified(true) 
       when KEY_DOWN+ RubyCurses::META_KEY # alt down
         popup  # pop up the popup
       else
@@ -99,6 +101,7 @@ module RubyCurses
         list_config listconfig
         bind(:PRESS) do |index|
           f.set_buffer dm[index].dup
+          f.set_modified(true) if f.current_index != index
           f.current_index = index
         end
       end
