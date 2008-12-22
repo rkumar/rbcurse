@@ -132,7 +132,8 @@ module RubyCurses
         m = @mnemonic
         ix = text.index(m) || text.index(m.swapcase)
         charm = text[ix,1]
-        @parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
+        #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
+        @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
       end
     end
     def destroy
