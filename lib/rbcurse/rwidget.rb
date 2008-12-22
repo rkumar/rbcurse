@@ -94,9 +94,13 @@ module RubyCurses
     dsl_accessor :underline                        # offset of text to underline
     dsl_accessor :width                # desired width of text
     dsl_accessor :wrap_length                      # wrap length of text, if applic
+
+    # next 3 to be checked if used or not. Copied from TK.
     dsl_accessor :select_foreground, :select_background  # color init_pair
     dsl_accessor :highlight_foreground, :highlight_background  # color init_pair
     dsl_accessor :disabled_foreground, :disabled_background  # color init_pair
+
+    # FIXME is enabled used?
     dsl_accessor :focusable, :enabled # boolean
     dsl_accessor :row, :col            # location of object
     dsl_accessor :color, :bgcolor      # normal foreground and background
@@ -380,6 +384,8 @@ module RubyCurses
       @active_index = nil 
       select_prev_field
     end
+    ## do not override
+    # form's trigger, fired when any widget loses focus
     def on_leave f
       return if f.nil?
       f.state = :NORMAL
@@ -388,6 +394,10 @@ module RubyCurses
       #f.text_variable.value = f.buffer if !f.text_variable.nil? # 2008-12-20 23:36 
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
+      ## to test XXX
+      if f.respond_to? :editable and f.editable and f.modified
+        f.fire_handler(:CHANGED, f) 
+      end
     end
     def on_enter f
       return if f.nil?
@@ -529,7 +539,7 @@ module RubyCurses
     @handler[event] = blk
   end
   def fire_handler event, object
-    $log.debug "called form firehander #{object}"
+    $log.debug "called form firehandler #{self}, #{event}, #{object}"
     blk = @handler[event]
     return if blk.nil?
     blk.call object
@@ -916,8 +926,12 @@ module RubyCurses
     dsl_accessor :color              # foreground colors from Ncurses COLOR_xxxx
     dsl_accessor :show               # what charactr to show for each char entered (password field)
     dsl_accessor :null_allowed       # allow nulls, don't validate if null # added 2008-12-22 12:38 
-    attr_reader :form
+
+    # any new widget that has editable should have modified also
+    dsl_accessor :editable          # allow editing
     attr_accessor :modified          # boolean, value modified or not
+
+    attr_reader :form
     attr_reader :handler             # event handler
     attr_reader :type                # datatype of field, currently only sets chars_allowed
     attr_reader :curpos              # cursor position in buffer current
@@ -1029,7 +1043,7 @@ module RubyCurses
     else
       acolor = $datacolor
     end
-    @form.window.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attrs
+    @form.window.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
   end
   def set_focusable(tf)
     @focusable = tf
@@ -1273,7 +1287,7 @@ module RubyCurses
           acolor = $datacolor
         end
         #    $log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} "
-        @form.window.printstring r, c, "%-*s" % [len, value], acolor,@attrs
+        @form.window.printstring r, c, "%-*s" % [len, value], acolor,@attr
         if !@mnemonic.nil?
           ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
           @form.window.mvchgat(y=r, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
@@ -1337,7 +1351,7 @@ module RubyCurses
         value = getvalue_for_paint
 #       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
         len = @display_length || value.length
-        @form.window.printstring r, c, "%-*s" % [len, value], color, @attrs
+        @form.window.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         if @underline != nil
         #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'

@@ -10,7 +10,7 @@ This todo relates to rbcurse, our own ruby fields, forms, widgets and applicatio
 MUST DO:
 ========
 
-- remove commonio.rb references from widget - DONE 2008-12-20 22:13 
+- TextArea and Field are allowing editing via RETURN, C-k etc if not editable. Pls check.
 
 - widget - hotkey on label puts focus on that field, on using hotkey - DONE
   But start using mnemonic for button etc,i/o underline.
@@ -22,7 +22,7 @@ MUST DO:
 3. Field and TextArea: OVERWRITE mode, 
    FIELD justification mode (after tabout), 
    FIELD - auto_skip (after reaching end), 
-   NULL_ALLOWED -upon leaving don't validate if true
+   NULL_ALLOWED -upon leaving don't validate if true - DONE
 
 4. Label - JUSTIFY (e.g. if numeric field)
 

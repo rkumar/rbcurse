@@ -94,6 +94,8 @@ if $0 == __FILE__
         # just for demo, lets scroll the text view to the line you enter
         @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| raise(FieldValidationException, "#{fld.getvalue.to_i} Outside range 1,200") if fld.getvalue.to_i >200; tv.top_row(fld.getvalue.to_i) }
         @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
+        @form.by_name["regex"].bind(:CHANGED) { |fld| 
+          @form.window.printstring(25,45, "REGEX CHANGED!!! #{fld.getvalue}   ",3); }
 
       checkbutton = CheckBox.new @form do
         text_variable $results
@@ -160,7 +162,7 @@ if $0 == __FILE__
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attrs(attrs)}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs)}
       radio1 = RadioButton.new @form do
         text_variable $radio
         text "red"
@@ -196,7 +198,7 @@ if $0 == __FILE__
      #item.checkbox.text "Labelcb"
      #item.text="Labelcb"
       # in next line, an explicit repaint is required since label is on another form.
-      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : nil; label.attrs(att); label.repaint}
+      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : nil; label.attr(att); label.repaint}
     
       ok_button = Button.new @form do
         text "OK"
