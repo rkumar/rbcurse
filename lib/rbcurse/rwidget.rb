@@ -130,7 +130,7 @@ module RubyCurses
     end
     ## got left out by mistake 2008-11-26 20:20 
     def bind event, *args, &blk
-      $log.debug "called widget #{id} BIND #{event} #{args} "
+      $log.debug "called widget #{id} #{self} BIND #{event} #{args} "
       @handler[event] = blk
       @event_args[event] = args
     end
@@ -138,7 +138,7 @@ module RubyCurses
     def fire_handler event, object
       blk = @handler[event]
       return if blk.nil?
-      $log.debug "called widget firehander #{object}, #{@event_args[event]}"
+      $log.debug "called widget firehander #{self}, o=#{object}, arg: #{@event_args[event]}"
       blk.call object,  *@event_args[event]
     end
     ## got left out by mistake 2008-11-26 20:20 
@@ -1295,7 +1295,8 @@ module RubyCurses
         #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} "
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         if @justify.to_sym == :center
-          c = (@display_length - value.length)/2
+          padding = (@display_length - value.length)/2
+          value = " "*padding + value + " "*padding # so its cleared if we change it midway
         end
         @form.window.printstring r, c, str % [len, value], acolor,@attr
         if !@mnemonic.nil?
@@ -1561,7 +1562,7 @@ module RubyCurses
   class ListDataModel
     include Enumerable
     include RubyCurses::EventHandler
-    attr_accessor :selected_item
+    attr_accessor :selected_index
 
     def initialize anarray
       @list = anarray.dup
@@ -1673,7 +1674,7 @@ module RubyCurses
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
-      set_focus_on (@list.selected_item || 0)
+      set_focus_on (@list.selected_index || 0)
     end
     def list alist=nil
       return @list if alist.nil?
@@ -1753,9 +1754,11 @@ module RubyCurses
       return ret
     end # handle_k listb
     def on_enter_row arow
+      $log.debug " Listbox #{self} FIRING ENTER_ROW with #{arow} H: #{@handler.keys}"
       fire_handler :ENTER_ROW, arow
     end
     def on_leave_row arow
+      $log.debug " Listbox #{self} FIRING leave with #{arow}"
       fire_handler :LEAVE_ROW, arow
     end
   end # class listb
@@ -1777,6 +1780,7 @@ module RubyCurses
                                 # layout
     dsl_accessor :max_visible_items   # how many to display
     dsl_accessor :list_config       # hash with values for the list to use 
+    attr_reader :listbox
 
     def initialize aconfig={}, &block
       @config = aconfig
@@ -1802,7 +1806,7 @@ module RubyCurses
 #     @message_row = @message_col = 2
 #     print_borders
 #     print_title
-      print_input
+      print_input # creates the listbox
       @form.repaint
       @window.wrefresh
       handle_keys
@@ -1918,10 +1922,8 @@ module RubyCurses
       @layout = { :height => height, :width => width, :top => top, :left => left } 
     end
     def destroy
-      $log.debug "DESTROY : popuplist "
-      panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
-      @window.delwin if !@window.nil?
+      #$log.debug "DESTROY : popuplist "
+      @window.destroy if !@window.nil?
     end
   end # class PopupList
 

@@ -39,6 +39,11 @@ if $0 == __FILE__
         end
         r += 1
       end
+
+      $message = Variable.new
+      $message.value = "Message Comes Here"
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 26, "col" => 1, "display_length" => 80}
+
       $results = Variable.new
       $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => 22}
@@ -135,6 +140,7 @@ if $0 == __FILE__
         list %w[scotty tiger secret pass torvalds qwerty quail toiletry]
         set_label Label.new @form, {'text' => "Edit Combo"}
         list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 5
+        bind(:ENTER_ROW) {|fld| $message.value = "Cursor on #{fld.selected_item}"}
       end
 
       @form.by_name["line"].display_length = 3
@@ -160,9 +166,6 @@ if $0 == __FILE__
       @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor   if f.respond_to? :label}
 
-      $message = Variable.new
-      $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 26, "col" => 1, "display_length" => 80}
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new(1)
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; message_label.color tv.value}

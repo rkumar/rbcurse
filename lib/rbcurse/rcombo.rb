@@ -38,6 +38,12 @@ module RubyCurses
       @current_index ||= 0
       set_buffer @list[@current_index].dup
     end
+    def selected_item
+      @list[@current_index]
+    end
+    def selected_index
+      @current_index
+    end
 
     ##
     # convert given list to datamodel
@@ -60,10 +66,12 @@ module RubyCurses
         @current_index -= 1 if @current_index > 0
         set_buffer @list[@current_index].dup
         set_modified(true) 
+        fire_handler :ENTER_ROW, self
       when KEY_DOWN  # show previous value
         @current_index += 1 if @current_index < @list.length()-1
         set_buffer @list[@current_index].dup
         set_modified(true) 
+        fire_handler :ENTER_ROW, self
       when KEY_DOWN+ RubyCurses::META_KEY # alt down
         popup  # pop up the popup
       else
@@ -86,12 +94,12 @@ module RubyCurses
       listconfig = @list_config.dup || {}
       dm = @list
       # current item in edit box will be focussed when list pops up
-      dm.selected_item = @current_index
+      dm.selected_index = @current_index
       poprow = @row+1 # one row below the edit box
       popcol = @col
       dlength = @display_length
       f = self
-      pl = RubyCurses::PopupList.new do
+      @popup = RubyCurses::PopupList.new do
         row  poprow
         col  popcol
         width dlength
@@ -128,9 +136,10 @@ module RubyCurses
       else
         match = next_match(char)
         set_buffer match unless match.nil?
+        fire_handler :ENTER_ROW, self
       end
       @modified = true
-      fire_handler :CHANGE, self    # 2008-12-09 14:51 
+      fire_handler :CHANGE, self    # 2008-12-09 14:51  ???
       0
     end
     ##
