@@ -133,6 +133,7 @@ module RubyCurses
         ix = text.index(m) || text.index(m.swapcase)
         charm = text[ix,1]
         #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
+        # prev line changed since not working in vt100 and vt200
         @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
       end
     end

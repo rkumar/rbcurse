@@ -151,6 +151,7 @@ if $0 == __FILE__
       @form.by_name["password"].color 'red'
       @form.by_name["password"].bgcolor 'blue'
       @form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
+      @form.by_name["password"].null_allowed true
 
       # a form level event, whenever any widget is focussed
       @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}

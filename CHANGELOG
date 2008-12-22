@@ -1,3 +1,11 @@
+**2008-12-22 12:52**
+## Added null_allowed to class Field ##
+
+if null_allowed, validation will be skipped if empty, however
+LEAVE event will be triggered.
+
+frmincr200812221251.tgz
+* * *
 **2008-12-22 02:02**
 ## xterm-color key hacks and vt100/200 fixes ##
 

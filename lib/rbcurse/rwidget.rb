@@ -915,6 +915,7 @@ module RubyCurses
     dsl_accessor :bgcolor            # background color 'red' 'black' 'cyan' etc
     dsl_accessor :color              # foreground colors from Ncurses COLOR_xxxx
     dsl_accessor :show               # what charactr to show for each char entered (password field)
+    dsl_accessor :null_allowed       # allow nulls, don't validate if null # added 2008-12-22 12:38 
     attr_reader :form
     attr_accessor :modified          # boolean, value modified or not
     attr_reader :handler             # event handler
@@ -1158,17 +1159,22 @@ module RubyCurses
     end
     # upon leaving a field
     # returns false if value not valid as per values or valid_regex
+    # 2008-12-22 12:40 if null_allowed, don't validate, but do fire_handlers
     def on_leave
       val = getvalue
       $log.debug " FIELD ON LEAVE:#{val}. #{@values.inspect}"
       valid = true
-      if !@values.nil?
-        valid = @values.include? val
-        raise FieldValidationException, "Field value (#{val}) not in values: #{@values.join(',')}" unless valid
-      end
-      if !@valid_regex.nil?
-        valid = @valid_regex.match(val)
-        raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
+      if val.empty? and @null_allowed
+        $log.debug " empty and null allowed"
+      else
+        if !@values.nil?
+          valid = @values.include? val
+          raise FieldValidationException, "Field value (#{val}) not in values: #{@values.join(',')}" unless valid
+        end
+        if !@valid_regex.nil?
+          valid = @valid_regex.match(val)
+          raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
+        end
       end
       super
       #return valid
