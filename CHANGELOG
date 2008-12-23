@@ -1,4 +1,19 @@
+**2008-12-23 13:38**
+## Added observers to events ##
+
+An object can listen in to events of another. Could be a hack.
+Helps if user creates an object which further creates others. User binds actioon to top level object.
+But we want internal objects events to also fire action.
+
+frmincr200812231337.tgz
+* * *
+## Multiple bindings for each event ##
+
+Each object can bind its actions without fear of overwriting each other.
+Variables update_command also stacked.
+
 **2008-12-22 15:13**
+
 ## class Field: CHANGED event, triggered when tabbing out after changing ##
 
 .

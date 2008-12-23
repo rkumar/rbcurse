@@ -63,6 +63,7 @@ module Selectable
     @selected.each { |sel| ret << list[sel] }
     return ret
   end
+  alias :get_selected_items :get_selected_data  # data should be deprecated
   ##
   # XXX in case of single selection popup, only ENTER selects and it closes too firing PRESS.
   # in case of multiple selection and popup, space selects and fires COMBO_SELECT, but enter closes and fires 

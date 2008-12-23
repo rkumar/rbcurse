@@ -195,6 +195,10 @@ module Scrollable
     def focussed_index
       @prow
     end
+    # only to be used in single selection cases as focussed item FIXME.
+    def selected_item
+      get_content()[focussed_index()]
+    end
     alias :current_index :focussed_index
     def scrollable_handle_key ch
       begin

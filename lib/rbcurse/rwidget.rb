@@ -82,20 +82,46 @@ module RubyCurses
         @event_args[event] ||= []
         @event_args[event] << xargs
       end
+      alias :add_binding :bind   # temporary, needs a proper name to point out that we are adding
+
+      # NOTE: Do we have a way of removing bindings
     
+      ##
+      # Fire all bindings for given event
       # e.g. fire_handler :ENTER, self
+      # currently object usually contains self which is perhaps a bit of a waste,
+      # could contain an event object with source, and some relevant methods or values
       def fire_handler event, object
-        return if @handler.nil?
+        if !@handler.nil?
         #blk = @handler[event]
-        ablk = @handler[event]
-        aeve = @event_args[event]
-        return if ablk.nil?
-        ablk.each_with_index do |blk, ix|
-          $log.debug "called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
-          blk.call object,  *aeve[ix]
+          ablk = @handler[event]
+          if !ablk.nil?
+            aeve = @event_args[event]
+            ablk.each_with_index do |blk, ix|
+              $log.debug "called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+              blk.call object,  *aeve[ix]
+            end
+          end # if
+        end # if
+            ## trying this out - chaining events
+        if !@observers.nil?
+          @observers.each do |obs|
+            $log.debug "EventHandler calling observers firehander #{@name}, #{event}, obj: #{object}"
+            obs.fire_handler event, object
+            # obs.form.repaint # this is required if another popped up form is changing value, but looks ugly
+          end
         end
       end
-    end
+      ##
+      # these are other objects that may want to listen in on events and act upon them.
+      # trying this out
+      def add_observer object
+        @observers ||= []
+        $log.debug " Adding #{object} as observer to #{self}"
+        @observers << object
+      end
+
+    end # module eventh
   class Widget
     include DSL
     include EventHandler
@@ -1769,11 +1795,13 @@ module RubyCurses
     end # handle_k listb
     def on_enter_row arow
       $log.debug " Listbox #{self} FIRING ENTER_ROW with #{arow} H: #{@handler.keys}"
-      fire_handler :ENTER_ROW, arow
+      #fire_handler :ENTER_ROW, arow
+      fire_handler :ENTER_ROW, self
     end
     def on_leave_row arow
       $log.debug " Listbox #{self} FIRING leave with #{arow}"
-      fire_handler :LEAVE_ROW, arow
+      #fire_handler :LEAVE_ROW, arow
+      fire_handler :LEAVE_ROW, self
     end
   end # class listb
 
@@ -1897,6 +1925,7 @@ module RubyCurses
       r = c = 0
       width = @layout[:width]
       height = @height
+      parent = @relative_to
       defaultvalue = @default_value || ""
         list = @list
         select_mode = @list_select_mode 
@@ -1916,6 +1945,7 @@ module RubyCurses
           select_mode select_mode
           default_values default_values
           is_popup true
+          add_observer parent
         end
     end
     def configure(*val , &block)

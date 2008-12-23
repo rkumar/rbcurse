@@ -94,7 +94,7 @@ if $0 == __FILE__
         @textview.top_row 21
 
         # just for demo, lets scroll the text view as we scroll this.
-        listb.bind(:ENTER_ROW, @textview) { |arow, tview| tview.top_row arow }
+        listb.bind(:ENTER_ROW, @textview) { |alist, tview| tview.top_row alist.current_index }
         
         # just for demo, lets scroll the text view to the line you enter
         @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| raise(FieldValidationException, "#{fld.getvalue.to_i} Outside range 1,200") if fld.getvalue.to_i >200; tv.top_row(fld.getvalue.to_i) }
@@ -140,8 +140,10 @@ if $0 == __FILE__
         list %w[scotty tiger secret pass torvalds qwerty quail toiletry]
         set_label Label.new @form, {'text' => "Edit Combo"}
         list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 5
-        bind(:ENTER_ROW) {|fld| $message.value = "Cursor on #{fld.selected_item}"}
+        bind(:ENTER_ROW) {|fld| $message.value = "Cursor on #{fld.selected_item}"; }
       end
+      # a special case required since another form (combo popup also modifies)
+      $message.update_command() { message_label.repaint }
 
       @form.by_name["line"].display_length = 3
       @form.by_name["line"].maxlen = 3
