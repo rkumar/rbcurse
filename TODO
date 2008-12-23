@@ -17,6 +17,10 @@ MUST DO:
 add_observer screwed up when i used ENTER to popup a list, and ENTER fired back !
 Went into a loop.
 
+cursor position in button, cb and radio
+
+sizing of messageboxes
+
 - widget - hotkey on label puts focus on that field, on using hotkey - DONE
   But start using mnemonic for button etc,i/o underline.
 

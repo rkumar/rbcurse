@@ -49,10 +49,11 @@ if $0 == __FILE__
         default_button 0
       end
     when 2:
+      @form = RubyCurses::Form.new nil
       field_list = []
-        titlelabel = RubyCurses::Label.new nil, {'text' => 'User', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'U'}
+        titlelabel = RubyCurses::Label.new @form, {'text' => 'User', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'U'}
       field_list << titlelabel
-        field = RubyCurses::Field.new nil do
+        field = RubyCurses::Field.new @form do
           name   "url" 
           row  3 
           col  10
@@ -60,7 +61,7 @@ if $0 == __FILE__
 #         set_buffer "http://"
           set_label titlelabel
         end
-      checkbutton = RubyCurses::CheckBox.new nil do
+      checkbutton = RubyCurses::CheckBox.new @form do
        # text_variable $results
         #value = true
         onvalue "Selected cb   "
@@ -73,7 +74,7 @@ if $0 == __FILE__
       end
       field_list << field
       field_list << checkbutton
-      checkbutton = RubyCurses::CheckBox.new nil do
+      checkbutton = RubyCurses::CheckBox.new @form do
        # text_variable $results
         value  true
         color 'black'
@@ -83,7 +84,7 @@ if $0 == __FILE__
         col 4
       end
       field_list << checkbutton
-      checkbutton = RubyCurses::CheckBox.new nil do
+      checkbutton = RubyCurses::CheckBox.new @form do
        # text_variable $results
         color 'black'
         bgcolor 'white'
@@ -92,11 +93,11 @@ if $0 == __FILE__
         col 4
       end
       field_list << checkbutton
-      titlelabel = RubyCurses::Label.new nil, {'text' => 'Language', 'row'=>8, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
+      titlelabel = RubyCurses::Label.new @form, {'text' => 'Language', 'row'=>8, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
       field_list << titlelabel
       $radio = RubyCurses::Variable.new
       #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
-      radio1 = RubyCurses::RadioButton.new nil do
+      radio1 = RubyCurses::RadioButton.new @form do
         text_variable $radio
         text "rub&y"
         value "ruby"
@@ -105,7 +106,7 @@ if $0 == __FILE__
         row 9
         col 4
       end
-      radio2 = RubyCurses::RadioButton.new nil do
+      radio2 = RubyCurses::RadioButton.new @form do
         text_variable $radio
         text  "python"
         value  "py&thon"
@@ -135,7 +136,7 @@ if $0 == __FILE__
           end
         end
       end
-      @mb = RubyCurses::MessageBox.new do
+      @mb = RubyCurses::MessageBox.new @form do
         #title "Color selector"
         title "HTTP Configuration"
   #     message "Enter your name"
@@ -144,8 +145,8 @@ if $0 == __FILE__
   #     underlines [0,0,0,0]
   #     type :input
   #     default_value "rahul"
-       type :field_list
-       field_list field_list
+       #type :field_list
+       #field_list field_list
        default_button 0
       end
     end 

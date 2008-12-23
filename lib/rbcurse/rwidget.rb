@@ -684,7 +684,8 @@ module RubyCurses
     attr_reader :window     # required for keyboard
     dsl_accessor :list_select_mode  # true or false allow multiple selection
 
-    def initialize aconfig={}, &block
+    def initialize form=nil, aconfig={}, &block
+      @form = form
       @config = aconfig
       @buttons = []
       #@keys = {}
@@ -703,11 +704,17 @@ module RubyCurses
           height = @field_list.length
           layout(10+height, 60, 5, 20)
         else
-          layout(10,60, 10, 20) 
+          height = 10
+          height = @form && @form.widgets.length ## quick fix. FIXME
+          layout(10+height,60, 10, 20) 
         end
       end
       @window = VER::Window.new(@layout)
-      @form = RubyCurses::Form.new @window
+      if @form.nil?
+        @form = RubyCurses::Form.new @window
+      else
+        @form.window = @window
+      end
       #@window.bkgd(Ncurses.COLOR_PAIR(@bgcolor || $reversecolor));
       @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
       @window.wrefresh
