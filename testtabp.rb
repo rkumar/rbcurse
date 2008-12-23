@@ -1,15 +1,11 @@
-# this is a test program, tests out messageboxes. type F1 to exit
+# this is a test program, tests out tabbed panes. type F1 to exit
 #
 $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'lib/ver/ncurses'
-#require 'lib/ver/keyboard'
 require 'lib/ver/window'
-#require 'lib/rbcurse/mapper'
-#require 'lib/rbcurse/keylabelprinter'
-#require 'lib/rbcurse/commonio'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rtabbedpane'
 
@@ -36,7 +32,7 @@ if $0 == __FILE__
         row 5
         col 10
       end
-      @tab1 = @tp.add_tab "Language" 
+      @tab1 = @tp.add_tab "&Language" 
       f1 = @tab1.form
       $radio = Variable.new
       radio1 = RadioButton.new f1 do
@@ -63,26 +59,26 @@ if $0 == __FILE__
         row 6
         col 2
       end
-      @tab2 = @tp.add_tab "Settings"
+      @tab2 = @tp.add_tab "&Settings"
       f2 = @tab2.form
       checkbutton = RubyCurses::CheckBox.new f2 do
-        text "Use HTTP/1.0"
+        text "Use &HTTP/1.0"
         row 3
         col 4
       end
       checkbutton = RubyCurses::CheckBox.new f2 do
-        text "Use frames"
+        text "Use &frames"
         row 5
         col 4
       end
       checkbutton = RubyCurses::CheckBox.new f2 do
-        text "Use SSL"
+        text "&Use SSL"
         row 6
         col 4
       end
-      @tab3 = @tp.add_tab "Editors"
+      @tab3 = @tp.add_tab "&Editors"
       f3 = @tab3.form
-      butts = %w[ Vim Emacs Jed Other ]
+      butts = %w[ &Vim E&macs &Jed &Other ]
       row = 3
       butts.each do |name|
         RubyCurses::CheckBox.new f3 do

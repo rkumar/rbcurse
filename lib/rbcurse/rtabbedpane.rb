@@ -66,9 +66,6 @@ module RubyCurses
         @form.window.printstring r, c, "%-*s" % [len, value], color, attribs
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         if @underline != nil
-        #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
-        #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
-       # underline not working here using Ncurses. Works with highline. \e[4m
           # changed +1 to +0 on 2008-12-15 21:23 pls check.
           @form.window.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
@@ -92,6 +89,8 @@ module RubyCurses
       @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
     end
+    ##
+    # when adding tabs, you may use ampersand in text to create hotkey
     def add_tab text, aconfig={}, &block
       #create a button here and block is taken care of in button's instance
       #or push this for later creation.
@@ -148,7 +147,6 @@ module RubyCurses
           value text
           row 1
           col col
-          underline 0
         end
         col += text.length+4
 #       @forms << create_tab_form(tab)
@@ -181,7 +179,7 @@ module RubyCurses
       form.navigation_policy = :NON_CYCLICAL
       window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       window.box( 0, 0);
-      window.mvprintw(1,1, tab.text)
+      window.mvprintw(1,1, tab.text.tr('&', ''))
       ##window.wrefresh
       ##Ncurses::Panel.update_panels
       return form
