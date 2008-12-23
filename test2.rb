@@ -111,15 +111,17 @@ if $0 == __FILE__
         text "A checkbox BOLD ME"
         row 17
         col 22
-        underline 11 
+        mnemonic 'B'
+        #underline 11 
       end
       togglebutton = ToggleButton.new @form do
         value  true
-        onvalue  "Toggle Down  "
-        offvalue "Toggle Up    "
+        onvalue  " Toggle Down "
+        offvalue "  Untoggle   "
         row 18
         col 22
-        underline 0
+        mnemonic 'T'
+        #underline 0
       end
       align = ComboBox.new @form do
         name "combo"
@@ -185,12 +187,11 @@ if $0 == __FILE__
       end
       radio2 = RadioButton.new @form do
         text_variable $radio
-        text  "green"
+        text  "&green"
         value  "green"
         color "green"
         row 23
         col 22
-        underline 0  
       end
       colorlabel.label_for radio1
 
@@ -217,19 +218,19 @@ if $0 == __FILE__
         name "OK"
         row 25
         col 22
-        underline 0
+        mnemonic 'O'
       end
       ok_button.command { |form| form.dump_data; $message.value = "Dumped data to log file"
         $listdata.value.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
+      # using ampersand to set mnemonic
       cancel_button = Button.new @form do
         #text_variable $results
-        text "Cancel"
+        text "&Cancel"
         row 25
-        col 28
-        underline 1
-        surround_chars ['{','}']
+        col 30
+        surround_chars ['{ ',' }']
       end
       cancel_button.command { |form| form.window.printstring(23,45, "Cancel CALLED",1); throw(:close); }
 

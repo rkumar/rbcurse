@@ -1347,8 +1347,12 @@ module RubyCurses
     end
   # ADD HERE LABEL
   end
+  ##
+  # action buttons
+  # TODO: phasing out underline, and giving mnemonic and ampersand preference
   class Button < Widget
   dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
+  dsl_accessor :mnemonic
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
@@ -1358,9 +1362,42 @@ module RubyCurses
       super
       @bgcolor ||= $datacolor 
       @color ||= $datacolor 
-      @surround_chars ||= ['[', ']'] 
-      @text = @name if @text.nil?
-      bind_hotkey
+      @surround_chars ||= ['[ ', ' ]'] 
+      #@text = @name if @text.nil?
+      #bind_hotkey # 2008-12-23 22:41 remarked
+    end
+    ##
+    # sets text, checking for ampersand, uses that for hotkey and underlines
+    def text(*val)
+      if val.empty?
+        return @text
+      else
+        s = val[0]
+        if (( ix = s.index('&')) != nil)
+          s.slice!(ix,1)
+          @underline = ix # this will create a problem in radio buttons where text is prepended.
+          mnemonic s[ix,1]
+        end
+        @text = s
+      end
+    end
+    def mnemonic char
+      @mnemonic = char
+      ch = char.downcase()[0] ## XXX 1.9 
+      # meta key 
+      mch = ?\M-a + (ch - ?a)
+      $log.debug " #{self} setting MNEMO to #{char} #{mch}"
+      @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
+    end
+    ##
+    # which index to use as underline.
+    # Instead of using this to make a hotkey, I am thinking of giving this a new usage.
+    # If you wish to override the underline?
+    # @deprecated . use mnemonic or an ampersand in text.
+    def OLDunderline ix
+      _value = @text || getvalue # hack for Togglebutton FIXME
+      raise "#{self}: underline requires text to be set " if _value.nil?
+      mnemonic _value[ix]
     end
     # bind hotkey to form keys. added 2008-12-15 20:19 
     # use ampersand in name or underline
@@ -1387,10 +1424,11 @@ module RubyCurses
 
     def getvalue_for_paint
       ret = getvalue
+      @text_offset = @surround_chars[0].length
       @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
-#       $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+        #$log.debug("BUTTon repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = rowcol
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
@@ -1400,15 +1438,13 @@ module RubyCurses
           color = ColorMap.get_color(color, bgcolor)
         end
         value = getvalue_for_paint
-#       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
+        $log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
         len = @display_length || value.length
         @form.window.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
-        if @underline != nil
-        #printstring @form.window, r, c+@underline+1, "%-*s" % [1, value[@underline+1,1]], color, 'bold'
-        #  @form.window.mvprintw(r, c+@underline+1, "\e[4m %s \e[0m", value[@underline+1,1]);
-       # underline not working here using Ncurses. Works with highline. \e[4m
-          uline = value.index(@mnemonic)
+        # in toggle buttons the underline can change as the text toggles
+        if !@underline.nil? or !@mnemonic.nil?
+          uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
           @form.window.mvchgat(y=r, x=c+uline, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
@@ -1474,6 +1510,7 @@ module RubyCurses
     end
     def getvalue_for_paint
       buttontext = getvalue()
+      @text_offset = @surround_chars[0].length
       @surround_chars[0] + buttontext + @surround_chars[1]
     end
     def handle_key ch
@@ -1516,7 +1553,8 @@ module RubyCurses
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
       super
-      @surround_chars ||= ['[', ']']
+      #@surround_chars ||= ['[', ']']
+      @surround_chars = ['[', ']']    # 2008-12-23 23:16 added space in Button so overriding
       @value ||= false
     end
     def getvalue
@@ -1527,9 +1565,13 @@ module RubyCurses
 #     $log.debug " iside CHECKBOX getvalue for paint"
       buttontext = getvalue() ? "X" : " "
       if @align_right
-        "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+        @text_offset = 0
+        return "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
       else
-        @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+        pretext = @surround_chars[0] + buttontext + @surround_chars[1] 
+        @text_offset = pretext.length + 1
+        #@surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+        return pretext + " #{@text}"
       end
     end
   end # class
@@ -1551,9 +1593,12 @@ module RubyCurses
     def getvalue_for_paint
       buttontext = @text_variable.value == @value ? "o" : " "
       if @align_right
-        "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+        @text_offset = 0
+        return "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
       else
-        @surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
+        pretext = @surround_chars[0] + buttontext + @surround_chars[1] 
+        @text_offset = pretext.length + 1
+        return pretext + " #{@text}"
       end
     end
     def toggle

@@ -13,7 +13,6 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-- TextArea and Field are allowing editing via RETURN, C-k etc if not editable. Pls check.
 
 - widget - hotkey on label puts focus on that field, on using hotkey - DONE
   But start using mnemonic for button etc,i/o underline.
@@ -42,15 +41,13 @@ Widget - event LEAVE and CHANGED should be separate. Currently validations happe
 3. Field and TextArea: OVERWRITE mode, 
    FIELD justification mode (after tabout), 
    FIELD - auto_skip (after reaching end), 
-   NULL_ALLOWED -upon leaving don't validate if true - DONE
-
-4. Label - JUSTIFY (e.g. if numeric field)
 
 text components: get set add keymap, get action for keystroke etc
 
 =========
 Thoughts:
 =========
+- make a sample data entry form (CRUD), so we can see how things really work. 
 
 - filechooser
 - quick dialogs for alert, confirm, etc
