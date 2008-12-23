@@ -29,7 +29,7 @@ if $0 == __FILE__
     catch(:close) do
       $log.debug "START  MESSAGE BOX TEST ---------"
       # need to pass a form, not window.
-      choice = 1
+      choice = 2
       case choice
       when 1:
       @mb = RubyCurses::MessageBox.new do
@@ -50,7 +50,7 @@ if $0 == __FILE__
       end
     when 2:
       field_list = []
-        titlelabel = RubyCurses::Label.new nil, {'text' => 'User', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
+        titlelabel = RubyCurses::Label.new nil, {'text' => 'User', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'U'}
       field_list << titlelabel
         field = RubyCurses::Field.new nil do
           name   "url" 
@@ -67,7 +67,7 @@ if $0 == __FILE__
         offvalue "UNselected cb"
           color 'black'
           bgcolor 'white'
-        text "No frames"
+        text "No &frames"
         row 4
         col 4
       end
@@ -78,7 +78,7 @@ if $0 == __FILE__
         value  true
         color 'black'
         bgcolor 'white'
-        text "Use HTTP/1.0"
+        text "Use &HTTP/1.0"
         row 5
         col 4
       end
@@ -87,7 +87,7 @@ if $0 == __FILE__
        # text_variable $results
         color 'black'
         bgcolor 'white'
-        text "Use passive FTP"
+        text "Use &passive FTP"
         row 6
         col 4
       end
@@ -98,7 +98,7 @@ if $0 == __FILE__
       #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
       radio1 = RubyCurses::RadioButton.new nil do
         text_variable $radio
-        text "ruby"
+        text "rub&y"
         value "ruby"
         color "red"
         bgcolor 'white'
@@ -108,7 +108,7 @@ if $0 == __FILE__
       radio2 = RubyCurses::RadioButton.new nil do
         text_variable $radio
         text  "python"
-        value  "python"
+        value  "py&thon"
         color "blue"
         bgcolor 'white'
         row 10

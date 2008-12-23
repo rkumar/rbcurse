@@ -161,7 +161,8 @@ module RubyCurses
       @config = aconfig
       @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
-      @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
+  #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
+      set_form(form) unless form.nil? 
     end
     ## got left out by mistake 2008-11-26 20:20 
     def OLDbind event, *args, &blk
@@ -742,23 +743,18 @@ module RubyCurses
     def create_buttons
       case @type.to_s.downcase
       when "ok"
-        @underlines = [0]
-        make_buttons ["OK"]
+        make_buttons ["&OK"]
       when "ok_cancel", "input", "list", "field_list"
-        @underlines = [0,0]
-        make_buttons %w[OK Cancel]
+        make_buttons %w[&OK &Cancel]
       when "yes_no"
-        @underlines = [0,0]
-        make_buttons %w[Yes No]
+        make_buttons %w[&Yes &No]
       when "yes_no_cancel"
-        @underlines = [0,0,0]
-        make_buttons ["Yes", "No", "Cancel"]
+        make_buttons ["&Yes", "&No", "&Cancel"]
       when "custom"
         make_buttons @buttons
       else
         $log.debug "No type passed for creating messagebox. Using default"
-        @underlines = [0]
-        make_buttons ["OK"]
+        make_buttons ["&OK"]
       end
     end
     def make_buttons names
@@ -769,15 +765,14 @@ module RubyCurses
       button_ct=0
       names.each_with_index do |bname, ix|
         text = bname
-        # now that buttons register hotkeys with form, we don't need this hack - removed @keys
-        underline = @underlines[ix] if !@underlines.nil?
+        #underline = @underlines[ix] if !@underlines.nil?
 
         button = Button.new @form do
           text text
           name bname
           row brow
           col bcol
-          underline underline
+          #underline underline
           highlight_background $datacolor 
           color $reversecolor
           bgcolor $reversecolor
@@ -1303,7 +1298,7 @@ module RubyCurses
     def label_for field
       @label_for = field
       #$log.debug " label for: #{@label_for}"
-      bind_hotkey
+      bind_hotkey unless @form.nil?   # GRRR!
     end
 
     ##
@@ -1375,13 +1370,17 @@ module RubyCurses
         s = val[0]
         if (( ix = s.index('&')) != nil)
           s.slice!(ix,1)
-          @underline = ix # this will create a problem in radio buttons where text is prepended.
+          @underline = ix unless @form.nil? # this setting a fake underline in messageboxes
           mnemonic s[ix,1]
         end
         @text = s
       end
     end
+    ## 
+    # FIXME this will not work in messageboxes since no form available
     def mnemonic char
+      $log.error " #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
+      return if @form.nil?
       @mnemonic = char
       ch = char.downcase()[0] ## XXX 1.9 
       # meta key 
@@ -1990,7 +1989,8 @@ module RubyCurses
           select_mode select_mode
           default_values default_values
           is_popup true
-          add_observer parent
+          #add_observer parent
+          
         end
     end
     def configure(*val , &block)
