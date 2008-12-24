@@ -29,7 +29,7 @@ if $0 == __FILE__
     catch(:close) do
       $log.debug "START  MESSAGE BOX TEST ---------"
       # need to pass a form, not window.
-      choice = 3
+      choice = 4
       case choice
       when 1:
       @mb = RubyCurses::MessageBox.new do

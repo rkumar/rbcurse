@@ -30,9 +30,9 @@ LABEL to take ampersand also.
 
 Combo - list of 3 is showing only 2 in max visible, need to scroll down for 3rd/
 
-textarea - CHANGE Event must give meaningful details such as offset start/end of change, text added or removed, type of change (ADD/REM/CHANGE) as in Listbox.
+textarea - CHANGE Event must give meaningful details such as offset start/end of change, text added or removed, type of change (ADD/REM/CHANGE) as in Listbox. DONE.
 
-textarea and textview eating alt-keys!
+textarea and textview eating alt-keys! - DONE.
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 
@@ -51,12 +51,13 @@ Widget - event LEAVE and CHANGED should be separate. Currently validations happe
    FIELD - auto_skip (after reaching end), 
 
 text components: get set add keymap, get action for keystroke etc
+or will this make each widget heavy?
 
 attr for position below, above, centered, on. - DONE
 =========
 Thoughts:
 =========
-- create and fire events only if someones listening.
+- create and fire events only if someones listening. ??
 
 - make a sample data entry form (CRUD), so we can see how things really work. 
 

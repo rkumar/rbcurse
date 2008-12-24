@@ -46,7 +46,10 @@ if $0 == __FILE__
       r+=1
       $results = Variable.new
       $results.value = "Event:"
-      var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => 22, "col" => 2}
+      status = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => 22, "col" => 2}
+      # since updated from another window, so explicit repaint required
+      $results.update_command { status.repaint }
+
       v_positions = [:BELOW, :SAME, :CENTER, :CENTER, :ABOVE, :ABOVE]
       #h_positions = [:SAME, :LEFT, :RIGHT, :SAME, :SAME, :ABOVE]
       policies = [:NO_INSERT, :INSERT_AT_TOP, :INSERT_AT_BOTTOM, 
@@ -55,6 +58,7 @@ if $0 == __FILE__
           name="combo#{r}"
           list = ListDataModel.new( %w[spotty tiger secret pass torvalds qwerty quail toiletry])
           list.bind(:LIST_DATA_EVENT, name) { |lde,n| $results.value = lde.to_s[0,70]; $log.debug " STA: #{$results} #{lde}"  }
+          list.bind(:ENTER_ROW, name) { |obj,n| $results.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$results.value} , #{obj}"  }
         ComboBox.new @form do
           name name
           row r

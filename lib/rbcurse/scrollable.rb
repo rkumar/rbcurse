@@ -200,6 +200,7 @@ module Scrollable
       get_content()[focussed_index()]
     end
     alias :current_index :focussed_index
+    alias :selected_index :focussed_index
     def scrollable_handle_key ch
       begin
         pre_key

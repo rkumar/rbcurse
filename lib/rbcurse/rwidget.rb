@@ -106,12 +106,14 @@ module RubyCurses
             ## trying this out - chaining events
         if !@observers.nil?
           @observers.each do |obs|
-            $log.debug "EventHandler calling observers firehander #{@name}, #{event}, obj: #{object}"
-            obs.fire_handler event, object
+            $log.debug "EventHandler calling observers observe #{@name}, #{event}, obj: #{object}"
+            #obs.fire_handler event, object
+            obs.observe self, event, object
             # obs.form.repaint # this is required if another popped up form is changing value, but looks ugly
           end
         end
       end
+      ## NOTE : I am gonna knock observers off. No need to complicate matters.
       ##
       # these are other objects that may want to listen in on events and act upon them.
       # trying this out
@@ -119,6 +121,9 @@ module RubyCurses
         @observers ||= []
         $log.debug " Adding #{object} as observer to #{self}"
         @observers << object
+      end
+      def observe source, event, object
+        $log.debug "Observe #{@self} gets #{@source}, #{event}, obj: #{object}"
       end
 
     end # module eventh
@@ -1284,7 +1289,9 @@ module RubyCurses
   class Label < Widget
     #dsl_accessor :label_for   # related field or buddy
     dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
+    # justify required a display length, esp if center.
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
+    dsl_accessor :display_length     # 
 
     def initialize form, config={}, &block
   
@@ -1293,11 +1300,11 @@ module RubyCurses
       @bgcolor = config.fetch("bgcolor", $def_bg_color)
       @color = config.fetch("color", $def_fg_color)
       @text = config.fetch("text", "NOTFOUND")
-      @name = config.fetch("name", @text)
       @editable = false
       @focusable = false
       super
       @justify ||= :left
+      @name ||= @text
     end
     def getvalue
       @text_variable && @text_variable.value || @text
@@ -1328,14 +1335,21 @@ module RubyCurses
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
+        # ensure we do not exceed
+        if !@display_length.nil?
+          if value.length > @display_length
+            value = value[0..@display_length-1]
+          end
+        end
         len = @display_length || value.length
         if @bgcolor.is_a? String and @color.is_a? String
           acolor = ColorMap.get_color(@color, @bgcolor)
         else
           acolor = $datacolor
         end
-        #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} "
+        #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
+        @form.window.printstring r, c, " " * len , acolor,@attr
         if @justify.to_sym == :center
           padding = (@display_length - value.length)/2
           value = " "*padding + value + " "*padding # so its cleared if we change it midway
@@ -1444,7 +1458,7 @@ module RubyCurses
           color = ColorMap.get_color(color, bgcolor)
         end
         value = getvalue_for_paint
-        $log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
+        #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
         len = @display_length || value.length
         @form.window.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -1715,6 +1729,10 @@ module RubyCurses
     def values
       @list.dup
     end
+    def on_enter_row object
+      $log.debug " XXX on_enter_row of list_data"
+      fire_handler :ENTER_ROW, object
+    end
     alias :to_array :values
   end # class ListDataModel
   ## 
@@ -1848,6 +1866,7 @@ module RubyCurses
       $log.debug " Listbox #{self} FIRING ENTER_ROW with #{arow} H: #{@handler.keys}"
       #fire_handler :ENTER_ROW, arow
       fire_handler :ENTER_ROW, self
+      @list.on_enter_row self
     end
     def on_leave_row arow
       $log.debug " Listbox #{self} FIRING leave with #{arow}"

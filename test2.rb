@@ -43,7 +43,7 @@ if $0 == __FILE__
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 26, "col" => 1, "display_length" => 80}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 26, "col" => 1, "display_length" => 80, 'color' => 'cyan'}
 
       $results = Variable.new
       $results.value = "A variable"
@@ -133,16 +133,20 @@ if $0 == __FILE__
         set_label Label.new @form, {'text' => "Align", "mnemonic"=>"I"}
         list_config 'color' => 'yellow', 'bgcolor'=>'red', 'max_visible_items' => 3
       end
+
+      list = ListDataModel.new( %w[spotty tiger panther jaguar leopard ocelot lion])
+      list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}"  }
+      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"  }
+
       combo1 = ComboBox.new @form do
         name "combo1"
         row 20
         col 22
         display_length 10
         editable true
-        list %w[scotty tiger secret pass torvalds qwerty quail toiletry]
+        list_data_model list
         set_label Label.new @form, {'text' => "Edit Combo"}
         list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 5
-        bind(:ENTER_ROW) {|fld| $message.value = "Cursor on #{fld.selected_item}"; }
       end
       # a special case required since another form (combo popup also modifies)
       $message.update_command() { message_label.repaint }
