@@ -307,6 +307,7 @@ module RubyCurses
     # moves focus to this field
     # XXX we must look into running on_leave of previous field
     def focus
+      return if !@focusable
       if @form.validate_field != -1
         @form.select_field @id
       end
@@ -452,12 +453,12 @@ module RubyCurses
     # puts focus on the given field/widget index
     # XXX if called externally will not run a on_leave of previous field
     def select_field ix0
-      return if @widgets.nil? or @widgets.empty?
+      return if @widgets.nil? or @widgets.empty? or !@widgets[ix0].focusable
 #     $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
-      @active_index = ix0
-      f = @widgets[@active_index]
+      f = @widgets[ix0]
       if f.focusable
         on_enter f
+        @active_index = ix0
         @row, @col = f.rowcol
 #       $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
         @window.wmove @row, @col
