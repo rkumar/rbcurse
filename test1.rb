@@ -29,18 +29,12 @@ if $0 == __FILE__
     catch(:close) do
       $log.debug "START  MESSAGE BOX TEST ---------"
       # need to pass a form, not window.
-      choice = 2
+      choice = 3
       case choice
       when 1:
       @mb = RubyCurses::MessageBox.new do
-        #title "Color selector"
         title "Enter your name"
         message "Enter your name"
-  #     type :custom
-  #     buttons %w[red green blue yellow]
-  #     underlines [0,0,0,0]
-  #     type :input
-  #     default_value "rahul"
        type :list
        list %w[john tim lee wong rahul edward why chad andy]
        list_select_mode 'multiple'
@@ -48,7 +42,23 @@ if $0 == __FILE__
   
         default_button 0
       end
-    when 2:
+      when 2
+      @mb = RubyCurses::MessageBox.new do
+        title "Color selector"
+        message "Select a color"
+        type :custom
+        buttons %w[&red &green &blue &yellow]
+        underlines [0,0,0,0]
+        default_button 0
+      end
+      when 3
+      @mb = RubyCurses::MessageBox.new do
+        title "Enter your name"
+        message "Enter your name"
+        type :input
+        default_value "rahul"
+      end
+    when 4:
       @form = RubyCurses::Form.new nil
       field_list = []
         titlelabel = RubyCurses::Label.new @form, {'text' => 'User', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'U'}

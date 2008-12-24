@@ -6,8 +6,9 @@
 
 * For a working example, execute rform.rb and rwidget.rb (exit with F1).
 
-* screenshots on blog mentioned above.
-  Sample: http://www.benegal.org/files/nc_screenshot_122108.png
+* Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
+  Some screenshots on blog mentioned above.
+  Full screen sample: http://www.benegal.org/files/nc_screenshot_122108.png
 
 == DESCRIPTION:
 

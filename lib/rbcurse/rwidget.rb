@@ -704,8 +704,8 @@ module RubyCurses
           height = @field_list.length
           layout(10+height, 60, 5, 20)
         else
-          height = 10
           height = @form && @form.widgets.length ## quick fix. FIXME
+          height ||= 0
           layout(10+height,60, 10, 20) 
         end
       end
@@ -867,6 +867,7 @@ module RubyCurses
     end
     def print_message message=@message, row=nil
       @message_row = @message_col = 2
+      width = @layout[:width]
       return if message.nil?
       case @type.to_s
       when "input" 
@@ -880,7 +881,6 @@ module RubyCurses
         @message_col = (width-message.length)/2
       end
       @message_row = row
-      width = @layout[:width]
       @window.printstring( row, @message_col , message, color=$reversecolor)
     end
     def print_input
