@@ -1,3 +1,10 @@
+**2008-12-24 13:00**
+## added autoscroll to TextArea ##
+
+Goes to end with each "<<" command.
+Also fixed goto_end and goto_start. I had changed the names in TextArea but not in scrollable.
+
+* * *
 **2008-12-23 23:49**
 ## Migrated buttons to mnemonic and ampersand for hotkeys ##
 
