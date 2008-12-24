@@ -56,6 +56,8 @@ attr for position below, above, centered, on. - DONE
 =========
 Thoughts:
 =========
+- create and fire events only if someones listening.
+
 - make a sample data entry form (CRUD), so we can see how things really work. 
 
 - filechooser

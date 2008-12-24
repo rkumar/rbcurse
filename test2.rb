@@ -7,6 +7,7 @@ require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rform'
+require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
 if $0 == __FILE__
   include RubyCurses
@@ -72,11 +73,10 @@ if $0 == __FILE__
           height 15
           title "Editable box"
           title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
+          bind(:CHANGE){|e| $message.value = e.to_s }
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now. "
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
-        #texta << "hello there" << "we are testing deletes in this application"
-        #texta << "HELLO there" << "WE ARE testing deletes in this application"
         texta << " "
         texta << " F1 to exit. or click second button"
 
