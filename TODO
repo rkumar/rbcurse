@@ -15,13 +15,18 @@ MUST DO:
     +----------+
 
 add_observer screwed up when i used ENTER to popup a list, and ENTER fired back !
-Went into a loop.
+Went into a loop. Remove it. its dead weight. Featuritis.
 
 cursor position in button, cb and radio
+
+1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
+
+2. cleanup scrollable code esp repaint method.
 
 sizing of messageboxes
 
 LABEL to take ampersand also.
+Label should be able to take height and wrap.
 
 - scrollable Field and List and TextArea/View. programmatic scrolling
   setScrollOffset, making a row visible
@@ -34,9 +39,6 @@ textarea - CHANGE Event must give meaningful details such as offset start/end of
 
 textarea and textview eating alt-keys! - DONE.
 
-1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
-
-2. cleanup scrollable code esp repaint method.
 
 
 Widget - event LEAVE and CHANGED should be separate. Currently validations happen on LEAVE.

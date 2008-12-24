@@ -1902,7 +1902,8 @@ module RubyCurses
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
       @list_config.each_pair { |k,v|  instance_variable_set("@#{k}",v) }
-      @height = [@max_visible_items || 10, @list.length].min 
+      @height ||= [@max_visible_items || 10, @list.length].min 
+      #$log.debug " POPUP XXX #{@max_visible_items} ll:#{@list.length} h:#{@height}"
       # get widgets absolute coords
       if !@relative_to.nil?
         layout = @relative_to.form.window.layout
@@ -2009,6 +2010,7 @@ module RubyCurses
     def print_input
       r = c = 0
       width = @layout[:width]
+      height = @layout[:height]
       height = @height
       parent = @relative_to
       defaultvalue = @default_value || ""

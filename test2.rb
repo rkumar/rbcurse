@@ -131,7 +131,7 @@ if $0 == __FILE__
         editable false
         list %w[left right center]
         set_label Label.new @form, {'text' => "Align", "mnemonic"=>"I"}
-        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'max_visible_items' => 3
+        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'height' => 4
       end
 
       list = ListDataModel.new( %w[spotty tiger panther jaguar leopard ocelot lion])
@@ -146,7 +146,7 @@ if $0 == __FILE__
         editable true
         list_data_model list
         set_label Label.new @form, {'text' => "Edit Combo"}
-        list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 5
+        list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 6, 'height' => 7
       end
       # a special case required since another form (combo popup also modifies)
       $message.update_command() { message_label.repaint }
