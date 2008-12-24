@@ -47,9 +47,11 @@ if $0 == __FILE__
       $results = Variable.new
       $results.value = "Event:"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => 22, "col" => 2}
+      v_positions = [:BELOW, :SAME, :CENTER, :CENTER, :ABOVE, :ABOVE]
+      #h_positions = [:SAME, :LEFT, :RIGHT, :SAME, :SAME, :ABOVE]
       policies = [:NO_INSERT, :INSERT_AT_TOP, :INSERT_AT_BOTTOM, 
         :INSERT_AT_CURRENT, :INSERT_BEFORE_CURRENT, :INSERT_AFTER_CURRENT]
-      policies.each do |policy|
+      policies.each_with_index do |policy, ix|
           name="combo#{r}"
           list = ListDataModel.new( %w[spotty tiger secret pass torvalds qwerty quail toiletry])
           list.bind(:LIST_DATA_EVENT, name) { |lde,n| $results.value = lde.to_s[0,70]; $log.debug " STA: #{$results} #{lde}"  }
@@ -64,9 +66,9 @@ if $0 == __FILE__
           list_data_model list
           insert_policy policy
           set_label Label.new @form, {'text' => "Combo: "+policy.to_s}
-          list_config 'color' => 'white', 'bgcolor'=>'blue'
+          list_config 'color' => 'white', 'bgcolor'=>'blue', 'valign' => v_positions[ix]
         end
-        r+=1
+        r+=2
       end
 
       @help = "Use UP and DOWN to navigate values, alt-DOWN for popup, TAB / BACKTAB between fields. F1-quit"

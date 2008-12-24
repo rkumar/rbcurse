@@ -95,7 +95,7 @@ module RubyCurses
       dm = @list
       # current item in edit box will be focussed when list pops up
       dm.selected_index = @current_index
-      poprow = @row+1 # one row below the edit box
+      poprow = @row+0 # one row below the edit box
       popcol = @col
       dlength = @display_length
       f = self

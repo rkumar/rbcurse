@@ -1873,6 +1873,7 @@ module RubyCurses
                                 # layout
     dsl_accessor :max_visible_items   # how many to display
     dsl_accessor :list_config       # hash with values for the list to use 
+    dsl_accessor :valign
     attr_reader :listbox
 
     def initialize aconfig={}, &block
@@ -1882,13 +1883,27 @@ module RubyCurses
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
       @list_config.each_pair { |k,v|  instance_variable_set("@#{k}",v) }
+      @height = [@max_visible_items || 10, @list.length].min 
       # get widgets absolute coords
       if !@relative_to.nil?
         layout = @relative_to.form.window.layout
         @row = @row + layout[:top]
         @col = @col + layout[:left]
       end
-      @height = [@max_visible_items || 10, @list.length].min 
+      if !@valign.nil?
+        case @valign.to_sym
+        when :BELOW
+          @row += 1
+        when :ABOVE
+          @row -= @height+1
+          @row = 0 if @row < 0
+        when :CENTER
+          @row -= @height/2
+          @row = 0 if @row < 0
+        else
+        end
+      end
+
       layout(1+height, @width+4, @row, @col) # changed 2 to 1, 2008-12-17 13:48 
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window

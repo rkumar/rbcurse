@@ -25,7 +25,7 @@ LABEL to take ampersand also.
 
 - scrollable Field and List and TextArea/View. programmatic scrolling
   setScrollOffset, making a row visible
-  auto_scroll
+  auto_scroll - done
   set_buffer alias set_text
 
 Combo - list of 3 is showing only 2 in max visible, need to scroll down for 3rd/
