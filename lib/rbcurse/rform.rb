@@ -591,6 +591,7 @@ module RubyCurses
     attr_reader :toprow
     attr_reader :prow
     attr_reader :winrow
+    dsl_accessor :auto_scroll # boolean, keeps view at end as data is inserted.
 
     def initialize form, config={}, &block
       @focusable = true
@@ -623,6 +624,7 @@ module RubyCurses
       @list.insert off0, *data
       # fire_handler :CHANGE, self  # 2008-12-09 14:56  NOT SURE
     end
+    # private
     def wrap_text(txt, col = @maxlen)
       $log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
@@ -642,8 +644,11 @@ module RubyCurses
         data << "\r" if data[-1,1] != "\r"
         @list << data
       end
+      goto_end if @auto_scroll # to test out.
       self
     end
+    ##
+    # private
     def print_borders
       width = @width
       height = @height
@@ -661,6 +666,7 @@ module RubyCurses
       window.printstring(startrow+height, col=startcol, hline, color)
   
     end
+    # private
     def print_title
       @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
@@ -703,9 +709,9 @@ module RubyCurses
         @form.row = @row + 1 + @winrow
         $log.debug "KEY minus : cp #{@curpos} #{@form.row} "
       when ?\C-[
-        cursor_start
+        goto_start #cursor_start
       when ?\C-]
-        cursor_end
+        goto_end # cursor_end
       when KEY_UP
         #select_prev_row
         ret = up
@@ -1098,9 +1104,9 @@ module RubyCurses
       when ?\C-p
         scroll_backward
       when ?\C-[
-        cursor_start
+        goto_start #cursor_start
       when ?\C-]
-        cursor_end
+        goto_end # cursor_end
       when KEY_UP
         #select_prev_row
         ret = up
