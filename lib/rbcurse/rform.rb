@@ -685,7 +685,7 @@ module RubyCurses
       @list
     end
     # textarea
-    # [ ] scroll left right
+    
     def handle_key ch
       @buffer = @list[@prow]
       if @buffer.nil? and @list.length == 0
@@ -771,7 +771,8 @@ module RubyCurses
         set_form_col @buffer.length
       else
         $log.debug(" textarea ch #{ch}")
-        putc ch
+        ret = putc ch
+        return ret if ret == :UNHANDLED
       end
       post_key
       # XXX 2008-11-27 13:57 trying out
@@ -937,9 +938,10 @@ module RubyCurses
         if ret == 0
         # addcol 1
           set_modified 
+          return 0
         end
       end
-      return -1
+      return :UNHANDLED
     end
     # DELETE func
     def delete_at index=@curpos
@@ -1138,6 +1140,7 @@ module RubyCurses
         end
       else
         $log.debug("TEXTVIEW XXX ch #{ch}")
+        return :UNHANDLED
       end
       post_key
       # XXX 2008-11-27 13:57 trying out

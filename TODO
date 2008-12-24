@@ -29,9 +29,10 @@ LABEL to take ampersand also.
   set_buffer alias set_text
 
 Combo - list of 3 is showing only 2 in max visible, need to scroll down for 3rd/
-  attr for position below, above, centered, on.
 
 textarea - CHANGE Event must give meaningful details such as offset start/end of change, text added or removed, type of change (ADD/REM/CHANGE) as in Listbox.
+
+textarea and textview eating alt-keys!
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 
@@ -51,6 +52,7 @@ Widget - event LEAVE and CHANGED should be separate. Currently validations happe
 
 text components: get set add keymap, get action for keystroke etc
 
+attr for position below, above, centered, on. - DONE
 =========
 Thoughts:
 =========

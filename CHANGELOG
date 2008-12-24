@@ -1,3 +1,9 @@
+**2008-12-24 15:51**
+## Alt-keys in TextArea and View were getting eaten up ##
+
+Returning alt keys so buttons and mnemonics can process
+
+* * *
 **2008-12-24 15:40**
 ## vertical alignment of combolists ##
 
