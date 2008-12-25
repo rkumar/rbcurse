@@ -1387,6 +1387,7 @@ module RubyCurses
       @bgcolor ||= $datacolor 
       @color ||= $datacolor 
       @surround_chars ||= ['[ ', ' ]'] 
+      @col_offset = @surround_chars[0].length 
       #@text = @name if @text.nil?
       #bind_hotkey # 2008-12-23 22:41 remarked
     end
@@ -1457,7 +1458,7 @@ module RubyCurses
     end
     def repaint  # button
         #$log.debug("BUTTon repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
-        r,c = rowcol
+        r,c = @row, @col #rowcol include offset for putting cursor
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
@@ -1486,19 +1487,6 @@ module RubyCurses
     def fire
       $log.debug "firing PRESS #{text}"
       fire_handler :PRESS, @form
-    end
-    ## args added on 2008-12-20 21:08 
-    def obind event, *args, &blk
-      @handler[event] = blk
-      @event_args[event] = args
-    end
-    ## args added on 2008-12-20 21:08 
-    # fires event for button
-    def ofire_handler event, object
-      $log.debug "called firehander #{object}"
-      blk = @handler[event]
-      return if blk.nil?
-      blk.call object, *@event_args[event]
     end
     # Button
     def handle_key ch
@@ -1580,9 +1568,9 @@ module RubyCurses
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
+      @surround_chars = ['[', ']']    # 2008-12-23 23:16 added space in Button so overriding
       super
       #@surround_chars ||= ['[', ']']
-      @surround_chars = ['[', ']']    # 2008-12-23 23:16 added space in Button so overriding
       @value ||= false
     end
     def getvalue
@@ -1877,6 +1865,7 @@ module RubyCurses
       #fire_handler :LEAVE_ROW, arow
       fire_handler :LEAVE_ROW, self
     end
+    # override widget so cursor is on focussed row. 2008-12-25 18:44 
     def set_form_row
       @form.row = @winrow + @row + 1
     end
