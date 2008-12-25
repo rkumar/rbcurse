@@ -34,6 +34,17 @@ Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 
 Above may be created using DSL like syntax, or hashes.
 
+== Sample programs:
+
+*  test2.rb  most widgets (including menus)
+   http://github.com/rkumar/rbcurse/tree/master/test2.rb
+*  test1.rb  various kinds of messageboxes (input, list, custom)
+   http://github.com/rkumar/rbcurse/tree/master/test1.rb
+*  testtabp.rb  tabbed pane
+   http://github.com/rkumar/rbcurse/tree/master/testtabp.rb
+*  testcombo.rb  combos with various insert policies and vertical
+   alignments
+
 == PROBLEMS, ISSUES
 
 
