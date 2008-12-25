@@ -111,6 +111,9 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       color = $datacolor
+      window.print_border @row, @col, @height, @width, color
+      print_title
+=begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
       window.printstring( row=startrow, col=startcol, hline, color)
@@ -119,6 +122,7 @@ module RubyCurses
         window.printstring(row, col=startcol, hline2, color)
       end
       window.printstring(startrow+height, col=startcol, hline, color)
+=end
   
     end
     # private
@@ -528,6 +532,9 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       color = $datacolor
+      window.print_border @row, @col, @height, @width, color
+      print_title
+=begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
       window.printstring(row=startrow, col=startcol, hline, color)
@@ -536,6 +543,7 @@ module RubyCurses
         window.printstring( row, col=startcol, hline2, color)
       end
       window.printstring( startrow+height, col=startcol, hline, color)
+=end
   
     end
     def print_title

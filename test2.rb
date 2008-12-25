@@ -70,7 +70,7 @@ if $0 == __FILE__
           row  1 
           col  52 
           width 40
-          height 15
+          height 14
           title "Editable box"
           title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
           bind(:CHANGE){|e| $message.value = e.to_s }
