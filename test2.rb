@@ -43,7 +43,7 @@ if $0 == __FILE__
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 26, "col" => 1, "display_length" => 80, 'color' => 'cyan'}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 80, 'color' => 'cyan'}
 
       $results = Variable.new
       $results.value = "A variable"
@@ -102,31 +102,52 @@ if $0 == __FILE__
         @form.by_name["regex"].bind(:CHANGED) { |fld| 
           @form.window.printstring(24,45, "REGEX CHANGED!!! #{fld.getvalue}   ",3); 
           $message.value =  "REGEX CHANGED!!! #{fld.getvalue}   " }
-
+row = 17
+col = 22
       checkbutton = CheckBox.new @form do
         text_variable $results
         #value = true
-        onvalue "Selected cb   "
-        offvalue "UNselected cb"
-        text "A checkbox BOLD ME"
-        row 17
-        col 22
+        onvalue "Selected bold   "
+        offvalue "UNselected bold"
+        text "Bold attribute "
+        display_length 18  # helps when right aligning
+        row row
+        col col
         mnemonic 'B'
-        #underline 11 
       end
+      row += 1
+      @cb_rev = Variable.new # related to checkbox reverse
+      cbb = @cb_rev
+      checkbutton1 = CheckBox.new @form do
+        text_variable cbb # $cb_rev
+        #value = true
+        onvalue "Selected reverse   "
+        offvalue "UNselected reverse"
+        text "Reverse attribute "
+        display_length 18
+        row row
+        col col
+        mnemonic 'R'
+      end
+      row += 1
       togglebutton = ToggleButton.new @form do
         value  true
         onvalue  " Toggle Down "
         offvalue "  Untoggle   "
         row 18
         col 22
+        row row
+        col col
         mnemonic 'T'
         #underline 0
       end
+      row += 1
       align = ComboBox.new @form do
         name "combo"
         row 19
         col 22
+        row row
+        col col
         display_length 10
         editable false
         list %w[left right center]
@@ -138,10 +159,13 @@ if $0 == __FILE__
       list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}"  }
       list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"  }
 
+      row += 1
       combo1 = ComboBox.new @form do
         name "combo1"
         row 20
         col 22
+        row row
+        col col
         display_length 10
         editable true
         list_data_model list
@@ -174,30 +198,62 @@ if $0 == __FILE__
       @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor   if f.respond_to? :label}
 
-      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 21, "col" => 22, "color"=>"cyan", "mnemonic" => 'S'}
+      row += 1
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new(1)
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
       $radio.update_command() {|tv|  message_label.color tv.value}
 
+      # whenever updated set colorlabel and messagelabel to bold
       $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
+
       align.bind(:CHANGED) {|fld| message_label.justify fld.getvalue}
+      align.bind(:CHANGED) {|fld| 
+        if fld.getvalue == 'right'
+          checkbutton1.align_right true
+          checkbutton.align_right true
+        else
+          checkbutton1.align_right false
+          checkbutton.align_right false
+        end
+      }
+
+      # whenever updated set colorlabel and messagelabel to reverse
+      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
+      row += 1
       radio1 = RadioButton.new @form do
         text_variable $radio
         text "red"
         value "red"
         color "red"
+        display_length 18  # helps when right aligning
         row 22
         col 22
+        row row
+        col col
       end
+      row += 1
       radio2 = RadioButton.new @form do
         text_variable $radio
         text  "&green"
         value  "green"
         color "green"
+        display_length 18  # helps when right aligning
         row 23
         col 22
+        row row
+        col col
       end
       colorlabel.label_for radio1
+      align.bind(:CHANGED) {|fld| 
+        if fld.getvalue == 'right'
+          radio1.align_right true
+          radio2.align_right true
+        else
+          radio1.align_right false
+          radio2.align_right false
+        end
+      }
 
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
@@ -217,11 +273,14 @@ if $0 == __FILE__
       # in next line, an explicit repaint is required since label is on another form.
       item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : nil; label.attr(att); label.repaint}
     
+      row += 2
       ok_button = Button.new @form do
         text "OK"
         name "OK"
         row 25
         col 22
+        row row
+        col col
         mnemonic 'O'
       end
       ok_button.command { |form| form.dump_data; $message.value = "Dumped data to log file"
@@ -234,6 +293,8 @@ if $0 == __FILE__
         text "&Cancel"
         row 25
         col 30
+        row row
+        col col + 10
         surround_chars ['{ ',' }']
       end
       cancel_button.command { |form| form.window.printstring(23,45, "Cancel CALLED",1); throw(:close); }

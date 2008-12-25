@@ -1570,7 +1570,6 @@ module RubyCurses
     def initialize form, config={}, &block
       @surround_chars = ['[', ']']    # 2008-12-23 23:16 added space in Button so overriding
       super
-      #@surround_chars ||= ['[', ']']
       @value ||= false
     end
     def getvalue
@@ -1580,14 +1579,17 @@ module RubyCurses
     def getvalue_for_paint
 #     $log.debug " iside CHECKBOX getvalue for paint"
       buttontext = getvalue() ? "X" : " "
+      dtext = @display_length.nil? ? text : "%-*s" % [@display_length, text]
       if @align_right
         @text_offset = 0
-        return "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+        @col_offset = dtext.length + @surround_chars[0].length + 1
+        return "#{dtext} " + @surround_chars[0] + buttontext + @surround_chars[1] 
       else
         pretext = @surround_chars[0] + buttontext + @surround_chars[1] 
         @text_offset = pretext.length + 1
+        @col_offset = @surround_chars[0].length
         #@surround_chars[0] + buttontext + @surround_chars[1] + " #{@text}"
-        return pretext + " #{@text}"
+        return pretext + " #{dtext}"
       end
     end
   end # class
@@ -1608,13 +1610,16 @@ module RubyCurses
     end
     def getvalue_for_paint
       buttontext = @text_variable.value == @value ? "o" : " "
+      dtext = @display_length.nil? ? text : "%-*s" % [@display_length, text]
       if @align_right
         @text_offset = 0
-        return "#{@text} " + @surround_chars[0] + buttontext + @surround_chars[1] 
+        @col_offset = dtext.length + @surround_chars[0].length + 1
+        return "#{dtext} " + @surround_chars[0] + buttontext + @surround_chars[1] 
       else
         pretext = @surround_chars[0] + buttontext + @surround_chars[1] 
         @text_offset = pretext.length + 1
-        return pretext + " #{@text}"
+        @col_offset = @surround_chars[0].length
+        return pretext + " #{dtext}"
       end
     end
     def toggle

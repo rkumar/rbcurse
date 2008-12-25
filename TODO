@@ -17,7 +17,6 @@ MUST DO:
 add_observer screwed up when i used ENTER to popup a list, and ENTER fired back !
 Went into a loop. Remove it. its dead weight. Featuritis.
 
-cursor position in button, cb and radio
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 
@@ -55,6 +54,8 @@ or will this make each widget heavy?
 
 RECENTLY DONE:
 --------------
+
+cursor position in button, cb and radio - 2008-12-25 19:21 
 Used ACS_ codes to make better boxes, wonder why I didn't do that before. Was going the lynx way.
 
 Widget - event LEAVE and CHANGED should be separate. Currently validations happen on LEAVE.
