@@ -27,13 +27,13 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
-      r = 1; c = 22;
+      r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
         field = Field.new @form do
           name   w 
           row  r 
-          col  c 
+          col  fc 
           display_length  30
           set_buffer "abcd " 
           set_label Label.new @form, {'text' => w, 'mnemonic'=> mnemonics[i]}
@@ -47,7 +47,7 @@ if $0 == __FILE__
 
       $results = Variable.new
       $results.value = "A variable"
-      var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => 22}
+      var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
         r += 1
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
@@ -102,8 +102,35 @@ if $0 == __FILE__
         @form.by_name["regex"].bind(:CHANGED) { |fld| 
           @form.window.printstring(24,45, "REGEX CHANGED!!! #{fld.getvalue}   ",3); 
           $message.value =  "REGEX CHANGED!!! #{fld.getvalue}   " }
-row = 17
-col = 22
+          row = 17
+          col = 2
+      align = ComboBox.new @form do
+        name "combo"
+        row row
+        col fc
+        display_length 10
+        editable false
+        list %w[left right center]
+        set_label Label.new @form, {'text' => "Align", "mnemonic"=>"I"}
+        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'height' => 4
+      end
+
+      list = ListDataModel.new( %w[spotty tiger panther jaguar leopard ocelot lion])
+      list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}"  }
+      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"  }
+
+      row += 1
+      combo1 = ComboBox.new @form do
+        name "combo1"
+        row row
+        col fc
+        display_length 10
+        editable true
+        list_data_model list
+        set_label Label.new @form, {'text' => "Edit Combo"}
+        list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 6, 'height' => 7
+      end
+      row += 1
       checkbutton = CheckBox.new @form do
         text_variable $results
         #value = true
@@ -134,43 +161,10 @@ col = 22
         value  true
         onvalue  " Toggle Down "
         offvalue "  Untoggle   "
-        row 18
-        col 22
         row row
         col col
         mnemonic 'T'
         #underline 0
-      end
-      row += 1
-      align = ComboBox.new @form do
-        name "combo"
-        row 19
-        col 22
-        row row
-        col col
-        display_length 10
-        editable false
-        list %w[left right center]
-        set_label Label.new @form, {'text' => "Align", "mnemonic"=>"I"}
-        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'height' => 4
-      end
-
-      list = ListDataModel.new( %w[spotty tiger panther jaguar leopard ocelot lion])
-      list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}"  }
-      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"  }
-
-      row += 1
-      combo1 = ComboBox.new @form do
-        name "combo1"
-        row 20
-        col 22
-        row row
-        col col
-        display_length 10
-        editable true
-        list_data_model list
-        set_label Label.new @form, {'text' => "Edit Combo"}
-        list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 6, 'height' => 7
       end
       # a special case required since another form (combo popup also modifies)
       $message.update_command() { message_label.repaint }
@@ -202,7 +196,7 @@ col = 22
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new(1)
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
-      $radio.update_command() {|tv|  message_label.color tv.value}
+      $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
 
       # whenever updated set colorlabel and messagelabel to bold
       $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
@@ -227,10 +221,17 @@ col = 22
         value "red"
         color "red"
         display_length 18  # helps when right aligning
-        row 22
-        col 22
         row row
         col col
+      end
+      radio11 = RadioButton.new @form do
+        text_variable $radio
+        text "c&yan"
+        value "cyan"
+        color "cyan"
+        display_length 18  # helps when right aligning
+        row row
+        col col+24
       end
       row += 1
       radio2 = RadioButton.new @form do
@@ -239,19 +240,30 @@ col = 22
         value  "green"
         color "green"
         display_length 18  # helps when right aligning
-        row 23
-        col 22
         row row
         col col
+      end
+      radio22 = RadioButton.new @form do
+        text_variable $radio
+        text "magenta"
+        value "magenta"
+        color "magenta"
+        display_length 18  # helps when right aligning
+        row row
+        col col+24
       end
       colorlabel.label_for radio1
       align.bind(:CHANGED) {|fld| 
         if fld.getvalue == 'right'
           radio1.align_right true
           radio2.align_right true
+          radio11.align_right true
+          radio22.align_right true
         else
           radio1.align_right false
           radio2.align_right false
+          radio11.align_right false
+          radio22.align_right false
         end
       }
 
@@ -295,9 +307,9 @@ col = 22
         col 30
         row row
         col col + 10
-        surround_chars ['{ ',' }']
+        #surround_chars ['{ ',' }']  ## change the surround chars
       end
-      cancel_button.command { |form| form.window.printstring(23,45, "Cancel CALLED",1); throw(:close); }
+      cancel_button.command { |form| throw(:close); }
 
 
       filemenu.add(item)

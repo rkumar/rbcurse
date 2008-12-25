@@ -5,11 +5,12 @@
 * See latest changes on http://github.com/rkumar/rbcurse/tree/master/CHANGELOG
 
 * For a working example, execute test2.rb (exit with F1, Or Cancel
-* button/Alt-C).
+  button/Alt-C).
 
 * Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
-  Some screenshots with source on blog mentioned above.
-  Full screen sample: http://www.benegal.org/files/nc_screenshot_122108.png
+  and http://www.benegal.org/files/screen/
+
+  Full screen sample: http://www.benegal.org/files/screen/nc_screenshot_122508.png
 
 == DESCRIPTION:
 
