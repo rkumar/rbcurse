@@ -312,6 +312,14 @@ module RubyCurses
         @form.select_field @id
       end
     end
+    def get_color default=$datacolor
+      if @bgcolor.is_a? String and @color.is_a? String
+        acolor = ColorMap.get_color(@color, @bgcolor)
+      else
+        acolor = default
+      end
+      return acolor
+    end
     ## ADD HERE WIDGET
   end
 
@@ -853,6 +861,8 @@ module RubyCurses
     def print_borders
       width = @layout[:width]
       height = @layout[:height]
+      @window.print_border_mb 1,2, height, width, $normalcolor, A_REVERSE
+=begin
       start = 2
       hline = "+%s+" % [ "-"*(width-((start+1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((start+1)*2)) ]
@@ -861,6 +871,7 @@ module RubyCurses
         @window.printstring row, col=start, hline2, color=$normalcolor, A_REVERSE
       end
       @window.printstring(height-2, col=start, hline, color=$reversecolor)
+=end
     end
     def print_title title=@title
       width = @layout[:width]
@@ -1343,11 +1354,7 @@ module RubyCurses
           end
         end
         len = @display_length || value.length
-        if @bgcolor.is_a? String and @color.is_a? String
-          acolor = ColorMap.get_color(@color, @bgcolor)
-        else
-          acolor = $datacolor
-        end
+        acolor = get_color $datacolor
         #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         @form.window.printstring r, c, " " * len , acolor,@attr
@@ -1812,22 +1819,18 @@ module RubyCurses
       window = @form.window
       startcol = @col 
       startrow = @row 
-      #color = $datacolor
-      if @bgcolor.is_a? String and @color.is_a? String
-        acolor = ColorMap.get_color(@color, @bgcolor)
-      else
-        acolor = $datacolor
-      end
-      @color_pair = acolor
+      @color_pair = get_color($datacolor)
+      window.print_border startrow, startcol, height, width, @color_pair, @attr
+      print_title
+=begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
       hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
       window.printstring( row=startrow, col=startcol, hline, acolor)
-      print_title
       (startrow+1).upto(startrow+height-1) do |row|
         window.printstring( row, col=startcol, hline2, acolor)
       end
       window.printstring( startrow+height, col=startcol, hline, acolor)
-  
+=end 
      # @derwin = @form.window.derwin(@height, @width, @row, @col)
      # repaint
     end
@@ -1929,6 +1932,9 @@ module RubyCurses
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
       @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
+      #@window.attron(Ncurses.COLOR_PAIR($reversecolor));
+      #@window.wclear
+      #@window.attroff(Ncurses.COLOR_PAIR($reversecolor));
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels

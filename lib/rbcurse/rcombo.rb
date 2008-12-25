@@ -196,6 +196,18 @@ module RubyCurses
       fire_handler :LEAVE, self
     end
 
+    def repaint
+      super
+      c = @col + @display_length
+     # @form.window.mvwvline( @row, c, ACS_VLINE, 1)
+      @form.window.mvwaddch @row, c+1, Ncurses::ACS_GEQUAL
+     # @form.window.mvwvline( @row, c+2, ACS_VLINE, 1)
+     # @form.window.mvwaddch @row, c+2, Ncurses::ACS_S1
+     # @form.window.mvwaddch @row, c+3, Ncurses::ACS_S9
+     # @form.window.mvwaddch @row, c+4, Ncurses::ACS_LRCORNER
+     # @form.window.mvwhline( @row, c+5, ACS_HLINE, 2)
+    end
+
   end # class ComboBox
 
 end # module

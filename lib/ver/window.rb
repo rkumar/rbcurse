@@ -326,5 +326,36 @@ module VER
     def clear_error r = $error_message_row, color = $datacolor
       printstring(r, 0, "%-*s" % [Ncurses.COLS," "], color)
     end
+    def print_border_mb row, col, height, width, color, attr
+      mvwaddch row, col, ACS_ULCORNER
+      mvwhline( row, col+1, ACS_HLINE, width-6)
+      mvwaddch row, col+width-5, Ncurses::ACS_URCORNER
+      mvwvline( row+1, col, ACS_VLINE, height-4)
+
+      mvwaddch row+height-3, col, Ncurses::ACS_LLCORNER
+      mvwhline(row+height-3, col+1, ACS_HLINE, width-6)
+      mvwaddch row+height-3, col+width-5, Ncurses::ACS_LRCORNER
+      mvwvline( row+1, col+width-5, ACS_VLINE, height-4)
+    end
+    def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
+      att ||= Ncurses::A_NORMAL
+
+      (row+2).upto(row+height-1) do |r|
+        printstring( r, col+1," "*(width-2) , color, att)
+      end
+      attron(Ncurses.COLOR_PAIR(color) | att)
+
+
+      mvwaddch row, col, ACS_ULCORNER
+      mvwhline( row, col+1, ACS_HLINE, width-2)
+      mvwaddch row, col+width-1, Ncurses::ACS_URCORNER
+      mvwvline( row+1, col, ACS_VLINE, height-1)
+
+      mvwaddch row+height-0, col, Ncurses::ACS_LLCORNER
+      mvwhline(row+height-0, col+1, ACS_HLINE, width-2)
+      mvwaddch row+height-0, col+width-1, Ncurses::ACS_LRCORNER
+      mvwvline( row+1, col+width-1, ACS_VLINE, height-1)
+      attroff(Ncurses.COLOR_PAIR(color) | att)
+    end
   end
 end

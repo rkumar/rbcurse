@@ -4,10 +4,11 @@
 
 * See latest changes on http://github.com/rkumar/rbcurse/tree/master/CHANGELOG
 
-* For a working example, execute rform.rb and rwidget.rb (exit with F1).
+* For a working example, execute test2.rb (exit with F1, Or Cancel
+* button/Alt-C).
 
 * Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
-  Some screenshots on blog mentioned above.
+  Some screenshots with source on blog mentioned above.
   Full screen sample: http://www.benegal.org/files/nc_screenshot_122108.png
 
 == DESCRIPTION:
@@ -22,12 +23,13 @@ Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 * entry fields in ruby 
 * scrollable list box
 * multi-line editable area
-* togglebutton, radio and check buttons
+* togglebutton, radio and check buttons (with mnemonics)
 * message box
 * menubar - with submenu and CheckBoxMenuItem
 * popup list
-* tabbedpane
+* tabbedpane (multiple forms using tabbed metaphor)
 * combobox
+* labels with mnemonics (hotkeys)
 
 Above may be created using DSL like syntax, or hashes.
 
