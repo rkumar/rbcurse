@@ -108,6 +108,8 @@ module Scrollable
       on_leave_row @oldprow if respond_to? :on_leave_row     # to be defined by widget that has included this
       on_enter_row @prow   if respond_to? :on_enter_row  # to be defined by widget that has included this
     end
+    #@form.row =  @winrow
+    set_form_row
 
     end
   ##

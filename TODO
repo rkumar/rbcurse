@@ -55,6 +55,7 @@ or will this make each widget heavy?
 
 RECENTLY DONE:
 --------------
+Used ACS_ codes to make better boxes, wonder why I didn't do that before. Was going the lynx way.
 
 Widget - event LEAVE and CHANGED should be separate. Currently validations happen on LEAVE.
  - Done. test more.

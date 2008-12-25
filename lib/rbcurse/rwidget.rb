@@ -1877,6 +1877,9 @@ module RubyCurses
       #fire_handler :LEAVE_ROW, arow
       fire_handler :LEAVE_ROW, self
     end
+    def set_form_row
+      @form.row = @winrow + @row + 1
+    end
   end # class listb
 
   ##

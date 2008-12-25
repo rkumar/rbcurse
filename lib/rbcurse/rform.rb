@@ -105,11 +105,7 @@ module RubyCurses
     ##
     # private
     def print_borders
-      width = @width
-      height = @height
       window = @form.window
-      startcol = @col 
-      startrow = @row 
       color = $datacolor
       window.print_border @row, @col, @height, @width, color
       print_title
@@ -526,11 +522,7 @@ module RubyCurses
                "\\1\\3\n") 
     end
     def print_borders
-      width = @width
-      height = @height
       window = @form.window
-      startcol = @col 
-      startrow = @row 
       color = $datacolor
       window.print_border @row, @col, @height, @width, color
       print_title
