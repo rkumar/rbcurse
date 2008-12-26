@@ -1,3 +1,12 @@
+**2008-12-27 01:07**
+## bug fixes in textarea cursor movement ##
+
+with respect to wrapping lines
+backspace behaviour.
+newlines
+still some glitches.
+
+* * *
 **2008-12-26 20:07**
 ## Missed one case of wrapping in Textarea ##
 

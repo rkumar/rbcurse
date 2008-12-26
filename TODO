@@ -15,6 +15,7 @@ MUST DO:
     +----------+
 
 Some bugs in TextArea wrapping.
+When a word is carried dowm, it shold gt carried back up too if i pt a space inside.
 
 add_observer screwed up when i used ENTER to popup a list, and ENTER fired back !
 Went into a loop. Remove it. its dead weight. Featuritis.
