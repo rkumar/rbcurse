@@ -14,6 +14,8 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+Some bugs in TextArea wrapping.
+
 add_observer screwed up when i used ENTER to popup a list, and ENTER fired back !
 Went into a loop. Remove it. its dead weight. Featuritis.
 
@@ -40,6 +42,8 @@ Field to also have change event.
     +----------+
     |  TO ADD  |
     +----------+
+
+alert, confirm boxes in single line. put in test2
 
 Datamodel for TextArea/View so one can change display and do simple multiple columns
 RowRenderer ?

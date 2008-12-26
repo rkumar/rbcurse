@@ -148,12 +148,14 @@ module RubyCurses
         @buffer = @list[@prow]
       end
       return if @buffer.nil?
-      #$log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
+      $log.debug "TA: before: curpos #{@curpos} blen: #{@buffer.length}"
+      # on any line if the cursor is ahead of buffer length, ensure its on last position
+      # what if the buffer is somehow gt maxlen ??
       if @curpos > @buffer.length
         addcol(@buffer.length-@curpos)+1
         @curpos = @buffer.length
       end
-      #$log.debug " after loop : curpos #{@curpos} blen: #{@buffer.length}"
+      $log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}"
       pre_key
       case ch
       when ?\C-n
@@ -202,12 +204,12 @@ module RubyCurses
           delete_prev_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
-      when 330, ?\C-d
+      when 330, ?\C-d # delete char
         if @editable
           delete_curr_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
-      when ?\C-k
+      when ?\C-k # delete till eol
         if @editable
           if @buffer == ""
             delete_line 
@@ -234,14 +236,16 @@ module RubyCurses
       end
       post_key
       set_form_row
+      set_form_col  # testing 2008-12-26 19:37 
     end
     # puts cursor on correct row.
     def set_form_row
       @form.row = @row + 1 + @winrow
     end
     # set cursor on correct column
-    def set_form_col col=@cursor
-      @curpos = col
+    def set_form_col col1=@curpos
+      @curpos = col1
+      #$log.debug " #{@orig_col}, #{@col_offset}. #{@curpos}."
       @form.col = @orig_col + @col_offset + @curpos
     end
     def do_current_row # :yields current row
@@ -350,10 +354,15 @@ module RubyCurses
         else
           lastchars = ""
         end
-        #$log.debug "last sapce #{lastspace}, #{lastchars}, #{@list[@prow]} "
+        $log.debug "last sapce #{lastspace}, lastchars:#{lastchars}, #{@list[@prow]} "
         ## wrap on word
         ret = down 
-        (append_row(lastchars) && down) if ret == -1
+        #(append_row(lastchars) && down) if ret == -1
+        if ret == -1 # could not go down, no row
+          (append_row(lastchars) && down) #if ret == -1
+        else
+          @list[@prow].insert(0, lastchars)
+        end
         @curpos = lastchars.length # 0
         @form.col = @orig_col + @col_offset + @curpos
         #addrowcol 1,0                  # positions the cursor down
@@ -622,7 +631,7 @@ module RubyCurses
       @form.row = @row + 1 + @winrow
     end
     # set cursor on correct column
-    def set_form_col col=@cursor
+    def set_form_col col=@curpos
       @curpos = col
       @form.col = @orig_col + @col_offset + @curpos
     end

@@ -46,7 +46,8 @@ Above may be created using DSL like syntax, or hashes.
    alignments
 
 == PROBLEMS, ISSUES
-
+TextArea not bug free. Some situations wrapping errors. Also, occ cursor
+postiion in buffer not matching displayed cursor.
 
 == Terminal related issues.
 

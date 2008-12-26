@@ -35,8 +35,8 @@ if $0 == __FILE__
           row  r 
           col  fc 
           display_length  30
-          set_buffer "abcd " 
-          set_label Label.new @form, {'text' => w, 'mnemonic'=> mnemonics[i]}
+          #set_buffer "abcd " 
+          set_label Label.new @form, {'text' => w, 'color'=>'cyan','mnemonic'=> mnemonics[i]}
         end
         r += 1
       end
@@ -100,7 +100,6 @@ if $0 == __FILE__
         @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| raise(FieldValidationException, "#{fld.getvalue.to_i} Outside range 1,200") if fld.getvalue.to_i >200; tv.top_row(fld.getvalue.to_i) }
         @form.by_name["regex"].bind(:LEAVE, @textview) { |fld, tv| tv.top_row(tv.find_first_match(fld.getvalue)) }
         @form.by_name["regex"].bind(:CHANGED) { |fld| 
-          @form.window.printstring(24,45, "REGEX CHANGED!!! #{fld.getvalue}   ",3); 
           $message.value =  "REGEX CHANGED!!! #{fld.getvalue}   " }
           row = 17
           col = 2
@@ -111,7 +110,7 @@ if $0 == __FILE__
         display_length 10
         editable false
         list %w[left right center]
-        set_label Label.new @form, {'text' => "Align", "mnemonic"=>"I"}
+        set_label Label.new @form, {'text' => "Align", 'color'=>'cyan','col'=>1, "mnemonic"=>"I"}
         list_config 'color' => 'yellow', 'bgcolor'=>'red', 'height' => 4
       end
 
@@ -127,7 +126,7 @@ if $0 == __FILE__
         display_length 10
         editable true
         list_data_model list
-        set_label Label.new @form, {'text' => "Edit Combo"}
+        set_label Label.new @form, {'text' => "Edit Combo",'color'=>'cyan','col'=>1}
         list_config 'color' => 'white', 'bgcolor'=>'blue', 'max_visible_items' => 6, 'height' => 7
       end
       row += 1
@@ -180,17 +179,17 @@ if $0 == __FILE__
       @form.by_name["regex"].set_buffer  "SYNOP"
       @form.by_name["regex"].display_length = 10
       @form.by_name["regex"].maxlen = 20
-      @form.by_name["regex"].bgcolor 'cyan'
+      #@form.by_name["regex"].bgcolor 'cyan'
       @form.by_name["password"].set_buffer ""
       @form.by_name["password"].show '*'
       @form.by_name["password"].color 'red'
-      @form.by_name["password"].bgcolor 'blue'
+      #@form.by_name["password"].bgcolor 'blue'
       @form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
       @form.by_name["password"].null_allowed true
 
       # a form level event, whenever any widget is focussed
       @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}
-      @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor   if f.respond_to? :label}
+      @form.bind(:LEAVE) { |f|  f.label.bgcolor = 'black'   if f.respond_to? :label}
 
       row += 1
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
@@ -201,8 +200,8 @@ if $0 == __FILE__
       # whenever updated set colorlabel and messagelabel to bold
       $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
 
-      align.bind(:CHANGED) {|fld| message_label.justify fld.getvalue}
-      align.bind(:CHANGED) {|fld| 
+      align.bind(:ENTER_ROW) {|fld| message_label.justify fld.getvalue}
+      align.bind(:ENTER_ROW) {|fld| 
         if fld.getvalue == 'right'
           checkbutton1.align_right true
           checkbutton.align_right true
@@ -253,7 +252,7 @@ if $0 == __FILE__
         col col+24
       end
       colorlabel.label_for radio1
-      align.bind(:CHANGED) {|fld| 
+      align.bind(:ENTER_ROW) {|fld| 
         if fld.getvalue == 'right'
           radio1.align_right true
           radio2.align_right true
@@ -270,7 +269,7 @@ if $0 == __FILE__
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
-      item.command(@form) {|it, form|  form.window.printstring(25,45, "Open CALLED    ",2); }
+      item.command(@form) {|it, form|  $message.value = "Open called on menu bar"; }
 
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
@@ -289,8 +288,6 @@ if $0 == __FILE__
       ok_button = Button.new @form do
         text "OK"
         name "OK"
-        row 25
-        col 22
         row row
         col col
         mnemonic 'O'
@@ -303,8 +300,6 @@ if $0 == __FILE__
       cancel_button = Button.new @form do
         #text_variable $results
         text "&Cancel"
-        row 25
-        col 30
         row row
         col col + 10
         #surround_chars ['{ ',' }']  ## change the surround chars

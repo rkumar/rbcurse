@@ -28,7 +28,7 @@ module RubyCurses
       inspect
     end
     def inspect
-      "#{@type.to_s}, #{@source}, #{@index0}, #{@index1}, #{@row}, #{@text}"
+      "#{@type.to_s}, #{@source}, ind0:#{@index0}, ind1:#{@index1}, row:#{@row}, text:#{@text}"
     end
   end
 end
