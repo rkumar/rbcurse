@@ -63,7 +63,7 @@ module RubyCurses
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
       if @list.empty?
-        @list << String.new 
+        @list << "\r"
       end
       @scrollatrow = @height-2
       @content_rows = @list.length
@@ -92,8 +92,10 @@ module RubyCurses
         data = wrap_text data
         $log.debug "after wrap text for :#{data}"
         data = data.split(/\n/)
-        # we need a soft return
-        data.each {|line| @list << line+"\n"}
+        # we need a soft return so a space can be added when pushing down.
+        # commented off 2008-12-28 21:59 
+        #data.each {|line| @list << line+"\n"}
+        data.each {|line| @list << line}
         @list[-1][-1] = "\r"
       else
         $log.debug "normal append for #{data}"
@@ -152,7 +154,7 @@ module RubyCurses
     def handle_key ch
       @buffer = @list[@prow]
       if @buffer.nil? and @list.length == 0
-        @list << "\r" # changed space to newline so wrapping puts a line.
+        @list << "\n" # changed space to newline so wrapping puts a line.
         @buffer = @list[@prow]
       end
       return if @buffer.nil?
@@ -402,10 +404,12 @@ module RubyCurses
         lastchars = @buffer[lastspace+1..-1]
         @list[@prow] = @buffer[0..lastspace]
         $log.debug "PUSH_LAST:ls:#{lastspace},lw:#{lastchars},lc:#{lastchars[-1]},:#{@list[@prow]}$"
-        if lastchars[-1] == 10 or lastchars[-1] == 13 or @list[@prow+1].nil?
+        if lastchars[-1,1] == "\r" or @list[@prow+1].nil?
           # open a new line and keep the 10 at the end.
           append_row lastchars
         else
+          # check for soft tab \n - NO EVEN THIS LOGIC IS WRONG.
+          #if lastchars[-1,1] == "\n"
           if lastchars[-1,1] != ' ' and @list[@prow+1][0,1] !=' '
             @list[@prow+1].insert 0, lastchars + ' '
           else

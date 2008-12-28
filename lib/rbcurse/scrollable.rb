@@ -185,6 +185,9 @@ module Scrollable
           @form.window.printstring @row+r+1, @col+@left_margin-1, "%s" % status, acolor, @attr if @implements_selectable
           @form.window.printstring  @row+r+1, @col+@left_margin, "%-*s" % [width,content], acolor, @attr
           win.mvchgat(y=r+@row+1, x=@col+@left_margin, max=width, Ncurses::A_NORMAL, bgcolor, nil) unless bgcolor.nil?
+          dollar = "|"
+          dollar = "$" if list[@toprow+r][-1,1]=="\r"
+          @form.window.printstring  @row+r+1, @col+@width-1, dollar, acolor, @attr
 
         else
           # clear the displayed area
