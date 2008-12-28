@@ -76,10 +76,11 @@ if $0 == __FILE__
           print_footer true
           bind(:CHANGE){|e| $message.value = e.to_s+" CP:"+e.source.curpos.to_s }
         end
-        texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now. "
+        texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
         texta << " "
-        texta << " F1 to exit. or click second button"
+        texta << " F1 to exit. or click cancel button"
+        texta << " Or alt-c"
 
         @textview = TextView.new @form do
           name   "myView" 
@@ -277,6 +278,22 @@ if $0 == __FILE__
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
       filemenu.add(RubyCurses::MenuItem.new "Save",'S')
+      filemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
+      item.command(@form, texta) do |it, form, testa|  
+        $message.value = "Testing textarea"
+        #testa.focus()
+        str = "Hello there good friends and fellow rubyists. Here is a textarea that I am testing out with"
+        str << " some long data, to see how it acts, how the wrapping takes place. Sit back and enjoy the "
+        str << " bugs as they crop up."
+        str.each_char {|c| testa.putch(c)}
+        testa.repaint
+        testa.handle_key KEY_DOWN
+        testa.handle_key KEY_DOWN
+        testa.handle_key KEY_DOWN
+        testa.handle_key ?\C-a
+        str.each_char {|c| testa.putch(c)}
+        testa.repaint
+      end
       filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
       item.command() {throw(:close)}
       item = RubyCurses::CheckBoxMenuItem.new "CheckMe"

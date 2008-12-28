@@ -55,6 +55,7 @@ module RubyCurses
       @left_margin = 1
       @row = 0
       @col = 0
+      @curpos = 0
       @show_focus = false
       @list = []
       super
@@ -91,12 +92,12 @@ module RubyCurses
         $log.debug "wrapped append for #{data}"
         data = wrap_text data
         $log.debug "after wrap text for :#{data}"
-        data = data.split(/\n/)
+        data = data.split("\n")
         # we need a soft return so a space can be added when pushing down.
         # commented off 2008-12-28 21:59 
         #data.each {|line| @list << line+"\n"}
         data.each {|line| @list << line}
-        @list[-1][-1] = "\r"
+        @list[-1] << "\r"
       else
         $log.debug "normal append for #{data}"
         data << "\r" if data[-1,1] != "\r"
@@ -441,6 +442,7 @@ module RubyCurses
         end
     end
       def putch char
+        @buffer ||= @list[@prow]
         return -1 if !@editable #or @buffer.length >= @maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
