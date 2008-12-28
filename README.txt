@@ -1,6 +1,6 @@
 = rbcurse
 
-* http://totalrecall.blogspot.com
+* http://totalrecall.wordpress.com   << CORRECTED !!!
 
 * See latest changes on http://github.com/rkumar/rbcurse/tree/master/CHANGELOG
 
@@ -10,7 +10,7 @@
 * Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
   and http://www.benegal.org/files/screen/
 
-  Full screen sample: http://www.benegal.org/files/screen/nc_screenshot_122508.png
+  Full screen sample: http://www.benegal.org/files/screen/nc_ss_full.png
 
 == DESCRIPTION:
 
