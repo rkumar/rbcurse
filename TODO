@@ -38,7 +38,7 @@ Label should be able to take height and wrap.
 
 Field to also have change event.
 
-
+TextArea: recursive wrap till end of para, otherwise words go out of buffer area.
 
     +----------+
     |  TO ADD  |
@@ -46,7 +46,7 @@ Field to also have change event.
 
 - Listbox : status or detail, row m or n.
 - TextView and Area: current row, col. INS/OVW
-- TextArea : show a $ if newline at end of line.
+- TextArea : show a $ if newline at end of line. DONE
 - TextArea: choice of word wrap, col wrap or no wrap.
 
 alert, confirm boxes in single line. put in test2

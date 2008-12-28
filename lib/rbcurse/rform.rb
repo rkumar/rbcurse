@@ -397,28 +397,48 @@ module RubyCurses
       $log.debug " str[]:#{str[0..ix]}~ len #{len} ix #{ix} , buff #{buff}~"
       return str[0..ix]
     end
-    def push_last_word
+    # push the last word from given line to next
+    # I have modified it to push all words that are exceeding maxlen.
+    # This was needed for if i push 10 chars to next line, and the last word is less then the line will 
+    # exceed. So i must push as many words as exceed length.
+    def push_last_word lineno=@prow
       #lastspace = @buffer.rindex(" ")
-      lastspace = @buffer.rindex(/ \w/)
+      #lastspace = @list[lineno].rindex(/ \w/)
+      line = @list[lineno]
+      line = @list[lineno][0..@maxlen+1] if line.length > @maxlen
+      lastspace = line.rindex(/ \w/)
+      $log.debug " PUSH:2 #{lastspace},#{line},"
       if !lastspace.nil?
-        lastchars = @buffer[lastspace+1..-1]
-        @list[@prow] = @buffer[0..lastspace]
-        $log.debug "PUSH_LAST:ls:#{lastspace},lw:#{lastchars},lc:#{lastchars[-1]},:#{@list[@prow]}$"
-        if lastchars[-1,1] == "\r" or @list[@prow+1].nil?
+        lastchars = @list[lineno][lastspace+1..-1]
+        @list[lineno] = @list[lineno][0..lastspace]
+        $log.debug "PUSH_LAST:ls:#{lastspace},lw:#{lastchars},lc:#{lastchars[-1]},:#{@list[lineno]}$"
+        if lastchars[-1,1] == "\r" or @list[lineno+1].nil?
           # open a new line and keep the 10 at the end.
-          append_row lastchars
+          append_row lineno, lastchars
         else
           # check for soft tab \n - NO EVEN THIS LOGIC IS WRONG.
           #if lastchars[-1,1] == "\n"
-          if lastchars[-1,1] != ' ' and @list[@prow+1][0,1] !=' '
-            @list[@prow+1].insert 0, lastchars + ' '
+          if lastchars[-1,1] != ' ' and @list[lineno+1][0,1] !=' '
+            #@list[lineno+1].insert 0, lastchars + ' '
+            insert_wrap lineno+1, 0, lastchars + ' '
           else
-            @list[@prow+1].insert 0, lastchars 
+            #@list[lineno+1].insert 0, lastchars 
+            insert_wrap lineno+1, 0, lastchars 
           end
         end
         return lastchars, lastspace
       end
       return nil
+    end
+    ##
+    # this attempts to recursively insert into a row, seeing that any stuff exceeding is pushed down further.
+    # Yes, it should check for a para end and insert. Currently it could add to next para.
+    def insert_wrap lineno, pos, lastchars
+      @list[lineno].insert pos, lastchars 
+      len = @list[lineno].length 
+      if len > @maxlen
+          push_last_word lineno #- sometime i may push down 10 chars but the last word is less
+        end
     end
       def putch char
         return -1 if !@editable #or @buffer.length >= @maxlen
@@ -429,12 +449,13 @@ module RubyCurses
       $log.debug "putch : pr:#{@prow}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
       @buffer.insert(@curpos, char)
       @curpos += 1 
-      if @curpos >= @maxlen or @buffer.length >= @maxlen
-        lastchars, lastspace = push_last_word
+      $log.debug "putch INS: cp:#{@curpos}, max:#{@maxlen}, buf:(#{@buffer.length})"
+      if @curpos-1 > @maxlen or @buffer.length()-1 > @maxlen
+        lastchars, lastspace = push_last_word @prow
         #$log.debug "last sapce #{lastspace}, lastchars:#{lastchars},lc:#{lastchars[-1]}, #{@list[@prow]} "
         ## wrap on word XX If last char is 10 then insert line
         @buffer = @list[@prow]
-        if @curpos >= @maxlen  or @curpos >= @buffer.length
+        if @curpos-1 > @maxlen  or @curpos-1 > @buffer.length()-1
           ret = down 
           # keep the cursor in the same position in the string that was pushed down.
           @curpos = oldcurpos - lastspace  #lastchars.length # 0
@@ -448,9 +469,9 @@ module RubyCurses
       fire_handler :CHANGE, InputDataEvent.new(oldcurpos,@curpos, self, :INSERT, @prow, char)     #  2008-12-24 18:34 
       0
     end
-    def append_row chars=""
+    def append_row lineno=@prow, chars=""
         $log.debug "append row sapce:#{chars}."
-      @list.insert @prow+1, chars
+      @list.insert lineno+1, chars
     end
     ##
     # removes and returns last word in given line number, or nil if no whitespace
