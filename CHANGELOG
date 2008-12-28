@@ -1,3 +1,18 @@
+**2008-12-28 21:05**
+## Textarea wrapping bugs fixed ##
+
+I believe things are working now.
+ALso added footers to the text area and view. That could help me in debugging too.
+
+frmincr200812282104.tgz
+* * *
+**2008-12-28 01:25**
+## WIP in Table ##
+
+working
+
+frmincr200812280125.tgz
+* * *
 **2008-12-27 01:07**
 ## bug fixes in textarea cursor movement ##
 

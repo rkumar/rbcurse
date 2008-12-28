@@ -44,6 +44,11 @@ Field to also have change event.
     |  TO ADD  |
     +----------+
 
+- Listbox : status or detail, row m or n.
+- TextView and Area: current row, col. INS/OVW
+- TextArea : show a $ if newline at end of line.
+- TextArea: choice of word wrap, col wrap or no wrap.
+
 alert, confirm boxes in single line. put in test2
 
 Datamodel for TextArea/View so one can change display and do simple multiple columns

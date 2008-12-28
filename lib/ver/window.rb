@@ -142,11 +142,11 @@ module VER
     def getchar 
       while 1 
         ch = getch
-        $log.debug "window getchar() GOT: #{ch}" if ch != -1
+        #$log.debug "window getchar() GOT: #{ch}" if ch != -1
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
           if @stack.first == 27
-            $log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
+            #$log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
             case @stack.size
             when 1
               @stack.clear
@@ -171,11 +171,11 @@ module VER
           end
           # possible F1..F3 on xterm-color
           if ch == 79 or ch == 91
-            $log.debug " got 27, #{ch}, waiting for one more"
+            #$log.debug " got 27, #{ch}, waiting for one more"
             @stack << ch
             next
           end
-          $log.debug "stack SIZE  #{@stack.size}, #{@stack.inspect}, ch: #{ch}"
+          #$log.debug "stack SIZE  #{@stack.size}, #{@stack.inspect}, ch: #{ch}"
           if @stack == [27,79]
             # xterm-color
             case ch

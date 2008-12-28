@@ -127,9 +127,37 @@ module RubyCurses
       end
 
     end # module eventh
+
+    module ConfigSetup
+      # private
+      def variable_set var, val
+        var = "@#{var}"
+        instance_variable_set(var, val) 
+      end
+      def configure(*val , &block)
+        case val.size
+        when 1
+          return @config[val[0]]
+        when 2
+          @config[val[0]] = val[1]
+          variable_set(val[0], val[1]) 
+        end
+        instance_eval &block if block_given?
+      end
+      ## 
+      # returns param from hash. Unused and untested. 
+      def cget param
+        @config[param]
+      end
+      def config_setup aconfig
+        @config = aconfig
+        @config.each_pair { |k,v| variable_set(k,v) }
+      end
+    end # module config
   class Widget
     include DSL
     include EventHandler
+    include ConfigSetup
     dsl_accessor :text, :text_variable
     dsl_accessor :underline                        # offset of text to underline
     dsl_accessor :width                # desired width of text
@@ -163,24 +191,10 @@ module RubyCurses
       @attr = nil
       @handler = {}
       @event_args = {}
-      @config = aconfig
-      @config.each_pair { |k,v| variable_set(k,v) }
+      config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
-    end
-    ## got left out by mistake 2008-11-26 20:20 
-    def OLDbind event, *args, &blk
-      $log.debug "called widget #{id} #{self} BIND #{event} #{args} "
-      @handler[event] = blk
-      @event_args[event] = args
-    end
-    ## got left out by mistake 2008-11-26 20:20 
-    def OLDfire_handler event, object
-      blk = @handler[event]
-      return if blk.nil?
-      $log.debug "called widget firehander #{self}, o=#{object}, arg: #{@event_args[event]}"
-      blk.call object,  *@event_args[event]
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
@@ -191,7 +205,7 @@ module RubyCurses
       fire_handler :LEAVE, self
     end
     # private
-    def variable_set var, val
+    def Ovariable_set var, val
         var = "@#{var}"
         instance_variable_set(var, val) 
     end
@@ -200,7 +214,7 @@ module RubyCurses
     # $log.debug "widgte rowcol : #{@row+@row_offset}, #{@col+@col_offset}"
       return @row+@row_offset, @col+@col_offset
     end
-    def configure(*val , &block)
+    def Oconfigure(*val , &block)
       case val.size
       when 1
         return @config[val[0]]
@@ -212,7 +226,7 @@ module RubyCurses
     end
     ## 
     # returns param from hash. Unused and untested. 
-    def cget param
+    def Ocget param
       @config[param]
     end
     ## return the value of the widget.

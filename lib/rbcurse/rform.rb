@@ -47,6 +47,7 @@ module RubyCurses
     attr_reader :prow
     attr_reader :winrow
     dsl_accessor :auto_scroll # boolean, keeps view at end as data is inserted.
+    dsl_accessor :print_footer
 
     def initialize form, config={}, &block
       @focusable = true
@@ -125,6 +126,12 @@ module RubyCurses
     def print_title
       @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
+    # text_area print footer
+    def print_foot
+      @footer_attrib ||= Ncurses::A_REVERSE
+      footer = "R: #{@prow+1}, C: #{@curpos}, #{@list.length} lines  "
+      @form.window.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
+    end
     ### FOR scrollable ###
     def get_content
       @list
@@ -135,6 +142,7 @@ module RubyCurses
     ### FOR scrollable ###
     def repaint # textarea
       paint
+      print_foot if @print_footer
     end
     def getvalue
       @list
@@ -144,7 +152,7 @@ module RubyCurses
     def handle_key ch
       @buffer = @list[@prow]
       if @buffer.nil? and @list.length == 0
-        @list << ""
+        @list << "\r" # changed space to newline so wrapping puts a line.
         @buffer = @list[@prow]
       end
       return if @buffer.nil?
@@ -387,68 +395,50 @@ module RubyCurses
       $log.debug " str[]:#{str[0..ix]}~ len #{len} ix #{ix} , buff #{buff}~"
       return str[0..ix]
     end
-    def putch char
-      return -1 if !@editable #or @buffer.length >= @maxlen
+    def push_last_word
+      #lastspace = @buffer.rindex(" ")
+      lastspace = @buffer.rindex(/ \w/)
+      if !lastspace.nil?
+        lastchars = @buffer[lastspace+1..-1]
+        @list[@prow] = @buffer[0..lastspace]
+        $log.debug "PUSH_LAST:ls:#{lastspace},lw:#{lastchars},lc:#{lastchars[-1]},:#{@list[@prow]}$"
+        if lastchars[-1] == 10 or lastchars[-1] == 13 or @list[@prow+1].nil?
+          # open a new line and keep the 10 at the end.
+          append_row lastchars
+        else
+          if lastchars[-1,1] != ' ' and @list[@prow+1][0,1] !=' '
+            @list[@prow+1].insert 0, lastchars + ' '
+          else
+            @list[@prow+1].insert 0, lastchars 
+          end
+        end
+        return lastchars, lastspace
+      end
+      return nil
+    end
+      def putch char
+        return -1 if !@editable #or @buffer.length >= @maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
       end
       oldcurpos = @curpos
-      #$log.debug "putch : pr:#{@prow} bu:#{@buffer} cp:#{@curpos}"
-      if @curpos >= @maxlen
-        #$log.debug "INSIDE 1 putch : pr:#{@prow} bu:#{@buffer} CP:#{@curpos}"
-        ## wrap on word
-        lastchars = ""
-        lastspace = @buffer.rindex(" ")
-        if !lastspace.nil?
-          lastchars = @buffer[lastspace+1..-1]
-          @list[@prow] = @buffer[0..lastspace]
-        else
-          lastchars = ""
-        end
-        $log.debug "last sapce #{lastspace}, lastchars:#{lastchars}, #{@list[@prow]} "
-        ## wrap on word
-        ret = down 
-        #(append_row(lastchars) && down) if ret == -1
-        if ret == -1 # could not go down, no row
-          (append_row(lastchars) && down) #if ret == -1
-        else
-          @list[@prow].insert(0, lastchars)
-        end
-        @curpos = lastchars.length # 0
-        @form.col = @orig_col + @col_offset + @curpos
-        #addrowcol 1,0                  # positions the cursor down
-        set_form_row
-        @buffer = @list[@prow]
-        $log.debug "INSIDE putch2: pr:#{@prow} bu:#{@buffer} CP:#{@curpos}"
-      elsif @buffer.length >= @maxlen
-        $log.debug "INELSE 2 putch : pr:#{@prow} bu:#{@buffer} CP:#{@curpos}"
-        if @list[@prow+1].nil? or @list[@prow+1].length >= @maxlen
-          @list.insert @prow+1, ""
-          $log.debug "created new row #{@list.length}"
-        end
-        lastchars = ""
-        lastspace = @buffer.rindex(" ")
-        if !lastspace.nil?
-          lastchars = @buffer[lastspace..-1]
-          @list[@prow] = @buffer[0..lastspace-1]
-        end
-        #$log.debug "last sapce #{lastspace},#{@buffer.length},#{lastchars}, #{@list[@prow]} "
-        ## wrap on word XXX some strange behaviour stiill over here.
-        newbuff = @list[@prow+1]
-        newbuff.insert(0, lastchars) # @buffer[-1,1])
-        $log.debug "beforelast char to new row. buffer:#{@buffer}"
-        #@list[@prow] = @buffer[0..-2]
-        @buffer = @list[@prow]
-        #$log.debug "moved last char to new row. buffer:#{@buffer}"
-        #$log.debug "buffer len:#{@buffer.length} curpos #{@curpos} maxlen #{@maxlen} " 
-        # sometimme cursor is on a space and we;ve pushed it to next line
-        # so cursor > buffer length
-      end
-      $log.debug " inserting #{@buffer.length}, #{@curpos}, #{@buffer[-1]}, #{@buffer[-2]}, fc: #{@form.col}"
-      cursor_bounds_check
+      $log.debug "putch : pr:#{@prow}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
       @buffer.insert(@curpos, char)
       @curpos += 1 
-      #addcol 1 # 2008-12-27 00:25 
+      if @curpos >= @maxlen or @buffer.length >= @maxlen
+        lastchars, lastspace = push_last_word
+        #$log.debug "last sapce #{lastspace}, lastchars:#{lastchars},lc:#{lastchars[-1]}, #{@list[@prow]} "
+        ## wrap on word XX If last char is 10 then insert line
+        @buffer = @list[@prow]
+        if @curpos >= @maxlen  or @curpos >= @buffer.length
+          ret = down 
+          # keep the cursor in the same position in the string that was pushed down.
+          @curpos = oldcurpos - lastspace  #lastchars.length # 0
+        end
+      end
+      set_form_row
+      @buffer = @list[@prow]
+      set_form_col
       @modified = true
       #fire_handler :CHANGE, self  # 2008-12-09 14:56 
       fire_handler :CHANGE, InputDataEvent.new(oldcurpos,@curpos, self, :INSERT, @prow, char)     #  2008-12-24 18:34 
@@ -463,7 +453,7 @@ module RubyCurses
     def remove_last_word lineno
       @list[lineno].chomp!
       line=@list[lineno]
-      lastspace = line.rindex(/\s/)
+      lastspace = line.rindex(" ")
       if !lastspace.nil?
         lastchars = line[lastspace+1..-1]
         @list[lineno].slice!(lastspace..-1)
@@ -557,6 +547,7 @@ module RubyCurses
     attr_reader :toprow    # the toprow in the view (offsets are 0)
     attr_reader :prow     # the row on which cursor/focus is
     attr_reader :winrow   # the row in the viewport/window
+    dsl_accessor :print_footer
 
     def initialize form, config={}, &block
       @focusable = true
@@ -627,6 +618,11 @@ module RubyCurses
     def print_title
       @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
+    def print_foot
+      @footer_attrib ||= Ncurses::A_REVERSE
+      footer = "R: #{@prow+1}, C: #{@curpos}, #{@list.length} lines  "
+      @form.window.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
+    end
     ### FOR scrollable ###
     def get_content
       @list
@@ -635,8 +631,9 @@ module RubyCurses
       @form.window
     end
     ### FOR scrollable ###
-    def repaint # textarea
+    def repaint # textview
       paint
+      print_foot if @print_footer
     end
     def getvalue
       @list
@@ -646,7 +643,7 @@ module RubyCurses
     def handle_key ch
       @buffer = @list[@prow]
       if @buffer.nil? and @list.length == 0
-        @list << ""
+        @list << "\r"
         @buffer = @list[@prow]
       end
       return if @buffer.nil?

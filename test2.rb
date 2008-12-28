@@ -73,7 +73,8 @@ if $0 == __FILE__
           height 14
           title "Editable box"
           title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
-          bind(:CHANGE){|e| $message.value = e.to_s }
+          print_footer true
+          bind(:CHANGE){|e| $message.value = e.to_s+" CP:"+e.source.curpos.to_s }
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now. "
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
@@ -88,6 +89,8 @@ if $0 == __FILE__
           height 7
           title "README.txt"
           title_attrib 'bold'
+          print_footer true
+          footer_attrib 'bold'
         end
         content = File.open("README.txt","r").readlines
         @textview.set_content content

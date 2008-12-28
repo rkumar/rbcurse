@@ -46,15 +46,15 @@ Above may be created using DSL like syntax, or hashes.
    alignments
 
 == PROBLEMS, ISSUES
-TextArea not bug free. Some situations wrapping errors. Also, occ cursor
-postiion in buffer not matching displayed cursor.
+TextArea not bug free. Some situations wrapping errors. 
 
 == Terminal related issues.
 
 * Some terminals may not show underlines (e.g screen).
 
 * Some terminals (xterm-color) do not process Function keys, avoid declaring F1 etc if
-  unsure of client terminals. 
+  unsure of client terminals. I have put in fixes for xterm-color F1 and
+  backtab.
 
 * To use ALT/META keys on a Mac OS X, in Terminal preferences, under
   Keyboard, select
