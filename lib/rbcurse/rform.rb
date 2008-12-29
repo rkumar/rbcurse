@@ -74,10 +74,12 @@ module RubyCurses
       @maxlen ||= @width-2
     end
     def rowcol
-      $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
+    #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
       return @row+@row_offset+@winrow, @col+@col_offset
     end
-    def insert off0, *data
+    ##
+    # this avoids wrapping. Better to use the <<.
+    def Oinsert off0, *data
       @list.insert off0, *data
       # fire_handler :CHANGE, self  # 2008-12-09 14:56  NOT SURE
     end
@@ -87,6 +89,27 @@ module RubyCurses
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
     end
+    ## 
+    # trying to wrap and insert
+    def insert off0, data
+      #@list.insert off0, *data
+      if data.length > @maxlen
+        data = wrap_text data
+        $log.debug "after wrap text done :#{data}"
+        data = data.split("\n")
+        data[-1] << "\r"
+      else
+        data << "\r" if data[-1,1] != "\r"
+      end
+      data.each do |row|
+        @list.insert off0, row
+        off0 += 1
+      end
+      $log.debug " AFTER INSERT: #{@list}"
+    end
+    ##
+    # wraps line sent in if longer than maxlen
+    # Typically a line is sent in. We wrap and put a hard return at end.
     def << data
       if data.length > @maxlen
         $log.debug "wrapped append for #{data}"
@@ -105,6 +128,23 @@ module RubyCurses
       end
       goto_end if @auto_scroll # to test out.
       self
+    end
+    def wrap_para line
+      l=[]
+      while true
+        if @list[line].nil? or @list[line]=="" or @list[line]==13 #"\r"
+          break
+        end
+        $log.debug "lastchar #{@list[line][-1]}, appending: #{@list[line]}]"
+        t =  @list[line]
+        l << t.strip
+        @list.delete_at line
+        break if t[-1]==13 # "\r"
+    #    line += 1
+      end
+      str=l.join(" ")
+      $log.debug " sending insert : #{str}."
+      insert line, str
     end
     ##
     # private
@@ -171,48 +211,25 @@ module RubyCurses
       case ch
       when ?\C-n
         scroll_forward
-        @form.row = @row + 1 + @winrow
       when ?\C-p
         scroll_backward
-        @form.row = @row + 1 + @winrow
-        $log.debug "KEY minus : cp #{@curpos} #{@form.row} "
       when ?\C-[
-        goto_start #cursor_start
+        goto_start #cursor_start of buffer
       when ?\C-]
-        goto_end # cursor_end
+        goto_end # cursor_end of buffer
       when KEY_UP
         #select_prev_row
         ret = up
-        #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
-        @form.row = @row + 1 + @winrow
       when KEY_DOWN
         ret = down
-        #addrowcol 1,0 if ret != -1   or @winrow != @oldwinrow                  # positions the cursor down
-        @form.row = @row + 1 + @winrow
-
-        #$log.debug "KEYDOWN : cp #{@curpos} #{@buffer.length} "
-        # select_next_row
       when KEY_ENTER, 10, 13
-        return -1 unless @editable
-        # insert a blank row and append rest of this line to cursor
-        $log.debug "ENTER PRESSED at  #{@curpos}, on row #{@prow}"
-        @delete_buffer = (delete_eol || "")
-        @list[@prow] << "\r"
-        $log.debug "DELETE BUFFER #{@delete_buffer}" 
-        @list.insert @prow+1, @delete_buffer 
-        @curpos = 0
-        down
-        @form.col = @orig_col + @col_offset
-        #addrowcol 1,0
-        @form.row = @row + 1 + @winrow
-        #fire_handler :CHANGE, self  # 2008-12-09 14:56 
-        fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @prow, @delete_buffer)     #  2008-12-24 18:34 
+        insert_break
       when KEY_LEFT
         cursor_backward
       when KEY_RIGHT
         cursor_forward
       when KEY_BACKSPACE, 127
-        if @editable
+        if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
@@ -232,13 +249,9 @@ module RubyCurses
           end
         end
       when ?\C-u
-        # added 2008-11-27 12:43  paste delete buffer into insertion point
-        @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
-        #fire_handler :CHANGE, self  # 2008-12-09 14:56 
-    #index0, index1, source, type, row, text
-        fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @prow, @delete_buffer)     #  2008-12-24 18:34 
+        undo_delete
       when ?\C-a
-        set_form_col 0
+        cursor_bol
       when ?\C-e
         cursor_eol
         #set_form_col @buffer.length
@@ -250,6 +263,27 @@ module RubyCurses
       post_key
       set_form_row
       set_form_col  # testing 2008-12-26 19:37 
+    end
+    def undo_delete
+        # added 2008-11-27 12:43  paste delete buffer into insertion point
+        @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
+        fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @prow, @delete_buffer)     #  2008-12-24 18:34 
+    end
+    def insert_break
+      return -1 unless @editable
+      # insert a blank row and append rest of this line to cursor
+      $log.debug "ENTER PRESSED at  #{@curpos}, on row #{@prow}"
+      @delete_buffer = (delete_eol || "")
+      @list[@prow] << "\r"
+      $log.debug "DELETE BUFFER #{@delete_buffer}" 
+      @list.insert @prow+1, @delete_buffer 
+      @curpos = 0
+      down
+      @form.col = @orig_col + @col_offset
+      #addrowcol 1,0
+      @form.row = @row + 1 + @winrow
+      #fire_handler :CHANGE, self  # 2008-12-09 14:56 
+      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @prow, @delete_buffer)     #  2008-12-24 18:34 
     end
     # puts cursor on correct row.
     def set_form_row
@@ -267,7 +301,7 @@ module RubyCurses
       @curpos = max if @curpos > max # check 2008-12-27 00:02 
     end
     def buffer_len
-      @list[@prow].chomp().length  
+      @list[@prow].nil? ? 0 : @list[@prow].chomp().length  
     end
     def do_current_row # :yields current row
       yield @list[@prow]
@@ -286,7 +320,7 @@ module RubyCurses
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @prow, @delete_buffer)     #  2008-12-24 18:34 
       return @delete_buffer
     end
-    def cursor_forward
+    def cursor_forward num=1
       $log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
       #if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
       if @curpos < buffer_len()
@@ -325,13 +359,16 @@ module RubyCurses
     #fire_handler :CHANGE, self  # 2008-12-09 14:56 
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @prow, @delete_buffer)     #  2008-12-24 18:34 
   end
-    def delete_curr_char
+    def delete_curr_char num=1
       return -1 unless @editable
-      delete_at
-      set_modified 
+      num.times do
+        delete_at
+        set_modified 
+      end
     end
-    def delete_prev_char
+    def delete_prev_char num=1
       return -1 if !@editable 
+      num.times do
       if @curpos <= 0
         join_to_prev_line
         return
@@ -340,6 +377,7 @@ module RubyCurses
       delete_at
       set_modified 
       addcol -1
+      end
     end
     # private
     # when backspace pressed in position zero if the previous line is filled we may have to bring 
@@ -441,12 +479,15 @@ module RubyCurses
           push_last_word lineno #- sometime i may push down 10 chars but the last word is less
         end
     end
+    ## 
+    # add one char. careful, i shoved a string in yesterday.
       def putch char
         @buffer ||= @list[@prow]
         return -1 if !@editable #or @buffer.length >= @maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
       end
+      raise "putch expects only one char" if char.length != 1
       oldcurpos = @curpos
       $log.debug "putch : pr:#{@prow}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
       @buffer.insert(@curpos, char)
@@ -540,6 +581,7 @@ module RubyCurses
       delete_line(@prow+1) if next_line().length==0
       fire_handler :CHANGE, InputDataEvent.new(oldcurpos,oldcurpos+can_move, self, :INSERT, oldprow, carry_up)     #  2008-12-24 18:34 
     end
+    ## returns next line, does not move to it,
     def next_line
       @list[@prow+1]
     end
@@ -556,6 +598,9 @@ module RubyCurses
     def cursor_eol
       $log.error "ERROR !!! bufferlen gt maxlen #{@buffer.length}, #{@maxlen}" if @buffer.length > @maxlen
       set_form_col current_line().chomp().length()-1
+    end
+    def cursor_bol
+      set_form_col 0
     end
   end # class textarea
   ##
@@ -596,6 +641,10 @@ module RubyCurses
       print_borders
       @maxlen ||= @width-2
     end
+    ## 
+    # send in a list
+    # e.g.         set_content File.open("README.txt","r").readlines
+    #
     def set_content list
       @list = list
     end
@@ -617,7 +666,7 @@ module RubyCurses
       return nil
     end
     def rowcol
-      $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
+      #$log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
       return @row+@row_offset+@winrow, @col+@col_offset
     end
     def wrap_text(txt, col = @maxlen)
@@ -687,9 +736,9 @@ module RubyCurses
       when ?\C-p
         scroll_backward
       when ?\C-[
-        goto_start #cursor_start
+        goto_start #start of buffer # cursor_start
       when ?\C-]
-        goto_end # cursor_end
+        goto_end # end / bottom cursor_end
       when KEY_UP
         #select_prev_row
         ret = up

@@ -285,13 +285,24 @@ if $0 == __FILE__
         str = "Hello there good friends and fellow rubyists. Here is a textarea that I am testing out with"
         str << " some long data, to see how it acts, how the wrapping takes place. Sit back and enjoy the "
         str << " bugs as they crop up."
+        testa.goto_start
+        testa.cursor_bol
         str.each_char {|c| testa.putch(c)}
         testa.repaint
-        testa.handle_key KEY_DOWN
-        testa.handle_key KEY_DOWN
-        testa.handle_key KEY_DOWN
-        testa.handle_key ?\C-a
+        testa.handle_key KEY_DOWN # down
+        testa.handle_key KEY_DOWN # down
+        testa.handle_key KEY_DOWN # down
+        testa.handle_key ?\C-a  # bol
+        #testa.cursor_bol
         str.each_char {|c| testa.putch(c)}
+        $message.value = "Wrapping textarea"
+        testa.repaint
+      end
+      filemenu.add(item = RubyCurses::MenuItem.new("Wrap",'W'))
+      item.command(@form, texta) do |it, form, testa|  
+        testa.goto_start
+        testa.handle_key ?\C-a  # bol
+        testa.wrap_para 0
         testa.repaint
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))

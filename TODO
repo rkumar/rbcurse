@@ -17,8 +17,10 @@ MUST DO:
 Some bugs in TextArea wrapping.
 When a word is carried dowm, it shold gt carried back up too if i pt a space inside.
 
-add_observer screwed up when i used ENTER to popup a list, and ENTER fired back !
-Went into a loop. Remove it. its dead weight. Featuritis.
+- can't call down up etc directly, since post_key still needs to be called. have to call handle_key KEY_UP etc.
+
+
+add_observer - remove it. Featuritis.
 
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT

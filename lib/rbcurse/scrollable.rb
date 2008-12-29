@@ -39,8 +39,9 @@ module Scrollable
     @pcol = 0 if @pcol < 0
   end
   # not that saving content_rows is buggy since we add rows.
-  def down
+  def down num=1
     #     $log.debug "inside down"
+    num.times do 
     if @prow >= get_content().length-1
       #Ncurses.beep
       @message = "No more rows"
@@ -52,8 +53,10 @@ module Scrollable
       @toprow += 1    # scroll down a row
     end
     @prow += 1        # incr pad row
+    end
   end
-  def up # UP
+  def up num=1  # UP
+    num.times do
     if @prow <= 0
       #Ncurses.beep
       @message = "This is the first row"
@@ -68,6 +71,7 @@ module Scrollable
       @toprow -= 1 if @toprow > 0
     end
     @toprow = @prow if @prow < @toprow
+    end
   end
   def scroll_forward
     if @toprow + @scrollatrow+1 >= get_content().length
@@ -192,6 +196,8 @@ module Scrollable
         else
           # clear the displayed area
           @form.window.printstring @row+r+1, @col+@left_margin, " "*(@width-(@left_margin+1)), acolor
+          dollar = "|"
+          @form.window.printstring  @row+r+1, @col+@width-1, dollar, acolor, @attr
         end
       }
       show_focus if @show_focus
