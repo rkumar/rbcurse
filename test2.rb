@@ -9,6 +9,8 @@ require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rform'
 require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
+#require 'lib/rbcurse/qdfilechooser'
+require 'qdfilechooser'
 if $0 == __FILE__
   include RubyCurses
 
@@ -87,7 +89,7 @@ if $0 == __FILE__
           row  16 
           col  52 
           width 40
-          height 7
+          height 10
           title "README.txt"
           title_attrib 'bold'
           print_footer true
@@ -273,7 +275,21 @@ if $0 == __FILE__
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
-      item.command(@form) {|it, form|  $message.value = "Open called on menu bar"; }
+      item.command(@form) {|it, form|  $message.value = "Open called on menu bar"; 
+        fchooser = QDFileChooser.new
+        option = fchooser.show_open_dialog
+        $message.value = "File Selection #{option}, #{fchooser.get_selected_file}"
+        if option == :OK
+          filesel = fchooser.get_selected_file
+          if !filesel.nil?
+            texta.remove_all
+            content = File.open(filesel,"r").readlines
+            content.each do |line|
+              texta << line
+            end
+          end
+        end
+      }
 
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
@@ -286,7 +302,8 @@ if $0 == __FILE__
         str << " some long data, to see how it acts, how the wrapping takes place. Sit back and enjoy the "
         str << " bugs as they crop up."
         testa.goto_start
-        testa.cursor_bol
+        #testa.cursor_bol
+        testa.handle_key ?\C-a  # bol
         str.each_char {|c| testa.putch(c)}
         testa.repaint
         testa.handle_key KEY_DOWN # down
@@ -300,9 +317,9 @@ if $0 == __FILE__
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Wrap",'W'))
       item.command(@form, texta) do |it, form, testa|  
-        testa.goto_start
+        #testa.goto_start
         testa.handle_key ?\C-a  # bol
-        testa.wrap_para 0
+        testa.wrap_para
         testa.repaint
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))

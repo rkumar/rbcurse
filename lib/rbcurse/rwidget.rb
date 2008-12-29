@@ -731,6 +731,10 @@ module RubyCurses
         when "field_list"
           height = @field_list.length
           layout(10+height, 60, 5, 20)
+        when "override"
+          $log.debug " override: #{@height},#{@width}, #{@top}, #{@left} "
+          layout(@height,@width, @top, @left) 
+          $log.debug " override: #{@layout.inspect}"
         else
           height = @form && @form.widgets.length ## quick fix. FIXME
           height ||= 0
@@ -776,10 +780,10 @@ module RubyCurses
       return @listbox.getvalue if !@listbox.nil?
     end
     def create_buttons
-      case @type.to_s.downcase
+      case @button_type.to_s.downcase
       when "ok"
         make_buttons ["&OK"]
-      when "ok_cancel", "input", "list", "field_list"
+      when "ok_cancel" #, "input", "list", "field_list"
         make_buttons %w[&OK &Cancel]
       when "yes_no"
         make_buttons %w[&Yes &No]
@@ -788,7 +792,7 @@ module RubyCurses
       when "custom"
         make_buttons @buttons
       else
-        $log.debug "No type passed for creating messagebox. Using default"
+        $log.debug "No type passed for creating messagebox. Using default (OK)"
         make_buttons ["&OK"]
       end
     end
@@ -875,6 +879,7 @@ module RubyCurses
     def print_borders
       width = @layout[:width]
       height = @layout[:height]
+          $log.debug " PB override: #{height},#{width}, #{@layout.inspect}  "
       @window.print_border_mb 1,2, height, width, $normalcolor, A_REVERSE
 =begin
       start = 2
@@ -1051,6 +1056,7 @@ module RubyCurses
       @buffer.insert(@curpos, char)
       @curpos += 1 if @curpos < @maxlen
       @modified = true
+      $log.debug " FIELD FIRING CHANGE: #{char}"
       fire_handler :CHANGE, self    # 2008-12-09 14:51 
       0
     end
@@ -1794,7 +1800,7 @@ module RubyCurses
       @win = @form.window
  #     @list = @list_variable.value unless @list_variable.nil?
       init_scrollable
-      print_borders
+      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
@@ -1854,6 +1860,7 @@ module RubyCurses
     end
     ### END FOR scrollable ###
     def repaint
+      print_borders
       paint
     end
     # override widgets text

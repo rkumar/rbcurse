@@ -40,15 +40,14 @@ Label should be able to take height and wrap.
 
 Field to also have change event.
 
-TextArea: recursive wrap till end of para, otherwise words go out of buffer area.
+With changes to Listbox (model) now list_variable seems useless.
 
     +----------+
     |  TO ADD  |
     +----------+
 
 - Listbox : status or detail, row m or n.
-- TextView and Area: current row, col. INS/OVW
-- TextArea : show a $ if newline at end of line. DONE
+- Text Area: INS/OVW
 - TextArea: choice of word wrap, col wrap or no wrap.
 
 alert, confirm boxes in single line. put in test2
@@ -61,12 +60,14 @@ RowRenderer ?
    FIELD - auto_skip (after reaching end), 
 
 text components: get set add keymap, get action for keystroke etc
-or will this make each widget heavy?
-
+or will this make each widget heavy? TextArea/View may require for attaching actions/movement etc
 
 RECENTLY DONE:
 --------------
 
+- TextView and Area: current row, col. INS/OVW
+- TextArea : show a $ if newline at end of line. DONE
+TextArea: recursive wrap till end of para, otherwise words go out of buffer area. 2008-12-28 
 cursor position in button, cb and radio - 2008-12-25 19:21 
 Used ACS_ codes to make better boxes, wonder why I didn't do that before. Was going the lynx way.
 

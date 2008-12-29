@@ -464,6 +464,7 @@ module RubyCurses
           @selected = true
             $log.debug " mb insdie ENTER :  #{current_menu}" 
             current_menu.handle_key ch
+            #break; ## 2008-12-29 18:00 
         when KEY_UP
           $log.debug " mb insdie keyUPP :  #{ch}" 
           current_menu.handle_key ch

@@ -89,13 +89,15 @@ module RubyCurses
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
     end
+    def remove_all
+      @list = []
+    end
     ## 
     # trying to wrap and insert
     def insert off0, data
-      #@list.insert off0, *data
       if data.length > @maxlen
         data = wrap_text data
-        $log.debug "after wrap text done :#{data}"
+      #  $log.debug "after wrap text done :#{data}"
         data = data.split("\n")
         data[-1] << "\r"
       else
@@ -105,7 +107,7 @@ module RubyCurses
         @list.insert off0, row
         off0 += 1
       end
-      $log.debug " AFTER INSERT: #{@list}"
+      #$log.debug " AFTER INSERT: #{@list}"
     end
     ##
     # wraps line sent in if longer than maxlen
@@ -129,7 +131,8 @@ module RubyCurses
       goto_end if @auto_scroll # to test out.
       self
     end
-    def wrap_para line
+    def wrap_para line=@prow
+      line ||= 0
       l=[]
       while true
         if @list[line].nil? or @list[line]=="" or @list[line]==13 #"\r"

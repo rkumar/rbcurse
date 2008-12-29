@@ -27,7 +27,7 @@ if $0 == __FILE__
 
 
     catch(:close) do
-      choice = ARGV[0].to_i || 4
+      choice = ARGV[0] && ARGV[0].to_i || 5
       $log.debug "START  MESSAGE BOX TEST #{ARGV[0]}. choice==#{choice} ---------"
       # need to pass a form, not window.
       case choice
@@ -36,6 +36,7 @@ if $0 == __FILE__
         title "Enter your name"
         message "Enter your name"
        type :list
+       button_type :ok_cancel
        list %w[john tim lee wong rahul edward why chad andy]
        list_select_mode 'multiple'
        default_values %w[ lee why ]
@@ -47,6 +48,7 @@ if $0 == __FILE__
         title "Color selector"
         message "Select a color"
         type :custom
+        button_type :custom
         buttons %w[&red &green &blue &yellow]
         underlines [0,0,0,0]
         default_button 0
@@ -56,6 +58,7 @@ if $0 == __FILE__
         title "Enter your name"
         message "Enter your name"
         type :input
+        button_type :ok_cancel
         default_value "rahul"
       end
       when 4:
@@ -157,11 +160,52 @@ if $0 == __FILE__
   #     default_value "rahul"
        #type :field_list
        #field_list field_list
+        button_type :ok
        default_button 0
       end
-    end 
+      when 5:
+        @form = RubyCurses::Form.new nil
+        label = RubyCurses::Label.new @form, {'text' => 'File', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'F'}
+        field = RubyCurses::Field.new @form do
+          name   "file" 
+          row  3 
+          col  10
+          display_length  40
+          set_label label
+        end
+        flist = Dir.glob("*.*")
+        listb = RubyCurses::Listbox.new @form do
+          name   "mylist" 
+          row  5 
+          col  10 
+          width 40
+          height 10
+          list flist
+          title "File list"
+          title_attrib 'bold'
+        end
+        #listb.list.bind(:ENTER_ROW) { field.set_buffer listb.selected_item }
+        field.bind(:CHANGE) do |f|   
+          flist = Dir.glob(f.getvalue+"*")
+          l = listb.list
+          l.remove_all
+          l.insert 0, *flist
+        end
+        @mb = RubyCurses::MessageBox.new @form do
+          title "Sample File Selector"
+          type :override
+          height 20
+          width 60
+          top 5
+          left 20
+          default_button 0
+          button_type :ok_cancel
+
+        end
+        $log.debug "MBOX :selected #{listb.selected_item}"
+      end 
       
-     $log.debug "MBOX :selected index #{@mb.selected_index} "
+     $log.debug "MBOX :selected button index #{@mb.selected_index} "
      $log.debug "MBOX :input val #{@mb.input_value} "
 #     $log.debug "row : #{@form.row} "
 #     $log.debug "col : #{@form.col} "
