@@ -1435,7 +1435,7 @@ module RubyCurses
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         # loop added for labels that are wrapped.
         # TODO clear separately since value can change in status like labels
-        0.upto(_height) { |i| 
+        0.upto(_height-1) { |i| 
           @form.window.printstring r+i, c, " " * len , acolor,@attr
         }
         lablist.each_with_index do |_value, ix|

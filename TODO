@@ -62,6 +62,8 @@ RowRenderer ?
 text components: get set add keymap, get action for keystroke etc
 or will this make each widget heavy? TextArea/View may require for attaching actions/movement etc
 
+Textarea del does not delete newline, although C-k does look into that.
+
 RECENTLY DONE:
 --------------
 

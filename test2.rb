@@ -332,7 +332,7 @@ if $0 == __FILE__
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
       item.command() {
-        throw(:menubarclose);
+        #throw(:menubarclose);
         throw(:close)
       }
       item = RubyCurses::CheckBoxMenuItem.new "CheckMe"
@@ -390,6 +390,10 @@ if $0 == __FILE__
       @mb.add(menu=RubyCurses::Menu.new("Others"))
       #item=RubyCurses::MenuItem.new "Save","S"
       item = RubyCurses::MenuItem.new "Options"
+      item.command() do |it|  
+        require 'testtabp'
+        TestTabbedPane.new
+      end
       menu.add(item)
       item = RubyCurses::MenuItem.new "Config"
       menu.add(item)

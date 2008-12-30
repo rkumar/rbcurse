@@ -9,23 +9,17 @@ require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rtabbedpane'
 
-if $0 == __FILE__
-  # Initialize curses
-  begin
-    # XXX update with new color and kb
-    VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("view.log")
-    $log.level = Logger::DEBUG
-
-    @window = VER::Window.root_window
-
-
-    catch(:close) do
-      $log.debug "START  ---------"
-      # need to pass a form, not window.
-      choice = 1
-      case choice
-      when 1:
+class TestTabbedPane
+  def initialize
+    @layout = { :height => 12, :width => 50, :top => 5, :left => 10 }
+    @window = VER::Window.new(@layout)
+    begin
+      main
+    ensure
+      @window.destroy unless @window.nil?
+    end
+  end
+  def main
       @tp = RubyCurses::TabbedPane.new @window do
         height 12
         width  50
@@ -90,16 +84,18 @@ if $0 == __FILE__
       end
       @tp.show
       @tp.handle_keys
-    when 2:
-    end
-      #     VER::Keyboard.focus = tp
-    end
+  end
+end
+if $0 == __FILE__
+  # Initialize curses
+  begin
+    # XXX update with new color and kb
+    VER::start_ncurses  # this is initializing colors via ColorMap.setup
+    $log = Logger.new("view.log")
+    $log.level = Logger::DEBUG
+    n = TestTabbedPane.new
   rescue => ex
   ensure
-    @window.destroy unless @window.nil?
-#   @panel = @window.panel unless @window.nil?
-#   Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-#   @window.delwin if !@window.nil?
     VER::stop_ncurses
     p ex if ex
     p(ex.backtrace.join("\n")) if ex
