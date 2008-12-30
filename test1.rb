@@ -60,7 +60,8 @@ if $0 == __FILE__
         config["input_config"]["valid_regex"]=/[A-Z][a-z]*/
       @mb = RubyCurses::MessageBox.new nil, config do
         title "Enter your name"
-        message "Enter your name"
+        #message "Enter your first name. You are not permitted to enter x z or q and must enter a capital first"
+        message "Enter your first name. "
         type :input
         button_type :ok_cancel
         default_value "Rahul"

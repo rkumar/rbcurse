@@ -721,6 +721,7 @@ module RubyCurses
   #
   class MessageBox
     include DSL
+    include RubyCurses::Utils
     dsl_accessor :title
     dsl_accessor :message
     dsl_accessor :type               # :ok, :ok_cancel :yes_no :yes_no_cancel :custom
@@ -732,6 +733,11 @@ module RubyCurses
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
     dsl_accessor :list_select_mode  # true or false allow multiple selection
+    dsl_accessor :button_type      # ok, ok_cancel, yes_no
+    dsl_accessor :default_value     # 
+
+    dsl_accessor :message_height
+
 
     def initialize form=nil, aconfig={}, &block
       @form = form
@@ -924,6 +930,13 @@ module RubyCurses
     end
     def print_message message=@message, row=nil
       @message_row = @message_col = 2
+      display_length = @layout[:width]-8
+      # XXX this needs to go up and decide height of window
+      if @message_height.nil?
+        @message_height = (message.length/display_length)+1
+        $log.debug " print_message: mh:#{@message_height}"
+      end
+      @message_height ||= 1
       width = @layout[:width]
       return if message.nil?
       case @type.to_s
@@ -940,11 +953,13 @@ module RubyCurses
       @message_row = row
       #@window.printstring( row, @message_col , message, color=$reversecolor)
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
-      @window.printstring( row, @message_col , message, color=$reversecolor)
+      #@window.printstring( row, @message_col , message, color=$reversecolor)
+      message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
+
     end
     def print_input
       #return if @type.to_s != "input"
-      r = @message_row + 1
+      r = @message_row + @message_height + 1
       c = @message_col
       defaultvalue = @default_value || ""
       input_config = @config["input_config"] || {}
@@ -1395,10 +1410,8 @@ module RubyCurses
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
-        $log.debug " LABEL 1 #{value}"
         lablist = []
         if @height && @height > 1
-          $log.debug " inside height"
           lablist = wrap_text(value, @display_length).split("\n")
         else
           # ensure we do not exceed
@@ -1414,11 +1427,9 @@ module RubyCurses
         #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
         firstrow = r
         _height = @height || 1
-        $log.debug " LABEL #{lablist}"
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         lablist.each_with_index do |_value, ix|
           break if ix >= _height
-          $log.debug " -- LABEL #{r}: #{_value}"
           @form.window.printstring r, c, " " * len , acolor,@attr
           if @justify.to_sym == :center
             padding = (@display_length - _value.length)/2
