@@ -1,5 +1,5 @@
 =begin
-  * Name: dialogs
+  * Name: dialogs so user can do basic stuff in one line.
   * Description: 
   * Author: rkumar
   

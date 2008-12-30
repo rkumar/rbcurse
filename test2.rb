@@ -46,7 +46,7 @@ if $0 == __FILE__
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 80, 'color' => 'cyan'}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
 
       $results = Variable.new
       $results.value = "A variable"
@@ -299,7 +299,7 @@ if $0 == __FILE__
       item.command() do |it|  
         result = get_string("Please enter file to save in")
         $message.value = "file: #{result}"
-        #throw(:menuclose)
+        throw(:menubarclose)
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
       item.command(@form, texta) do |it, form, testa|  
@@ -320,6 +320,7 @@ if $0 == __FILE__
         str.each_char {|c| testa.putch(c)}
         $message.value = "Wrapping textarea"
         testa.repaint
+        throw(:menubarclose)
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Wrap",'W'))
       item.command(@form, texta) do |it, form, testa|  
@@ -327,9 +328,13 @@ if $0 == __FILE__
         testa.handle_key ?\C-a  # bol
         testa.wrap_para
         testa.repaint
+        throw(:menubarclose)
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
-      item.command() {throw(:close)}
+      item.command() {
+        throw(:menubarclose);
+        throw(:close)
+      }
       item = RubyCurses::CheckBoxMenuItem.new "CheckMe"
 #     item.onvalue="On"
 #     item.offvalue="Off"

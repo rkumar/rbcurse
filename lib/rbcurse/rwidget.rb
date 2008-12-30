@@ -68,13 +68,24 @@ module RubyCurses
   include ColorMap
     class FieldValidationException < RuntimeError
     end
-    def get_color default=$datacolor
-      if @bgcolor.is_a? String and @color.is_a? String
-        acolor = ColorMap.get_color(@color, @bgcolor)
-      else
-        acolor = default
+    module Utils
+      ## 
+      # wraps text given max length, puts newlines in it.
+      # it does not take into account existing newlines
+      # Some classes have @maxlen or display_length which may be passed as the second parameter
+      def wrap_text(txt, max )
+        txt.gsub(/(.{1,#{max}})( +|$\n?)|(.{1,#{max}})/,
+                 "\\1\\3\n") 
       end
-      return acolor
+
+      def get_color default=$datacolor
+        if @bgcolor.is_a? String and @color.is_a? String
+          acolor = ColorMap.get_color(@color, @bgcolor)
+        else
+          acolor = default
+        end
+        return acolor
+      end
     end
 
     module EventHandler
@@ -167,6 +178,7 @@ module RubyCurses
     include DSL
     include EventHandler
     include ConfigSetup
+    include RubyCurses::Utils
     dsl_accessor :text, :text_variable
     dsl_accessor :underline                        # offset of text to underline
     dsl_accessor :width                # desired width of text
@@ -926,6 +938,8 @@ module RubyCurses
         @message_col = (width-message.length)/2
       end
       @message_row = row
+      #@window.printstring( row, @message_col , message, color=$reversecolor)
+      # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
       @window.printstring( row, @message_col , message, color=$reversecolor)
     end
     def print_input
@@ -1328,12 +1342,16 @@ module RubyCurses
       end
     end
   end
+  ##
+  # the preferred way of printing text on screen, esp if you want to modify it at run time.
+  # Use display_length to ensure no spillage.
   class Label < Widget
     #dsl_accessor :label_for   # related field or buddy
     dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
     # justify required a display length, esp if center.
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
-    dsl_accessor :display_length     # 
+    dsl_accessor :display_length     #  please give this to ensure the we only print this much
+    dsl_accessor :height    # if you want a multiline label.
 
     def initialize form, config={}, &block
   
@@ -1377,25 +1395,41 @@ module RubyCurses
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
-        # ensure we do not exceed
-        if !@display_length.nil?
-          if value.length > @display_length
-            value = value[0..@display_length-1]
+        $log.debug " LABEL 1 #{value}"
+        lablist = []
+        if @height && @height > 1
+          $log.debug " inside height"
+          lablist = wrap_text(value, @display_length).split("\n")
+        else
+          # ensure we do not exceed
+          if !@display_length.nil?
+            if value.length > @display_length
+              value = value[0..@display_length-1]
+            end
           end
+          lablist << value
         end
         len = @display_length || value.length
         acolor = get_color $datacolor
         #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
+        firstrow = r
+        _height = @height || 1
+        $log.debug " LABEL #{lablist}"
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
-        @form.window.printstring r, c, " " * len , acolor,@attr
-        if @justify.to_sym == :center
-          padding = (@display_length - value.length)/2
-          value = " "*padding + value + " "*padding # so its cleared if we change it midway
+        lablist.each_with_index do |_value, ix|
+          break if ix >= _height
+          $log.debug " -- LABEL #{r}: #{_value}"
+          @form.window.printstring r, c, " " * len , acolor,@attr
+          if @justify.to_sym == :center
+            padding = (@display_length - _value.length)/2
+            _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
+          end
+          @form.window.printstring r, c, str % [len, _value], acolor,@attr
+          r += 1
         end
-        @form.window.printstring r, c, str % [len, value], acolor,@attr
         if !@mnemonic.nil?
           ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          @form.window.mvchgat(y=r, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
+          @form.window.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
         end
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
     end
