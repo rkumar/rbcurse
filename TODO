@@ -29,8 +29,6 @@ add_observer - remove it. Featuritis.
 
 sizing of messageboxes
 
-LABEL to take ampersand also.
-Label should be able to take height and wrap.
 
 - scrollable Field and List and TextArea/View. programmatic scrolling
   setScrollOffset, making a row visible
@@ -52,7 +50,7 @@ Add tabbed pane to test2.rb and integrate so i see how it actually integrates.
 - Text Area: INS/OVW
 - TextArea: choice of word wrap, col wrap or no wrap.
 
-alert, confirm boxes in single line. put in test2
+LABEL to take ampersand also. ?? No there could be legit ampersands. Also only if label_for.
 
 Datamodel for TextArea/View so one can change display and do simple multiple columns
 RowRenderer ?
@@ -67,6 +65,8 @@ or will this make each widget heavy? TextArea/View may require for attaching act
 RECENTLY DONE:
 --------------
 
+Label should be able to take height and wrap. - DONE 2008-12-30 23:52 
+alert, confirm boxes in single line. put in test2 - done 2008-12-30 23:53 
 - TextView and Area: current row, col. INS/OVW
 - TextArea : show a $ if newline at end of line. DONE
 TextArea: recursive wrap till end of para, otherwise words go out of buffer area. 2008-12-28 
@@ -86,6 +86,7 @@ Combo - list of 3 is showing only 2 in max visible, need to scroll down for 3rd/
 =========
 Thoughts:
 =========
+error messages - should they be popped up ? or choice of status bar and pop up.
 
 - create and fire events only if someones listening. ??
 

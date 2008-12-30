@@ -783,7 +783,7 @@ module RubyCurses
       process_field_list
       print_borders
       print_title
-      print_message
+      print_message unless @message.nil?
       print_input
       create_buttons
       @form.repaint
@@ -959,6 +959,9 @@ module RubyCurses
     end
     def print_input
       #return if @type.to_s != "input"
+      @message_height ||= 0
+      @message_row ||= 2
+      @message_col ||= 2
       r = @message_row + @message_height + 1
       c = @message_col
       defaultvalue = @default_value || ""
@@ -1407,6 +1410,8 @@ module RubyCurses
       end
     end
 
+    ##
+    # XXX need to move wrapping etc up and done once. 
     def repaint
         r,c = rowcol
         value = getvalue_for_paint
@@ -1428,6 +1433,8 @@ module RubyCurses
         firstrow = r
         _height = @height || 1
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
+        # loop added for labels that are wrapped.
+        # TODO clear separately since value can change in status like labels
         lablist.each_with_index do |_value, ix|
           break if ix >= _height
           @form.window.printstring r, c, " " * len , acolor,@attr
