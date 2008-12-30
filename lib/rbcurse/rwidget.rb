@@ -1435,9 +1435,11 @@ module RubyCurses
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         # loop added for labels that are wrapped.
         # TODO clear separately since value can change in status like labels
+        0.upto(_height) { |i| 
+          @form.window.printstring r+i, c, " " * len , acolor,@attr
+        }
         lablist.each_with_index do |_value, ix|
           break if ix >= _height
-          @form.window.printstring r, c, " " * len , acolor,@attr
           if @justify.to_sym == :center
             padding = (@display_length - _value.length)/2
             _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
