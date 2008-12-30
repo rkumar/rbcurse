@@ -29,6 +29,7 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
+      @form.window.printstring 0, 25, "Demo of Ruby Curses Widgets", $normalcolor, 'reverse'
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
@@ -66,7 +67,8 @@ if $0 == __FILE__
           title_attrib 'reverse'
         end
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        $listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 
@@ -293,11 +295,15 @@ if $0 == __FILE__
 
       filemenu.insert_separator 1
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
-      filemenu.add(RubyCurses::MenuItem.new "Save",'S')
+      filemenu.add(item = RubyCurses::MenuItem.new("Save",'S'))
+      item.command() do |it|  
+        result = get_string("Please enter file to save in")
+        $message.value = "file: #{result}"
+        #throw(:menuclose)
+      end
       filemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
       item.command(@form, texta) do |it, form, testa|  
         $message.value = "Testing textarea"
-        #testa.focus()
         str = "Hello there good friends and fellow rubyists. Here is a textarea that I am testing out with"
         str << " some long data, to see how it acts, how the wrapping takes place. Sit back and enjoy the "
         str << " bugs as they crop up."
@@ -340,8 +346,10 @@ if $0 == __FILE__
         col col
         mnemonic 'O'
       end
-      ok_button.command { |form| form.dump_data; $message.value = "Dumped data to log file"
-        $listdata.value.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
+      ok_button.command { |form| 
+        alert("About to dump data into log file!")
+        form.dump_data; $message.value = "Dumped data to log file"
+        listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
       # using ampersand to set mnemonic
@@ -352,7 +360,13 @@ if $0 == __FILE__
         col col + 10
         #surround_chars ['{ ',' }']  ## change the surround chars
       end
-      cancel_button.command { |form| throw(:close); }
+      cancel_button.command { |form| 
+        if confirm("Do your really want to quit?")== :YES
+          throw(:close); 
+        else
+          $message.value = "Quit aborted"
+        end
+      }
 
 
       filemenu.add(item)

@@ -27,6 +27,7 @@ require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/colormap'
+require 'lib/rbcurse/rdialogs'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
@@ -66,6 +67,14 @@ module RubyCurses
   extend self
   include ColorMap
     class FieldValidationException < RuntimeError
+    end
+    def get_color default=$datacolor
+      if @bgcolor.is_a? String and @color.is_a? String
+        acolor = ColorMap.get_color(@color, @bgcolor)
+      else
+        acolor = default
+      end
+      return acolor
     end
 
     module EventHandler
@@ -747,8 +756,9 @@ module RubyCurses
       else
         @form.window = @window
       end
-      #@window.bkgd(Ncurses.COLOR_PAIR(@bgcolor || $reversecolor));
-      @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
+      acolor = get_color $reversecolor
+      $log.debug " MESSAGE BOX #{@bgcolor} , #{@color} , #{acolor}"
+      @window.bkgd(Ncurses.COLOR_PAIR(acolor));
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
@@ -843,7 +853,7 @@ module RubyCurses
       return @selected_index
     end
     def press ch
-       $log.debug "message box handle_keys :  #{ch}"  if ch != -1
+       #$log.debug "message box handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
           return
@@ -879,7 +889,6 @@ module RubyCurses
     def print_borders
       width = @layout[:width]
       height = @layout[:height]
-          $log.debug " PB override: #{height},#{width}, #{@layout.inspect}  "
       @window.print_border_mb 1,2, height, width, $normalcolor, A_REVERSE
 =begin
       start = 2
@@ -924,9 +933,10 @@ module RubyCurses
       r = @message_row + 1
       c = @message_col
       defaultvalue = @default_value || ""
+      input_config = @config["input_config"] || {}
       case @type.to_s 
       when "input"
-        @input = RubyCurses::Field.new @form do
+        @input = RubyCurses::Field.new @form, input_config do
           name   "input" 
           row  r 
           col  c 
@@ -1814,7 +1824,8 @@ module RubyCurses
       return @list if alist.nil?
       @list = RubyCurses::ListDataModel.new(alist.value)
     end
-    def list_data_model ldm
+    def list_data_model ldm=nil
+      return @list if ldm.nil?
       raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
       @list = ldm
     end

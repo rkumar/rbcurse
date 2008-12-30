@@ -40,7 +40,9 @@ Label should be able to take height and wrap.
 
 Field to also have change event.
 
+Save data from TextArea and see whether we've scrood it up or not.
 With changes to Listbox (model) now list_variable seems useless.
+Add tabbed pane to test2.rb and integrate so i see how it actually integrates.
 
     +----------+
     |  TO ADD  |

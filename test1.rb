@@ -27,7 +27,7 @@ if $0 == __FILE__
 
 
     catch(:close) do
-      choice = ARGV[0] && ARGV[0].to_i || 5
+      choice = ARGV[0] && ARGV[0].to_i || 3
       $log.debug "START  MESSAGE BOX TEST #{ARGV[0]}. choice==#{choice} ---------"
       # need to pass a form, not window.
       case choice
@@ -54,12 +54,16 @@ if $0 == __FILE__
         default_button 0
       end
       when 3
-      @mb = RubyCurses::MessageBox.new do
+        config = {}
+        config["input_config"] = {}
+        config["input_config"]["chars_allowed"]=/[^xzq]/
+        config["input_config"]["valid_regex"]=/[A-Z][a-z]*/
+      @mb = RubyCurses::MessageBox.new nil, config do
         title "Enter your name"
         message "Enter your name"
         type :input
         button_type :ok_cancel
-        default_value "rahul"
+        default_value "Rahul"
       end
       when 4:
       @form = RubyCurses::Form.new nil
