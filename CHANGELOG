@@ -1,3 +1,19 @@
+**2008-12-31 23:46**
+## Variable modifications ##
+
+Had to move to get_value and set_value so that Variable could support a hash or array without
+anything else changing.
+That means if a set of checkboxes and radio buttons are based on one Variable which is a Hash,
+they will continue working as before, since they always pass t heir name as a second parm to set_value 
+(whch is used as a key, if Variable is a hash).
+Earlier i was using value= but that does not allow 2 params.
+In the case of a hash, even retrieving requires the widgt name as key.
+So seeing how many params are coming in does not work. Thus moving from value() and value= to get and set value.
+
+Currently, its there as RVariable. Will be moved to Variable in a day or so.
+
+frmincr200812312341.tgz
+* * *
 **2008-12-29 17:50**
 ## textarea bugfixes in wrap and wrapping ##
 

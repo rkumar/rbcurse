@@ -11,16 +11,13 @@ require 'lib/rbcurse/rtabbedpane'
 
 class TestTabbedPane
   def initialize
-    @layout = { :height => 12, :width => 50, :top => 5, :left => 10 }
-    @window = VER::Window.new(@layout)
-    begin
-      main
-    ensure
-      @window.destroy unless @window.nil?
-    end
+    acolor = $reversecolor
+    #$config_hash ||= {}
   end
-  def main
-      @tp = RubyCurses::TabbedPane.new @window do
+  def run
+    $config_hash ||= RVariable.new Hash.new
+    #configvar.update_command(){ |v| $config_hash[v.source()] = v.value }
+      @tp = RubyCurses::TabbedPane.new nil  do
         height 12
         width  50
         row 5
@@ -28,9 +25,11 @@ class TestTabbedPane
       end
       @tab1 = @tp.add_tab "&Language" 
       f1 = @tab1.form
-      $radio = Variable.new
+      #$radio = RVariable.new
       radio1 = RadioButton.new f1 do
-        text_variable $radio
+        #text_variable $radio
+        text_variable $config_hash
+        name "radio1"
         text "ruby"
         value "ruby"
         color "red"
@@ -38,7 +37,9 @@ class TestTabbedPane
         col 2
       end
       radio2 = RadioButton.new f1 do
-        text_variable $radio
+        #text_variable $radio
+        text_variable $config_hash
+        name "radio1"
         text  "jruby"
         value  "jruby"
         color "green"
@@ -46,7 +47,9 @@ class TestTabbedPane
         col 2
       end
       radio3 = RadioButton.new f1 do
-        text_variable $radio
+        #text_variable $radio
+        text_variable $config_hash
+        name "radio1"
         text  "macruby"
         value  "macruby"
         color "cyan"
@@ -55,28 +58,28 @@ class TestTabbedPane
       end
       @tab2 = @tp.add_tab "&Settings"
       f2 = @tab2.form
-      checkbutton = RubyCurses::CheckBox.new f2 do
-        text "Use &HTTP/1.0"
-        row 3
-        col 4
-      end
-      checkbutton = RubyCurses::CheckBox.new f2 do
-        text "Use &frames"
-        row 5
-        col 4
-      end
-      checkbutton = RubyCurses::CheckBox.new f2 do
-        text "&Use SSL"
-        row 6
-        col 4
+      r = 3
+      butts = [ "Use &HTTP/1.0", "Use &frames", "&Use SSL" ]
+      bcodes = %w[ HTTP, FRAMES, SSL ]
+      butts.each_with_index do |t, i|
+        RubyCurses::CheckBox.new f2 do
+          text butts[i]
+          text_variable $config_hash
+          name bcodes[i]
+          row r+i
+          col 4
+        end
       end
       @tab3 = @tp.add_tab "&Editors"
       f3 = @tab3.form
       butts = %w[ &Vim E&macs &Jed &Other ]
+      bcodes = %w[ VIM EMACS JED OTHER]
       row = 3
-      butts.each do |name|
+      butts.each_with_index do |name, i|
         RubyCurses::CheckBox.new f3 do
           text name
+          text_variable $config_hash
+          name bcodes[i]
           row row
           col 4
         end

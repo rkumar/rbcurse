@@ -64,6 +64,18 @@ or will this make each widget heavy? TextArea/View may require for attaching act
 
 Textarea del does not delete newline, although C-k does look into that.
 
+Tabbedpane needs to look okay if change colors. At least should be able to switch to reverse.
+
+Menuitem: disabled, what if no action (not armed).
+
+Properties: redraw only when property change or data change, not each time. Esp for label.
+
+Togglebutton - selected (bool)
+
+if there is no next, should onleave be fired.
+
+if text_variable, when updateing value also puts object name, then it can multiplex across many objcts like a set of checkboxes, like a model ? One such object can be used fr all fields and inside it update a hash.
+
 RECENTLY DONE:
 --------------
 
@@ -85,9 +97,13 @@ textarea - CHANGE Event must give meaningful details such as offset start/end of
 
 Combo - list of 3 is showing only 2 in max visible, need to scroll down for 3rd/: @height helps
 
+- quick dialogs for alert, confirm, etc
 =========
 Thoughts:
 =========
+text_variable etc: when set should class register with text_variable to be updated on change so it can repaint.
+or should it always repaint by default, if based on Variable.
+
 error messages - should they be popped up ? or choice of status bar and pop up.
 
 - create and fire events only if someones listening. ??
@@ -95,7 +111,6 @@ error messages - should they be popped up ? or choice of status bar and pop up.
 - make a sample data entry form (CRUD), so we can see how things really work. 
 
 - filechooser
-- quick dialogs for alert, confirm, etc
 - simple date widget YYYY-MM-DD using 3 fields
 
 - Action classes (like Java swing) which can be passed to a menu, button, or key. Also, disabling will disable for all.

@@ -180,7 +180,7 @@ module RubyCurses
     include ConfigSetup
     include RubyCurses::Utils
     dsl_accessor :text, :text_variable
-    dsl_accessor :underline                        # offset of text to underline
+    dsl_accessor :underline                        # offset of text to underline DEPRECATED
     dsl_accessor :width                # desired width of text
     dsl_accessor :wrap_length                      # wrap length of text, if applic
 
@@ -1321,13 +1321,14 @@ module RubyCurses
         # Array at least.
         
   class Variable
+    attr_reader :source  # optional source of updater passed in value= method
     def initialize value=""
       @update_command = []
       @args = []
       @value = value
     end
     ##
-    # trigger to call whenever a value is updated
+    # install trigger to call whenever a value is updated
     def update_command *args, &block
       $log.debug "Variable: update command set #{args}"
       @update_command << block
@@ -1336,18 +1337,30 @@ module RubyCurses
 #   def read_command &block
 #     @read_command = block
 #   end
-    def value
+    ##
+    # value of the variable
+    #def value
 #     $log.debug "variable value called : #{@value} "
-      @value
-    end
-    def value= val
-      $log.debug "variable value= called : #{val} "
-      @value = val
-      #@update_command.call(self, *@args) if !@update_command.nil?
+    #  @value
+    #end
+    ##
+    # update the value of this variable.
+    # 2008-12-31 18:35 Added source so one can identify multiple sources that are updating.
+    # Idea is that mutiple fields (e.g. checkboxes) can share one var and update a hash through it.
+    # Source would contain some code or key relatin to each field.
+    def value (*val)
+      return @value if val.empty?
+      if val.size == 1
+        @value,@source = val
+      end
+      $log.debug "variable value= called : #{val}, source=#{source} "
       return if @update_command.nil?
       @update_command.each_with_index do |comm, ix|
         comm.call(self, *@args[ix]) unless comm.nil?
       end
+    end
+    def value= (val)
+      value val
     end
     ##
     # since we could put a hash or array in as @value
@@ -1357,7 +1370,78 @@ module RubyCurses
         @value.send(sym, args)
       else
         $log.error("ERROR VARIABLE MISSING #{sym} called")
+        raise "ERROR VARIABLE MISSING #{sym} called"
       end
+    end
+  end
+  class RVariable
+  
+    def initialize value=""
+      @update_command = []
+      @args = []
+      @value = value
+      @klass = value.class.to_s
+    end
+    ##
+    # install trigger to call whenever a value is updated
+    def update_command *args, &block
+      $log.debug "RVariable: update command set #{args}"
+      @update_command << block
+      @args << args
+    end
+    ##
+    # value of the variable
+    def get_value val=nil
+      if @klass == 'String'
+        return @value
+      elsif @klass == 'Hash'
+        return @value[val]
+      elsif @klass == 'Array'
+        return @value[val]
+      end
+    end
+    ##
+    # update the value of this variable.
+    # 2008-12-31 18:35 Added source so one can identify multiple sources that are updating.
+    # Idea is that mutiple fields (e.g. checkboxes) can share one var and update a hash through it.
+    # Source would contain some code or key relatin to each field.
+    def set_value val, key=""
+      if @klass == 'String'
+        @value = val
+      elsif @klass == 'Hash'
+        $log.debug " RVariable setting hash #{key} to #{val}"
+        @value[key]=val
+      elsif @klass == 'Array'
+        $log.debug " RVariable setting array #{key} to #{val}"
+        @value[key]=val
+      end
+      return if @update_command.nil?
+      @update_command.each_with_index do |comm, ix|
+        comm.call(self, *@args[ix]) unless comm.nil?
+      end
+    end
+    ##
+    def value= (val)
+      @value=val
+      return if @update_command.nil?
+      @update_command.each_with_index do |comm, ix|
+        comm.call(self, *@args[ix]) unless comm.nil?
+      end
+    end
+    def value
+      @value
+    end
+    def inspect
+      @value.inspect
+    end
+    def [](key)
+      @value[key]
+    end
+    def source
+      @value
+    end
+    def to_s
+      inspect
     end
   end
   ##
@@ -1532,7 +1616,7 @@ module RubyCurses
 #      $log.debug "ONLEAVE : #{@bgcolor} "
     end
     def getvalue
-      @text_variable.nil? ? @text : @text_variable.value
+      @text_variable.nil? ? @text : @text_variable.get_value(@name)
     end
 
     def getvalue_for_paint
@@ -1588,6 +1672,35 @@ module RubyCurses
       end
     end
   end #BUTTON
+  
+  ##
+  # an event fired when an item that can be selected is toggled/selected
+  class ItemEvent 
+    # http://java.sun.com/javase/6/docs/api/java/awt/event/ItemEvent.html
+    attr_reader :state   # :SELECTED :DESELECTED
+    attr_reader :item   # the item pressed such as toggle button
+    attr_reader :item_selectable   # item originating event such as list or collection
+    attr_reader :item_first   # if from a list
+    attr_reader :item_last   # 
+    attr_reader :param_string   #  for debugging etc
+=begin
+    def initialize item, item_selectable, state, item_first=-1, item_last=-1, paramstring=nil
+      @item, @item_selectable, @state, @item_first, @item_last =
+        item, item_selectable, state, item_first, item_last 
+      @param_string = "Item event fired: #{item}, #{state}"
+    end
+=end
+    # i think only one is needed per object, so create once only
+    def initialize item, item_selectable
+      @item, @item_selectable =
+        item, item_selectable
+    end
+    def set state, item_first=-1, item_last=-1, param_string=nil
+      @state, @item_first, @item_last, @param_string =
+        state, item_first, item_last, param_string 
+      @param_string = "Item event fired: #{item}, #{state}" if param_string.nil?
+    end
+  end
   ##
   # A button that may be switched off an on. 
   # To be extended by RadioButton and checkbox.
@@ -1595,9 +1708,10 @@ module RubyCurses
     dsl_accessor :onvalue, :offvalue
     dsl_accessor :value
     dsl_accessor :surround_chars 
+    # item_event
     def initialize form, config={}, &block
       super
-      @value ||= false
+      @value ||= (@text_variable.nil? ? false : @text_variable.get_value(@name))
     end
     def getvalue
       @value ? @onvalue : @offvalue
@@ -1608,6 +1722,8 @@ module RubyCurses
     def checked?
       @value
     end
+    alias :selected? :checked?
+
     def getvalue_for_paint
       buttontext = getvalue()
       @text_offset = @surround_chars[0].length
@@ -1627,8 +1743,12 @@ module RubyCurses
     end
     def fire
       checked(!@value)
+      # added ItemEvent on 2008-12-31 13:44 
+      @item_event = ItemEvent.new self, self if @item_event.nil?
+      @item_event.set(@value ? :SELECTED : :DESELECTED)
+      fire_handler :PRESS, @item_event # should the event itself be ITEM_EVENT
     #  fire_handler :PRESS, @form
-      super
+    #  super
     end
     ##
     # set the value to true or false
@@ -1637,9 +1757,9 @@ module RubyCurses
       @value = tf
       if !@text_variable.nil?
         if @value 
-          @text_variable.value = (@onvalue || 1)
+          @text_variable.set_value((@onvalue || 1), @name)
         else
-          @text_variable.value = (@offvalue || 0)
+          @text_variable.set_value((@offvalue || 0), @name)
         end
       end
       # call fire of button class 2008-12-09 17:49 
@@ -1657,13 +1777,12 @@ module RubyCurses
       @value ||= false
     end
     def getvalue
-#     $log.debug " iside CHECKBOX getvalue"
       @value 
     end
+      
     def getvalue_for_paint
-#     $log.debug " iside CHECKBOX getvalue for paint"
       buttontext = getvalue() ? "X" : " "
-      dtext = @display_length.nil? ? text : "%-*s" % [@display_length, text]
+      dtext = @display_length.nil? ? @text : "%-*s" % [@display_length, @text]
       if @align_right
         @text_offset = 0
         @col_offset = dtext.length + @surround_chars[0].length + 1
@@ -1690,10 +1809,11 @@ module RubyCurses
     end
     # all radio buttons will return the value of the selected value, not the offered value
     def getvalue
-      @text_variable.value
+      #@text_variable.value
+      @text_variable.get_value @name
     end
     def getvalue_for_paint
-      buttontext = @text_variable.value == @value ? "o" : " "
+      buttontext = getvalue() == @value ? "o" : " "
       dtext = @display_length.nil? ? text : "%-*s" % [@display_length, text]
       if @align_right
         @text_offset = 0
@@ -1707,13 +1827,13 @@ module RubyCurses
       end
     end
     def toggle
-      @text_variable.value = @value
+      @text_variable.set_value @value, @name
       # call fire of button class 2008-12-09 17:49 
       fire
     end
     # added for bindkeys since that calls fire, not toggle - XXX i don't like this
     def fire
-      @text_variable.value = @value
+      @text_variable.set_value  @value,@name
       super
     end
     ##
@@ -1722,8 +1842,8 @@ module RubyCurses
     def checked tf
       if tf
         toggle
-      elsif !@text_variable.nil? and @text_variable == @value
-        @text_variable = nil
+      elsif !@text_variable.nil? and getvalue() != @value # XXX ???
+        @text_variable.set_value "",""
       end
     end
   end # class radio

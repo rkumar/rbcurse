@@ -44,17 +44,17 @@ if $0 == __FILE__
         r += 1
       end
 
-      $message = Variable.new
+      $message = RVariable.new
       $message.value = "Message Comes Here"
       message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
 
-      $results = Variable.new
+      $results = RVariable.new
       $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
         r += 1
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
-        $listdata = Variable.new mylist
+        $listdata = RVariable.new mylist
         listb = Listbox.new @form do
           name   "mylist" 
           row  r 
@@ -150,7 +150,7 @@ if $0 == __FILE__
         mnemonic 'B'
       end
       row += 1
-      @cb_rev = Variable.new # related to checkbox reverse
+      @cb_rev = RVariable.new # related to checkbox reverse
       cbb = @cb_rev
       checkbutton1 = CheckBox.new @form do
         text_variable cbb # $cb_rev
@@ -201,7 +201,7 @@ if $0 == __FILE__
 
       row += 1
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
-      $radio = Variable.new(1)
+      $radio = RVariable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
       $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
 
@@ -392,7 +392,10 @@ if $0 == __FILE__
       item = RubyCurses::MenuItem.new "Options"
       item.command() do |it|  
         require 'testtabp'
-        TestTabbedPane.new
+        tp = TestTabbedPane.new
+        tp.run
+        $message.value=$config_hash.inspect
+        $log.debug " returning with #{$config_hash}: #{$config_hash.inspect}"
       end
       menu.add(item)
       item = RubyCurses::MenuItem.new "Config"

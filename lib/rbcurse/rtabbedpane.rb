@@ -137,7 +137,7 @@ module RubyCurses
       col = 1
       @buttons = []
       ## create a button for each tab
-      $tabradio = Variable.new
+      $tabradio = RVariable.new
       @tabs.each do |tab|
         text = tab.text
         @buttons << RubyCurses::TabbedButton.new(@form) do
@@ -218,7 +218,7 @@ module RubyCurses
           end
         when :UNHANDLED
           $log.debug " unhandled in tabbed pane #{ch}"
-          ret = @form.process_key ch, field
+          ret = @form.process_key ch, self # field
           @form.repaint
           #return :UNHANDLED if ret == :UNHANDLED
         end
