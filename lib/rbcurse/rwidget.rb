@@ -1398,6 +1398,8 @@ module RubyCurses
         return @value[val]
       elsif @klass == 'Array'
         return @value[val]
+      else
+        return @value
       end
     end
     ##
@@ -1414,6 +1416,8 @@ module RubyCurses
       elsif @klass == 'Array'
         $log.debug " RVariable setting array #{key} to #{val}"
         @value[key]=val
+      else
+        @value = val
       end
       return if @update_command.nil?
       @update_command.each_with_index do |comm, ix|
@@ -1422,6 +1426,7 @@ module RubyCurses
     end
     ##
     def value= (val)
+      raise "Please use set_value for hash/array" if @klass=='Hash' or @klass=='Array'
       @value=val
       return if @update_command.nil?
       @update_command.each_with_index do |comm, ix|
@@ -1429,6 +1434,7 @@ module RubyCurses
       end
     end
     def value
+      raise "Please use set_value for hash/array: #{@klass}" if @klass=='Hash' #or @klass=='Array'
       @value
     end
     def inspect
@@ -1437,6 +1443,8 @@ module RubyCurses
     def [](key)
       @value[key]
     end
+    ## 
+    # in order to run some method we don't yet support
     def source
       @value
     end
@@ -1708,10 +1716,13 @@ module RubyCurses
     dsl_accessor :onvalue, :offvalue
     dsl_accessor :value
     dsl_accessor :surround_chars 
+    dsl_accessor :variable    # value linked to this variable which is a boolean
+
     # item_event
     def initialize form, config={}, &block
       super
-      @value ||= (@text_variable.nil? ? false : @text_variable.get_value(@name))
+      # no longer linked to text_variable, that was a misunderstanding
+      @value ||= (@variable.nil? ? false : @variable.get_value(@name)==true)
     end
     def getvalue
       @value ? @onvalue : @offvalue
@@ -1755,11 +1766,11 @@ module RubyCurses
     # user may programmatically want to check or uncheck
     def checked tf
       @value = tf
-      if !@text_variable.nil?
+      if !@variable.nil?
         if @value 
-          @text_variable.set_value((@onvalue || 1), @name)
+          @variable.set_value((@onvalue || 1), @name)
         else
-          @text_variable.set_value((@offvalue || 0), @name)
+          @variable.set_value((@offvalue || 0), @name)
         end
       end
       # call fire of button class 2008-12-09 17:49 
@@ -1774,7 +1785,6 @@ module RubyCurses
     def initialize form, config={}, &block
       @surround_chars = ['[', ']']    # 2008-12-23 23:16 added space in Button so overriding
       super
-      @value ||= false
     end
     def getvalue
       @value 
@@ -1810,7 +1820,7 @@ module RubyCurses
     # all radio buttons will return the value of the selected value, not the offered value
     def getvalue
       #@text_variable.value
-      @text_variable.get_value @name
+      @variable.get_value @name
     end
     def getvalue_for_paint
       buttontext = getvalue() == @value ? "o" : " "
@@ -1827,13 +1837,13 @@ module RubyCurses
       end
     end
     def toggle
-      @text_variable.set_value @value, @name
+      @variable.set_value @value, @name
       # call fire of button class 2008-12-09 17:49 
       fire
     end
     # added for bindkeys since that calls fire, not toggle - XXX i don't like this
     def fire
-      @text_variable.set_value  @value,@name
+      @variable.set_value  @value,@name
       super
     end
     ##
@@ -1842,8 +1852,8 @@ module RubyCurses
     def checked tf
       if tf
         toggle
-      elsif !@text_variable.nil? and getvalue() != @value # XXX ???
-        @text_variable.set_value "",""
+      elsif !@variable.nil? and getvalue() != @value # XXX ???
+        @variable.set_value "",""
       end
     end
   end # class radio

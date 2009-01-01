@@ -1,3 +1,11 @@
+**2009-01-01 13:01**
+## Boolean buttons use "variable" not "text_variable" ##
+
+That was a misunderstanding. Checkbutton, Toggle and Radio use "variable" which 
+updates or gets updated by any changes.
+
+frmincr200901011300.tgz
+* * *
 **2008-12-31 23:46**
 ## Variable modifications ##
 

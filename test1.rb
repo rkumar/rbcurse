@@ -80,7 +80,7 @@ if $0 == __FILE__
           set_label titlelabel
         end
       checkbutton = RubyCurses::CheckBox.new @form do
-       # text_variable $results
+       # variable $results
         #value = true
         onvalue "Selected cb   "
         offvalue "UNselected cb"
@@ -93,7 +93,7 @@ if $0 == __FILE__
       field_list << field
       field_list << checkbutton
       checkbutton = RubyCurses::CheckBox.new @form do
-       # text_variable $results
+       # variable $results
         value  true
         color 'black'
         bgcolor 'white'
@@ -103,7 +103,7 @@ if $0 == __FILE__
       end
       field_list << checkbutton
       checkbutton = RubyCurses::CheckBox.new @form do
-       # text_variable $results
+       # variable $results
         color 'black'
         bgcolor 'white'
         text "Use &passive FTP"
@@ -116,7 +116,7 @@ if $0 == __FILE__
       $radio = RubyCurses::Variable.new
       #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
       radio1 = RubyCurses::RadioButton.new @form do
-        text_variable $radio
+        variable $radio
         text "rub&y"
         value "ruby"
         color "red"
@@ -125,7 +125,7 @@ if $0 == __FILE__
         col 4
       end
       radio2 = RubyCurses::RadioButton.new @form do
-        text_variable $radio
+        variable $radio
         text  "python"
         value  "py&thon"
         color "blue"

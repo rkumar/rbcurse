@@ -330,6 +330,11 @@ module RubyCurses
         cmenu.select_prev_item
       when KEY_ENTER, 10, 13, 32 # added 32 2008-11-27 23:50 
         cmenu.fire
+        if !cmenu.is_a? RubyCurses::Menu 
+          return :CLOSE
+        else
+          return :KEEPOPEN
+        end
       when KEY_LEFT
         if cmenu.parent.is_a? RubyCurses::Menu 
        $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
@@ -463,9 +468,10 @@ module RubyCurses
         when KEY_ENTER, 10, 13, 32
           @selected = true
             $log.debug " mb insdie ENTER :  #{current_menu}" 
-            current_menu.handle_key ch
+            ret = current_menu.handle_key ch
             #break; ## 2008-12-29 18:00  This will close after firing
             #anything
+            break if ret == :CLOSE
         when KEY_UP
           $log.debug " mb insdie keyUPP :  #{ch}" 
           current_menu.handle_key ch
@@ -484,7 +490,7 @@ module RubyCurses
           if ret == :UNHANDLED
             Ncurses.beep 
           else
-            break  # we handled a menu action, close menubar
+            break  # we handled a menu action, close menubar (THIS WORKS FOR MNEMONICS ONLY and always)
           end
         end
         Ncurses::Panel.update_panels();

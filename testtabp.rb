@@ -27,8 +27,8 @@ class TestTabbedPane
       f1 = @tab1.form
       #$radio = RVariable.new
       radio1 = RadioButton.new f1 do
-        #text_variable $radio
-        text_variable $config_hash
+        #variable $radio
+        variable $config_hash
         name "radio1"
         text "ruby"
         value "ruby"
@@ -37,8 +37,8 @@ class TestTabbedPane
         col 2
       end
       radio2 = RadioButton.new f1 do
-        #text_variable $radio
-        text_variable $config_hash
+        #variable $radio
+        variable $config_hash
         name "radio1"
         text  "jruby"
         value  "jruby"
@@ -47,8 +47,8 @@ class TestTabbedPane
         col 2
       end
       radio3 = RadioButton.new f1 do
-        #text_variable $radio
-        text_variable $config_hash
+        #variable $radio
+        variable $config_hash
         name "radio1"
         text  "macruby"
         value  "macruby"
@@ -64,7 +64,7 @@ class TestTabbedPane
       butts.each_with_index do |t, i|
         RubyCurses::CheckBox.new f2 do
           text butts[i]
-          text_variable $config_hash
+          variable $config_hash
           name bcodes[i]
           row r+i
           col 4
@@ -78,7 +78,7 @@ class TestTabbedPane
       butts.each_with_index do |name, i|
         RubyCurses::CheckBox.new f3 do
           text name
-          text_variable $config_hash
+          variable $config_hash
           name bcodes[i]
           row row
           col 4

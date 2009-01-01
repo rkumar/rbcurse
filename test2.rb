@@ -139,7 +139,7 @@ if $0 == __FILE__
       end
       row += 1
       checkbutton = CheckBox.new @form do
-        text_variable $results
+        variable $results
         #value = true
         onvalue "Selected bold   "
         offvalue "UNselected bold"
@@ -150,10 +150,10 @@ if $0 == __FILE__
         mnemonic 'B'
       end
       row += 1
-      @cb_rev = RVariable.new # related to checkbox reverse
+      @cb_rev = RVariable.new false # related to checkbox reverse
       cbb = @cb_rev
       checkbutton1 = CheckBox.new @form do
-        text_variable cbb # $cb_rev
+        variable cbb # $cb_rev
         #value = true
         onvalue "Selected reverse   "
         offvalue "UNselected reverse"
@@ -223,7 +223,7 @@ if $0 == __FILE__
       @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
       row += 1
       radio1 = RadioButton.new @form do
-        text_variable $radio
+        variable $radio
         text "red"
         value "red"
         color "red"
@@ -232,7 +232,7 @@ if $0 == __FILE__
         col col
       end
       radio11 = RadioButton.new @form do
-        text_variable $radio
+        variable $radio
         text "c&yan"
         value "cyan"
         color "cyan"
@@ -242,7 +242,7 @@ if $0 == __FILE__
       end
       row += 1
       radio2 = RadioButton.new @form do
-        text_variable $radio
+        variable $radio
         text  "&green"
         value  "green"
         color "green"
@@ -251,7 +251,7 @@ if $0 == __FILE__
         col col
       end
       radio22 = RadioButton.new @form do
-        text_variable $radio
+        variable $radio
         text "magenta"
         value "magenta"
         color "magenta"
@@ -359,7 +359,7 @@ if $0 == __FILE__
 
       # using ampersand to set mnemonic
       cancel_button = Button.new @form do
-        #text_variable $results
+        #variable $results
         text "&Cancel"
         row row
         col col + 10

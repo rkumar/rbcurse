@@ -42,6 +42,8 @@ Save data from TextArea and see whether we've scrood it up or not.
 With changes to Listbox (model) now list_variable seems useless.
 Add tabbed pane to test2.rb and integrate so i see how it actually integrates.
 
+For toggle, checkbutton etc it is variable, not textvariable
+
     +----------+
     |  TO ADD  |
     +----------+
@@ -70,15 +72,15 @@ Menuitem: disabled, what if no action (not armed).
 
 Properties: redraw only when property change or data change, not each time. Esp for label.
 
-Togglebutton - selected (bool)
 
 if there is no next, should onleave be fired.
-
-if text_variable, when updateing value also puts object name, then it can multiplex across many objcts like a set of checkboxes, like a model ? One such object can be used fr all fields and inside it update a hash.
 
 RECENTLY DONE:
 --------------
 
+if text_variable, when updateing value also puts object name, then it can multiplex across many objcts like a set of checkboxes, like a model ? One such object can be used fr all fields and inside it update a hash.
+
+Togglebutton - selected (bool)
 Label should be able to take height and wrap. - DONE 2008-12-30 23:52 
 alert, confirm boxes in single line. put in test2 - done 2008-12-30 23:53 
 - TextView and Area: current row, col. INS/OVW

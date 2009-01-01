@@ -39,7 +39,7 @@ module RubyCurses
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
         _state = @state
-        _state = :SELECTED if @text_variable.value == @value 
+        _state = :SELECTED if @variable.value == @value 
         case _state
         when :HIGHLIGHTED
           bgcolor = @highlight_background
@@ -141,7 +141,7 @@ module RubyCurses
       @tabs.each do |tab|
         text = tab.text
         @buttons << RubyCurses::TabbedButton.new(@form) do
-          text_variable $tabradio
+          variable $tabradio
           text text
           name text
           value text
