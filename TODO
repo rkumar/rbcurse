@@ -44,6 +44,8 @@ Add tabbed pane to test2.rb and integrate so i see how it actually integrates.
 
 For toggle, checkbutton etc it is variable, not textvariable
 
+menu's Exit, throws close without destroying menu (i suspect). It should close menu then app
+
     +----------+
     |  TO ADD  |
     +----------+

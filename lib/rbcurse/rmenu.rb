@@ -450,6 +450,7 @@ module RubyCurses
       @selected = false
       @toggle_key ||= 27 # default switch off with ESC, if nothing else defined
       set_menu 0
+      begin
       catch(:menubarclose) do
       while((ch = @window.getchar()) != @toggle_key )
        $log.debug "menuubar inside handle_keys :  #{ch}"  if ch != -1
@@ -499,7 +500,10 @@ module RubyCurses
         @window.wrefresh
       end
       end # catch
+      ensure
+        #ensure is required becos one can throw a :close
       destroy  # Note that we destroy the menu bar upon exit
+      end
     end
     def current_menu
       @items[@active_index]
