@@ -125,6 +125,7 @@ module RubyCurses
     end
     def add_row_selection_interval ix0, ix1
       # if row_selection_allowed
+      @list_selection_model.add_selection_interval ix0, ix1
     end
     def remove_row_selection_interval ix0, ix1
     end
@@ -227,17 +228,34 @@ module RubyCurses
       @current_index ||= 0
       @toprow ||= 0
       h = @height-3      
+      rc = @table_model.row_count
       case ch
       when KEY_UP  # show previous value
         @current_index -= 1 if @current_index > 0
     #    @toprow = @current_index
       when KEY_DOWN  # show previous value
-        rc = @table_model.row_count
         @current_index += 1 if @current_index < rc
     #    @toprow = @current_index
+      when 32:
+        add_row_selection_interval @current_index, @current_index
+      when ?\C-n:
+        #@current_index += h if @current_index+h < rc
+        @toprow += h+1 #if @current_index+h < rc
+        @current_index = @toprow
+      when ?\C-p:
+        @current_index -= h 
+
+      when 48, ?\C-[:
+        # please note that C-[ gives 27, same as esc so will respond after ages
+        @current_index = 0
+      when ?\C-]:
+        @current_index = rc
       else
     #    super
       end
+      @current_index = 0 if @current_index < 0
+      @current_index = rc-1 if @current_index >= rc
+      @toprow = rc-h-1 if @toprow > rc - h - 1
       if @current_index - @toprow > h
         @toprow = @current_index - h
       elsif @current_index < @toprow
@@ -264,7 +282,7 @@ module RubyCurses
         if crow < rc
           0.upto(cc-1) do |colix|
             focussed = @current_index == crow ? true : false 
-            selected = crow == 3 ? true : false
+            selected = is_row_selected crow
             content = tm.get_value_at(crow, colix)
             #crend = get_default_cell_renderer_for_class content.class.to_s
             crend = get_cell_renderer(crow, colix)
@@ -490,7 +508,7 @@ module RubyCurses
       def add_selection_interval ix0, ix1
         @anchor_selection_index = ix0
         @lead_selection_index = ix1
-        ix0.uptp(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
+        ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
       end
       def remove_selection_interval ix0, ix1
         @anchor_selection_index = ix0
