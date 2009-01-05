@@ -189,12 +189,16 @@ module RubyCurses
       @table_column_model.remove_column  tc
       table_structure_changed
     end
-    def get_column ident
+    def get_column identifier
+      ix = @table_column_model.column_index identifier
+      return @table_column_model.column ix
     end
     def get_column_name ix
-      @table_column_model[ix]
+      @table_column_model.column(ix).identifier
     end
     def move_column ix, newix
+      @table_column_model.move_column ix, newix
+      table_structure_changed
     end
 
     #--- row and column  methods ---#
@@ -541,6 +545,8 @@ module RubyCurses
       @columns.delete  tc
     end
     def move_column ix, newix
+      acol = remove_column column(ix)
+      @columns.insert newix, acol
     end
     ##
     # return index of column identified with identifier
