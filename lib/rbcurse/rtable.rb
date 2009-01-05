@@ -56,6 +56,8 @@ module RubyCurses
       @show_grid ||= 1
       # @selected_color ||= 'yellow'
       # @selected_bgcolor ||= 'black'
+      @table_changed = true
+      @repaint_required = true
     end
 
     def set_data data, colnames_array
@@ -96,6 +98,9 @@ module RubyCurses
       @table_column_model = tcm
       @table_header.column_model(tcm) unless @table_header.nil?
     end
+    def get_table_column_model
+      @table_column_model 
+    end
     # XXX link in
     def list_selection_model lsm
       @list_selection_model = lsm
@@ -112,22 +117,37 @@ module RubyCurses
 
     #--- selection methods ---#
     def is_column_selected col
+      raise "TODO "
     end
     def is_row_selected row
       @list_selection_model.is_selected_index row
     end
     def is_cell_selected row, col
+      raise "TODO "
     end
     def add_column_selection_interval ix0, ix1
+      raise "TODO "
       # if column_selection_allowed
     end
     def remove_column_selection_interval ix0, ix1
+      raise "TODO "
     end
     def add_row_selection_interval ix0, ix1
       # if row_selection_allowed
       @list_selection_model.add_selection_interval ix0, ix1
     end
     def remove_row_selection_interval ix0, ix1
+      @list_selection_model.remove_selection_interval ix0, ix1
+    end
+    def toggle_row_selection row
+      if is_row_selected row
+        $log.debug " deleting row #{row}"
+        remove_row_selection_interval(row, row)
+      else
+        $log.debug " adding row #{row}"
+        add_row_selection_interval(row, row) 
+      end
+
     end
     attr_accessor :row_selection_allowed
     attr_accessor :column_selection_allowed
@@ -197,8 +217,8 @@ module RubyCurses
     def prepare_renderers
       @crh = Hash.new
       @crh['String'] = TableCellRenderer.new "", {"parent" => self }
-      @crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "parent" => self}
-      @crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "parent" => self}
+      @crh['Fixnum'] = TableCellRenderer.new "", { "justify" => :right, "parent" => self}
+      @crh['Float'] = TableCellRenderer.new "", {"justify" => :right, "parent" => self}
       #@crh['String'] = TableCellRenderer.new "", {"bgcolor" => "cyan", "color"=>"white", "parent" => self}
       #@crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue","bgcolor"=>"cyan" }
       #@crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue", "bgcolor"=>"cyan" }
@@ -223,7 +243,8 @@ module RubyCurses
     # -----------------
 
     ##
-    # combo edit box key handling
+    # key handling
+    # make separate methods so callable programmatically
     def handle_key(ch)
       @current_index ||= 0
       @toprow ||= 0
@@ -231,43 +252,101 @@ module RubyCurses
       rc = @table_model.row_count
       case ch
       when KEY_UP  # show previous value
-        @current_index -= 1 if @current_index > 0
+        previous_row
     #    @toprow = @current_index
       when KEY_DOWN  # show previous value
-        @current_index += 1 if @current_index < rc
-    #    @toprow = @current_index
+        next_row
       when 32:
-        add_row_selection_interval @current_index, @current_index
+        #add_row_selection_interval @current_index, @current_index
+        toggle_row_selection @current_index #, @current_index
+        @repaint_required = true
       when ?\C-n:
-        #@current_index += h if @current_index+h < rc
-        @toprow += h+1 #if @current_index+h < rc
-        @current_index = @toprow
+        scroll_forward
       when ?\C-p:
-        @current_index -= h 
-
+        scroll_backward
       when 48, ?\C-[:
         # please note that C-[ gives 27, same as esc so will respond after ages
-        @current_index = 0
+        goto_top
       when ?\C-]:
-        @current_index = rc
+        goto_bottom
       else
     #    super
       end
-      @current_index = 0 if @current_index < 0
-      @current_index = rc-1 if @current_index >= rc
-      @toprow = rc-h-1 if @toprow > rc - h - 1
+    end
+    ##
+    def previous_row
+        @current_index -= 1 if @current_index > 0
+        bounds_check
+    end
+    def next_row
+      rc = @table_model.row_count
+      @current_index += 1 if @current_index < rc
+      bounds_check
+    end
+    def goto_bottom
+      rc = @table_model.row_count
+      @current_index = rc -1
+      bounds_check
+    end
+    def goto_top
+        @current_index = 0
+        bounds_check
+    end
+    def scroll_backward
+      h = @height-3      
+      @current_index -= h 
+      bounds_check
+    end
+    def scroll_forward
+      h = @height-3      
+      rc = @table_model.row_count
+      # more rows than box
+      if h < rc
+        @toprow += h+1 #if @current_index+h < rc
+        @current_index = @toprow
+      else
+        # fewer rows than box
+        @current_index = rc -1
+      end
+      #@current_index += h+1 #if @current_index+h < rc
+      bounds_check
+    end
+
+    def bounds_check
+      h = @height-3      
+      rc = @table_model.row_count
+      #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+      @current_index = 0 if @current_index < 0  # not lt 0
+      @current_index = rc-1 if @current_index >= rc # not gt rowcount
+      @toprow = rc-h-1 if rc > h and @toprow > rc - h - 1 # toprow shows full page if possible
+      # curr has gone below table,  move toprow forward
       if @current_index - @toprow > h
         @toprow = @current_index - h
       elsif @current_index < @toprow
+        # curr has gone above table,  move toprow up
         @toprow = @current_index
       end
+      #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+      set_form_row
+      @repaint_required = true
     end
-    ##
-
+    # the cursor should be appropriately positioned
+    def set_form_row
+      r,c = rowcol
+      @form.row = r + (@current_index-@toprow) + 1
+    end
+    # temporary, while testing and fleshing out
+    def table_data_changed 
+      $log.debug " TEMPORARILY PLACED. REMOVE AFTER FINALIZED. table_data_changed"
+      #@data_changed = true
+      @repaint_required = true
+    end
     def repaint
+      return unless @repaint_required
       print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
       cc = @table_model.column_count
       rc = @table_model.row_count
+      tcm = @table_column_model
       tm = @table_model
       tr = @toprow
       h = @height - 3
@@ -280,31 +359,49 @@ module RubyCurses
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
+          offset = 0
           0.upto(cc-1) do |colix|
+            acolumn = tcm.column(colix)
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
             content = tm.get_value_at(crow, colix)
-            #crend = get_default_cell_renderer_for_class content.class.to_s
-            crend = get_cell_renderer(crow, colix)
-            crend = get_default_cell_renderer_for_class(content.class.to_s) if crend.nil?
-            crend.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+            #renderer = get_default_cell_renderer_for_class content.class.to_s
+            renderer = get_cell_renderer(crow, colix)
+            if renderer.nil?
+              renderer = get_default_cell_renderer_for_class(content.class.to_s) if renderer.nil?
+              renderer.display_length acolumn.width unless acolumn.nil?
+            end
+            width = renderer.display_length + 1
+            #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+            renderer.repaint @form.window, r+hh, c+(offset), content, focussed, selected
+            offset += width
           end
         else
           # clear rows
         end
       end
+      @table_changed = false
+      @repaint_required = false
     end
     def print_border g
+      return unless @table_changed
       g.print_border @row, @col, @height, @width, $datacolor
     end
     def print_header
+      return unless @table_changed
       r,c = rowcol
       header_model = @table_header.table_column_model
+      tcm = @table_column_model
+      offset = 0
       header_model.each_with_index do |tc, colix|
+        acolumn = tcm.column colix
         renderer = tc.cell_renderer
         renderer = @table_header.default_renderer if renderer.nil?
+        renderer.display_length acolumn.width unless acolumn.nil?
+        width = renderer.display_length + 1
         content = tc.header_value
-        renderer.repaint @form.window, r, c+(colix*11), content, false, false
+        renderer.repaint @form.window, r, c+(offset), content, false, false
+        offset += width
       end
     end
 
@@ -315,7 +412,6 @@ module RubyCurses
   ## TC 
   #
   class TableColumn
-    attr_reader :width
     attr_reader :identifier
     attr_accessor :min_width, :max_width, :is_resizable
     attr_accessor :cell_renderer
@@ -323,14 +419,19 @@ module RubyCurses
     attr_accessor :header_renderer  
     attr_reader :header_value
     def initialize identifier, header_value, width, config={}, &block
-      @current_width = width
+      @width = width
       @identifier = identifier
       @header_value = header_value
       instance_eval &block if block_given?
     end
-    def width w
-      @width = w
+    ## display this row on top
+    def width(*val)
+      if val.empty?
+        @width
+      else
+        @width = val[0] 
       # fire property change
+      end
     end
     ## table header will be picking header_value from here
     def set_header_value w
@@ -392,7 +493,7 @@ module RubyCurses
       @selected_columns = []
     end
     def column ix
-      raise "Invalid arg #{ix}" if ix < 0 or ix > @columns.length-1
+      raise "Invalid arg #{ix}" if ix < 0 or ix > (@columns.length() -1)
       @columns[ix]
     end
     ##
@@ -428,8 +529,11 @@ module RubyCurses
     end
     def move_column ix, newix
     end
+    ##
+    # return index of column identified with identifier
     def column_index identifier
-      nil
+      @columns.each_with_index {|c, i| return i if c.identifier == identifier }
+      return nil
     end
     ## TODO  - if we get into column selection somewhen
     def get_selection_model
@@ -437,9 +541,6 @@ module RubyCurses
     end
     def set_selection_model lsm
       @lsm = lsm
-    end
-    def column_index identifier
-      @columns.detect { |i| i.identifier == identifier }
     end
     # add tcm listener
   end
@@ -450,8 +551,20 @@ module RubyCurses
       end
       def row_count
       end
-      def value_at row, col, val
+      def set_value_at row, col, val
       end
+      def get_value_at row, col
+      end
+=begin
+      def << obj
+      end
+      def insert row, obj
+      end
+      def delete obj
+      end
+      def delete_at row
+      end
+=end
     end # class 
 
     class DefaultTableModel
@@ -471,6 +584,18 @@ module RubyCurses
       end
       def get_value_at row, col
         return @data[row][ col]
+      end
+      def << obj
+        @data << obj
+      end
+      def insert row, obj
+        @data.insert row, obj
+      end
+      def delete obj
+        @data.delete obj
+      end
+      def delete_at row
+        @data.delete_at row
       end
     end # class 
 

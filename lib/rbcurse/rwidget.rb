@@ -87,7 +87,7 @@ module RubyCurses
       # needs to move to a keystroke class
       def keycode_tos keycode
         case keycode
-        when 32..126
+        when 33..126
           return keycode.chr
         when ?\C-a .. ?\C-z
           return "C-" + (keycode + ?a -1).chr 
@@ -97,7 +97,26 @@ module RubyCurses
           return "M-C-"+ (keycode - 32).chr
         when ?\M-0..?\M-9
           return "M-"+ (keycode - 48).chr
+        when 32:
+          return "Space"
+        when 27:
+          return "Esc"
+        when ?\C-]
+          return "C-]"
+        when 258
+          return "down"
+        when 259
+          return "up"
+        when 260
+          return "left"
+        when 261
+          return "right"
         when KEY_F1..KEY_F12
+          return "F"+ (keycode-264).to_s
+        when 330
+          return "delete"
+        when 127
+          return "bs"
         else
           return keycode.to_s
         end
