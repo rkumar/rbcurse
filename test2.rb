@@ -9,7 +9,7 @@ require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rform'
 require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
-require 'lib/rbcurse/cellrenderer'
+#require 'lib/rbcurse/table/tablecellrenderer'
 require 'qdfilechooser'
 if $0 == __FILE__
   include RubyCurses

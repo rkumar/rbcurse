@@ -183,9 +183,11 @@ module RubyCurses
     #--- row and column  methods ---#
     def add_column tc
       @table_column_model << tc
+      table_structure_changed
     end
     def remove_column tc
-      @table_column_model.delete  tc
+      @table_column_model.remove_column  tc
+      table_structure_changed
     end
     def get_column ident
     end
@@ -341,6 +343,11 @@ module RubyCurses
       #@data_changed = true
       @repaint_required = true
     end
+    def table_structure_changed 
+      $log.debug " TEMPORARILY PLACED. REMOVE AFTER FINALIZED. table_structure_changed"
+      @table_changed = true
+      @repaint_required = true
+    end
     def repaint
       return unless @repaint_required
       print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
@@ -360,11 +367,14 @@ module RubyCurses
         crow = tr+hh
         if crow < rc
           offset = 0
-          0.upto(cc-1) do |colix|
-            acolumn = tcm.column(colix)
+    #      0.upto(cc-1) do |colix|
+          # we loop through column_model and fetch data based on model index
+          tcm.each_with_index do |acolumn, colix|
+            #acolumn = tcm.column(colix)
+            model_index = acolumn.model_index
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
-            content = tm.get_value_at(crow, colix)
+            content = tm.get_value_at(crow, model_index)
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = get_cell_renderer(crow, colix)
             if renderer.nil?
@@ -391,7 +401,7 @@ module RubyCurses
       return unless @table_changed
       r,c = rowcol
       header_model = @table_header.table_column_model
-      tcm = @table_column_model
+      tcm = @table_column_model ## could have been overridden, should we use this at all
       offset = 0
       header_model.each_with_index do |tc, colix|
         acolumn = tcm.column colix
@@ -410,16 +420,19 @@ module RubyCurses
   end # class Table
 
   ## TC 
-  #
+  # All column changes take place in ColumnModel not in data. TC keeps pointer to col in data via
+  # model_index
   class TableColumn
     attr_reader :identifier
     attr_accessor :min_width, :max_width, :is_resizable
     attr_accessor :cell_renderer
+    attr_accessor :model_index  # index inside TableModel
     # user may override or set for this column, else headers default will be used
     attr_accessor :header_renderer  
     attr_reader :header_value
-    def initialize identifier, header_value, width, config={}, &block
+    def initialize model_index, identifier, header_value, width, config={}, &block
       @width = width
+      @model_index = model_index
       @identifier = identifier
       @header_value = header_value
       instance_eval &block if block_given?
@@ -489,7 +502,7 @@ module RubyCurses
     #  takes a column names array
     def initialize cols=[]
       @columns = []
-      cols.each {|c| @columns << TableColumn.new(c, c, 10) }
+      cols.each_with_index {|c, index| @columns << TableColumn.new(index, c, c, 10) }
       @selected_columns = []
     end
     def column ix

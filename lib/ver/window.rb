@@ -348,7 +348,7 @@ module VER
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
 
-      (row+2).upto(row+height-1) do |r|
+      (row+1).upto(row+height-1) do |r|
         printstring( r, col+1," "*(width-2) , color, att)
       end
       attron(Ncurses.COLOR_PAIR(color) | att)

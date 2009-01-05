@@ -725,8 +725,11 @@ module RubyCurses
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
     dsl_accessor :list_select_mode  # true or false allow multiple selection
+    dsl_accessor :list  # 2009-01-05 23:59 
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :default_value     # 
+    dsl_accessor :default_values     # #  2009-01-06 00:05 after removing meth missing 
+    dsl_accessor :height, :width, :top, :left  #  2009-01-06 00:05 after removing meth missing
 
     dsl_accessor :message_height
 
@@ -982,8 +985,8 @@ module RubyCurses
           width 30
           height 6
           list  list
-          display_length  30
-          set_buffer defaultvalue
+          # ?? display_length  30
+          #set_buffer defaultvalue
           select_mode select_mode
           default_values default_values
           is_popup false
@@ -1361,8 +1364,8 @@ module RubyCurses
         $log.debug("MISSING calling Variable  #{sym} called #{args[0]}")
         @value.send(sym, args)
       else
-        $log.error("ERROR VARIABLE MISSING #{sym} called")
-        raise "ERROR VARIABLE MISSING #{sym} called"
+        $log.error("ERROR VARIABLE MISSING #{sym} called by #{self}")
+        raise "ERROR VARIABLE MISSING #{sym} called by #{self}"
       end
     end
   end
@@ -1709,6 +1712,7 @@ module RubyCurses
     dsl_accessor :value
     dsl_accessor :surround_chars 
     dsl_accessor :variable    # value linked to this variable which is a boolean
+    dsl_accessor :display_length    #  2009-01-06 00:10 
 
     # item_event
     def initialize form, config={}, &block
@@ -2091,7 +2095,7 @@ module RubyCurses
     include DSL
     include RubyCurses::EventHandler
     dsl_accessor :title
-    dsl_accessor :row, :col, :height
+    dsl_accessor :row, :col, :height, :width
     dsl_accessor :layout
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
@@ -2239,7 +2243,7 @@ module RubyCurses
           width width
           height height
           list_data_model  list
-          display_length  30
+# ?? XXX          display_length  30
 #         set_buffer defaultvalue
           select_mode select_mode
           default_values default_values

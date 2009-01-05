@@ -633,6 +633,7 @@ module RubyCurses
     dsl_accessor :height  # height of viewport
     dsl_accessor :title   # set this on top
     dsl_accessor :title_attrib   # bold, reverse, normal
+    dsl_accessor :footer_attrib   # bold, reverse, normal
     dsl_accessor :list    # the array of data to be sent by user
     dsl_accessor :maxlen    # max len to be displayed
     attr_reader :toprow    # the toprow in the view (offsets are 0)
