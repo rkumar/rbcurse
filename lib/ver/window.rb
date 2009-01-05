@@ -19,6 +19,7 @@ module VER
 
       @window = Ncurses::WINDOW.new(height, width, top, left)
       @panel = Ncurses::Panel.new_panel(@window)
+      ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       $error_message_row = $status_message_row = Ncurses.LINES-1
 
       Ncurses::keypad(@window, true)
@@ -291,6 +292,7 @@ module VER
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
+      ## XXX check if row is exceeding height and don't print
       att = Ncurses::A_NORMAL if att.nil?
       case att.to_s.downcase
       when 'underline'
@@ -304,6 +306,12 @@ module VER
       end
 
       attron(Ncurses.COLOR_PAIR(color) | att)
+      # we should not print beyond window coordinates
+      # trying out on 2009-01-03 19:29 
+      width = Ncurses.COLS
+      # the next line won't ensure we don't write outside some bounds like table
+      #string = string[0..(width-c)] if c + string.length > width
+      #$log.debug "PRINT #{string.length}, #{Ncurses.COLS}, #{c} "
       mvprintw(r, c, "%s", string);
       attroff(Ncurses.COLOR_PAIR(color) | att)
     end

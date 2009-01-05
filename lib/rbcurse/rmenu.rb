@@ -84,6 +84,7 @@ module RubyCurses
     def fire
       $log.debug ">>>fire menuitem : #{@text} #{@command} "
       @command.call self, *@args if !@command.nil?
+      return :CLOSE # added 2009-01-02 00:09 to close only actions, not submenus
     end
     def highlight tf=true
       if tf
@@ -158,8 +159,8 @@ module RubyCurses
         end
       else
         ### shouod this not just show ?
-      $log.debug "menu fire called: #{text} ELSE XXX WHEN IS THIS CALLED ? 658  " 
-        @items[@active_index].fire # this should happen if selected. else selected()
+        $log.debug "menu fire called: #{text} ELSE XXX WHEN IS THIS CALLED ? 658  " 
+        return @items[@active_index].fire # this should happen if selected. else selected()
       end
       #@action.call if !@action.nil?
     end
@@ -329,12 +330,7 @@ module RubyCurses
       when KEY_UP
         cmenu.select_prev_item
       when KEY_ENTER, 10, 13, 32 # added 32 2008-11-27 23:50 
-        cmenu.fire
-        if !cmenu.is_a? RubyCurses::Menu 
-          return :CLOSE
-        else
-          return :KEEPOPEN
-        end
+        return cmenu.fire
       when KEY_LEFT
         if cmenu.parent.is_a? RubyCurses::Menu 
        $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
@@ -470,6 +466,7 @@ module RubyCurses
           @selected = true
             $log.debug " mb insdie ENTER :  #{current_menu}" 
             ret = current_menu.handle_key ch
+            $log.debug "ret = #{ret}  mb insdie ENTER :  #{current_menu}" 
             #break; ## 2008-12-29 18:00  This will close after firing
             #anything
             break if ret == :CLOSE

@@ -14,13 +14,13 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+if no focusable widget, stack overflow. XXX
+
 Some bugs in TextArea wrapping.
-When a word is carried dowm, it shold gt carried back up too if i pt a space inside.
+When a word is carried dowm, it shold gt carried back up too if i pt a space
+inside. However, even vim does not do this, btw.
 
 - can't call down up etc directly, since post_key still needs to be called. have to call handle_key KEY_UP etc.
-
-
-add_observer - remove it. Featuritis.
 
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
@@ -44,13 +44,15 @@ Add tabbed pane to test2.rb and integrate so i see how it actually integrates.
 
 For toggle, checkbutton etc it is variable, not textvariable
 
-menu's Exit, throws close without destroying menu (i suspect). It should close menu then app
+Textarea bug: if line inserted is gt maxlen then it is split but when writing to disk a space will be added.
+This is a bug only if the line has NO SPACE in it. 
 
     +----------+
     |  TO ADD  |
     +----------+
 
 - Listbox : status or detail, row m or n.
+  Search up and down
 - Text Area: INS/OVW
 - TextArea: choice of word wrap, col wrap or no wrap.
 
@@ -66,7 +68,7 @@ RowRenderer ?
 text components: get set add keymap, get action for keystroke etc
 or will this make each widget heavy? TextArea/View may require for attaching actions/movement etc
 
-Textarea del does not delete newline, although C-k does look into that.
+Textarea "del" does not delete newline, although C-k does look into that.
 
 Tabbedpane needs to look okay if change colors. At least should be able to switch to reverse.
 
@@ -74,11 +76,14 @@ Menuitem: disabled, what if no action (not armed).
 
 Properties: redraw only when property change or data change, not each time. Esp for label.
 
+if there is no next, should onleave be fired ?
 
-if there is no next, should onleave be fired.
+focus_traversable - bool: tabbing won't get focus, but can be focussed by Enter (default) or hotkey.
 
 RECENTLY DONE:
 --------------
+
+menu's Exit, throws close without destroying menu (i suspect). It should close menu then app. 2009-01-01 13:16 
 
 if text_variable, when updateing value also puts object name, then it can multiplex across many objcts like a set of checkboxes, like a model ? One such object can be used fr all fields and inside it update a hash.
 
@@ -105,6 +110,12 @@ Combo - list of 3 is showing only 2 in max visible, need to scroll down for 3rd/
 =========
 Thoughts:
 =========
+
+if repaint gets a handle for form.window then it neednt worry about getting initialized with form/window.
+in other words, when a widget needs a window ref it shd be given one..
+Similaryl how can we remove haing to pass Form. That way one can create independent fields/widgets.
+
+
 text_variable etc: when set should class register with text_variable to be updated on change so it can repaint.
 or should it always repaint by default, if based on Variable.
 

@@ -9,7 +9,7 @@ require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rform'
 require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
-#require 'lib/rbcurse/qdfilechooser'
+require 'lib/rbcurse/cellrenderer'
 require 'qdfilechooser'
 if $0 == __FILE__
   include RubyCurses
@@ -297,9 +297,12 @@ if $0 == __FILE__
       filemenu.add(RubyCurses::MenuItem.new "New",'N')
       filemenu.add(item = RubyCurses::MenuItem.new("Save",'S'))
       item.command() do |it|  
-        result = get_string("Please enter file to save in")
-        $message.value = "file: #{result}"
-        throw(:menubarclose)
+        filename = get_string("Please enter file to save in", 20, "t.t")
+        $message.value = "file: #{filename}"
+        filename ||= "tmpzzzz.tmp"
+        str = texta.to_s
+        File.open(filename, 'w') {|f| f.write(str) }
+        $message.value = " written #{str.length} bytes to file: #{filename}"
       end
       filemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
       item.command(@form, texta) do |it, form, testa|  
@@ -335,7 +338,7 @@ if $0 == __FILE__
         #throw(:menubarclose);
         throw(:close)
       }
-      item = RubyCurses::CheckBoxMenuItem.new "CheckMe"
+      item = RubyCurses::CheckBoxMenuItem.new "Reverse"
 #     item.onvalue="On"
 #     item.offvalue="Off"
      #item.checkbox.text "Labelcb"
@@ -413,11 +416,14 @@ if $0 == __FILE__
       # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
       @mb.toggle_key = KEY_F2
       @form.set_menu_bar  @mb
+      #@cell = CellRenderer.new "Hello", {"col" => 1, "row"=>29, "justify"=>:right, "display_length" => 30}
       # END
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
+        #@cell.repaint @form.window, 29,1, "ok #{ch} pressed!"
+        #@cell.repaint @form.window, 29,45, "#{ch} pressed!"
         @form.handle_key(ch)
         #@form.repaint
         @window.wrefresh

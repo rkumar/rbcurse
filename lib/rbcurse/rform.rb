@@ -99,9 +99,9 @@ module RubyCurses
         data = wrap_text data
       #  $log.debug "after wrap text done :#{data}"
         data = data.split("\n")
-        data[-1] << "\r"
+         data[-1] << "\r" #XXXX
       else
-        data << "\r" if data[-1,1] != "\r"
+        data << "\r" if data[-1,1] != "\r" #XXXX
       end
       data.each do |row|
         @list.insert off0, row
@@ -118,14 +118,15 @@ module RubyCurses
         data = wrap_text data
         $log.debug "after wrap text for :#{data}"
         data = data.split("\n")
+        # 2009-01-01 22:24 the \n was needed so we would put a space at time of writing.
         # we need a soft return so a space can be added when pushing down.
         # commented off 2008-12-28 21:59 
         #data.each {|line| @list << line+"\n"}
         data.each {|line| @list << line}
-        @list[-1] << "\r"
+         @list[-1] << "\r" #XXXX
       else
         $log.debug "normal append for #{data}"
-        data << "\r" if data[-1,1] != "\r"
+        data << "\r" if data[-1,1] != "\r" #XXXX
         @list << data
       end
       goto_end if @auto_scroll # to test out.
@@ -604,6 +605,21 @@ module RubyCurses
     end
     def cursor_bol
       set_form_col 0
+    end
+    def to_s
+      l = getvalue
+      str = ""
+      old = " "
+      l.each_with_index do |line, i|
+        tmp = line.gsub("\n","")
+        tmp.gsub!("\r", "\n")
+        if old[-1,1] !~ /\s/ and tmp[0,1] !~ /\s/
+          str << " "
+        end
+        str << tmp
+        old = tmp
+      end
+      str
     end
   end # class textarea
   ##

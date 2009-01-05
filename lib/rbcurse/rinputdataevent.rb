@@ -28,7 +28,9 @@ module RubyCurses
       inspect
     end
     def inspect
-      "#{@type.to_s}, #{@source}, ind0:#{@index0}, ind1:#{@index1}, row:#{@row}, text:#{@text}"
+      ## now that textarea.to_s prints content we shouldn pass it here.
+      #"#{@type.to_s}, #{@source}, ind0:#{@index0}, ind1:#{@index1}, row:#{@row}, text:#{@text}"
+      "#{@type.to_s}, ind0:#{@index0}, ind1:#{@index1}, row:#{@row}, text:#{@text}"
     end
   end
 end

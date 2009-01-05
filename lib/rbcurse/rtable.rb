@@ -21,15 +21,41 @@ include RubyCurses
 module RubyCurses
   extend self
 
+  # ------ NOTE ------------------ #
+  # Table contains a TableModel
+  # Table contains a TableColumnModel (which contains TableColumn instances)
+  # TableColumn contains 2 TableCellRenderer: column and header
+  # ------------------------ #
+  # TODO : tableheader, model index
+  #
+  # Due to not having method overloading, after usig new, use set_data or set_model
+  #
+  # This is a widget that displays tabular data. We will get into editing after this works out.
+  # This uses the MVC architecture and is WIP as of 2009-01-04 18:37 
+  # TODO cellrenderers should be able to get parents bgcolor and color (Jtables) if none defined for them.
   class Table < Widget
     include RubyCurses::EventHandler
-    dsl_accessor :list_config
 
+    dsl_accessor :height
+    dsl_accessor :title
+    dsl_accessor :title_attrib
+    dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     attr_accessor :current_index
 
     def initialize form, config={}, &block
       super
+      init_locals
+    end
+
+    def init_locals
+      @col_offset = @row_offset = 1
+      @focusable= true
       @current_index ||= 0
+      @toprow ||= 0
+      @to_print_borders ||= 1
+      @show_grid ||= 1
+      # @selected_color ||= 'yellow'
+      # @selected_bgcolor ||= 'black'
     end
 
     def set_data data, colnames_array
@@ -43,7 +69,24 @@ module RubyCurses
       elsif colnames_array.is_a? RubyCurses::TableColumnModel
         table_column_model  colnames_array
       end
+      create_default_list_selection_model
+      create_table_header
     end
+    def set_model tm, tcm=nil, lsm=nil
+        table_model tm
+        if tcm.nil?
+          create_default_table_column_model
+        else
+          table_column_model tcm
+        end
+        if lsm.nil?
+          create_default_list_selection_model
+        else
+          list_selection_model lsm
+        end
+      create_table_header
+    end
+
     def table_model tm
       raise "data error" if !tm.is_a? RubyCurses::TableModel
       @table_model = tm
@@ -51,34 +94,92 @@ module RubyCurses
     def table_column_model tcm
       raise "data error" if !tcm.is_a? RubyCurses::TableColumnModel
       @table_column_model = tcm
+      @table_header.column_model(tcm) unless @table_header.nil?
     end
+    # XXX link in
     def list_selection_model lsm
       @list_selection_model = lsm
     end
-
-    #--- selection methods ---#
-
-    def clear_selection
-
+    def create_default_list_selection_model
+      list_selection_model DefaultListSelectionModel.new
+    end
+    def create_default_table_column_model
+      table_column_model DefaultTableColumnModel.new
+    end
+    def create_table_header
+      @table_header = TableHeader.new @table_column_model
     end
 
+    #--- selection methods ---#
+    def is_column_selected col
+    end
+    def is_row_selected row
+      @list_selection_model.is_selected_index row
+    end
+    def is_cell_selected row, col
+    end
+    def add_column_selection_interval ix0, ix1
+      # if column_selection_allowed
+    end
+    def remove_column_selection_interval ix0, ix1
+    end
+    def add_row_selection_interval ix0, ix1
+      # if row_selection_allowed
+    end
+    def remove_row_selection_interval ix0, ix1
+    end
+    attr_accessor :row_selection_allowed
+    attr_accessor :column_selection_allowed
+
+
+    def clear_selection
+      @list_selection_model.clear_selection
+    end
+    def selected_item
+    #  @list[@current_index]
+    end
+    def selected_rows
+      @list_selection_model.get_selected_rows
+    end
+    def selected_row_count
+      selected_rows.size
+    end
+    def selected_row
+      @list_selection_model.get_min_selection_index
+    end
+    alias :selected_index :selected_row
+
+    def selected_column
+      @table_column_model.selected_columns
+    end
+    def selected_columns
+      @table_column_model.selected_columns
+    end
+    def selected_column_count
+      @table_column_model.selected_column_count
+    end
 
     #--- row and column  methods ---#
     def add_column tc
+      @table_column_model << tc
     end
     def remove_column tc
+      @table_column_model.delete  tc
     end
     def get_column ident
     end
     def get_column_name ix
+      @table_column_model[ix]
     end
     def move_column ix, newix
     end
 
     #--- row and column  methods ---#
     def get_value_at row, col
+      @table_model.get_value_at row, col
     end
     def set_value_at row, col, value
+      @table_model.set_value_at row, col, value
     end
 
     #--- event listener support  methods (p521) ---#
@@ -91,95 +192,118 @@ module RubyCurses
     end
     def column_moved tabcolmodev
     end
+    ## to do for TrueClass and FalseClass
+    def prepare_renderers
+      @crh = Hash.new
+      @crh['String'] = TableCellRenderer.new "", {"parent" => self }
+      @crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "parent" => self}
+      @crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "parent" => self}
+      #@crh['String'] = TableCellRenderer.new "", {"bgcolor" => "cyan", "color"=>"white", "parent" => self}
+      #@crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue","bgcolor"=>"cyan" }
+      #@crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue", "bgcolor"=>"cyan" }
+    end
+    # this is vry temporary and will change as we begin to use models - i need to pick 
+    # columns renderer
+    def get_default_cell_renderer_for_class cname
+      @crh || prepare_renderers
+      @crh[cname] || @crh['String']
+    end
+    def set_default_cell_renderer_for_class cname, rend
+      @crh ||= []
+      @crh[cname]=rend
+    end
+    ## override for cell or row behaviour
+    def get_cell_renderer row, col
+      # get columns renderer else class default
+      column = @table_column_model.column(col)
+      rend = column.cell_renderer
+      return rend # can be nil
+    end
     # -----------------
-    def selected_item
-    #  @list[@current_index]
-    end
-    def selected_index
-    #  @current_index
-    end
 
     ##
     # combo edit box key handling
     def handle_key(ch)
       @current_index ||= 0
+      @toprow ||= 0
+      h = @height-3      
       case ch
       when KEY_UP  # show previous value
         @current_index -= 1 if @current_index > 0
-        set_buffer @list[@current_index].dup
-        set_modified(true) 
-        fire_handler :ENTER_ROW, self
-        @list.on_enter_row self
+    #    @toprow = @current_index
       when KEY_DOWN  # show previous value
-        @current_index += 1 if @current_index < @list.length()-1
-        set_buffer @list[@current_index].dup
-        set_modified(true) 
-        fire_handler :ENTER_ROW, self
-        @list.on_enter_row self
-      when KEY_DOWN+ RubyCurses::META_KEY # alt down
-        popup  # pop up the popup
+        rc = @table_model.row_count
+        @current_index += 1 if @current_index < rc
+    #    @toprow = @current_index
       else
-        super
+    #    super
+      end
+      if @current_index - @toprow > h
+        @toprow = @current_index - h
+      elsif @current_index < @toprow
+        @toprow = @current_index
       end
     end
     ##
-
-    # Field putc advances cursor when it gives a char so we override this
-    def putc c
-      if c >= 0 and c <= 127
-        ret = putch c.chr
-        if ret == 0
-          addcol 1 if @editable
-          set_modified 
-        end
-      end
-      return -1 # always ??? XXX 
-    end
-    ##
-    # field does not give char to non-editable fields so we override
-    def putch char
-      @current_index ||= 0
-      if @editable 
-        super
-        return 0
-      else
-        match = next_match(char)
-        set_buffer match unless match.nil?
-        fire_handler :ENTER_ROW, self
-      end
-      @modified = true
-      fire_handler :CHANGE, self    # 2008-12-09 14:51  ???
-      0
-    end
-    ##
-    # the sets the next match in the edit field
-    ##
-    # on leaving the listbox, update the combo/datamodel.
-    # we are using methods of the datamodel. Updating our list will have
-    # no effect on the list, and wont trigger events.
-    # Do not override.
-    def on_leave
-    end
 
     def repaint
-      super
-      c = @col + @display_length
-     # @form.window.mvwvline( @row, c, ACS_VLINE, 1)
-      @form.window.mvwaddch @row, c+1, Ncurses::ACS_GEQUAL
-     # @form.window.mvwvline( @row, c+2, ACS_VLINE, 1)
-     # @form.window.mvwaddch @row, c+2, Ncurses::ACS_S1
-     # @form.window.mvwaddch @row, c+3, Ncurses::ACS_S9
-     # @form.window.mvwaddch @row, c+4, Ncurses::ACS_LRCORNER
-     # @form.window.mvwhline( @row, c+5, ACS_HLINE, 2)
+      print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
+      cc = @table_model.column_count
+      rc = @table_model.row_count
+      tm = @table_model
+      tr = @toprow
+      h = @height - 3
+      r,c = rowcol
+      # each cell should print itself, however there is a width issue. 
+      # Then thee
+      print_header # do this once, unless columns changed
+      # TODO TCM should give modelindex of col which is used to fetch data from TM
+      r += 1 # save for header
+      0.upto(h) do |hh|
+        crow = tr+hh
+        if crow < rc
+          0.upto(cc-1) do |colix|
+            focussed = @current_index == crow ? true : false 
+            selected = crow == 3 ? true : false
+            content = tm.get_value_at(crow, colix)
+            #crend = get_default_cell_renderer_for_class content.class.to_s
+            crend = get_cell_renderer(crow, colix)
+            crend = get_default_cell_renderer_for_class(content.class.to_s) if crend.nil?
+            crend.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+          end
+        else
+          # clear rows
+        end
+      end
+    end
+    def print_border g
+      g.print_border @row, @col, @height, @width, $datacolor
+    end
+    def print_header
+      r,c = rowcol
+      header_model = @table_header.table_column_model
+      header_model.each_with_index do |tc, colix|
+        renderer = tc.cell_renderer
+        renderer = @table_header.default_renderer if renderer.nil?
+        content = tc.header_value
+        renderer.repaint @form.window, r, c+(colix*11), content, false, false
+      end
     end
 
-  end # class ComboBox
 
+    attr_accessor :toprow # top visible
+  end # class Table
+
+  ## TC 
+  #
   class TableColumn
     attr_reader :width
     attr_reader :identifier
     attr_accessor :min_width, :max_width, :is_resizable
-    attr_accessor :align # ?? datatype ?
+    attr_accessor :cell_renderer
+    # user may override or set for this column, else headers default will be used
+    attr_accessor :header_renderer  
+    attr_reader :header_value
     def initialize identifier, header_value, width, config={}, &block
       @current_width = width
       @identifier = identifier
@@ -190,11 +314,15 @@ module RubyCurses
       @width = w
       # fire property change
     end
-    def header_value w
+    ## table header will be picking header_value from here
+    def set_header_value w
       @header_value = w
       # fire property change
     end
   end # class tc
+
+  ## TCM 
+  #
   class TableColumnModel
     def column ix
       nil
@@ -233,18 +361,28 @@ module RubyCurses
     end
     # add tcm listener
   end
+  ## DTCM  DCM
   class DefaultTableColumnModel < TableColumnModel
+    include Enumerable
     attr_accessor :column_selection_allowed
-    @columns = []
-    @selected_columns = []
+    
+    ##
+    #  takes a column names array
+    def initialize cols=[]
+      @columns = []
+      cols.each {|c| @columns << TableColumn.new(c, c, 10) }
+      @selected_columns = []
+    end
     def column ix
+      raise "Invalid arg #{ix}" if ix < 0 or ix > @columns.length-1
       @columns[ix]
     end
-    def columns  # ??
-      @columns
-      #@columns.each { |c| 
-      #  yield c if block_given?
-      #}
+    ##
+    # yields a table column
+    def each
+      @columns.each { |c| 
+        yield c 
+      }
     end
     def column_count
       @columns.length
@@ -255,28 +393,40 @@ module RubyCurses
     def selected_columns
       @selected_columns
     end
+    def clear_selection
+      @selected_columns = []
+    end
     def total_column_width
       0
     end
+    def set_selection_model lsm
+      @column_selection_model = lsm
+    end
+    def add_column tc
+      @columns << tc
+    end
+    def remove_column tc
+      @columns.delete  tc
+    end
+    def move_column ix, newix
+    end
+    def column_index identifier
+      nil
+    end
+    ## TODO  - if we get into column selection somewhen
     def get_selection_model
       @lsm
     end
     def set_selection_model lsm
       @lsm = lsm
     end
-    def add_column tc
-      @columns = tc
-    end
-    def remove_column tc
-      @columns.remove tc
-    end
-    def move_column ix, newix
-    end
     def column_index identifier
       @columns.detect { |i| i.identifier == identifier }
     end
     # add tcm listener
+  end
 
+  ## TM 
     class TableModel
       def column_count
       end
@@ -285,24 +435,88 @@ module RubyCurses
       def value_at row, col, val
       end
     end # class 
+
     class DefaultTableModel
       def initialize data, colnames_array
         @data = data
         @column_identifiers = colnames_array
+      end
       def column_count
         @column_identifiers.count
       end
       def row_count
         @data.length
       end
-      def value_at row, col, val=nil
-        if val == nil
-          return @data[row, col]
-        else
+      def set_value_at row, col, val
           # if editing allowed
           @data[row][col] = val
-        end
+      end
+      def get_value_at row, col
+        return @data[row][ col]
       end
     end # class 
+
+    ##
+    # LSM 
+    #
+    class DefaultListSelectionModel
+      include EventHandler
+      attr_accessor :selection_mode
+      attr_reader :anchor_selection_index
+      attr_reader :lead_selection_index
+      def initialize
+        @selected_indices=[]
+        @anchor_selection_index = -1
+        @lead_selection_index = -1
+        @selection_mode = :MULTIPLE
+      end
+
+      def clear_selection
+        @selected_indices=[]
+      end
+      def is_selected_index ix
+        @selected_indices.include? ix
+      end
+      def get_max_selection_index
+        @selected_indices[-1]
+      end
+      def get_min_selection_index
+        @selected_indices[0]
+      end
+      def get_selected_rows
+        @selected_indices
+      end
+      ## TODO should go in sorted, and no dupes
+      def add_selection_interval ix0, ix1
+        @anchor_selection_index = ix0
+        @lead_selection_index = ix1
+        ix0.uptp(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
+      end
+      def remove_selection_interval ix0, ix1
+        @anchor_selection_index = ix0
+        @lead_selection_index = ix1
+        @selected_indices.delete_if {|x| x >= ix0 and x <= ix1}
+      end
+      def insert_index_interval ix0, len
+        @anchor_selection_index = ix0
+        @lead_selection_index = ix0+len
+        add_selection_interval @anchor_selection_index, @lead_selection_index
+      end
+    end # class DefaultListSelectionModel
+    ##
+    # 
+    class TableHeader
+      attr_accessor :default_renderer
+      attr_accessor :table_column_model
+      def initialize table_column_model
+        @table_column_model = table_column_model
+        create_default_renderer
+      end
+      def create_default_renderer
+        #@default_renderer = TableCellRenderer.new "", {"display_length" => 10, "justify" => :center}
+        @default_renderer = TableCellRenderer.new "", {"display_length" => 10, "justify" => :center, "color"=>"white", "bgcolor"=>"blue"}
+      end
+
+    end
 
 end # module

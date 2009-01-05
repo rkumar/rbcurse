@@ -31,7 +31,8 @@ require 'lib/rbcurse/rdialogs'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
-  def method_missing(sym, *args)
+  # using this resulted in time lost in bedebugging why some method was not working.
+  def OLD_method_missing(sym, *args)
     $log.debug "METHOD MISSING : #{sym} #{self} "
     #if "#{sym}"[-1].chr=="="
     #  sym = "#{sym}"[0..-2]
@@ -77,10 +78,34 @@ module RubyCurses
         txt.gsub(/(.{1,#{max}})( +|$\n?)|(.{1,#{max}})/,
                  "\\1\\3\n") 
       end
+      def clean_string! content
+          content.chomp! # don't display newline
+          content.gsub!(/[\t\n]/, '  ') # don't display tab
+          content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+          content
+      end
+      # needs to move to a keystroke class
+      def keycode_tos keycode
+        case keycode
+        when 32..126
+          return keycode.chr
+        when ?\C-a .. ?\C-z
+          return "C-" + (keycode + ?a -1).chr 
+        when ?\M-A..?\M-z
+          return "M-"+ (keycode - 128).chr
+        when ?\M-\C-A..?\M-\C-Z
+          return "M-C-"+ (keycode - 32).chr
+        when ?\M-0..?\M-9
+          return "M-"+ (keycode - 48).chr
+        when KEY_F1..KEY_F12
+        else
+          return keycode.to_s
+        end
+      end
 
-      def get_color default=$datacolor
-        if @bgcolor.is_a? String and @color.is_a? String
-          acolor = ColorMap.get_color(@color, @bgcolor)
+      def get_color default=$datacolor, color=@color, bgcolor=@bgcolor
+        if bgcolor.is_a? String and color.is_a? String
+          acolor = ColorMap.get_color(color, bgcolor)
         else
           acolor = default
         end
@@ -123,27 +148,6 @@ module RubyCurses
             end
           end # if
         end # if
-            ## trying this out - chaining events
-        if !@observers.nil?
-          @observers.each do |obs|
-            $log.debug "EventHandler calling observers observe #{@name}, #{event}, obj: #{object}"
-            #obs.fire_handler event, object
-            obs.observe self, event, object
-            # obs.form.repaint # this is required if another popped up form is changing value, but looks ugly
-          end
-        end
-      end
-      ## NOTE : I am gonna knock observers off. No need to complicate matters.
-      ##
-      # these are other objects that may want to listen in on events and act upon them.
-      # trying this out
-      def add_observer object
-        @observers ||= []
-        $log.debug " Adding #{object} as observer to #{self}"
-        @observers << object
-      end
-      def observe source, event, object
-        $log.debug "Observe #{@self} gets #{@source}, #{event}, obj: #{object}"
       end
 
     end # module eventh
@@ -225,30 +229,9 @@ module RubyCurses
     def on_leave
       fire_handler :LEAVE, self
     end
-    # private
-    def Ovariable_set var, val
-        var = "@#{var}"
-        instance_variable_set(var, val) 
-    end
-    # private
     def rowcol
     # $log.debug "widgte rowcol : #{@row+@row_offset}, #{@col+@col_offset}"
       return @row+@row_offset, @col+@col_offset
-    end
-    def Oconfigure(*val , &block)
-      case val.size
-      when 1
-        return @config[val[0]]
-      when 2
-        @config[val[0]] = val[1]
-        variable_set(val[0], val[1]) 
-      end
-      instance_eval &block if block_given?
-    end
-    ## 
-    # returns param from hash. Unused and untested. 
-    def Ocget param
-      @config[param]
     end
     ## return the value of the widget.
     #  In cases where selection is possible, should return selected value/s
@@ -347,9 +330,9 @@ module RubyCurses
         @form.select_field @id
       end
     end
-    def get_color default=$datacolor
-      if @bgcolor.is_a? String and @color.is_a? String
-        acolor = ColorMap.get_color(@color, @bgcolor)
+    def get_color default=$datacolor, _color=@color, _bgcolor=@bgcolor
+      if _bgcolor.is_a? String and _color.is_a? String
+        acolor = ColorMap.get_color(_color, _bgcolor)
       else
         acolor = default
       end
@@ -621,16 +604,6 @@ module RubyCurses
       @row += row
       @window.wmove @row, @col
     end
-  def oldbind event, &blk
-   $log.debug "called form bind #{event} PLEASE ADD args here"
-    @handler[event] = blk
-  end
-  def oldfire_handler event, object
-    $log.debug "called form firehandler #{self}, #{event}, #{object}"
-    blk = @handler[event]
-    return if blk.nil?
-    blk.call object
-  end
   ##
   # bind an action to a key, required if you create a button which has a hotkey
   # or a field to be focussed on a key, or any other user defined action based on key

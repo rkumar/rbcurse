@@ -43,6 +43,7 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != ?q )
         texta << "#{ch} got"
+        texta.repaint
         @form.handle_key(ch)
         @window.wrefresh
       end
