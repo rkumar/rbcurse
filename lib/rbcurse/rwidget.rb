@@ -96,7 +96,7 @@ module RubyCurses
         when ?\M-\C-A..?\M-\C-Z
           return "M-C-"+ (keycode - 32).chr
         when ?\M-0..?\M-9
-          return "M-"+ (keycode - 48).chr
+          return "M-"+ (keycode-?\M-0).to_s
         when 32:
           return "Space"
         when 27:
@@ -118,6 +118,13 @@ module RubyCurses
         when 127
           return "bs"
         else
+          others=[?\M--,?\M-+,?\M-=]
+          s_others=%w[M-- M-+ M-=]
+          if others.include? keycode
+            index =  others.index keycode
+            return s_others[index]
+          end
+          # all else failed
           return keycode.to_s
         end
       end
@@ -205,7 +212,7 @@ module RubyCurses
     dsl_accessor :text, :text_variable
     dsl_accessor :underline                        # offset of text to underline DEPRECATED
     dsl_accessor :width                # desired width of text
-    dsl_accessor :wrap_length                      # wrap length of text, if applic
+    dsl_accessor :wrap_length                      # wrap length of text, if applic UNUSED
 
     # next 3 to be checked if used or not. Copied from TK.
     dsl_accessor :select_foreground, :select_background  # color init_pair
@@ -357,6 +364,38 @@ module RubyCurses
       end
       return acolor
     end
+    ##
+    # bind an action to a key, required if you create a button which has a hotkey
+    # or a field to be focussed on a key, or any other user defined action based on key
+    # e.g. bind_key ?\C-x, object, block 
+    # added 2009-01-06 19:13 since widgets need to handle keys properly
+    def bind_key keycode, *args, &blk
+      $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} #{args} "
+      @key_handler ||= {}
+      @key_args ||= {}
+      @key_handler[keycode] = blk
+      @key_args[keycode] = args
+    end
+
+    # e.g. process_key ch, self
+    # returns UNHANDLED if no block for it
+    # after form handles basic keys, it gives unhandled key to current field, if current field returns
+    # unhandled, then it checks this map.
+    # added 2009-01-06 19:13 since widgets need to handle keys properly
+    def process_key keycode, object
+      return :UNHANDLED if @key_handler.nil?
+      blk = @key_handler[keycode]
+      return :UNHANDLED if blk.nil?
+      $log.debug "called process_key #{object}, #{@key_args[keycode]}"
+      blk.call object,  *@key_args[keycode]
+      0
+    end
+    ## 
+    # to be added at end of handle_key of widgets so instlalled actions can be checked
+    def handle_key(ch)
+      ret = process_key ch, self
+      return :UNHANDLED if ret == :UNHANDLED
+    end
     ## ADD HERE WIDGET
   end
 
@@ -367,6 +406,7 @@ module RubyCurses
   # in one place.
   class Form
     include EventHandler
+    include RubyCurses::Utils
     attr_reader :value
     attr_reader :widgets
     attr_accessor :window
@@ -628,7 +668,7 @@ module RubyCurses
   # or a field to be focussed on a key, or any other user defined action based on key
   # e.g. bind_key ?\C-x, object, block
   def bind_key keycode, *args, &blk
-    $log.debug "called bind_key BIND #{keycode} #{args} "
+    $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} #{args} "
     @key_handler ||= {}
     @key_args ||= {}
     @key_handler[keycode] = blk
@@ -678,7 +718,7 @@ module RubyCurses
           end
         end
        $log.debug " form before repaint"
-        repaint
+       repaint
   end
   ##
   # test program to dump data onto log
@@ -1045,6 +1085,7 @@ module RubyCurses
     attr_reader :handler             # event handler
     attr_reader :type                # datatype of field, currently only sets chars_allowed
     attr_reader :curpos              # cursor position in buffer current
+    attr_accessor :datatype              # crrently set during set_buffer
 
     def initialize form, config={}, &block
       @form = form
@@ -1093,7 +1134,7 @@ module RubyCurses
       @buffer.insert(@curpos, char)
       @curpos += 1 if @curpos < @maxlen
       @modified = true
-      $log.debug " FIELD FIRING CHANGE: #{char}"
+      $log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
       fire_handler :CHANGE, self    # 2008-12-09 14:51 
       0
     end
@@ -1125,10 +1166,29 @@ module RubyCurses
     ## 
     # should this do a dup ??
     def set_buffer value
-      @buffer = value
+      @datatype = value.class
+      $log.debug " FIELD DATA #{@datatype}"
+      @buffer = value.to_s
+      @curpos = 0
     end
+    # converts back into original type
+    #  changed to convert on 2009-01-06 23:39 
     def getvalue
-      @buffer
+      dt = @datatype || String
+      $log.debug " FIELD getvalue #{dt}"
+      case dt.to_s
+      when "String"
+        $log.debug "IN STRING FIELD getvalue #{dt}"
+        return @buffer
+      when "Fixnum"
+        $log.debug "IN FIXNUM FIELD getvalue #{dt}"
+        return @buffer.to_i
+      when "Float"
+        return @buffer.to_f
+      else
+        $log.debug "IN DEFAULT FIELD getvalue #{dt}"
+        return @buffer.to_s
+      end
     end
   
   def set_label label
@@ -1139,7 +1199,7 @@ module RubyCurses
   end
   def repaint
 #    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
-    printval = getvalue_for_paint
+    printval = getvalue_for_paint().to_s # added 2009-01-06 23:27 
     printval = show()*printval.length unless @show.nil?
     if !printval.nil? 
       if printval.length > display_length # only show maxlen
@@ -1189,7 +1249,7 @@ module RubyCurses
     when ?\C-u
       @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
     when 32..126
-      $log.debug("ch #{ch}")
+      $log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
     else
       return :UNHANDLED
@@ -1291,7 +1351,7 @@ module RubyCurses
       val = getvalue
       $log.debug " FIELD ON LEAVE:#{val}. #{@values.inspect}"
       valid = true
-      if val.empty? and @null_allowed
+      if val.to_s.empty? and @null_allowed
         $log.debug " empty and null allowed"
       else
         if !@values.nil?
@@ -1299,7 +1359,7 @@ module RubyCurses
           raise FieldValidationException, "Field value (#{val}) not in values: #{@values.join(',')}" unless valid
         end
         if !@valid_regex.nil?
-          valid = @valid_regex.match(val)
+          valid = @valid_regex.match(val.to_s)
           raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
         end
       end

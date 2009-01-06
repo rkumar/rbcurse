@@ -14,6 +14,9 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+Field: if set_buffer sets numeric or float we should be intelligent and return edited values in same way,
+and not crash.
+
 if no focusable widget, stack overflow. XXX
 
 Some bugs in TextArea wrapping.

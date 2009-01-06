@@ -26,7 +26,7 @@ module RubyCurses
   # Table contains a TableColumnModel (which contains TableColumn instances)
   # TableColumn contains 2 TableCellRenderer: column and header
   # ------------------------ #
-  # TODO : tableheader, model index
+  # 
   #
   # Due to not having method overloading, after usig new, use set_data or set_model
   #
@@ -60,6 +60,10 @@ module RubyCurses
       @repaint_required = true
     end
 
+    def focussed_row
+      @current_index
+    end
+
     def set_data data, colnames_array
       if data.is_a? Array
         @table_model = RubyCurses::DefaultTableModel.new data, colnames_array
@@ -89,9 +93,14 @@ module RubyCurses
       create_table_header
     end
 
-    def table_model tm
-      raise "data error" if !tm.is_a? RubyCurses::TableModel
-      @table_model = tm
+    # getter and setter for table_model
+    def table_model(*val)
+      if val.empty?
+        @table_model
+      else
+        raise "data error" if !val[0].is_a? RubyCurses::TableModel
+        @table_model = val[0] 
+      end
     end
     def table_column_model tcm
       raise "data error" if !tcm.is_a? RubyCurses::TableColumnModel
@@ -101,7 +110,7 @@ module RubyCurses
     def get_table_column_model
       @table_column_model 
     end
-    # XXX link in
+    # 
     def list_selection_model lsm
       @list_selection_model = lsm
     end
@@ -276,7 +285,8 @@ module RubyCurses
       when ?\C-]:
         goto_bottom
       else
-    #    super
+        ret = process_key ch, self
+        return :UNHANDLED if ret == :UNHANDLED
       end
     end
     ##
@@ -360,12 +370,13 @@ module RubyCurses
       tcm = @table_column_model
       tm = @table_model
       tr = @toprow
+      acolor = get_color $datacolor
       h = @height - 3
       r,c = rowcol
       # each cell should print itself, however there is a width issue. 
       # Then thee
       print_header # do this once, unless columns changed
-      # TODO TCM should give modelindex of col which is used to fetch data from TM
+      # TCM should give modelindex of col which is used to fetch data from TM
       r += 1 # save for header
       0.upto(h) do |hh|
         crow = tr+hh
@@ -391,6 +402,7 @@ module RubyCurses
             offset += width
           end
         else
+          @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
           # clear rows
         end
       end
