@@ -1349,7 +1349,7 @@ module RubyCurses
     # 2008-12-22 12:40 if null_allowed, don't validate, but do fire_handlers
     def on_leave
       val = getvalue
-      $log.debug " FIELD ON LEAVE:#{val}. #{@values.inspect}"
+      #$log.debug " FIELD ON LEAVE:#{val}. #{@values.inspect}"
       valid = true
       if val.to_s.empty? and @null_allowed
         $log.debug " empty and null allowed"

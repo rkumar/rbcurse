@@ -54,6 +54,8 @@ This is a bug only if the line has NO SPACE in it.
     |  TO ADD  |
     +----------+
 
+Don;t update other widgets unless datachanged or properties changed. As in table.
+
 - Listbox : status or detail, row m or n.
   Search up and down
 - Text Area: INS/OVW
