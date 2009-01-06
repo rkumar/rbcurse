@@ -245,7 +245,7 @@ module RubyCurses
       @crh[cname] || @crh['String']
     end
     def set_default_cell_renderer_for_class cname, rend
-      @crh ||= []
+      @crh ||= {}
       @crh[cname]=rend
     end
     ## override for cell or row behaviour

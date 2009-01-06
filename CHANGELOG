@@ -1,3 +1,17 @@
+**2009-01-07 00:36**
+## Field storing datatypes ##
+
+1.   set_buffer updates datatype of data
+2.   get_value reverts to original datatype (stored as a string since many methods
+     do check length etc
+
+Widget binds_keys
+Certain widgets like tables etc would like to bind_keys which could be used by other
+widgets. Such as left and right keys or del key. So these should not be at the program
+level, but only at widget level.
+
+frmincr200901070034.tgz
+* * *
 **2009-01-05 01:51**
 ## rtable with scrolling ##
 

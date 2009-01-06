@@ -28,7 +28,6 @@ module RubyCurses
       @display_length ||= 10
     end
     def getvalue
-      #@text_variable && @text_variable.value || @text
       @text
     end
 

@@ -56,6 +56,10 @@ This is a bug only if the line has NO SPACE in it.
 
 Don;t update other widgets unless datachanged or properties changed. As in table.
 
+Tabbed Pane may want to add OK, or OK_CANCEL buttons.
+
+REDO Listbox, TextArea and TextView withuth scrollable, selectable.
+
 - Listbox : status or detail, row m or n.
   Search up and down
 - Text Area: INS/OVW
