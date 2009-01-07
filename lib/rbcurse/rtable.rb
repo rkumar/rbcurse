@@ -15,6 +15,8 @@ require 'logger'
 require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
+require 'lib/rbcurse/table/tablecellrenderer'
+require 'lib/rbcurse/listselectable'
 
 include Ncurses
 include RubyCurses
@@ -35,6 +37,7 @@ module RubyCurses
   # TODO cellrenderers should be able to get parents bgcolor and color (Jtables) if none defined for them.
   class Table < Widget
     include RubyCurses::EventHandler
+    include RubyCurses::ListSelectable
 
     dsl_accessor :height
     dsl_accessor :title
@@ -62,6 +65,14 @@ module RubyCurses
 
     def focussed_row
       @current_index
+    end
+    # added 2009-01-07 13:05 so new scrollable can use
+    def row_count
+      @table_model.row_count
+    end
+    # added 2009-01-07 13:05 so new scrollable can use
+    def scrollatrow
+      @height -3
     end
 
     def set_data data, colnames_array
@@ -111,12 +122,6 @@ module RubyCurses
       @table_column_model 
     end
     # 
-    def list_selection_model lsm
-      @list_selection_model = lsm
-    end
-    def create_default_list_selection_model
-      list_selection_model DefaultListSelectionModel.new
-    end
     def create_default_table_column_model
       table_column_model DefaultTableColumnModel.new
     end
@@ -128,9 +133,6 @@ module RubyCurses
     def is_column_selected col
       raise "TODO "
     end
-    def is_row_selected row
-      @list_selection_model.is_selected_index row
-    end
     def is_cell_selected row, col
       raise "TODO "
     end
@@ -141,43 +143,8 @@ module RubyCurses
     def remove_column_selection_interval ix0, ix1
       raise "TODO "
     end
-    def add_row_selection_interval ix0, ix1
-      # if row_selection_allowed
-      @list_selection_model.add_selection_interval ix0, ix1
-    end
-    def remove_row_selection_interval ix0, ix1
-      @list_selection_model.remove_selection_interval ix0, ix1
-    end
-    def toggle_row_selection row
-      if is_row_selected row
-        $log.debug " deleting row #{row}"
-        remove_row_selection_interval(row, row)
-      else
-        $log.debug " adding row #{row}"
-        add_row_selection_interval(row, row) 
-      end
-
-    end
-    attr_accessor :row_selection_allowed
-    attr_accessor :column_selection_allowed
 
 
-    def clear_selection
-      @list_selection_model.clear_selection
-    end
-    def selected_item
-    #  @list[@current_index]
-    end
-    def selected_rows
-      @list_selection_model.get_selected_rows
-    end
-    def selected_row_count
-      selected_rows.size
-    end
-    def selected_row
-      @list_selection_model.get_min_selection_index
-    end
-    alias :selected_index :selected_row
 
     def selected_column
       @table_column_model.selected_columns
@@ -263,7 +230,7 @@ module RubyCurses
     def handle_key(ch)
       @current_index ||= 0
       @toprow ||= 0
-      h = @height-3      
+      h = scrollatrow()
       rc = @table_model.row_count
       case ch
       when KEY_UP  # show previous value
@@ -295,12 +262,12 @@ module RubyCurses
         bounds_check
     end
     def next_row
-      rc = @table_model.row_count
+      rc = row_count
       @current_index += 1 if @current_index < rc
       bounds_check
     end
     def goto_bottom
-      rc = @table_model.row_count
+      rc = row_count
       @current_index = rc -1
       bounds_check
     end
@@ -309,13 +276,13 @@ module RubyCurses
         bounds_check
     end
     def scroll_backward
-      h = @height-3      
+      h = scrollatrow()
       @current_index -= h 
       bounds_check
     end
     def scroll_forward
-      h = @height-3      
-      rc = @table_model.row_count
+      h = scrollatrow()
+      rc = row_count
       # more rows than box
       if h < rc
         @toprow += h+1 #if @current_index+h < rc
@@ -329,8 +296,8 @@ module RubyCurses
     end
 
     def bounds_check
-      h = @height-3      
-      rc = @table_model.row_count
+      h = scrollatrow()
+      rc = row_count
       #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
       @current_index = 0 if @current_index < 0  # not lt 0
       @current_index = rc-1 if @current_index >= rc # not gt rowcount
@@ -349,6 +316,7 @@ module RubyCurses
     # the cursor should be appropriately positioned
     def set_form_row
       r,c = rowcol
+      # +1 is due to header
       @form.row = r + (@current_index-@toprow) + 1
     end
     # temporary, while testing and fleshing out
@@ -371,7 +339,7 @@ module RubyCurses
       tm = @table_model
       tr = @toprow
       acolor = get_color $datacolor
-      h = @height - 3
+      h = scrollatrow()
       r,c = rowcol
       # each cell should print itself, however there is a width issue. 
       # Then thee

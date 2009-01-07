@@ -28,6 +28,7 @@ require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/colormap'
 require 'lib/rbcurse/rdialogs'
+#require 'lib/rbcurse/listcellrenderer'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
@@ -432,6 +433,7 @@ module RubyCurses
       @focusable = true
       @navigation_policy ||= :CYCLICAL
       instance_eval &block if block_given?
+      @firsttime = true # internal, don't touch
     end
     ##
     # set this menubar as the form's menu bar.
@@ -485,11 +487,13 @@ module RubyCurses
       @window.print_status_message $status_message unless $status_message.nil?
       @window.print_error_message $error_message unless $error_message.nil?
       $error_message = $status_message = nil
-      if @row == -1
+      #  this can bomb if someone sets row. We need a better way!
+      if @row == -1 #or @firsttime == true
         #set_field_cursor 0
        $log.debug "form repaint calling select field 0"
         #select_field 0
         req_first_field
+        #@firsttime = false
       end
        setpos 
        @window.wrefresh
@@ -502,6 +506,7 @@ module RubyCurses
      @window.wmove r,c
     end
     def get_current_field
+      select_next_field if @active_index == -1
       @widgets[@active_index]
     end
     def req_first_field
@@ -1175,18 +1180,14 @@ module RubyCurses
     #  changed to convert on 2009-01-06 23:39 
     def getvalue
       dt = @datatype || String
-      $log.debug " FIELD getvalue #{dt}"
       case dt.to_s
       when "String"
-        $log.debug "IN STRING FIELD getvalue #{dt}"
         return @buffer
       when "Fixnum"
-        $log.debug "IN FIXNUM FIELD getvalue #{dt}"
         return @buffer.to_i
       when "Float"
         return @buffer.to_f
       else
-        $log.debug "IN DEFAULT FIELD getvalue #{dt}"
         return @buffer.to_s
       end
     end
@@ -2334,6 +2335,234 @@ module RubyCurses
       @window.destroy if !@window.nil?
     end
   end # class PopupList
+  class NewListbox < Widget
+    require 'lib/rbcurse/listscrollable'
+    require 'lib/rbcurse/listselectable'
+    require 'lib/rbcurse/defaultlistselectionmodel'
+    include NewScrollable
+    include ListSelectable
+    dsl_accessor :height
+    dsl_accessor :title
+    dsl_accessor :title_attrib   # bold, reverse, normal
+#   dsl_accessor :list    # the array of data to be sent by user
+    attr_reader :toprow
+  #  attr_reader :prow
+  #  attr_reader :winrow
+    dsl_accessor :select_mode # allow multiple select or not
+#   dsl_accessor :list_variable   # a variable values are shown from this
+    dsl_accessor :default_values  # array of default values
+    dsl_accessor :is_popup       # if it is in a popup and single select, selection closes
+    attr_accessor :current_index
+    #dsl_accessor :cell_renderer
+    dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+
+    def initialize form, config={}, &block
+      @focusable = true
+      @editable = false
+      @row = 0
+      @col = 0
+      # data of listbox
+      @list = []
+      # any special attribs such as status to be printed in col1, or color (selection)
+      @list_attribs = {}
+      super
+      @current_index ||= 0
+      @row_offset = @col_offset = 1
+      #@scrollatrow = @height -2
+      @content_rows = @list.length
+      @select_mode ||= 'multiple'
+      @win = @form.window
+ #     @list = @list_variable.value unless @list_variable.nil?
+      #init_scrollable
+      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
+      # next 2 lines carry a redundancy
+      select_default_values   
+      # when the combo box has a certain row in focus, the popup should have the same row in focus
+      set_focus_on (@list.selected_index || 0)
+      init_vars
+    end
+    def init_vars
+      @to_print_borders ||= 1
+      @repaint_required = true
+      @toprow = @pcol = 0
+    end
+    def row_count
+      @list.length
+    end
+    # added 2009-01-07 13:05 so new scrollable can use
+    def scrollatrow
+      @height - 2
+    end
+    def list alist=nil
+      return @list if alist.nil?
+      @list = RubyCurses::ListDataModel.new(alist)
+      create_default_list_selection_model
+    end
+    def list_variable alist=nil
+      return @list if alist.nil?
+      @list = RubyCurses::ListDataModel.new(alist.value)
+      create_default_list_selection_model
+    end
+    def list_data_model ldm=nil
+      return @list if ldm.nil?
+      raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
+      @list = ldm
+      create_default_list_selection_model
+    end
+
+    def select_default_values
+      return if @default_values.nil?
+      @default_values.each do |val|
+        row = @list.index val
+        #do_select(row) unless row.nil?
+        add_row_selection_interval row, row unless row.nil?
+      end
+    end
+    def print_borders
+      width = @width
+      height = @height
+      window = @form.window
+      startcol = @col 
+      startrow = @row 
+      @color_pair = get_color($datacolor)
+      window.print_border startrow, startcol, height, width, @color_pair, @attr
+      print_title
+=begin
+      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
+      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
+      window.printstring( row=startrow, col=startcol, hline, acolor)
+      (startrow+1).upto(startrow+height-1) do |row|
+        window.printstring( row, col=startcol, hline2, acolor)
+      end
+      window.printstring( startrow+height, col=startcol, hline, acolor)
+=end 
+     # @derwin = @form.window.derwin(@height, @width, @row, @col)
+     # repaint
+    end
+    def print_title
+      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+    end
+    ### START FOR scrollable ###
+    def get_content
+      #@list 2008-12-01 23:13 
+      @list_variable && @list_variable.value || @list 
+    end
+    def get_window
+      @form.window
+    end
+    ### END FOR scrollable ###
+    # override widgets text
+    def getvalue
+      selected_rows
+    end
+    # Listbox
+    def handle_key(ch)
+      @current_index ||= 0
+      @toprow ||= 0
+      h = scrollatrow()
+      rc = row_count
+      case ch
+      when KEY_UP  # show previous value
+        previous_row
+    #    @toprow = @current_index
+      when KEY_DOWN  # show previous value
+        next_row
+      when 32:
+        return if is_popup and @select_mode == 'single' # not allowing select this way since there will be a difference 
+        toggle_row_selection @current_index #, @current_index
+        @repaint_required = true
+      when ?\C-n:
+        scroll_forward
+      when ?\C-p:
+        scroll_backward
+      when 48, ?\C-[:
+        # please note that C-[ gives 27, same as esc so will respond after ages
+        goto_top
+      when ?\C-]:
+        goto_bottom
+      when ?A..?Z, ?a..?z
+        ret = set_selection_for_char ch.chr
+      else
+        ret = process_key ch, self
+        return :UNHANDLED if ret == :UNHANDLED
+      end
+    end
+    def oldhandle_key ch
+      if ch == 32
+        toggle_row_selection @current_index
+        return
+      end
+      ret = scrollable_handle_key ch
+      if ret == :UNHANDLED
+      end
+      return ret
+    end # handle_k listb
+    def on_enter_row arow
+      $log.debug " Listbox #{self} FIRING ENTER_ROW with #{arow} H: #{@handler.keys}"
+      #fire_handler :ENTER_ROW, arow
+      fire_handler :ENTER_ROW, self
+      @list.on_enter_row self
+    end
+    def on_leave_row arow
+      $log.debug " Listbox #{self} FIRING leave with #{arow}"
+      #fire_handler :LEAVE_ROW, arow
+      fire_handler :LEAVE_ROW, self
+    end
+    # override widget so cursor is on focussed row. 2008-12-25 18:44 
+
+# cell_renderer
+    ##
+    # getter and setter for cell_renderer
+    def cell_renderer(*val)
+      if val.empty?
+        @cell_renderer ||= create_default_cell_renderer
+      else
+        @cell_renderer = val[0] 
+      end
+    end
+    def create_default_cell_renderer
+      return RubyCurses::ListCellRenderer.new "", {"parent" => self, "display_length"=> @maxlen ||= @width-2}
+      #return ListCellRenderer.new "", {"parent" => self }
+    end
+    def repaint
+      return unless @repaint_required
+      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      rc = row_count
+      maxlen = @maxlen ||= @width-2
+      tm = @list
+      tr = @toprow
+      acolor = get_color $datacolor
+      h = scrollatrow()
+      r,c = rowcol
+      0.upto(h) do |hh|
+        crow = tr+hh
+        if crow < rc
+            focussed = @current_index == crow ? true : false 
+            selected = is_row_selected crow
+            content = tm[crow].chomp
+            content.gsub!(/\t/, '  ') # don't display tab
+            content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+            if !content.nil? 
+              if content.length > maxlen # only show maxlen
+                content = content[@pcol..@pcol+maxlen-1] 
+              else
+                content = content[@pcol..-1]
+              end
+            end
+            #renderer = get_default_cell_renderer_for_class content.class.to_s
+            renderer = cell_renderer()
+            #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+            renderer.repaint @form.window, r+hh, c, content, focussed, selected
+        else
+          # clear rows
+          @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+        end
+      end
+      @table_changed = false
+      @repaint_required = false
+    end
+
+  end # class listb
 
   def self.startup
     VER::start_ncurses

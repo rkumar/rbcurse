@@ -9,7 +9,7 @@ require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rform'
 require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
-#require 'lib/rbcurse/table/tablecellrenderer'
+require 'lib/rbcurse/listcellrenderer'
 require 'qdfilechooser'
 if $0 == __FILE__
   include RubyCurses
@@ -55,7 +55,7 @@ if $0 == __FILE__
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
         $listdata = RVariable.new mylist
-        listb = Listbox.new @form do
+        listb = NewListbox.new @form do
           name   "mylist" 
           row  r 
           col  1 
@@ -68,7 +68,7 @@ if $0 == __FILE__
         end
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi perl6"
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 

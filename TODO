@@ -14,10 +14,15 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+2. cleanup scrollable code esp repaint method.
+Its okay to have scrollable and selectable, but call methods in them, rather than pass handlekey to them.
+Also don't delegate paint to them.
+
+
 Field: if set_buffer sets numeric or float we should be intelligent and return edited values in same way,
 and not crash.
 
-if no focusable widget, stack overflow. XXX
+if no focusable widget, stack overflow. XXX Make next_field safer.
 
 Some bugs in TextArea wrapping.
 When a word is carried dowm, it shold gt carried back up too if i pt a space
@@ -28,7 +33,6 @@ inside. However, even vim does not do this, btw.
 
 1. popup lists/combo lists: correct inconsistency in firing of event. RETURN vs SELECT
 
-2. cleanup scrollable code esp repaint method.
 
 sizing of messageboxes
 
