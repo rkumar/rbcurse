@@ -100,7 +100,7 @@ if $0 == __FILE__
           footer_attrib 'bold'
         end
         content = File.open("README.txt","r").readlines
-        @textview.set_content content
+        @textview.set_content content #, :WRAP_WORD
         @textview.top_row 21
 
         # just for demo, lets scroll the text view as we scroll this.

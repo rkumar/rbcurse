@@ -27,7 +27,7 @@ module RubyCurses
   # A viewable read only box. Can scroll. 
   # Intention is to be able to change content dynamically - the entire list.
   # Use set_content to set content, or just update the list attrib
-  # TODO give wrapping option
+  # TODO give wrapping option - done
   # TODO - 
   #      - searching, goto line - DONE
   class TextView < Widget
@@ -70,9 +70,26 @@ module RubyCurses
     ## 
     # send in a list
     # e.g.         set_content File.open("README.txt","r").readlines
-    #
-    def set_content list
-      @list = list
+    # set wrap at time of passing :WRAP_NONE :WRAP_WORD
+    def set_content list, wrap = :WRAP_NONE
+      @wrap_policy = wrap
+      if list.is_a? String
+        if @wrap_policy == :WRAP_WORD
+          data = wrap_text list
+          @list = data.split("\n")
+        else
+          @list = list.split("\n")
+        end
+      elsif list.is_a? Array
+        if @wrap_policy == :WRAP_WORD
+          data = wrap_text list.join(" ")
+          @list = data.split("\n")
+        else
+          @list = list
+        end
+      else
+        raise "set_content expects Array not #{list.class}"
+      end
     end
     ## display this row on top
     def top_row(*val)
@@ -82,6 +99,7 @@ module RubyCurses
         @toprow = val[0] || 0
         #@prow = val[0] || 0
       end
+      @repaint_required = true
     end
     ## ---- for listscrollable ---- ##
     def scrollatrow
@@ -143,6 +161,7 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textview
+      return unless @repaint_required
       paint
       print_foot if @print_footer
     end
@@ -278,7 +297,6 @@ module RubyCurses
       yield @list[@current_index+num] 
     end
     def paint
-      return unless @repaint_required
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
