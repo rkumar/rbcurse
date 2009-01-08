@@ -61,6 +61,29 @@ class Module
       }
     }
   end
+  def dsl_property(*symbols)
+    symbols.each { |sym|
+      class_eval %{
+        def #{sym}(*val)
+          if val.empty?
+            @#{sym}
+          else
+            oldvalue = @#{sym}
+            @#{sym} = val.size == 1 ? val[0] : val
+            newvalue = @#{sym}
+            @config["#{sym}"]=@#{sym}
+            if oldvalue != newvalue
+              fire_property_change("#{sym}", oldvalue, newvalue)
+            end
+          end
+        end
+    #attr_writer sym
+        def #{sym}=val
+           #{sym}(val)
+        end
+      }
+    }
+  end
 
 end
 
@@ -176,14 +199,22 @@ module RubyCurses
           end # if
         end # if
       end
+      ## added on 2009-01-08 00:33 
+      # goes with dsl_property
+      # Need to inform listeners
+    def fire_property_change text, oldvalue, newvalue
+      $log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
+      @repaint_required = true
+    end
 
     end # module eventh
 
     module ConfigSetup
       # private
       def variable_set var, val
-        var = "@#{var}"
-        instance_variable_set(var, val) 
+        nvar = "@#{var}"
+        send("#{var}", val)   # 2009-01-08 01:30 BIG CHANGE calling methods too here.
+        #instance_variable_set(nvar, val)   # we should not call this !!! bypassing 
       end
       def configure(*val , &block)
         case val.size
@@ -200,6 +231,7 @@ module RubyCurses
       def cget param
         @config[param]
       end
+       # this bypasses our methods and sets directly !
       def config_setup aconfig
         @config = aconfig
         @config.each_pair { |k,v| variable_set(k,v) }
@@ -210,21 +242,22 @@ module RubyCurses
     include EventHandler
     include ConfigSetup
     include RubyCurses::Utils
-    dsl_accessor :text, :text_variable
+    dsl_property :text
+    #dsl_accessor :text_variable
     dsl_accessor :underline                        # offset of text to underline DEPRECATED
-    dsl_accessor :width                # desired width of text
+    dsl_property :width                # desired width of text
     dsl_accessor :wrap_length                      # wrap length of text, if applic UNUSED
 
     # next 3 to be checked if used or not. Copied from TK.
-    dsl_accessor :select_foreground, :select_background  # color init_pair
-    dsl_accessor :highlight_foreground, :highlight_background  # color init_pair
-    dsl_accessor :disabled_foreground, :disabled_background  # color init_pair
+    dsl_property :select_foreground, :select_background  # color init_pair
+    dsl_property :highlight_foreground, :highlight_background  # color init_pair
+    dsl_property :disabled_foreground, :disabled_background  # color init_pair
 
     # FIXME is enabled used?
     dsl_accessor :focusable, :enabled # boolean
-    dsl_accessor :row, :col            # location of object
-    dsl_accessor :color, :bgcolor      # normal foreground and background
-    dsl_accessor :attr                 # attribute bold, normal, reverse
+    dsl_property :row, :col            # location of object
+    dsl_property :color, :bgcolor      # normal foreground and background
+    dsl_property :attr                 # attribute bold, normal, reverse
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id, :zorder
     attr_accessor :curpos              # cursor position inside object
@@ -232,7 +265,7 @@ module RubyCurses
     attr_accessor  :form              # made accessor 2008-11-27 22:32 so menu can set
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
-    dsl_accessor :visible # boolean     # 2008-12-09 11:29 
+    dsl_property :visible # boolean     # 2008-12-09 11:29 
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -248,6 +281,19 @@ module RubyCurses
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
     end
+
+    ##
+    # getter and setter for text_variable
+    def text_variable(*val)
+      if val.empty?
+        @text_variable
+      else
+        @text_variable = val[0] 
+        $log.debug " GOING TO CALL ADD DELPENDENT #{self}"
+        @text_variable.add_dependent(self)
+      end
+    end
+
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
       fire_handler :ENTER, self
@@ -507,6 +553,7 @@ module RubyCurses
     end
     def get_current_field
       select_next_field if @active_index == -1
+      return nil if @active_index.nil?   # for forms that have no focusable field 2009-01-08 12:22 
       @widgets[@active_index]
     end
     def req_first_field
@@ -588,7 +635,7 @@ module RubyCurses
         begin
           on_leave f
         rescue => err
-         $log.debug " caught EXCEPTION #{err}"
+         $log.debug "select_next_field: caught EXCEPTION #{err}"
          $log.debug(err.backtrace.join("\n")) 
          $error_message = "#{err}"
          Ncurses.beep
@@ -608,10 +655,17 @@ module RubyCurses
       ## added on 2008-12-14 18:27 so we can skip to another form/tab
       if @navigation_policy == :CYCLICAL
         @active_index = nil
-        select_next_field
-      else
-        return :NO_NEXT_FIELD
+        # recursive call worked, but bombed if no focusable field!
+        #select_next_field
+        0.upto(index-1) do |i|
+          f = @widgets[i]
+          if f.focusable
+            select_field i
+            return
+          end
+        end
       end
+      return :NO_NEXT_FIELD
     end
     ##
     # put focus on previous field
@@ -643,12 +697,20 @@ module RubyCurses
       end
       # $log.debug "insdie sele prev field FAILED:  #{@active_index} WL:#{@widgets.length}" 
       ## added on 2008-12-14 18:27 so we can skip to another form/tab
+      # 2009-01-08 12:24 no recursion, can be stack overflows if no focusable field
       if @navigation_policy == :CYCLICAL
         @active_index = nil # HACK !!!
-        select_prev_field
-      else
-        return :NO_PREV_FIELD
+        #select_prev_field
+        total = @widgets.length-1
+        total.downto(index-1) do |i|
+          f = @widgets[i]
+          if f.focusable
+            select_field i
+            return
+          end
+        end
       end
+      return :NO_PREV_FIELD
     end
     alias :req_next_field :select_next_field
     alias :req_prev_field :select_prev_field
@@ -708,9 +770,9 @@ module RubyCurses
           return ret if ret == :NO_PREV_FIELD
         else
           field =  get_current_field
-          handled = field.handle_key ch
+          handled = field.handle_key ch unless field.nil? # no field focussable
           # some widgets like textarea and list handle up and down
-          if handled == :UNHANDLED or handled == -1
+          if handled == :UNHANDLED or handled == -1 or field.nil?
             case ch
             when KEY_UP
               select_prev_field
@@ -1194,8 +1256,8 @@ module RubyCurses
   
   def set_label label
     @label = label
-    label.row = @row if label.row == -1
-    label.col = @col-(label.name.length+1) if label.col == -1
+    label.row  @row if label.row == -1
+    label.col  @col-(label.name.length+1) if label.col == -1
     label.label_for(self)
   end
   def repaint
@@ -1438,6 +1500,11 @@ module RubyCurses
       @value = value
       @klass = value.class.to_s
     end
+    def add_dependent obj
+      $log.debug " ADDING DEPENDE #{obj}"
+      @dependents ||= []
+      @dependents << obj
+    end
     ##
     # install trigger to call whenever a value is updated
     def update_command *args, &block
@@ -1464,30 +1531,37 @@ module RubyCurses
     # Idea is that mutiple fields (e.g. checkboxes) can share one var and update a hash through it.
     # Source would contain some code or key relatin to each field.
     def set_value val, key=""
+      oldval = @value
       if @klass == 'String'
         @value = val
       elsif @klass == 'Hash'
         $log.debug " RVariable setting hash #{key} to #{val}"
+        oldval = @value[key]
         @value[key]=val
       elsif @klass == 'Array'
         $log.debug " RVariable setting array #{key} to #{val}"
+        oldval = @value[key]
         @value[key]=val
       else
+        oldval = @value
         @value = val
       end
       return if @update_command.nil?
       @update_command.each_with_index do |comm, ix|
         comm.call(self, *@args[ix]) unless comm.nil?
       end
+      @dependents.each {|d| d.fire_property_change(d, oldval, val) } unless @dependents.nil?
     end
     ##
     def value= (val)
       raise "Please use set_value for hash/array" if @klass=='Hash' or @klass=='Array'
+      oldval = @value
       @value=val
       return if @update_command.nil?
       @update_command.each_with_index do |comm, ix|
         comm.call(self, *@args[ix]) unless comm.nil?
       end
+      @dependents.each {|d| d.fire_property_change(d, oldval, val) } unless @dependents.nil?
     end
     def value
       raise "Please use set_value for hash/array: #{@klass}" if @klass=='Hash' #or @klass=='Array'
@@ -1515,9 +1589,10 @@ module RubyCurses
     #dsl_accessor :label_for   # related field or buddy
     dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
     # justify required a display length, esp if center.
-    dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
-    dsl_accessor :display_length     #  please give this to ensure the we only print this much
-    dsl_accessor :height    # if you want a multiline label.
+    #dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
+    dsl_property :justify     # :right, :left, :center  # added 2008-12-22 19:02 
+    dsl_property :display_length     #  please give this to ensure the we only print this much
+    dsl_property :height    # if you want a multiline label.
 
     def initialize form, config={}, &block
   
@@ -1531,6 +1606,7 @@ module RubyCurses
       super
       @justify ||= :left
       @name ||= @text
+      @repaint_required = true
     end
     def getvalue
       @text_variable && @text_variable.value || @text
@@ -1561,6 +1637,7 @@ module RubyCurses
     ##
     # XXX need to move wrapping etc up and done once. 
     def repaint
+      return unless @repaint_required
         r,c = rowcol
         value = getvalue_for_paint
         lablist = []
@@ -1600,6 +1677,7 @@ module RubyCurses
           @form.window.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
         end
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
+        @repaint_required = false
     end
   # ADD HERE LABEL
   end
@@ -2017,6 +2095,7 @@ module RubyCurses
   #    be the object.
   #    - this event could change when range selection is allowed.
   #  
+  # PLEASE USE NEWLISTBOX being deprecated
   class Listbox < Widget
     require 'lib/rbcurse/scrollable'
     require 'lib/rbcurse/selectable'
@@ -2368,12 +2447,9 @@ module RubyCurses
       super
       @current_index ||= 0
       @row_offset = @col_offset = 1
-      #@scrollatrow = @height -2
       @content_rows = @list.length
       @select_mode ||= 'multiple'
       @win = @form.window
- #     @list = @list_variable.value unless @list_variable.nil?
-      #init_scrollable
       print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   

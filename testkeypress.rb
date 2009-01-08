@@ -31,6 +31,7 @@ if $0 == __FILE__
           width 60
           height 15
           editable false
+          focusable false
           title "Keypresses"
           auto_scroll true
           title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)

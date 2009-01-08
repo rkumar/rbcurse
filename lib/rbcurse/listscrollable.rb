@@ -329,17 +329,17 @@ module NewScrollable
     # returning the index
     def next_match char
       data = get_content
-      row = focussed_index
-      currval = data[row].chomp
+      row = focussed_index + 1
       row.upto(data.length-1) do |ix|
         val = data[ix].chomp
-        if val[0,1] == char and val != currval
+        if val[0,1] == char #and val != currval
           return ix
         end
       end
+      row = focussed_index - 1
       0.upto(row) do |ix|
         val = data[ix].chomp
-        if val[0,1] == char and val != currval
+        if val[0,1] == char #and val != currval
           return ix
         end
       end

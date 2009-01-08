@@ -1,3 +1,29 @@
+**2009-01-08 01:41**
+## firing property change and others ##
+
+Some major changes (internal)
+
+1.   In order not to repaint the entire form each time, we must only repaint a widget when modified.
+     However, as can be seen, widgets are being modified by other widgets. Thus whenever a property
+     is changed, we need a flag to be set that repainting is required.
+
+    Thus, copied dsl_accessor and made dsl_property. Whenever, such props are modified, a property 
+    change is now fired, and repaint_required is set to true.
+    I am currently changing this. What this means is that on startup, fire_prop_change will be called
+    many times, and i need to avoid this on first time instantiation. TODO.
+    
+2. The tricky part was text_variables. When there value changes any widget (such as label) auto
+   changes. When a text_variable is defined for  field, internally that field, adds itself as a 
+   dependent. When its value is changed, it fires a change to the dependent field.
+
+3. The real worrisome part was this:
+   When user passes in a hash in the constructor, i was directly setting variables, NOT calling
+   methods. Tracked this down. Now i am calling methods and not setting variables. See rwidget.rb
+   instance_variable_set (top). Only throrough testing will tell how much this change
+   will affect stuff. Maybe not.
+
+frmincr200901080133.tgz
+* * *
 **2009-01-07 23:35**
 ## New Listbox ##
 
