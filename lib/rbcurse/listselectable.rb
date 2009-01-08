@@ -5,6 +5,7 @@ module RubyCurses
 
     def list_selection_model lsm
       @list_selection_model = lsm
+      #@list_selection_model.selection_mode = @selection_mode || :MULTIPLE
     end
     def create_default_list_selection_model
       list_selection_model DefaultListSelectionModel.new

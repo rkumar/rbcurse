@@ -831,7 +831,7 @@ module RubyCurses
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
-    dsl_accessor :list_select_mode  # true or false allow multiple selection
+    dsl_accessor :list_selection_mode  # true or false allow multiple selection
     dsl_accessor :list  # 2009-01-05 23:59 
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :default_value     # 
@@ -1079,9 +1079,9 @@ module RubyCurses
         end
       when "list"
         list = @list
-        select_mode = @list_select_mode 
+        selection_mode = @list_selection_mode 
         default_values = @default_values
-        $log.debug " value of select_mode #{select_mode}"
+        $log.debug " value of select_mode #{selection_mode}"
         @listbox = RubyCurses::Listbox.new @form do
           name   "input" 
           row  r 
@@ -1094,7 +1094,7 @@ module RubyCurses
           list  list
           # ?? display_length  30
           #set_buffer defaultvalue
-          select_mode select_mode
+          selection_mode selection_mode
           default_values default_values
           is_popup false
         end
@@ -2096,7 +2096,7 @@ module RubyCurses
   #    - this event could change when range selection is allowed.
   #  
   # PLEASE USE NEWLISTBOX being deprecated
-  class Listbox < Widget
+  class OldListbox < Widget
     require 'lib/rbcurse/scrollable'
     require 'lib/rbcurse/selectable'
     include Scrollable
@@ -2108,7 +2108,7 @@ module RubyCurses
     attr_reader :toprow
     attr_reader :prow
     attr_reader :winrow
-    dsl_accessor :select_mode # allow multiple select or not
+    dsl_accessor :selection_mode # allow multiple select or not
 #   dsl_accessor :list_variable   # a variable values are shown from this
     dsl_accessor :default_values  # array of default values
     dsl_accessor :is_popup       # if it is in a popup and single select, selection closes
@@ -2126,7 +2126,7 @@ module RubyCurses
       @row_offset = @col_offset = 1
       @scrollatrow = @height -2
       @content_rows = @list.length
-      @select_mode ||= 'multiple'
+      @selection_mode ||= 'multiple'
       @win = @form.window
  #     @list = @list_variable.value unless @list_variable.nil?
       init_scrollable
@@ -2240,7 +2240,7 @@ module RubyCurses
     attr_reader :config
     attr_reader :selected_index     # button index selected by user
     attr_reader :window     # required for keyboard
-    dsl_accessor :list_select_mode  # true or false allow multiple selection
+    dsl_accessor :list_selection_mode  # true or false allow multiple selection
     dsl_accessor :relative_to   # a widget, if given row and col are relative to widgets windows 
                                 # layout
     dsl_accessor :max_visible_items   # how many to display
@@ -2371,7 +2371,7 @@ module RubyCurses
       parent = @relative_to
       defaultvalue = @default_value || ""
         list = @list
-        select_mode = @list_select_mode 
+        selection_mode = @list_selection_mode 
         default_values = @default_values
         @list_config['color'] ||= 'black'
         @list_config['bgcolor'] ||= 'cyan'
@@ -2385,7 +2385,7 @@ module RubyCurses
           list_data_model  list
 # ?? XXX          display_length  30
 #         set_buffer defaultvalue
-          select_mode select_mode
+          selection_mode selection_mode
           default_values default_values
           is_popup true
           #add_observer parent
@@ -2414,7 +2414,7 @@ module RubyCurses
       @window.destroy if !@window.nil?
     end
   end # class PopupList
-  class NewListbox < Widget
+  class Listbox < Widget
     require 'lib/rbcurse/listscrollable'
     require 'lib/rbcurse/listselectable'
     require 'lib/rbcurse/defaultlistselectionmodel'
@@ -2427,7 +2427,7 @@ module RubyCurses
     attr_reader :toprow
   #  attr_reader :prow
   #  attr_reader :winrow
-    dsl_accessor :select_mode # allow multiple select or not
+  #  dsl_accessor :selection_mode # allow multiple select or not
 #   dsl_accessor :list_variable   # a variable values are shown from this
     dsl_accessor :default_values  # array of default values
     dsl_accessor :is_popup       # if it is in a popup and single select, selection closes
@@ -2448,7 +2448,7 @@ module RubyCurses
       @current_index ||= 0
       @row_offset = @col_offset = 1
       @content_rows = @list.length
-      @select_mode ||= 'multiple'
+      @selection_mode ||= 'multiple'
       @win = @form.window
       print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
@@ -2461,6 +2461,18 @@ module RubyCurses
       @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
+    end
+
+    ##
+    # getter and setter for selection_mode
+    # Must be called after creating model, so no duplicate. Since one may set in model directly.
+    def selection_mode(*val)
+      raise "ListSelectionModel not yet created!" if @list_selection_model.nil?
+      if val.empty?
+        @list_selection_model.selection_mode
+      else
+        @list_selection_model.selection_mode = val[0] 
+      end
     end
     def row_count
       @list.length
@@ -2544,7 +2556,7 @@ module RubyCurses
       when KEY_DOWN  # show previous value
         next_row
       when 32:
-        return if is_popup and @select_mode == 'single' # not allowing select this way since there will be a difference 
+        return if is_popup and @selection_mode == 'single' # not allowing select this way since there will be a difference 
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
       when ?\C-n:

@@ -56,7 +56,7 @@ if $0 == __FILE__
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
         $listdata = RVariable.new mylist
-        listb = NewListbox.new @form do
+        listb = Listbox.new @form do
           name   "mylist" 
           row  r 
           col  1 
@@ -64,6 +64,7 @@ if $0 == __FILE__
           height 10
 #         list mylist
           list_variable $listdata
+          selection_mode :SINGLE
           title "A long list"
           title_attrib 'reverse'
         end

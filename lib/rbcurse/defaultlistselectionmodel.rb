@@ -28,6 +28,9 @@ module RubyCurses
     end
     ## TODO should go in sorted, and no dupes
     def add_selection_interval ix0, ix1
+      if @selection_mode != :MULTIPLE
+        clear_selection
+      end
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
