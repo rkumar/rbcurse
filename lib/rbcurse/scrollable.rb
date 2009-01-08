@@ -1,3 +1,8 @@
+#### ---------------------- ####
+# CAUTION: This is the worst piece of code ever written, pls do not
+# go further. I will remove this very soon.
+# -- Shamefully yours.
+#### ---------------------- ####
 # Provides the ability to scroll content, typically an array
 # widget that includes may override on_enter_row and on_leave_row
 # This was essentially copied and modifed from the pad scroller

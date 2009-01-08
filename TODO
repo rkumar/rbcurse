@@ -14,15 +14,19 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+Newlistbox : if select_mode is single then clear previous selections.
+Also move to next selection and previous.
+fire_handler LIST_COMBO_SELECT
+
 2. cleanup scrollable code esp repaint method.
 Its okay to have scrollable and selectable, but call methods in them, rather than pass handlekey to them.
 Also don't delegate paint to them.
+Actually passing handle_key was an okay idea.
 
 
 Field: if set_buffer sets numeric or float we should be intelligent and return edited values in same way,
 and not crash.
 
-if no focusable widget, stack overflow. XXX Make next_field safer.
 
 Some bugs in TextArea wrapping.
 When a word is carried dowm, it shold gt carried back up too if i pt a space
@@ -78,8 +82,6 @@ RowRenderer ?
    FIELD justification mode (after tabout), 
    FIELD - auto_skip (after reaching end), 
 
-text components: get set add keymap, get action for keystroke etc
-or will this make each widget heavy? TextArea/View may require for attaching actions/movement etc
 
 Textarea "del" does not delete newline, although C-k does look into that.
 
@@ -95,6 +97,11 @@ focus_traversable - bool: tabbing won't get focus, but can be focussed by Enter 
 
 RECENTLY DONE:
 --------------
+
+if no focusable widget, stack overflow. XXX Make next_field safer. DONE 2009-01-08 12:58 
+
+text components: get set add keymap, get action for keystroke etc
+or will this make each widget heavy? TextArea/View may require for attaching actions/movement etc
 
 menu's Exit, throws close without destroying menu (i suspect). It should close menu then app. 2009-01-01 13:16 
 

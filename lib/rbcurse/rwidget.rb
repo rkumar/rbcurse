@@ -2418,7 +2418,7 @@ module RubyCurses
     require 'lib/rbcurse/listscrollable'
     require 'lib/rbcurse/listselectable'
     require 'lib/rbcurse/defaultlistselectionmodel'
-    include NewScrollable
+    include ListScrollable
     include ListSelectable
     dsl_accessor :height
     dsl_accessor :title
@@ -2563,16 +2563,6 @@ module RubyCurses
         return :UNHANDLED if ret == :UNHANDLED
       end
     end
-    def oldhandle_key ch
-      if ch == 32
-        toggle_row_selection @current_index
-        return
-      end
-      ret = scrollable_handle_key ch
-      if ret == :UNHANDLED
-      end
-      return ret
-    end # handle_k listb
     def on_enter_row arow
       $log.debug " Listbox #{self} FIRING ENTER_ROW with #{arow} H: #{@handler.keys}"
       #fire_handler :ENTER_ROW, arow

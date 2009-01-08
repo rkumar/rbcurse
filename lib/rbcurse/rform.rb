@@ -750,14 +750,14 @@ module RubyCurses
         addcol(@buffer.length-@curpos)+1
         @curpos = @buffer.length
       end
-      $log.debug " after loop : curpos #{@curpos} blen: #{@buffer.length}"
+      $log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
       pre_key
       case ch
       when ?\C-n
         scroll_forward
       when ?\C-p
         scroll_backward
-      when ?\C-[
+      when ?0, ?\C-[
         goto_start #start of buffer # cursor_start
       when ?\C-]
         goto_end # end / bottom cursor_end
