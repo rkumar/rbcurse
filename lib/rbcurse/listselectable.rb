@@ -46,6 +46,20 @@ module RubyCurses
     def selected_row
       @list_selection_model.get_min_selection_index
     end
+    def do_next_selection
+      return if selected_rows().length == 0 
+      row = selected_rows().sort.find { |i| i > @current_index }
+      row ||= @current_index
+      @current_index = row
+      @repaint_required = true # fire list_select XXX
+    end
+    def do_prev_selection
+      return if selected_rows().length == 0 
+      row = selected_rows().sort{|a,b| b <=> a}.find { |i| i < @current_index }
+      row ||= @current_index
+      @current_index = row
+      @repaint_required = true # fire list_select XXX
+    end
     alias :selected_index :selected_row
     attr_accessor :row_selection_allowed
     attr_accessor :column_selection_allowed

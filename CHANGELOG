@@ -1,3 +1,10 @@
+**2009-01-08 19:21**
+## New Listbox ##
+
+Movement between selected items (using ' and ") and C-e to clear selection.
+
+frmincr200901081921.tgz
+* * *
 **2009-01-08 14:38**
 ## before moving TextView to listscrollable ##
 

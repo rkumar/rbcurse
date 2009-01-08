@@ -64,7 +64,7 @@ if $0 == __FILE__
           height 10
 #         list mylist
           list_variable $listdata
-          selection_mode :SINGLE
+          #selection_mode :SINGLE
           title "A long list"
           title_attrib 'reverse'
         end

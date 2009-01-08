@@ -14,7 +14,6 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
-Newlistbox : if select_mode is single then clear previous selections.
 Also move to next selection and previous.
 fire_handler LIST_COMBO_SELECT
 
@@ -96,6 +95,7 @@ focus_traversable - bool: tabbing won't get focus, but can be focussed by Enter 
 RECENTLY DONE:
 --------------
 
+Newlistbox : if select_mode is single then clear previous selections.
 if no focusable widget, stack overflow. XXX Make next_field safer. DONE 2009-01-08 12:58 
 
 text components: get set add keymap, get action for keystroke etc

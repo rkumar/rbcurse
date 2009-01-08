@@ -2570,6 +2570,19 @@ module RubyCurses
         goto_bottom
       when ?A..?Z, ?a..?z
         ret = set_selection_for_char ch.chr
+      when ?'
+        $log.debug "insdie next selection"
+        @oldrow = @current_index
+        do_next_selection #if @select_mode == 'multiple'
+        bounds_check
+      when ?"
+        @oldrow = @current_index
+        $log.debug "insdie prev selection"
+        do_prev_selection #if @select_mode == 'multiple'
+        bounds_check
+      when ?\C-e
+        clear_selection #if @select_mode == 'multiple'
+        @repaint_required = true
       else
         ret = process_key ch, self
         return :UNHANDLED if ret == :UNHANDLED
