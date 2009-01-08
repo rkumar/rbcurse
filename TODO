@@ -26,7 +26,7 @@ Field: if set_buffer sets numeric or float we should be intelligent and return e
 and not crash.
 
 
-Some bugs in TextArea wrapping.
+Some possible bugs in TextArea wrapping.
 When a word is carried dowm, it shold gt carried back up too if i pt a space
 inside. However, even vim does not do this, btw.
 

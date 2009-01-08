@@ -27,7 +27,6 @@ module RubyCurses
   # A viewable read only box. Can scroll. 
   # Intention is to be able to change content dynamically - the entire list.
   # Use set_content to set content, or just update the list attrib
-  # TODO give wrapping option - done
   # TODO - 
   #      - searching, goto line - DONE
   class TextView < Widget

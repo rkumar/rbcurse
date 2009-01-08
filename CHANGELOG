@@ -1,3 +1,11 @@
+**2009-01-08 23:34**
+## class Textarea moved to new scrollable ##
+
+Thank God, done away with the old scrollable module.
+Textarea is now in rtextarea.rb
+
+frmincr200901082333.tgz
+* * *
 **2009-01-08 20:57**
 ## wrapping option in TextArea ##
 
