@@ -630,7 +630,7 @@ module RubyCurses
   # Use set_content to set content, or just update the list attrib
   # TODO - 
   #      - searching, goto line - DONE
-  class TextView < Widget
+  class OldTextView < Widget
     include Scrollable
     dsl_accessor :height  # height of viewport
     dsl_accessor :title   # set this on top
@@ -678,6 +678,13 @@ module RubyCurses
         @toprow = val[0] || 0
         @prow = val[0] || 0
       end
+    end
+    ## ---- for listscrollable ---- ##
+    def scrollatrow
+      @height - 2
+    end
+    def row_count
+      @list.length
     end
     ##
     # returns row of first match of given regex (or nil if not found)

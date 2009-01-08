@@ -61,6 +61,7 @@ This is a bug only if the line has NO SPACE in it.
     +----------+
     |  TO ADD  |
     +----------+
+TextView, how about wrapping option ?
 
 Don;t update other widgets unless datachanged or properties changed. As in table.
 
