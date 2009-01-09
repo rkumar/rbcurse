@@ -203,7 +203,7 @@ module RubyCurses
       # goes with dsl_property
       # Need to inform listeners
     def fire_property_change text, oldvalue, newvalue
-      $log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
+      #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
       @repaint_required = true
     end
 
@@ -354,7 +354,7 @@ module RubyCurses
       when 'reverse'
         att = Ncurses::A_REVERSE
       end
-      $log.debug "att #{att}"
+      #$log.debug "att #{att}"
 
       #att = bold ? Ncurses::A_BLINK|Ncurses::A_BOLD : Ncurses::A_NORMAL
       #     att = bold ? Ncurses::A_BOLD : Ncurses::A_NORMAL
@@ -376,7 +376,7 @@ module RubyCurses
     #  @form.row = @row + 1 + @winrow
       @form.row = @row + 1 
     end
-    # set cursor on correct column
+    # set cursor on correct column, widget
     def set_form_col col=@cursor
       @curpos = col
       @form.col = @col + @col_offset + @curpos
@@ -1234,7 +1234,7 @@ module RubyCurses
     # should this do a dup ??
     def set_buffer value
       @datatype = value.class
-      $log.debug " FIELD DATA #{@datatype}"
+      #$log.debug " FIELD DATA #{@datatype}"
       @buffer = value.to_s
       @curpos = 0
     end
@@ -2414,10 +2414,14 @@ module RubyCurses
       @window.destroy if !@window.nil?
     end
   end # class PopupList
+  ##
+  # this is the new Listbox, based on new scrollable.
+  #
   class Listbox < Widget
     require 'lib/rbcurse/listscrollable'
     require 'lib/rbcurse/listselectable'
     require 'lib/rbcurse/defaultlistselectionmodel'
+    require 'lib/rbcurse/celleditor'
     include ListScrollable
     include ListSelectable
     dsl_accessor :height
@@ -2434,6 +2438,7 @@ module RubyCurses
     attr_accessor :current_index
     #dsl_accessor :cell_renderer
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+    dsl_accessor :cell_editing_allowed
 
     def initialize form, config={}, &block
       @focusable = true
@@ -2515,17 +2520,6 @@ module RubyCurses
       @color_pair = get_color($datacolor)
       window.print_border startrow, startcol, height, width, @color_pair, @attr
       print_title
-=begin
-      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
-      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
-      window.printstring( row=startrow, col=startcol, hline, acolor)
-      (startrow+1).upto(startrow+height-1) do |row|
-        window.printstring( row, col=startcol, hline2, acolor)
-      end
-      window.printstring( startrow+height, col=startcol, hline, acolor)
-=end 
-     # @derwin = @form.window.derwin(@height, @width, @row, @col)
-     # repaint
     end
     def print_title
       printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
@@ -2568,8 +2562,6 @@ module RubyCurses
         goto_top
       when ?\C-]:
         goto_bottom
-      when ?A..?Z, ?a..?z
-        ret = set_selection_for_char ch.chr
       when ?'
         $log.debug "insdie next selection"
         @oldrow = @current_index
@@ -2584,24 +2576,90 @@ module RubyCurses
         clear_selection #if @select_mode == 'multiple'
         @repaint_required = true
       else
-        ret = process_key ch, self
-        return :UNHANDLED if ret == :UNHANDLED
+        # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
+        if @cell_editing_allowed
+          @repaint_required = true
+          # hack - on_enter_row should fire when this widget gets focus. first row that is
+          begin
+            @cell_editor.component.handle_key(ch)
+          rescue
+            on_enter_row @current_index
+            @cell_editor.component.handle_key(ch)
+          end
+        else
+          case ch
+          when ?A..?Z, ?a..?z
+            ret = set_selection_for_char ch.chr
+          else
+            ret = process_key ch, self
+            return :UNHANDLED if ret == :UNHANDLED
+          end
+        end
       end
     end
     def on_enter_row arow
-      $log.debug " Listbox #{self} FIRING ENTER_ROW with #{arow} H: #{@handler.keys}"
+      $log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
       #fire_handler :ENTER_ROW, arow
       fire_handler :ENTER_ROW, self
       @list.on_enter_row self
+      if @cell_editing_allowed
+        $log.debug " cell editor on enter #{arow} val of list[row]: #{@list[arow]}"
+        editor = cell_editor
+        prepare_editor editor, arow
+      end
+      @repaint_required = true
+    end
+    def prepare_editor editor, row
+      r,c = rowcol
+      value =  @list[row].chomp
+      editor.setvalue value.dup
+      widget = editor.component
+      widget.row = r + (row - @toprow) #  @form.row
+      widget.col = c # @form.col
+      widget.editable = true
+      widget.focusable = true
+      widget.visible = true
+      widget.form = @form
+      widget.attr = Ncurses::A_REVERSE
+      #@col = 0
+      set_form_col 0
+      $log.debug " prepare editor value #{value} : fr:#{@form.row}, fc:#{@form.col}"
+      #widget.focus
+
+      # set original value so we can cancel
+      # set row and col,
+      # set value and other things, color and bgcolor
+      # somehow disable listbox from painting over field
+      # tab out set value to list, or directtly edit list?  - NO.
     end
     def on_leave_row arow
-      $log.debug " Listbox #{self} FIRING leave with #{arow}"
+      $log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: list[row]:#{@list[arow]}"
       #fire_handler :LEAVE_ROW, arow
       fire_handler :LEAVE_ROW, self
+      if @cell_editing_allowed
+        if !@cell_editor.nil?
+          $log.debug " cell editor (leave) setting value row: #{arow} val: #{@cell_editor.getvalue}"
+          @list[arow] = @cell_editor.getvalue.dup
+        else
+          $log.debug "CELL EDITOR WAS NIL, #{arow} "
+        end
+      end
+      @repaint_required = true
     end
-    # override widget so cursor is on focussed row. 2008-12-25 18:44 
 
-# cell_renderer
+    ##
+    # getter and setter for cell_editor
+    def cell_editor(*val)
+      if val.empty?
+        @cell_editor ||= create_default_cell_editor
+      else
+        @cell_editor = val[0] 
+      end
+    end
+    def create_default_cell_editor
+      return RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> @maxlen ||= @width-2}
+      #return ListCellRenderer.new "", {"parent" => self }
+    end
     ##
     # getter and setter for cell_renderer
     def cell_renderer(*val)
@@ -2648,6 +2706,9 @@ module RubyCurses
           # clear rows
           @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
+      end
+      if @cell_editing_allowed
+        @cell_editor.component.repaint unless @cell_editor.nil?
       end
       @table_changed = false
       @repaint_required = false

@@ -1,3 +1,13 @@
+**2009-01-10 01:22**
+## listbox editing ##
+
+WIP, but i've got editing in.
+To sort out key related issues. Editing keys are clashing with selection
+and navig keys.
+Touching up also.
+
+frmincr200901100121.tgz
+* * *
 **2009-01-08 23:34**
 ## class Textarea moved to new scrollable ##
 

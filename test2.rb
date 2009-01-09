@@ -68,6 +68,7 @@ if $0 == __FILE__
           #selection_mode :SINGLE
           title "A long list"
           title_attrib 'reverse'
+          cell_editing_allowed true
         end
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
@@ -199,8 +200,8 @@ if $0 == __FILE__
       @form.by_name["password"].null_allowed true
 
       # a form level event, whenever any widget is focussed
-      @form.bind(:ENTER) { |f|   f.label.bgcolor = 'red' if f.respond_to? :label}
-      @form.bind(:LEAVE) { |f|  f.label.bgcolor = 'black'   if f.respond_to? :label}
+      @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = 'red' if f.respond_to? :label}
+      @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if f.respond_to? :label}
 
       row += 1
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
