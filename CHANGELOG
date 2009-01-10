@@ -1,3 +1,22 @@
+**2009-01-11 00:28**
+## ComboBoxCellRenderer ##
+
+For lists, to display combo boxes.
+Althoght does not make much sense. THe normal list box already has
+selection of rows. so its like a list which is now editable and selectable.
+
+This has only checkboxes. How do i pass in text in addition to booleans
+given that the method interface of renderers takes one value.
+
+frmincr200901110026.tgz
+* * *
+**2009-01-10 23:18**
+## About to move selector code up ##
+
+To avoid duplication in renderers
+
+frmincr200901102317.tgz
+* * *
 **2009-01-10 01:22**
 ## listbox editing ##
 

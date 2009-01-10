@@ -12,6 +12,8 @@ require 'lib/rbcurse/rtextview'
 require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/listcellrenderer'
+require 'lib/rbcurse/comboboxcellrenderer'
+require 'lib/rbcurse/celleditor'
 require 'qdfilechooser'
 if $0 == __FILE__
   include RubyCurses
@@ -66,6 +68,7 @@ if $0 == __FILE__
 #         list mylist
           list_variable $listdata
           #selection_mode :SINGLE
+          show_selector true
           title "A long list"
           title_attrib 'reverse'
           cell_editing_allowed true
@@ -89,6 +92,25 @@ if $0 == __FILE__
         texta << " "
         texta << " F1 to exit. or click cancel button"
         texta << " Or alt-c"
+
+        alist = [true, false, true, false, true, false, true, false, true]
+        cblist = RVariable.new alist
+        listcb = Listbox.new @form do
+          name   "cblist" 
+          row  1 
+          col  96 
+          width 8
+          height 10
+#         list mylist
+          list_variable cblist
+          #selection_mode :SINGLE
+          title "Checklist"
+          title_attrib 'reverse'
+          cell_renderer RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => self, "display_length"=> @width-2}
+          cell_editing_allowed true
+          cell_editor RubyCurses::CellEditor.new(RubyCurses::CheckBox.new nil, {"focusable"=>false, "visible"=>false})
+        end
+        #listcb.cell_editor.component.form = @form
 
         @textview = TextView.new @form do
           name   "myView" 

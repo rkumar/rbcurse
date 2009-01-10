@@ -2439,6 +2439,15 @@ module RubyCurses
     #dsl_accessor :cell_renderer
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     dsl_accessor :cell_editing_allowed
+    dsl_property :show_selector
+    dsl_property :row_selector_symbol
+    dsl_property :left_margin
+    dsl_accessor :KEY_ROW_SELECTOR
+    dsl_accessor :KEY_GOTO_TOP
+    dsl_accessor :KEY_GOTO_BOTTOM
+    dsl_accessor :KEY_CLEAR_SELECTION
+    dsl_accessor :KEY_NEXT_SELECTION
+    dsl_accessor :KEY_PREV_SELECTION
 
     def initialize form, config={}, &block
       @focusable = true
@@ -2466,6 +2475,15 @@ module RubyCurses
       @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
+      @KEY_ROW_SELECTOR ||= ?\C-x
+      @KEY_GOTO_TOP ||= ?\M-0
+      @KEY_GOTO_BOTTOM ||= ?\M-9
+      @KEY_CLEAR_SELECTION ||= ?\M-e
+      if @show_selector
+        @row_selector_symbol ||= '>'
+        @left_margin ||= @row_selector_symbol.length
+      end
+      @left_margin ||= 0
     end
 
     ##
@@ -2549,7 +2567,7 @@ module RubyCurses
     #    @toprow = @current_index
       when KEY_DOWN  # show previous value
         next_row
-      when 32:
+      when @KEY_ROW_SELECTOR # 32:
         return if is_popup and @selection_mode == 'single' # not allowing select this way since there will be a difference 
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
@@ -2557,22 +2575,22 @@ module RubyCurses
         scroll_forward
       when ?\C-p:
         scroll_backward
-      when 48, ?\C-[:
+      when @KEY_GOTO_TOP # 48, ?\C-[:
         # please note that C-[ gives 27, same as esc so will respond after ages
         goto_top
       when ?\C-]:
         goto_bottom
-      when ?'
+      when @KEY_NEXT_SELECTION # ?'
         $log.debug "insdie next selection"
         @oldrow = @current_index
         do_next_selection #if @select_mode == 'multiple'
         bounds_check
-      when ?"
+      when @KEY_PREV_SELECTION # ?"
         @oldrow = @current_index
         $log.debug "insdie prev selection"
         do_prev_selection #if @select_mode == 'multiple'
         bounds_check
-      when ?\C-e
+      when @KEY_CLEAR_SELECTION
         clear_selection #if @select_mode == 'multiple'
         @repaint_required = true
       else
@@ -2597,6 +2615,10 @@ module RubyCurses
         end
       end
     end
+    def on_enter
+      on_enter_row @current_index
+      fire_handler :ENTER, self
+    end
     def on_enter_row arow
       $log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
       #fire_handler :ENTER_ROW, arow
@@ -2611,18 +2633,20 @@ module RubyCurses
     end
     def prepare_editor editor, row
       r,c = rowcol
-      value =  @list[row].chomp
-      editor.setvalue value.dup
+      value =  @list[row] # .chomp
+      editor.setvalue value #.dup
       widget = editor.component
       widget.row = r + (row - @toprow) #  @form.row
-      widget.col = c # @form.col
-      widget.editable = true
+      widget.col = c+@left_margin # @form.col
+      widget.editable = true if widget.respond_to? :editable  # cb's don't ???
       widget.focusable = true
       widget.visible = true
       widget.form = @form
+      $log.debug " prepare editor value #{widget.display_length} displlen"
+      #widget.display_length = widget.display_length -1
       widget.attr = Ncurses::A_REVERSE
       #@col = 0
-      set_form_col 0
+      set_form_col @left_margin
       $log.debug " prepare editor value #{value} : fr:#{@form.row}, fc:#{@form.col}"
       #widget.focus
 
@@ -2639,7 +2663,7 @@ module RubyCurses
       if @cell_editing_allowed
         if !@cell_editor.nil?
           $log.debug " cell editor (leave) setting value row: #{arow} val: #{@cell_editor.getvalue}"
-          @list[arow] = @cell_editor.getvalue.dup
+          @list[arow] = @cell_editor.getvalue #.dup 2009-01-10 21:42 boolean can't duplicate
         else
           $log.debug "CELL EDITOR WAS NIL, #{arow} "
         end
@@ -2657,8 +2681,7 @@ module RubyCurses
       end
     end
     def create_default_cell_editor
-      return RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> @maxlen ||= @width-2}
-      #return ListCellRenderer.new "", {"parent" => self }
+      return RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> @width-2-@left_margin}
     end
     ##
     # getter and setter for cell_renderer
@@ -2671,7 +2694,6 @@ module RubyCurses
     end
     def create_default_cell_renderer
       return RubyCurses::ListCellRenderer.new "", {"parent" => self, "display_length"=> @maxlen ||= @width-2}
-      #return ListCellRenderer.new "", {"parent" => self }
     end
     def repaint
       return unless @repaint_required
@@ -2688,27 +2710,46 @@ module RubyCurses
         if crow < rc
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
-            content = tm[crow].chomp
-            content.gsub!(/\t/, '  ') # don't display tab
-            content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
-            if !content.nil? 
-              if content.length > maxlen # only show maxlen
-                content = content[@pcol..@pcol+maxlen-1] 
-              else
-                content = content[@pcol..-1]
+            content = tm[crow]
+            if content.is_a? String
+              content.chomp!
+              content.gsub!(/\t/, '  ') # don't display tab
+              content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+              if !content.nil? 
+                if content.length > maxlen # only show maxlen
+                  content = content[@pcol..@pcol+maxlen-1] 
+                else
+                  content = content[@pcol..-1]
+                end
               end
+            elsif content.is_a? TrueClass or content.is_a? FalseClass
+            else
+              content = content.to_s
+            end
+            ## set the selector symbol if requested
+            selection_symbol = ''
+            if @show_selector
+              if selected
+                selection_symbol = @row_selector_symbol
+              else
+                selection_symbol = ' '
+              end
+              @form.window.printstring r+hh, c, selection_symbol, acolor,@attr
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = cell_renderer()
+            #renderer.show_selector @show_selector
+            #renderer.row_selector_symbol @row_selector_symbol
+            #renderer.left_margin @left_margin
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
-            renderer.repaint @form.window, r+hh, c, content, focussed, selected
+            renderer.repaint @form.window, r+hh, c+@left_margin, content, focussed, selected
         else
           # clear rows
           @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
       if @cell_editing_allowed
-        @cell_editor.component.repaint unless @cell_editor.nil?
+        @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
       end
       @table_changed = false
       @repaint_required = false

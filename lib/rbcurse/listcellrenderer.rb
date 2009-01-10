@@ -3,6 +3,11 @@ require 'ncurses'
 require 'logger'
 #require 'lib/rbcurse/rwidget'
 module RubyCurses
+
+  ## 
+  # This is a basic list cell renderer that will render the to_s value of anything.
+  # Using alignment one can use for numbers too.
+  # However, for booleans it will print true and false. If editing, you may want checkboxes
   class ListCellRenderer
     #include DSL
     #include EventHandler
@@ -31,10 +36,31 @@ module RubyCurses
     def getvalue
       @text
     end
+    ##
+    # sets @color_pair and @attr
+    def prepare_default_colors focussed, selected
+        @color_pair = get_color $datacolor
+        #acolor =get_color $datacolor, @color || @parent.color, @bgcolor || @parent.bgcolor #unless @parent.nil?
+        @attr = Ncurses::A_NORMAL
+
+
+        ## determine bg and fg and attr
+        if selected
+          @attr = Ncurses::A_BOLD if selected
+          @color_pair =get_color $selectedcolor, @parent.selected_color, @parent.selected_bgcolor unless @parent.nil?
+        end
+        if focussed 
+          @attr |= Ncurses::A_REVERSE
+        end
+    end
 
     ##
-    # XXX need to move wrapping etc up and done once. 
+    # 
     def repaint graphic, r=@row,c=@col, value=@text, focussed=false, selected=false
+        #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor= #{acolor} j:#{@justify} dlL: #{@display_length} "
+
+      prepare_default_colors focussed, selected
+
         lablist = []
         value=value.to_s # ??
         if @height && @height > 1
@@ -49,23 +75,13 @@ module RubyCurses
           lablist << value
         end
         len = @display_length || value.length
-        acolor = get_color $datacolor
-        #acolor =get_color $datacolor, @color || @parent.color, @bgcolor || @parent.bgcolor #unless @parent.nil?
-        _attr = Ncurses::A_NORMAL
-        if selected
-          _attr = Ncurses::A_BOLD if selected
-          acolor =get_color $selectedcolor, @parent.selected_color, @parent.selected_bgcolor unless @parent.nil?
-        end
-        if focussed 
-          _attr |= Ncurses::A_REVERSE
-        end
-        #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor= #{acolor} j:#{@justify} dlL: #{@display_length} "
         _height = @height || 1
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         # loop added for labels that are wrapped.
-        # TODO clear separately since value can change in status like labels
+        # clear separately since value can change in status like labels
+        #len -= @left_margin
         0.upto(_height-1) { |i| 
-          graphic.printstring r+i, c, " " * len , acolor,_attr
+          graphic.printstring r+i, c, ( " " * len) , @color_pair,@attr
         }
         lablist.each_with_index do |_value, ix|
           break if ix >= _height
@@ -73,10 +89,10 @@ module RubyCurses
             padding = (@display_length - _value.length)/2
             _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
           end
-          graphic.printstring r, c, str % [len, _value], acolor,_attr
+          graphic.printstring r, c, str % [len, _value], @color_pair,@attr
           r += 1
         end
     end
-  # ADD HERE LABEL
+  # ADD HERE 
   end
 end
