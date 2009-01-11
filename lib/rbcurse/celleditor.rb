@@ -11,8 +11,7 @@ require 'logger'
 # so it can display itself. Otherwise it is not added to the forms widget list, so the 
 # form has no idea tha this widget exists.
 #
-# Tested with Field
-# TODO with checkbox and combolist
+# Tested with Field, combo and checkbox
 # TODO test and integrate with tables.
 #
 module RubyCurses
@@ -29,11 +28,10 @@ module RubyCurses
 
     def initialize component, config={}, &block
       @component = component
-      #@_class = @component.class.to_s.downcase().to_sym
       s = @component.class.to_s.downcase()
       s.slice!("rubycurses::")
       @_class = s.to_sym
-      $log.debug " CELL EIDOTR got #{@_class}"
+      #$log.debug " CELL EIDOTR got #{@_class}"
       config_setup config # @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
     end
@@ -66,7 +64,7 @@ module RubyCurses
       when :checkbox
         @component.checked value
       when :combobox
-        $log.debug " EDITOR COMBO Gets #{value}"
+        #$log.debug " EDITOR COMBO Gets #{value}"
         @component.set_buffer value
         #index = @component.list.index value
         #@component.current_index = index
@@ -77,7 +75,25 @@ module RubyCurses
     def component
       @component
     end
-
-    ##
-  end
-end
+    def prepare_editor parent, row, col,  value
+      setvalue value #.dup
+      widget = component()
+      widget.row = row
+      widget.col = col
+      # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
+      # FIXME so combo's can be editable, but no new value added
+      if @_class == :combobox
+        widget.editable = false if widget.respond_to? :editable  # chb's don't ???
+      else
+        widget.editable = true if widget.respond_to? :editable  # chb's don't ???
+      end
+      widget.focusable = true
+      widget.visible = true
+      widget.form = parent.form
+      #$log.debug " prepare editor value #{widget.display_length} displlen"
+      #widget.display_length = widget.display_length -1
+      widget.attr = Ncurses::A_REVERSE
+      #$log.debug " prepare editor value #{value} : fr:#{row}, fc:#{col}"
+    end
+  end # class
+end # module

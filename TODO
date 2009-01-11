@@ -14,6 +14,11 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+POPUP LIST:
+if selected index is not visible, it needs to scroll down and make that visible !!!
+
+Cancelling edits in lists.
+
 Don;t update other widgets unless datachanged or properties changed. As in table.
 Properties: redraw only when property change or data change, not each time. Esp for label.
 TODO for field and buttons.
@@ -42,6 +47,7 @@ sizing of messageboxes
   set_buffer alias set_text
 
 
+
 -----------
 ## ISSUES
 -----------
@@ -50,15 +56,21 @@ When a word is carried dowm, it shold gt carried back up too if i pt a space
 inside. However, even vim does not do this, btw.
 
 
-Textarea bug: if line inserted is gt maxlen then it is split but when writing to disk a space will be added.
-This is a bug only if the line has NO SPACE in it. 
+Textarea bug: if line inserted is gt maxlen then it is split but when writing
+to disk a space will be added.  This is a bug only if the line has NO SPACE in
+it. 
 
     +----------+
     |  TO ADD  |
     +----------+
+LISTBOX EDITING:
+- cancelling edit - restore original value
 
-Need editing in lists too.
-the row that is focussed, put a field there. Create one field and reuse for each row
+EDITING IN TABLES:
+Now that lists have editable field/combo/check, try editing multicolumn tables.
+All that i need to do, is put celleditor and cellrenderer in TableColumn, and use that
+as done in list.
+actually there's more: moving into cells. TAB is strictly for movement across fields.
 
 Tabbed Pane may want to add OK, or OK_CANCEL buttons.
 
@@ -72,8 +84,6 @@ Tabbed Pane may want to add OK, or OK_CANCEL buttons.
 
 LABEL to take ampersand also. ?? No there could be legit ampersands. Also only if label_for.
 
-Datamodel for TextArea/View so one can change display and do simple multiple columns
-RowRenderer ?
 
 3. Field and TextArea: OVERWRITE mode, 
    FIELD justification mode (after tabout), 
@@ -93,6 +103,13 @@ focus_traversable - bool: tabbing won't get focus, but can be focussed by Enter 
 
 RECENTLY DONE:
 --------------
+
+Listbox. when cursor enters, cursor should be shown on selected row which could
+be another row, if we tabbed out earlier. Curently, always shows on row 0 when entering a list. DONE
+Form was setting cursor after calling on_enter.
+
+Need editing in lists too.
+the row that is focussed, put a field there. Create one field and reuse for each row
 
 REDO Listbox, TextArea and TextView withuth scrollable, selectable.
 Field: if set_buffer sets numeric or float we should be intelligent and return edited values in same way,

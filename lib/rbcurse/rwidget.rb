@@ -594,11 +594,11 @@ module RubyCurses
 #     $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
       f = @widgets[ix0]
       if f.focusable
-        on_enter f
         @active_index = ix0
         @row, @col = f.rowcol
 #       $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
         @window.wmove @row, @col
+        on_enter f
         f.curpos = 0
         repaint
         @window.refresh
@@ -2620,6 +2620,9 @@ module RubyCurses
     end
     def on_enter
       on_enter_row @current_index
+      set_form_row # added 2009-01-11 23:41 
+      $log.debug " ONE ENTER LIST #{@current_index}, #{@form.row}"
+      @repaint_required
       fire_handler :ENTER, self
     end
     def on_enter_row arow
@@ -2634,31 +2637,19 @@ module RubyCurses
       end
       @repaint_required = true
     end
+    ## 
     def prepare_editor editor, row
       r,c = rowcol
       value =  @list[row] # .chomp
-      editor.setvalue value #.dup
-      widget = editor.component
-      widget.row = r + (row - @toprow) #  @form.row
-      widget.col = c+@left_margin # @form.col
+      row = r + (row - @toprow) #  @form.row
+      col = c+@left_margin # @form.col
       # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
-      widget.editable = true if widget.respond_to? :editable  # chb's don't ???
-      widget.focusable = true
-      widget.visible = true
-      widget.form = @form
-      $log.debug " prepare editor value #{widget.display_length} displlen"
-      #widget.display_length = widget.display_length -1
-      widget.attr = Ncurses::A_REVERSE
-      #@col = 0
+      editor.prepare_editor self, row, col, value
       set_form_col @left_margin
-      $log.debug " prepare editor value #{value} : fr:#{@form.row}, fc:#{@form.col}"
-      #widget.focus
 
       # set original value so we can cancel
       # set row and col,
       # set value and other things, color and bgcolor
-      # somehow disable listbox from painting over field
-      # tab out set value to list, or directtly edit list?  - NO.
     end
     def on_leave_row arow
       $log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: list[row]:#{@list[arow]}"
@@ -2697,7 +2688,7 @@ module RubyCurses
       end
     end
     def create_default_cell_renderer
-      return RubyCurses::ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @maxlen ||= @width-2}
+      return RubyCurses::ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-2-@left_margin}
     end
     def repaint
       return unless @repaint_required
