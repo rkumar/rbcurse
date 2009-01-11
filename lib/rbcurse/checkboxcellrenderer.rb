@@ -8,7 +8,7 @@ module RubyCurses
   # This is a basic list cell renderer that will render the to_s value of anything.
   # Using alignment one can use for numbers too.
   # However, for booleans it will print true and false. If editing, you may want checkboxes
-  class ComboBoxCellRenderer < ListCellRenderer
+  class CheckBoxCellRenderer < ListCellRenderer
     include ConfigSetup
     include RubyCurses::Utils
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 

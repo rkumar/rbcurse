@@ -12,7 +12,8 @@ require 'lib/rbcurse/rtextview'
 require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/listcellrenderer'
-require 'lib/rbcurse/comboboxcellrenderer'
+require 'lib/rbcurse/checkboxcellrenderer'
+#require 'lib/rbcurse/comboboxcellrenderer'
 require 'lib/rbcurse/celleditor'
 require 'qdfilechooser'
 if $0 == __FILE__
@@ -106,7 +107,7 @@ if $0 == __FILE__
           #selection_mode :SINGLE
           title "Checklist"
           title_attrib 'reverse'
-          cell_renderer RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => self, "display_length"=> @width-2}
+          cell_renderer RubyCurses::CheckBoxCellRenderer.new nil, {"parent" => self, "display_length"=> @width-2}
           cell_editing_allowed true
           cell_editor RubyCurses::CellEditor.new(RubyCurses::CheckBox.new nil, {"focusable"=>false, "visible"=>false})
         end
