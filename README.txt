@@ -22,7 +22,7 @@ Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 == FEATURES
 
 * entry fields in ruby 
-* scrollable list box
+* scrollable list box (new, editable with Field, checkbox and combos)
 * multi-line editable area
 * togglebutton, radio and check buttons (with mnemonics)
 * message box
@@ -47,7 +47,7 @@ Above may be created using DSL like syntax, or hashes.
    alignments
 
 == PROBLEMS, ISSUES
-TextArea not bug free. Some situations wrapping errors. 
+TextArea not bug free. Some situations wrapping errors could exist. 
 
 == Terminal related issues.
 
@@ -69,7 +69,7 @@ I am developing and testing under "screen" under OS X Leopard.
 
 == SYNOPSIS:
 
-See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
+See lib/rbcurse/rwidgets.rb.
 For test programs, see test1, test2, testcombo etc in root folder.
 
 This depends only on "window" provided by ncurses. Does not use forms
