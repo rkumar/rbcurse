@@ -1846,6 +1846,7 @@ module RubyCurses
   ##
   # A button that may be switched off an on. 
   # To be extended by RadioButton and checkbox.
+  # TODO: add editable here nd prevent toggling if not so.
   class ToggleButton < Button
     dsl_accessor :onvalue, :offvalue
     dsl_accessor :value
@@ -2370,11 +2371,11 @@ module RubyCurses
       height = @height
       parent = @relative_to
       defaultvalue = @default_value || ""
-        list = @list
-        selection_mode = @list_selection_mode 
-        default_values = @default_values
-        @list_config['color'] ||= 'black'
-        @list_config['bgcolor'] ||= 'cyan'
+      list = @list
+      selection_mode = @list_selection_mode 
+      default_values = @default_values
+      @list_config['color'] ||= 'black'
+      @list_config['bgcolor'] ||= 'cyan'
         @listbox = RubyCurses::Listbox.new @form, @list_config do
           name   "input" 
           row  r 
@@ -2392,6 +2393,7 @@ module RubyCurses
           
         end
     end
+    # may need to be upgraded to new one XXX FIXME
     def configure(*val , &block)
       case val.size
       when 1
@@ -2438,6 +2440,7 @@ module RubyCurses
     attr_accessor :current_index
     #dsl_accessor :cell_renderer
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+    dsl_accessor :max_visible_items   # how many to display 2009-01-11 16:15 
     dsl_accessor :cell_editing_allowed
     dsl_property :show_selector
     dsl_property :row_selector_symbol
@@ -2638,7 +2641,8 @@ module RubyCurses
       widget = editor.component
       widget.row = r + (row - @toprow) #  @form.row
       widget.col = c+@left_margin # @form.col
-      widget.editable = true if widget.respond_to? :editable  # cb's don't ???
+      # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
+      widget.editable = true if widget.respond_to? :editable  # chb's don't ???
       widget.focusable = true
       widget.visible = true
       widget.form = @form
@@ -2693,7 +2697,7 @@ module RubyCurses
       end
     end
     def create_default_cell_renderer
-      return RubyCurses::ListCellRenderer.new "", {"parent" => self, "display_length"=> @maxlen ||= @width-2}
+      return RubyCurses::ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @maxlen ||= @width-2}
     end
     def repaint
       return unless @repaint_required

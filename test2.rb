@@ -13,7 +13,7 @@ require 'lib/rbcurse/rmenu'
 require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/listcellrenderer'
 require 'lib/rbcurse/checkboxcellrenderer'
-#require 'lib/rbcurse/comboboxcellrenderer'
+require 'lib/rbcurse/comboboxcellrenderer'
 require 'lib/rbcurse/celleditor'
 require 'qdfilechooser'
 if $0 == __FILE__
@@ -110,6 +110,24 @@ if $0 == __FILE__
           cell_renderer RubyCurses::CheckBoxCellRenderer.new nil, {"parent" => self, "display_length"=> @width-2}
           cell_editing_allowed true
           cell_editor RubyCurses::CellEditor.new(RubyCurses::CheckBox.new nil, {"focusable"=>false, "visible"=>false})
+        end
+        colist = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
+        colistdata = ["Todo", "Todo", "WIP","WIP", "Postp", "Cancel","Cancel", "Postp"]
+        colistv = RVariable.new colistdata
+        listcb = Listbox.new @form do
+          name   "colist" 
+          row  16
+          col  96 
+          width 12
+          height 10
+#         list mylist
+          list_variable colistv
+          #selection_mode :SINGLE
+          title "Status"
+          title_attrib 'bold'
+          cell_renderer RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => self, "display_length"=> width()-2}
+          cell_editing_allowed true
+          cell_editor RubyCurses::CellEditor.new(RubyCurses::ComboBox.new nil, {"focusable"=>false, "visible"=>false, "list"=>colist, "display_length"=>width()-2})
         end
         #listcb.cell_editor.component.form = @form
 

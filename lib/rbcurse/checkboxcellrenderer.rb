@@ -22,7 +22,7 @@ module RubyCurses
     dsl_accessor :surround_chars
 
     def initialize boolean=nil, config={}, &block
-      @value = value
+      @value = boolean
       @text = "" # what if someone wants to show a label later. ??? XXX
       @editable = false
       @focusable = false

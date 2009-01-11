@@ -55,6 +55,10 @@ module RubyCurses
     def checkbox_getvalue
       @component.getvalue
     end
+    def combobox_getvalue
+      @component.getvalue
+      #@component.selected_item
+    end
     def setvalue value
       case @_class
       when :field
@@ -62,7 +66,10 @@ module RubyCurses
       when :checkbox
         @component.checked value
       when :combobox
+        $log.debug " EDITOR COMBO Gets #{value}"
         @component.set_buffer value
+        #index = @component.list.index value
+        #@component.current_index = index
       else
         raise "Unknown class #{@_class} in CellEditor setv"
       end

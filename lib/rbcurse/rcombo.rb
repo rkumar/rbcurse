@@ -32,11 +32,19 @@ module RubyCurses
     # INSERT_AFTER_CURRENT, INSERT_BEFORE_CURRENT,INSERT_ALPHABETICALLY
 
     attr_accessor :current_index
+    # the symbol you want to use for combos
+    attr_accessor :COMBO_SYMBOL
+    attr_accessor :show_symbol # show that funny symbol after a combo to signify its a combo
 
     def initialize form, config={}, &block
       super
       @current_index ||= 0
       set_buffer @list[@current_index].dup
+      init_vars
+    end
+    def init_vars
+      @show_symbol ||= true
+      @COMBO_SYMBOL ||= Ncurses::ACS_GEQUAL
     end
     def selected_item
       @list[@current_index]
@@ -93,10 +101,13 @@ module RubyCurses
     # added dup in PRESS since editing edit field mods this
     # on pressing ENTER, value set back and current_index updated
     def popup
-      listconfig = @list_config.dup || {}
+      listconfig = (@list_config && @list_config.dup) || {}
       dm = @list
       # current item in edit box will be focussed when list pops up
-      dm.selected_index = @current_index
+      #$log.debug "XXX POPUP: #{dm.selected_index} = #{@current_index}, value #{@buffer}"
+      # we are having some problms when using this in a list. it retains earlier value
+      _index = dm.index @buffer
+      dm.selected_index = _index #  @current_index
       poprow = @row+0 # one row below the edit box
       popcol = @col
       dlength = @display_length
@@ -106,7 +117,7 @@ module RubyCurses
         col  popcol
         width dlength
         list_data_model dm
-        list_select_mode 'single'
+        list_selection_mode 'single'
         relative_to f
         list_config listconfig
         bind(:PRESS) do |index|
@@ -200,7 +211,10 @@ module RubyCurses
       super
       c = @col + @display_length
      # @form.window.mvwvline( @row, c, ACS_VLINE, 1)
-      @form.window.mvwaddch @row, c+1, Ncurses::ACS_GEQUAL
+      if @show_symbol # 2009-01-11 18:47 
+        # i have changed c +1 to c, since we have no right to print beyond display_length
+        @form.window.mvwaddch @row, c, @COMBO_SYMBOL # Ncurses::ACS_GEQUAL
+      end
      # @form.window.mvwvline( @row, c+2, ACS_VLINE, 1)
      # @form.window.mvwaddch @row, c+2, Ncurses::ACS_S1
      # @form.window.mvwaddch @row, c+3, Ncurses::ACS_S9
