@@ -70,6 +70,8 @@ if $0 == __FILE__
           list_variable $listdata
           #selection_mode :SINGLE
           show_selector true
+          row_selected_symbol "[X] "
+          row_unselected_symbol "[ ] "
           title "A long list"
           title_attrib 'reverse'
           cell_editing_allowed true

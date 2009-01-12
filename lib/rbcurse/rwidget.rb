@@ -2443,7 +2443,8 @@ module RubyCurses
     dsl_accessor :max_visible_items   # how many to display 2009-01-11 16:15 
     dsl_accessor :cell_editing_allowed
     dsl_property :show_selector
-    dsl_property :row_selector_symbol
+    dsl_property :row_selected_symbol # 2009-01-12 12:01 changed from selector to selected
+    dsl_property :row_unselected_symbol # added 2009-01-12 12:00 
     dsl_property :left_margin
     dsl_accessor :KEY_ROW_SELECTOR
     dsl_accessor :KEY_GOTO_TOP
@@ -2483,8 +2484,9 @@ module RubyCurses
       @KEY_GOTO_BOTTOM ||= ?\M-9
       @KEY_CLEAR_SELECTION ||= ?\M-e
       if @show_selector
-        @row_selector_symbol ||= '>'
-        @left_margin ||= @row_selector_symbol.length
+        @row_selected_symbol ||= '>'
+        @row_unselected_symbol ||= ' '
+        @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
     end
@@ -2725,16 +2727,16 @@ module RubyCurses
             selection_symbol = ''
             if @show_selector
               if selected
-                selection_symbol = @row_selector_symbol
+                selection_symbol = @row_selected_symbol
               else
-                selection_symbol = ' '
+                selection_symbol =  @row_unselected_symbol
               end
               @form.window.printstring r+hh, c, selection_symbol, acolor,@attr
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = cell_renderer()
             #renderer.show_selector @show_selector
-            #renderer.row_selector_symbol @row_selector_symbol
+            #renderer.row_selected_symbol @row_selected_symbol
             #renderer.left_margin @left_margin
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             renderer.repaint @form.window, r+hh, c+@left_margin, content, focussed, selected
