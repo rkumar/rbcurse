@@ -127,8 +127,8 @@ if $0 == __FILE__
           #selection_mode :SINGLE
           title "Status"
           title_attrib 'bold'
-          cell_renderer RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => self, "display_length"=> width()-2}
           cell_editing_allowed true
+          cell_renderer RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => self, "display_length"=> width()-2}
           cell_editor RubyCurses::CellEditor.new(RubyCurses::ComboBox.new nil, {"focusable"=>false, "visible"=>false, "list"=>colist, "display_length"=>width()-2})
         end
         #listcb.cell_editor.component.form = @form

@@ -6,8 +6,14 @@ require 'lib/ver/ncurses'
 #require 'lib/ver/keyboard'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
+require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/rtable'
 #require 'lib/rbcurse/table/tablecellrenderer'
+require 'lib/rbcurse/comboboxcellrenderer'
+
+##
+# a renderer which paints alternate lines with
+# another color, for people with poor taste.
 class MyRenderer < TableCellRenderer
   def initialize text="", config={}, &block
     super
@@ -41,26 +47,27 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       r = 1; c = 30;
-      data = [["You're beautiful",3,"James Blunt",3.21, true],
-        ["Where are you",3,"London Beat",3.47, true],
-        ["I swear",nil,"Boyz II Men",112.7, true],
-        ["I'll always love my mama",92,"Intruders",412, true],
-        ["I believe in love",4,"Paula Cole",110.0, false],
-        ["Red Sky at night",4,"Dave Gilmour",102.72, false],
-        ["Midnight and you",8,"Barry White",12.72, false],
-        ["Let the music play",9,"Barry White",12.2, false],
-        ["Believe",9,"Elton John",12.2, false],
-        ["Private Dancer",9,"Tina Turner",12.2, false],
-        ["Liberian Girl",9,"Michael Jackson",12.2, false],
-        ["Like a prayer",163,"Charlotte Perrelli",5.4, false]]
+      data = [["You're beautiful",3,"James Blunt",3.21, true, "WIP"],
+        ["Where are you",3,"London Beat",3.47, true, "WIP"],
+        ["I swear",nil,"Boyz II Men",112.7, true, "Cancel"],
+        ["I'll always love my mama",92,"Intruders",412, true, "Fin"],
+        ["I believe in love",4,"Paula Cole",110.0, false, "Cancel"],
+        ["Red Sky at night",4,"Dave Gilmour",102.72, false, "Postp"],
+        ["Midnight and you",8,"Barry White",12.72, false, "Todo"],
+        ["Let the music play",9,"Barry White",12.2, false, "WIP"],
+        ["Believe",9,"Elton John",12.2, false, "Todo"],
+        ["Private Dancer",9,"Tina Turner",12.2, false, "Todo"],
+        ["Liberian Girl",9,"Michael Jackson",12.2, false, "Todo"],
+        ["Like a prayer",163,"Charlotte Perrelli",5.4, false, "WIP"]]
 
-      colnames = %w[ Song Cat Artist Ratio Flag]
+      colnames = %w[ Song Cat Artist Ratio Flag Status]
+      statuses = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
 
         texta = Table.new @form do
           name   "mytext" 
           row  r 
           col  c
-          width 70
+          width 78
           height 15
           #title "A Table"
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
@@ -79,6 +86,7 @@ if $0 == __FILE__
           tcm.column(2).width  18
           tcm.column(3).width  7
           tcm.column(4).width  5
+          tcm.column(5).width  8
           bind_key(330) { texta.remove_column(tcm.column(sel_col.value))}
           bind_key(?+) {
             acolumn = texta.get_column selcolname
@@ -108,14 +116,17 @@ if $0 == __FILE__
       @help = "C-q to quit. UP, DOWN, C-n (Pg Dn), C-p (Pg Up), 0 Top, C-] End, space (select). Columns:- Narrow, + expand, > < switch"
       RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
 
-      str_renderer = MyRenderer.new ""
-      num_renderer = MyRenderer.new "", { "justify" => :right }
+      str_renderer = TableCellRenderer.new ""
+      num_renderer = TableCellRenderer.new "", { "justify" => :right }
       bool_renderer = CheckBoxCellRenderer.new "", {"parent" => texta, "display_length"=>5}
+      combo_renderer =  RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => texta, "display_length"=> 8}
+      combo_editor = RubyCurses::CellEditor.new(RubyCurses::ComboBox.new nil, {"focusable"=>false, "visible"=>false, "list"=>statuses, "display_length"=>8})
       texta.set_default_cell_renderer_for_class "String", str_renderer
       texta.set_default_cell_renderer_for_class "Fixnum", num_renderer
       texta.set_default_cell_renderer_for_class "Float", num_renderer
       texta.set_default_cell_renderer_for_class "TrueClass", bool_renderer
       texta.set_default_cell_renderer_for_class "FalseClass", bool_renderer
+      texta.get_table_column_model.column(5).cell_editor =  combo_editor
         field = Field.new @form do
           name   "value" 
           row  r+18
