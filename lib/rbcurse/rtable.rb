@@ -47,6 +47,7 @@ module RubyCurses
     attr_accessor :current_index   # the row index universally
     #attr_accessor :current_column  # index of column (usually in current row )
     attr_reader :editing_column, :editing_row # TODO
+    attr_accessor :is_editing # boolean
 
     def initialize form, config={}, &block
       super
@@ -57,6 +58,7 @@ module RubyCurses
       @col_offset = @row_offset = 1
       @focusable= true
       @current_index ||= 0
+      @current_column ||= 0
       @current_column_offset ||= 0 # added 2009-01-12 19:06 current_column's offset
       @toprow ||= 0
       @to_print_borders ||= 1
@@ -175,9 +177,7 @@ module RubyCurses
         v = val[0]
         v = 0 if v < 0
         v = @table_column_model.column_count-1 if v > @table_column_model.column_count-1
-        v = 0 if v < 0
         @current_column = v 
-        @current_column_offset = @table_column_model.column(@current_column).column_offset
         set_form_col
       end
     end
@@ -227,8 +227,8 @@ module RubyCurses
       @crh['String'] = TableCellRenderer.new "", {"parent" => self }
       @crh['Fixnum'] = TableCellRenderer.new "", { "justify" => :right, "parent" => self}
       @crh['Float'] = TableCellRenderer.new "", {"justify" => :right, "parent" => self}
-      @crh['TrueClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>5}
-      @crh['FalseClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>5}
+      @crh['TrueClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>7}
+      @crh['FalseClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>7}
       #@crh['String'] = TableCellRenderer.new "", {"bgcolor" => "cyan", "color"=>"white", "parent" => self}
       #@crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue","bgcolor"=>"cyan" }
       #@crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue", "bgcolor"=>"cyan" }
@@ -253,14 +253,70 @@ module RubyCurses
     #
     # ------- editing methods---------- #
     def get_cell_editor row, col
+    $log.debug " def get_cell_editor #{row}, #{col}"
+      column = @table_column_model.column(col)
+      editor = column.cell_editor
+      return editor # can be nil
     end
     def edit_cell_at row, col
-
+      editor = get_cell_editor row, col
+      value = get_value_at row, col
+      if editor.nil?
+        cls = value.nil? ? get_value_at(0,col).class.to_s : value.class.to_s
+        editor = get_default_cell_editor_for_class cls
+        editor.component.display_length = @table_column_model.column(col).width
+        editor.component.maxlen = editor.component.display_length if editor.component.respond_to? :maxlen
+        $log.debug "EDIT_CELL_AT:  #{editor.component.display_length} = #{@table_column_model.column(col).width}"
+      end
+      $log.debug " got an EDITOR #{editor}"
+      # by now we should have something to edit with. We just need to prepare the widgey.
+      prepare_editor editor, row, col, value
+    
+    end
+    def prepare_editor editor, row, col, value
+      r,c = rowcol
+      row = r + (row - @toprow) +1  #  @form.row , 1 added for header row!
+      col = c+get_column_offset()
+      editor.prepare_editor self, row, col, value
+      @cell_editor = editor
+      set_form_col 
+    end
+    def get_default_cell_editor_for_class cname
+      @ceh ||= {}
+      cname = 'Boolean' if cname == 'TrueClass' or cname == 'FalseClass'
+      if @ceh.include? cname
+        return @ceh[cname]
+      else
+        case cname
+        when 'String'
+          # I do not know cell width here, you will have toset display_length NOTE
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 8}
+          @ceh['String'] = ce
+          return ce
+        when 'Fixnum'
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 5}
+          @ceh[cname] = ce
+          return ce
+        when 'Float'
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 5}
+          @ceh[cname] = ce
+          return ce
+        when "Boolean" #'TrueClass', 'FalseClass'
+          ce = RubyCurses::CellEditor.new(RubyCurses::CheckBox.new nil, {"display_length"=> 0})
+          @ceh[cname] = ce
+          return ce
+        else
+          $log.debug " get_default_cell_editor_for_class UNKNOWN #{cname}"
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 6}
+          @ceh[cname] = ce
+          return ce
+        end
+      end
     end
     # returns true if editing is occurring
-    def is_editing?
-
-    end
+    #def is_editing?
+    #  @editing
+    #end
    
     # ----------------- #
 
@@ -272,13 +328,31 @@ module RubyCurses
       @toprow ||= 0
       h = scrollatrow()
       rc = @table_model.row_count
+      if @is_editing and (ch != 27 and ch != ?\C-c and ch != 13)
+        $log.debug " sending ch #{ch} to cell editor"
+        ret = @cell_editor.component.handle_key(ch)
+        @repaint_required = true
+        $log.debug "RET #{ret} got from to cell editor"
+        return if ret != :UNHANDLED
+      end
       case ch
       when KEY_UP  # show previous value
         previous_row
     #    @toprow = @current_index
       when KEY_DOWN  # show previous value
         next_row
-      when 32:
+      when 27, ?\C-c:
+        @is_editing = false if @is_editing
+      when KEY_ENTER, 10, 13:
+        @is_editing = !@is_editing
+        if @is_editing 
+          $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
+          edit_cell_at focussed_row(), focussed_col()
+        else
+          set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+        end
+
+      when ?\C-x #32:
         #add_row_selection_interval @current_index, @current_index
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
@@ -365,7 +439,12 @@ module RubyCurses
     # set cursor on correct column, widget
     def set_form_col col=@curpos
       @curpos = col
+      @current_column_offset = get_column_offset
       @form.col = @col + @col_offset + @curpos + @current_column_offset
+    end
+    # protected
+    def get_column_offset columnid=@current_column
+      return @table_column_model.column(columnid).column_offset
     end
 
 
@@ -425,6 +504,9 @@ module RubyCurses
           # clear rows
         end
       end
+      if @is_editing
+        @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
+      end
       @table_changed = false
       @repaint_required = false
     end
@@ -467,6 +549,7 @@ module RubyCurses
     attr_reader :header_value
     ## added column_offset on 2009-01-12 19:01 
     attr_accessor :column_offset # where we've place this guy. in case we need to position cursor
+    attr_accessor :cell_editor
 
 
     def initialize model_index, identifier, header_value, width, config={}, &block

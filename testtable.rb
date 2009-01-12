@@ -78,6 +78,7 @@ if $0 == __FILE__
           tcm.column(1).width  5
           tcm.column(2).width  18
           tcm.column(3).width  7
+          tcm.column(4).width  5
           bind_key(330) { texta.remove_column(tcm.column(sel_col.value))}
           bind_key(?+) {
             acolumn = texta.get_column selcolname
@@ -193,11 +194,11 @@ if $0 == __FILE__
         sel_col.value = tcm.column_count-1 if sel_col.value > tcm.column_count-1
         sel_col.value = 0 if sel_col.value < 0
         selcolname = texta.get_column_name sel_col.value
-        keylabel.text = "Pressed #{ch} , #{s}. Column selected #{sel_col.value}: Width:#{tcm.column(sel_col.value).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
-        s = texta.get_value_at(texta.focussed_row, sel_col.value)
+        keylabel.text = "Pressed #{ch} , #{s}. Column selected #{texta.focussed_col}: Width:#{tcm.column(sel_col.value).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
+        s = texta.get_value_at(texta.focussed_row, texta.focussed_col)
         #s = s.to_s
-        $log.debug " updating Field #{s}, #{s.class}"
-        field.set_buffer s unless field.state == :HIGHLIGHTED # $editing
+      ##  $log.debug " updating Field #{s}, #{s.class}"
+      ##  field.set_buffer s unless field.state == :HIGHLIGHTED # $editing
 
         @form.repaint
         @window.wrefresh

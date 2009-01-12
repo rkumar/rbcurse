@@ -1,3 +1,12 @@
+**2009-01-13 01:03**
+## Table editing is on ##
+
+Testing and working out visual glitch in checkbox edit.
+One extra char displayed by editor but not by renderer.
+So a white space gets left over.
+
+frmincr200901130102.tgz
+* * *
 **2009-01-11 20:06**
 ## editable lists: check and combo boxes ##
 

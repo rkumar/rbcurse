@@ -1929,6 +1929,8 @@ module RubyCurses
     def getvalue_for_paint
       buttontext = getvalue() ? "X" : " "
       dtext = @display_length.nil? ? @text : "%-*s" % [@display_length, @text]
+      $log.debug " TEXT NIL I CB" if @text.nil?
+      dtext = "" if @text.nil?  # added 2009-01-13 00:41 since cbcellrenderer prints no text
       if @align_right
         @text_offset = 0
         @col_offset = dtext.length + @surround_chars[0].length + 1

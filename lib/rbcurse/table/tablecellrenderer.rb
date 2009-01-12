@@ -42,7 +42,9 @@ module RubyCurses
           # ensure we do not exceed
           if !@display_length.nil?
             if value.length > @display_length
-              value = value[0..@display_length-1]
+              dlen = @display_length - 1
+              dlen = 0 if dlen < 0
+              value = value[0..dlen]
             end
           end
           lablist << value
@@ -70,6 +72,7 @@ module RubyCurses
           break if ix >= _height
           if @justify.to_sym == :center
             padding = (@display_length - _value.length)/2
+            padding = 0 if padding < 0
             _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
           end
           graphic.printstring r, c, str % [len, _value], acolor,_attr

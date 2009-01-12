@@ -68,6 +68,8 @@ module RubyCurses
       @component
     end
     def prepare_editor parent, row, col,  value
+      #value = value.dup if value.respond_to? :dup
+      value = value.dup rescue value
       setvalue value #.dup
       widget = component()
       widget.row = row
@@ -82,7 +84,7 @@ module RubyCurses
       widget.focusable = true
       widget.visible = true
       widget.form = parent.form
-      #$log.debug " prepare editor value #{widget.display_length} displlen"
+      #$log.debug " prepare editor value #{widget.display_length} displlen #{widget.maxlen}"
       #widget.display_length = widget.display_length -1
       widget.attr = Ncurses::A_REVERSE
       #$log.debug " prepare editor value #{value} : fr:#{row}, fc:#{col}"
