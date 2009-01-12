@@ -41,26 +41,26 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       r = 1; c = 30;
-      data = [["You're beautiful",3,"James Blunt",3.21],
-        ["Where are you",3,"London Beat",3.47],
-        ["I swear",nil,"Boyz II Men",112.7],
-        ["I'll always love my mama",92,"Intruders",412],
-        ["I believe in love",4,"Paula Cole",110.0],
-        ["Red Sky at night",4,"Dave Gilmour",102.72],
-        ["Midnight and you",8,"Barry White",12.72],
-        ["Let the music play",9,"Barry White",12.2],
-        ["Believe",9,"Elton John",12.2],
-        ["Private Dancer",9,"Tina Turner",12.2],
-        ["Liberian Girl",9,"Michael Jackson",12.2],
-        ["Like a prayer",163,"Charlotte Perrelli",5.4]]
+      data = [["You're beautiful",3,"James Blunt",3.21, true],
+        ["Where are you",3,"London Beat",3.47, true],
+        ["I swear",nil,"Boyz II Men",112.7, true],
+        ["I'll always love my mama",92,"Intruders",412, true],
+        ["I believe in love",4,"Paula Cole",110.0, false],
+        ["Red Sky at night",4,"Dave Gilmour",102.72, false],
+        ["Midnight and you",8,"Barry White",12.72, false],
+        ["Let the music play",9,"Barry White",12.2, false],
+        ["Believe",9,"Elton John",12.2, false],
+        ["Private Dancer",9,"Tina Turner",12.2, false],
+        ["Liberian Girl",9,"Michael Jackson",12.2, false],
+        ["Like a prayer",163,"Charlotte Perrelli",5.4, false]]
 
-      colnames = %w[ Song Cat Artist Ratio]
+      colnames = %w[ Song Cat Artist Ratio Flag]
 
         texta = Table.new @form do
           name   "mytext" 
           row  r 
           col  c
-          width 60
+          width 70
           height 15
           #title "A Table"
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
@@ -100,8 +100,8 @@ if $0 == __FILE__
           bind_key(?<) {
             texta.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
           }
-          bind_key(KEY_RIGHT) { sel_col.value = sel_col.value+1}
-          bind_key(KEY_LEFT) { sel_col.value = sel_col.value-1}
+          bind_key(KEY_RIGHT) { sel_col.value = sel_col.value+1; current_column sel_col.value}
+          bind_key(KEY_LEFT) { sel_col.value = sel_col.value-1;current_column sel_col.value}
         end
       keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+16, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
       @help = "C-q to quit. UP, DOWN, C-n (Pg Dn), C-p (Pg Up), 0 Top, C-] End, space (select). Columns:- Narrow, + expand, > < switch"
@@ -109,9 +109,12 @@ if $0 == __FILE__
 
       str_renderer = MyRenderer.new ""
       num_renderer = MyRenderer.new "", { "justify" => :right }
+      bool_renderer = CheckBoxCellRenderer.new "", {"parent" => texta, "display_length"=>5}
       texta.set_default_cell_renderer_for_class "String", str_renderer
       texta.set_default_cell_renderer_for_class "Fixnum", num_renderer
       texta.set_default_cell_renderer_for_class "Float", num_renderer
+      texta.set_default_cell_renderer_for_class "TrueClass", bool_renderer
+      texta.set_default_cell_renderer_for_class "FalseClass", bool_renderer
         field = Field.new @form do
           name   "value" 
           row  r+18

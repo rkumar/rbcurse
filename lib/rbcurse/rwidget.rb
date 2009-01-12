@@ -377,7 +377,7 @@ module RubyCurses
       @form.row = @row + 1 
     end
     # set cursor on correct column, widget
-    def set_form_col col=@cursor
+    def set_form_col col=@curpos
       @curpos = col
       @form.col = @col + @col_offset + @curpos
     end

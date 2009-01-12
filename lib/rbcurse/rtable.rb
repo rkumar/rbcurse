@@ -16,6 +16,7 @@ require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/table/tablecellrenderer'
+require 'lib/rbcurse/checkboxcellrenderer'
 require 'lib/rbcurse/listselectable'
 
 include Ncurses
@@ -43,7 +44,9 @@ module RubyCurses
     dsl_accessor :title
     dsl_accessor :title_attrib
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
-    attr_accessor :current_index
+    attr_accessor :current_index   # the row index universally
+    #attr_accessor :current_column  # index of column (usually in current row )
+    attr_reader :editing_column, :editing_row # TODO
 
     def initialize form, config={}, &block
       super
@@ -54,9 +57,11 @@ module RubyCurses
       @col_offset = @row_offset = 1
       @focusable= true
       @current_index ||= 0
+      @current_column_offset ||= 0 # added 2009-01-12 19:06 current_column's offset
       @toprow ||= 0
       @to_print_borders ||= 1
       @show_grid ||= 1
+      @curpos = 0
       # @selected_color ||= 'yellow'
       # @selected_bgcolor ||= 'black'
       @table_changed = true
@@ -65,6 +70,9 @@ module RubyCurses
 
     def focussed_row
       @current_index
+    end
+    def focussed_col
+      @current_column
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def row_count
@@ -147,7 +155,7 @@ module RubyCurses
 
 
     def selected_column
-      @table_column_model.selected_columns
+      @table_column_model.selected_columns[0]
     end
     def selected_columns
       @table_column_model.selected_columns
@@ -157,6 +165,24 @@ module RubyCurses
     end
 
     #--- row and column  methods ---#
+
+    ##
+    # getter and setter for current_column
+    def current_column(*val)
+      if val.empty?
+        @current_column || 0
+      else
+        v = val[0]
+        v = 0 if v < 0
+        v = @table_column_model.column_count-1 if v > @table_column_model.column_count-1
+        v = 0 if v < 0
+        @current_column = v 
+        @current_column_offset = @table_column_model.column(@current_column).column_offset
+        set_form_col
+      end
+    end
+
+
     def add_column tc
       @table_column_model << tc
       table_structure_changed
@@ -201,6 +227,8 @@ module RubyCurses
       @crh['String'] = TableCellRenderer.new "", {"parent" => self }
       @crh['Fixnum'] = TableCellRenderer.new "", { "justify" => :right, "parent" => self}
       @crh['Float'] = TableCellRenderer.new "", {"justify" => :right, "parent" => self}
+      @crh['TrueClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>5}
+      @crh['FalseClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>5}
       #@crh['String'] = TableCellRenderer.new "", {"bgcolor" => "cyan", "color"=>"white", "parent" => self}
       #@crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue","bgcolor"=>"cyan" }
       #@crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue", "bgcolor"=>"cyan" }
@@ -222,7 +250,19 @@ module RubyCurses
       rend = column.cell_renderer
       return rend # can be nil
     end
-    # -----------------
+    #
+    # ------- editing methods---------- #
+    def get_cell_editor row, col
+    end
+    def edit_cell_at row, col
+
+    end
+    # returns true if editing is occurring
+    def is_editing?
+
+    end
+   
+    # ----------------- #
 
     ##
     # key handling
@@ -314,11 +354,21 @@ module RubyCurses
       @repaint_required = true
     end
     # the cursor should be appropriately positioned
+    def on_enter
+      set_form_row
+    end
     def set_form_row
       r,c = rowcol
       # +1 is due to header
       @form.row = r + (@current_index-@toprow) + 1
     end
+    # set cursor on correct column, widget
+    def set_form_col col=@curpos
+      @curpos = col
+      @form.col = @col + @col_offset + @curpos + @current_column_offset
+    end
+
+
     # temporary, while testing and fleshing out
     def table_data_changed 
       $log.debug " TEMPORARILY PLACED. REMOVE AFTER FINALIZED. table_data_changed"
@@ -366,6 +416,7 @@ module RubyCurses
             end
             width = renderer.display_length + 1
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+            acolumn.column_offset = offset
             renderer.repaint @form.window, r+hh, c+(offset), content, focussed, selected
             offset += width
           end
@@ -414,6 +465,10 @@ module RubyCurses
     # user may override or set for this column, else headers default will be used
     attr_accessor :header_renderer  
     attr_reader :header_value
+    ## added column_offset on 2009-01-12 19:01 
+    attr_accessor :column_offset # where we've place this guy. in case we need to position cursor
+
+
     def initialize model_index, identifier, header_value, width, config={}, &block
       @width = width
       @model_index = model_index

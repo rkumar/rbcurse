@@ -22,6 +22,8 @@ Cancelling edits in lists.
 make edits such (calling editor) so it can defined on a key. In Finder, we press Enter to get into
 edit mode.
 
+separate methods in utils for get_selected_color, get_focussed_color etc
+
 Don;t update other widgets unless datachanged or properties changed. As in table.
 Properties: redraw only when property change or data change, not each time. Esp for label.
 TODO for field and buttons.
@@ -70,6 +72,9 @@ All that i need to do, is put celleditor and cellrenderer in TableColumn, and us
 as done in list.
 actually there's more: moving into cells. TAB is strictly for movement across fields.
 
+Sorting of tables using intermediate view that maps jtable to model.
+
+TABBED:
 Tabbed Pane may want to add OK, or OK_CANCEL buttons.
 
 
