@@ -14,6 +14,7 @@ require 'lib/ver/window'
 #require 'lib/rbcurse/mapper'
 #require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/rwidget'
+require 'lib/rbcurse/rmessagebox'
 
 if $0 == __FILE__
   # Initialize curses
@@ -38,7 +39,7 @@ if $0 == __FILE__
        type :list
        button_type :ok_cancel
        list %w[john tim lee wong rahul edward why chad andy]
-       list_select_mode 'multiple'
+       list_selection_mode 'multiple'
        default_values %w[ lee why ]
   
         default_button 0
@@ -145,7 +146,7 @@ if $0 == __FILE__
           width 30
           #list url_list
           list_data_model url_list
-          list_select_mode 'single'
+          list_selection_mode 'single'
           relative_to f
           list_config listconfig
           #default_values %w[ lee _why ]

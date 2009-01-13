@@ -16,6 +16,8 @@ require 'lib/rbcurse/checkboxcellrenderer'
 require 'lib/rbcurse/comboboxcellrenderer'
 require 'lib/rbcurse/celleditor'
 require 'qdfilechooser'
+require 'lib/rbcurse/rlistbox'
+require 'lib/rbcurse/rmessagebox'
 if $0 == __FILE__
   include RubyCurses
 
