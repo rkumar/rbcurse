@@ -14,10 +14,26 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+FORM: on_enter, on_exit
+
+EDITING TABLES:
+editing cell in some other color so we know when editing is off. On pressing ENTER Or quit 
+change back colors.
+add option of automatic editing on enter
+
+on_enter_cell on_leave_cell and other events
+
+Adding a row on a key, deleting a row on key/undelete
+searching
+
+EDITING LISTS:
+
+searching
+add and delete
+
 POPUP LIST:
 if selected index is not visible, it needs to scroll down and make that visible !!!
 
-Cancelling edits in lists.
 
 make edits such (calling editor) so it can defined on a key. In Finder, we press Enter to get into
 edit mode.
@@ -67,12 +83,7 @@ LISTBOX EDITING:
 - cancelling edit - restore original value
 
 EDITING IN TABLES:
-Now that lists have editable field/combo/check, try editing multicolumn tables.
-All that i need to do, is put celleditor and cellrenderer in TableColumn, and use that
-as done in list.
-actually there's more: moving into cells. TAB is strictly for movement across fields.
-
-Sorting of tables using intermediate view that maps jtable to model.
+Sorting of tables using intermediate view that maps jtable to model - not imp
 
 TABBED:
 Tabbed Pane may want to add OK, or OK_CANCEL buttons.
@@ -91,6 +102,7 @@ LABEL to take ampersand also. ?? No there could be legit ampersands. Also only i
 3. Field and TextArea: OVERWRITE mode, 
    FIELD justification mode (after tabout), 
    FIELD - auto_skip (after reaching end), 
+   managing_focus() : true means it will eat a tab (insert a tab in case of textarea).
 
 
 Textarea "del" does not delete newline, although C-k does look into that.
@@ -104,9 +116,17 @@ if there is no next, should onleave be fired ?
 
 focus_traversable - bool: tabbing won't get focus, but can be focussed by Enter (default) or hotkey.
 
+FileChooser, FileSaver
+
 RECENTLY DONE:
 --------------
+Cancelling edits in lists. DONE. C-c or ESC 2009-01-13 22:12 
 
+EDITING IN TABLES:
+Now that lists have editable field/combo/check, try editing multicolumn tables.
+All that i need to do, is put celleditor and cellrenderer in TableColumn, and use that
+as done in list.
+actually there's more: moving into cells. TAB is strictly for movement across fields.
 Listbox. when cursor enters, cursor should be shown on selected row which could
 be another row, if we tabbed out earlier. Curently, always shows on row 0 when entering a list. DONE
 Form was setting cursor after calling on_enter.

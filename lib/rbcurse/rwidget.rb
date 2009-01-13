@@ -1929,7 +1929,6 @@ module RubyCurses
     def getvalue_for_paint
       buttontext = getvalue() ? "X" : " "
       dtext = @display_length.nil? ? @text : "%-*s" % [@display_length, @text]
-      $log.debug " TEXT NIL I CB" if @text.nil?
       dtext = "" if @text.nil?  # added 2009-01-13 00:41 since cbcellrenderer prints no text
       if @align_right
         @text_offset = 0
@@ -2600,11 +2599,13 @@ module RubyCurses
       when @KEY_CLEAR_SELECTION
         clear_selection #if @select_mode == 'multiple'
         @repaint_required = true
+      when 27, ?\C-c:
+        editing_canceled @current_index
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
         if @cell_editing_allowed
           @repaint_required = true
-          # hack - on_enter_row should fire when this widget gets focus. first row that is
+          # hack - on_enter_row should fire when this widget gets focus. first row that is DONE
           begin
             @cell_editor.component.handle_key(ch)
           rescue
@@ -2634,17 +2635,21 @@ module RubyCurses
       #fire_handler :ENTER_ROW, arow
       fire_handler :ENTER_ROW, self
       @list.on_enter_row self
+      edit_row_at arow
+      @repaint_required = true
+    end
+    def edit_row_at arow
       if @cell_editing_allowed
-        $log.debug " cell editor on enter #{arow} val of list[row]: #{@list[arow]}"
+        #$log.debug " cell editor on enter #{arow} val of list[row]: #{@list[arow]}"
         editor = cell_editor
         prepare_editor editor, arow
       end
-      @repaint_required = true
     end
     ## 
     def prepare_editor editor, row
       r,c = rowcol
       value =  @list[row] # .chomp
+      value = value.dup rescue value # so we can cancel
       row = r + (row - @toprow) #  @form.row
       col = c+@left_margin # @form.col
       # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
@@ -2659,14 +2664,21 @@ module RubyCurses
       $log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: list[row]:#{@list[arow]}"
       #fire_handler :LEAVE_ROW, arow
       fire_handler :LEAVE_ROW, self
+      editing_completed arow
+    end
+    def editing_completed arow
       if @cell_editing_allowed
         if !@cell_editor.nil?
-          $log.debug " cell editor (leave) setting value row: #{arow} val: #{@cell_editor.getvalue}"
+      #    $log.debug " cell editor (leave) setting value row: #{arow} val: #{@cell_editor.getvalue}"
           @list[arow] = @cell_editor.getvalue #.dup 2009-01-10 21:42 boolean can't duplicate
         else
           $log.debug "CELL EDITOR WAS NIL, #{arow} "
         end
       end
+      @repaint_required = true
+    end
+    def editing_canceled arow
+      prepare_editor @cell_editor, arow
       @repaint_required = true
     end
 

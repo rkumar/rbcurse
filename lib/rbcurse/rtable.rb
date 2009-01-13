@@ -46,7 +46,7 @@ module RubyCurses
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     attr_accessor :current_index   # the row index universally
     #attr_accessor :current_column  # index of column (usually in current row )
-    attr_reader :editing_column, :editing_row # TODO
+    attr_reader :editing_column, :editing_row 
     attr_accessor :is_editing # boolean
 
     def initialize form, config={}, &block
@@ -169,7 +169,7 @@ module RubyCurses
     #--- row and column  methods ---#
 
     ##
-    # getter and setter for current_column
+    # getter and setter for current_column index
     def current_column(*val)
       if val.empty?
         @current_column || 0
@@ -204,11 +204,15 @@ module RubyCurses
     end
 
     #--- row and column  methods ---#
+    # must not give wrong results when columns switched!
     def get_value_at row, col
-      @table_model.get_value_at row, col
+      model_index = @table_column_model.column(col).model_index
+      @table_model.get_value_at row, model_index
     end
+    # must not give wrong results when columns switched!
     def set_value_at row, col, value
-      @table_model.set_value_at row, col, value
+      model_index = @table_column_model.column(col).model_index
+      @table_model.set_value_at row, model_index, value
     end
 
     #--- event listener support  methods (p521) ---#
@@ -262,13 +266,26 @@ module RubyCurses
       editor = get_cell_editor row, col
       value = get_value_at row, col
       if editor.nil?
+        
         cls = value.nil? ? get_value_at(0,col).class.to_s : value.class.to_s
+        if value.nil?
+          case cls
+          when 'String'
+            value = value.to_s
+          when 'Fixnum'
+            value = value.to_i
+          when 'Float'
+            value = value.to_f
+          else
+            value = value.to_s
+          end
+        end
         editor = get_default_cell_editor_for_class cls
         editor.component.display_length = @table_column_model.column(col).width
         editor.component.maxlen = editor.component.display_length if editor.component.respond_to? :maxlen
-        $log.debug "EDIT_CELL_AT:  #{editor.component.display_length} = #{@table_column_model.column(col).width}"
+        $log.debug "EDIT_CELL_AT: #{cls}  #{editor.component.display_length} = #{@table_column_model.column(col).width}"
       end
-      $log.debug " got an EDITOR #{editor}"
+      $log.debug " got an EDITOR #{editor} ::  #{editor.component} "
       # by now we should have something to edit with. We just need to prepare the widgey.
       prepare_editor editor, row, col, value
     
@@ -279,7 +296,14 @@ module RubyCurses
       col = c+get_column_offset()
       editor.prepare_editor self, row, col, value
       @cell_editor = editor
+      @repaint_required = true
       set_form_col 
+    end
+    def cancel_editor
+      # not really required, the refresh was required.
+      #@cell_editor.cancel_editor
+      @editing_row, @editing_col = nil, nil
+      @repaint_required = true
     end
     def get_default_cell_editor_for_class cname
       @ceh ||= {}
@@ -343,13 +367,16 @@ module RubyCurses
         next_row
       when 27, ?\C-c:
         @is_editing = false if @is_editing
+        cancel_editor
       when KEY_ENTER, 10, 13:
         @is_editing = !@is_editing
         if @is_editing 
           $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
+          @editing_row, @editing_col = focussed_row(), focussed_col()
           edit_cell_at focussed_row(), focussed_col()
         else
           set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+          cancel_editor
         end
 
       when ?\C-x #32:
@@ -715,10 +742,16 @@ module RubyCurses
       def row_count
         @data.length
       end
+      # 
+      # please avoid directly hitting this. Suggested to use get_value_at of jtable
+      # since columns could have been switched.
       def set_value_at row, col, val
           # if editing allowed
           @data[row][col] = val
       end
+      ##
+      # please avoid directly hitting this. Suggested to use get_value_at of jtable
+      # since columns could have been switched.
       def get_value_at row, col
         return @data[row][ col]
       end

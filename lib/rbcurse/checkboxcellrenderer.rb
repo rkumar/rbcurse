@@ -48,7 +48,9 @@ module RubyCurses
 
       buttontext = value ? "X" : " "
       # HOW TO DO THE TEXT ??? XXX
-      dtext = "" #@display_length.nil? ? @text : "%-*s" % [@display_length, @text]
+      # the space in dtext next line is a cheat, to clear off the space that the
+      # editor is leaving.
+      dtext = " " #@display_length.nil? ? @text : "%-*s" % [@display_length, @text]
       if @align_right
         #@text_offset = 0
         #@col_offset = dtext.length + @surround_chars[0].length + 1

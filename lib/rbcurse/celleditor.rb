@@ -86,8 +86,17 @@ module RubyCurses
       widget.form = parent.form
       #$log.debug " prepare editor value #{widget.display_length} displlen #{widget.maxlen}"
       #widget.display_length = widget.display_length -1
-      widget.attr = Ncurses::A_REVERSE
+      widget.bgcolor = 'yellow'
+      widget.color = 'black'
+      #widget.attr = Ncurses::A_REVERSE | Ncurses::A_BOLD
       #$log.debug " prepare editor value #{value} : fr:#{row}, fc:#{col}"
+    end
+    #This may not really be necessary since we paint the cell editor only if editing is on
+    def cancel_editor
+      widget = component()
+      widget.focusable = false
+      widget.visible = false
+      widget.attr = Ncurses::A_REVERSE 
     end
   end # class
 end # module
