@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-#require 'lib/rbcurse/rwidget'
+require 'lib/rbcurse/rwidget'
 module RubyCurses
 
   ## 
@@ -11,7 +11,7 @@ module RubyCurses
   class ListCellRenderer
     #include DSL
     #include EventHandler
-    include ConfigSetup
+    include RubyCurses::ConfigSetup
     include RubyCurses::Utils
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
     dsl_accessor :display_length     #  please give this to ensure the we only print this much

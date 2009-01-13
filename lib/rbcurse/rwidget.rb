@@ -27,7 +27,7 @@ require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/mapper'
 require 'lib/rbcurse/colormap'
-require 'lib/rbcurse/rdialogs'
+#require 'lib/rbcurse/rdialogs'
 #require 'lib/rbcurse/listcellrenderer'
 
 module DSL

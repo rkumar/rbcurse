@@ -56,6 +56,8 @@ module ListScrollable
     bounds_check
   end
 
+  ##
+  # please set oldrow before calling this. Store current_index as oldrow before changing. NOTE
   def bounds_check
     h = scrollatrow()
     rc = row_count
@@ -192,6 +194,7 @@ module ListScrollable
     if total - @toprow < sar
       @toprow = (total - sar) 
     end
+    @repaint_required = true
     #bounds_check
   end
 

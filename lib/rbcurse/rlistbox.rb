@@ -12,7 +12,7 @@ require 'ncurses'
 require 'logger'
 require 'lib/ver/ncurses'
 require 'lib/ver/window'
-#require 'lib/rbcurse/rdialogs'
+require 'lib/rbcurse/rdialogs'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/listcellrenderer'
 
@@ -111,6 +111,40 @@ module RubyCurses
       $log.debug " XXX on_enter_row of list_data"
       fire_handler :ENTER_ROW, object
     end
+    # ##
+    # added 2009-01-14 01:00 
+    # searches between given range of rows (def 0 and end)
+    # returns row index of first match of given regex (or nil if not found)
+    def find_match regex, ix0=0, ix1=length()
+      $log.debug " find_match got #{regex} #{ix0} #{ix1}"
+      @last_regex = regex
+      @search_start_ix = ix0
+      @search_end_ix = ix1
+      @search_found_ix = nil
+      @list.each_with_index do |row, ix|
+        next if ix < ix0
+        break if ix > ix1
+        if !row.match(regex).nil?
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
+    end
+    ##
+    # continues previous search
+    def find_next
+      raise "No previous search" if @last_regex.nil?
+      start = @search_found_ix+1 || 0
+      return find_match @last_regex, start, @search_end_ix
+    end
+    def find_prev
+      raise "No previous search" if @last_regex.nil?
+      ## TODO
+      #start = @search_found_ix+1 || 0
+      #return find_match @last_regex, start, @search_end_ix
+    end
+
     alias :to_array :values
   end # class ListDataModel
   ## 
@@ -373,6 +407,7 @@ module RubyCurses
       # when the combo box has a certain row in focus, the popup should have the same row in focus
       set_focus_on (@list.selected_index || 0)
       init_vars
+      install_bindings
     end
     def init_vars
       @to_print_borders ||= 1
@@ -388,6 +423,12 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
+      @KEY_ASK_FIND ||= ?\M-f
+      @KEY_FIND_NEXT ||= ?\M-g
+      @KEY_FIND_PREV ||= ?\M-G
+    end
+    def install_bindings
+
     end
 
     ##
@@ -505,6 +546,30 @@ module RubyCurses
         @repaint_required = true
       when 27, ?\C-c:
         editing_canceled @current_index
+      when @KEY_ASK_FIND
+        regex = ask_search
+        ix = @list.find_match regex
+        if ix.nil?
+          alert("No matching data for: #{regex}")
+        else
+          #set_focus_on(ix)
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
+      when @KEY_FIND_NEXT
+        ix = @list.find_next
+        #set_focus_on(ix) unless ix.nil?
+        if ix.nil?
+          alert("No more matching data for: #{regex}")
+        else
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
+      when @KEY_FIND_PREV
+        ix = @list.find_prev
+        set_focus_on(ix) unless ix.nil?
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
         if @cell_editing_allowed
@@ -526,6 +591,9 @@ module RubyCurses
           end
         end
       end
+    end
+    def ask_search
+      return get_string("Enter regex to search")
     end
     def on_enter
       on_enter_row @current_index
