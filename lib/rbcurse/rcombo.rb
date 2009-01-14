@@ -15,6 +15,7 @@ require 'logger'
 require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
+require 'lib/rbcurse/rlistbox'
 
 include Ncurses
 include RubyCurses

@@ -8,6 +8,7 @@ require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/rtable'
+require 'lib/rbcurse/celleditor'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/comboboxcellrenderer'
 
@@ -109,8 +110,8 @@ if $0 == __FILE__
           bind_key(?<) {
             texta.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
           }
-          bind_key(KEY_RIGHT) { sel_col.value = sel_col.value+1; current_column sel_col.value}
-          bind_key(KEY_LEFT) { sel_col.value = sel_col.value-1;current_column sel_col.value}
+          #bind_key(KEY_RIGHT) { sel_col.value = sel_col.value+1; current_column sel_col.value}
+          #bind_key(KEY_LEFT) { sel_col.value = sel_col.value-1;current_column sel_col.value}
         end
       keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+16, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
       @help = "C-q to quit. UP, DOWN, C-n (Pg Dn), C-p (Pg Up), 0 Top, C-] End, space (select). Columns:- Narrow, + expand, > < switch"

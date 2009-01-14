@@ -18,6 +18,7 @@ require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/checkboxcellrenderer'
 require 'lib/rbcurse/listselectable'
+require 'lib/rbcurse/listkeys'
 
 include Ncurses
 include RubyCurses
@@ -39,6 +40,7 @@ module RubyCurses
   class Table < Widget
     include RubyCurses::EventHandler
     include RubyCurses::ListSelectable
+    include RubyCurses::ListKeys
 
     dsl_accessor :height
     dsl_accessor :title
@@ -68,6 +70,12 @@ module RubyCurses
       # @selected_bgcolor ||= 'black'
       @table_changed = true
       @repaint_required = true
+      install_list_keys
+      install_keys_bindings
+    end
+    def install_keys_bindings
+      bind_key(KEY_RIGHT) { current_column @current_column+1 }
+      bind_key(KEY_LEFT) { current_column @current_column-1}
     end
 
     def focussed_row
@@ -174,10 +182,15 @@ module RubyCurses
       if val.empty?
         @current_column || 0
       else
+        @oldcol = @current_column
         v = val[0]
         v = 0 if v < 0
         v = @table_column_model.column_count-1 if v > @table_column_model.column_count-1
         @current_column = v 
+        if @current_column != @oldcol
+          on_leave_column @current_column
+          on_enter_column @current_column
+        end
         set_form_col
       end
     end
@@ -362,24 +375,14 @@ module RubyCurses
       case ch
       when KEY_UP  # show previous value
         previous_row
-    #    @toprow = @current_index
       when KEY_DOWN  # show previous value
         next_row
       when 27, ?\C-c:
-        @is_editing = false if @is_editing
-        cancel_editor
+        cancel_editing
       when KEY_ENTER, 10, 13:
-        @is_editing = !@is_editing
-        if @is_editing 
-          $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
-          @editing_row, @editing_col = focussed_row(), focussed_col()
-          edit_cell_at focussed_row(), focussed_col()
-        else
-          set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
-          cancel_editor
-        end
+        toggle_cell_editing
 
-      when ?\C-x #32:
+      when @KEY_ROW_SELECTOR # ?\C-x #32:
         #add_row_selection_interval @current_index, @current_index
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
@@ -397,31 +400,58 @@ module RubyCurses
         return :UNHANDLED if ret == :UNHANDLED
       end
     end
+    def cancel_editing
+      @is_editing = false if @is_editing
+      cancel_editor
+    end
+    def toggle_cell_editing
+      @is_editing = !@is_editing
+      if @is_editing 
+        start_editing
+      else
+        stop_editing
+      end
+    end
+    def start_editing
+        $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
+        @editing_row, @editing_col = focussed_row(), focussed_col()
+        edit_cell_at focussed_row(), focussed_col()
+    end
+    def stop_editing
+        set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+        cancel_editor
+    end
     ##
     def previous_row
-        @current_index -= 1 if @current_index > 0
-        bounds_check
+      @oldrow = @current_index
+      @current_index -= 1 if @current_index > 0
+      bounds_check
     end
     def next_row
       rc = row_count
+      @oldrow = @current_index
       @current_index += 1 if @current_index < rc
       bounds_check
     end
     def goto_bottom
+      @oldrow = @current_index
       rc = row_count
       @current_index = rc -1
       bounds_check
     end
     def goto_top
-        @current_index = 0
-        bounds_check
+      @oldrow = @current_index
+      @current_index = 0
+      bounds_check
     end
     def scroll_backward
+      @oldrow = @current_index
       h = scrollatrow()
       @current_index -= h 
       bounds_check
     end
     def scroll_forward
+      @oldrow = @current_index
       h = scrollatrow()
       rc = row_count
       # more rows than box
@@ -451,9 +481,37 @@ module RubyCurses
         @toprow = @current_index
       end
       #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+      if @oldrow != @current_index
+        $log.debug "going to call on leave and on enter"
+        on_leave_row @oldrow #if respond_to? :on_leave_row     # to be defined by widget that has included this
+        on_enter_row @current_index   #if respond_to? :on_enter_row  # to be defined by widget that has included this
+      end
       set_form_row
       @repaint_required = true
     end
+    def on_leave_row arow
+      $log.debug " def on_leave_row #{arow}"
+      on_leave_cell arow, @current_column
+    end
+    def on_leave_column acol
+      $log.debug " def on_leave_column #{acol}"
+      on_leave_cell @current_index, acol
+    end
+    def on_enter_row arow
+      $log.debug " def on_enter_row #{arow}"
+      on_enter_cell arow, @current_column
+    end
+    def on_enter_column acol
+      $log.debug " def on_enter_column #{acol}"
+      on_enter_cell @current_index, acol
+    end
+    def on_leave_cell arow, acol
+      $log.debug " def on_leave_cell #{arow}, #{acol}"
+    end
+    def on_enter_cell arow, acol
+      $log.debug " def on_enter_cell #{arow}, #{acol}"
+    end
+    # on enter of widget
     # the cursor should be appropriately positioned
     def on_enter
       set_form_row

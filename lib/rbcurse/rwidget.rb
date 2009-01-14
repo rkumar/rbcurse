@@ -142,8 +142,8 @@ module RubyCurses
         when 127
           return "bs"
         else
-          others=[?\M--,?\M-+,?\M-=]
-          s_others=%w[M-- M-+ M-=]
+          others=[?\M--,?\M-+,?\M-=,?\M-',?\M-"]
+          s_others=%w[M-- M-+ M-= M-' M-"]
           if others.include? keycode
             index =  others.index keycode
             return s_others[index]

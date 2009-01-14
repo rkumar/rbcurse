@@ -15,6 +15,7 @@ require 'lib/ver/window'
 require 'lib/rbcurse/rdialogs'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/listcellrenderer'
+require 'lib/rbcurse/listkeys'
 
 
 include Ncurses
@@ -142,15 +143,15 @@ module RubyCurses
       start = @search_found_ix && @search_found_ix+1 || 0
       return find_match @last_regex, start, @search_end_ix
     end
+    ##
+    # find backwards
+    # Using this to start a search or continue search
     def find_prev regex=@last_regex, start = @search_found_ix 
       raise "No previous search" if @last_regex.nil?
-      ## TODO
       $log.debug " find_prev #{@search_found_ix} : #{@current_index}"
       start -= 1 unless start == 0
       @last_regex = regex
       @search_start_ix = start
-      #regex = @last_regex  
-      #@search_found_ix = nil
       start.downto(0) do |ix| 
         row = @list[ix]
         if !row.match(regex).nil?
@@ -263,6 +264,7 @@ module RubyCurses
     def stopping?
       @stop
     end
+    ## popuplist
     def handle_keys
       begin
         while((ch = @window.getchar()) != 999 )
@@ -367,7 +369,7 @@ module RubyCurses
     end
   end # class PopupList
   ##
-  # this is the new Listbox, based on new scrollable.
+  # this is the new LISTBOX, based on new scrollable.
   #
   class Listbox < Widget
     require 'lib/rbcurse/listscrollable'
@@ -376,6 +378,7 @@ module RubyCurses
     require 'lib/rbcurse/celleditor'
     include ListScrollable
     include ListSelectable
+    include RubyCurses::ListKeys
     dsl_accessor :height
     dsl_accessor :title
     dsl_accessor :title_attrib   # bold, reverse, normal
@@ -396,6 +399,8 @@ module RubyCurses
     dsl_property :row_selected_symbol # 2009-01-12 12:01 changed from selector to selected
     dsl_property :row_unselected_symbol # added 2009-01-12 12:00 
     dsl_property :left_margin
+    # please set these in he constructor block. Settin them later will have no effect
+    # since i would have bound them to actions
     dsl_accessor :KEY_ROW_SELECTOR
     dsl_accessor :KEY_GOTO_TOP
     dsl_accessor :KEY_GOTO_BOTTOM
@@ -422,28 +427,23 @@ module RubyCurses
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
+
+      # i don't think this is working any longer. See how its done in find_next etc
+      # in any case set_focus should happen on entering the box right ?
       set_focus_on (@list.selected_index || 0)
       init_vars
-      install_bindings
     end
     def init_vars
       @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
-      @KEY_ROW_SELECTOR ||= ?\C-x
-      @KEY_GOTO_TOP ||= ?\M-0
-      @KEY_GOTO_BOTTOM ||= ?\M-9
-      @KEY_CLEAR_SELECTION ||= ?\M-e
       if @show_selector
         @row_selected_symbol ||= '>'
         @row_unselected_symbol ||= ' '
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
-      @KEY_ASK_FIND_FORWARD ||= ?\M-f
-      @KEY_ASK_FIND_BACKWARD ||= ?\M-F
-      @KEY_FIND_NEXT ||= ?\M-g
-      @KEY_FIND_PREV ||= ?\M-G
+      install_list_keys
     end
     def install_bindings
 
@@ -530,24 +530,25 @@ module RubyCurses
       @toprow ||= 0
       h = scrollatrow()
       rc = row_count
+      $log.debug " listbxo got ch #{ch}"
+      $log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
       when KEY_UP  # show previous value
         previous_row
-    #    @toprow = @current_index
       when KEY_DOWN  # show previous value
         next_row
       when @KEY_ROW_SELECTOR # 32:
         return if is_popup and @selection_mode == 'single' # not allowing select this way since there will be a difference 
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
-      when ?\C-n:
+      when @KEY_SCROLL_FORWARD # ?\C-n:
         scroll_forward
-      when ?\C-p:
+      when @KEY_SCROLL_BACKWARD #  ?\C-p:
         scroll_backward
       when @KEY_GOTO_TOP # 48, ?\C-[:
         # please note that C-[ gives 27, same as esc so will respond after ages
         goto_top
-      when ?\C-]:
+      when @KEY_GOTO_BOTTOM # ?\C-]:
         goto_bottom
       when @KEY_NEXT_SELECTION # ?'
         $log.debug "insdie next selection"
@@ -565,58 +566,27 @@ module RubyCurses
       when 27, ?\C-c:
         editing_canceled @current_index
       when @KEY_ASK_FIND_FORWARD
-        regex = ask_search
-        ix = @list.find_match regex
-        if ix.nil?
-          alert("No matching data for: #{regex}")
-        else
-          #set_focus_on(ix)
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
-        end
+        ask_search_forward
       when @KEY_ASK_FIND_BACKWARD
-        regex = ask_search
-        ix = @list.find_prev regex, @current_index
-        if ix.nil?
-          alert("No matching data for: #{regex}")
-        else
-          #set_focus_on(ix)
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
-        end
+        ask_search_backward
       when @KEY_FIND_NEXT
-        ix = @list.find_next
-        #set_focus_on(ix) unless ix.nil?
-        if ix.nil?
-          alert("No more matching data for: #{regex}")
-        else
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
-        end
+        find_next
       when @KEY_FIND_PREV
-        ix = @list.find_prev
-        if ix.nil?
-          alert("No previous matching data for: #{regex}")
-        else
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
-        end
+        find_prev
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
+        ret = 0
         if @cell_editing_allowed
           @repaint_required = true
           # hack - on_enter_row should fire when this widget gets focus. first row that is DONE
           begin
-            @cell_editor.component.handle_key(ch)
+            ret = @cell_editor.component.handle_key(ch)
           rescue
             on_enter_row @current_index
-            @cell_editor.component.handle_key(ch)
+            ret = @cell_editor.component.handle_key(ch)
           end
-        else
+        end
+        if ret == :UNHANDLED
           case ch
           when ?A..?Z, ?a..?z
             ret = set_selection_for_char ch.chr
@@ -627,8 +597,52 @@ module RubyCurses
         end
       end
     end
-    def ask_search
-      return get_string("Enter regex to search")
+    def ask_search_forward
+        regex =  get_string("Enter regex to search")
+        ix = @list.find_match regex
+        if ix.nil?
+          alert("No matching data for: #{regex}")
+        else
+          #set_focus_on(ix)
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
+    end
+    def ask_search_backward
+      regex =  get_string("Enter regex to search (backward)")
+      ix = @list.find_prev regex, @current_index
+      if ix.nil?
+        alert("No matching data for: #{regex}")
+      else
+        #set_focus_on(ix)
+        @oldrow = @current_index
+        @current_index = ix
+        bounds_check
+      end
+    end
+    def find_prev
+        ix = @list.find_prev
+        regex = @last_regex 
+        if ix.nil?
+          alert("No previous matching data for: #{regex}")
+        else
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
+    end
+    def find_next
+        ix = @list.find_next
+        regex = @last_regex 
+        #set_focus_on(ix) unless ix.nil?
+        if ix.nil?
+          alert("No more matching data for: #{regex}")
+        else
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
     end
     def on_enter
       on_enter_row @current_index
@@ -653,6 +667,7 @@ module RubyCurses
       end
     end
     ## 
+    # private
     def prepare_editor editor, row
       r,c = rowcol
       value =  @list[row] # .chomp
@@ -684,7 +699,7 @@ module RubyCurses
       end
       @repaint_required = true
     end
-    def editing_canceled arow
+    def editing_canceled arow=@current_index
       prepare_editor @cell_editor, arow
       @repaint_required = true
     end

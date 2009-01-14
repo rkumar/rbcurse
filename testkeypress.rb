@@ -6,9 +6,10 @@ require 'lib/ver/ncurses'
 #require 'lib/ver/keyboard'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rform'
+require 'lib/rbcurse/rtextarea'
 if $0 == __FILE__
   include RubyCurses
+  include RubyCurses::Utils
 
   begin
   # Initialize curses
@@ -43,7 +44,8 @@ if $0 == __FILE__
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != ?q )
-        texta << "#{ch} got"
+        str = keycode_tos ch
+        texta << "#{ch} got (#{str})"
         texta.repaint
         @form.handle_key(ch)
         @window.wrefresh

@@ -14,14 +14,22 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+TEXTAREA : test with a wide box, larger than width of rows
+           Give option of no wrap, and panning
+
 FORM: on_enter, on_exit
 
 EDITING TABLES:
+
+- We are not calling on_leave and on_enter of cell_editor component ??
+on_enter_cell on_leave_cell and other events
+
+NOT CLEAR - do i need on_enter_row and col and cell. or just cell.
+
 editing cell in some other color so we know when editing is off. On pressing ENTER Or quit 
 change back colors.
 add option of automatic editing on enter
 
-on_enter_cell on_leave_cell and other events
 
 Adding a row on a key, deleting a row on key/undelete
 searching
@@ -30,8 +38,8 @@ EDITING LISTS:
 
 make the keys definable as in table
 clean up handle_keys
-searching
-add and delete
+add and delete row
+- We are not calling on_leave and on_enter of cell_editor component ??
 
 POPUP LIST:
 if selected index is not visible, it needs to scroll down and make that visible !!!
@@ -81,7 +89,12 @@ it.
     +----------+
     |  TO ADD  |
     +----------+
+
+Each widget coukd hve its own popup menu (like right click) with its own options. Hey, we don't have
+a popup menu.
+
 LISTBOX EDITING:
+option to edit on a key: is_editing stuff
 
 EDITING IN TABLES:
 Sorting of tables using intermediate view that maps jtable to model - not imp
@@ -121,6 +134,7 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+listbox searching - done 2009-01-14 13:30 
 Cancelling edits in lists. DONE. C-c or ESC 2009-01-13 22:12 
 
 EDITING IN TABLES:
@@ -132,8 +146,6 @@ Listbox. when cursor enters, cursor should be shown on selected row which could
 be another row, if we tabbed out earlier. Curently, always shows on row 0 when entering a list. DONE
 Form was setting cursor after calling on_enter.
 
-Need editing in lists too.
-the row that is focussed, put a field there. Create one field and reuse for each row
 
 REDO Listbox, TextArea and TextView withuth scrollable, selectable.
 Field: if set_buffer sets numeric or float we should be intelligent and return edited values in same way,
