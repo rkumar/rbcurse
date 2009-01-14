@@ -50,14 +50,18 @@ module RubyCurses
     def initialize anarray
       @list = anarray.dup
     end
-    # not sure how to do this XXX 
-    def each 
-      @list.each { |item| yield item }
+    # changd on 2009-01-14 12:28 based on ..
+    # http://www.ruby-forum.com/topic/175637#769030
+    def each(&blk)
+      @list.each(&blk)
     end
-    # not sure how to do this XXX 
-    def <=>(other)
-      @list <=> other
-    end
+    #def each 
+    #  @list.each { |item| yield item }
+    #end
+    # not sure how to do this XXX  removed on 2009-01-14 12:28 
+    #def <=>(other)
+    #  @list <=> other
+    #end
     def index obj
       @list.index(obj)
     end
@@ -120,7 +124,7 @@ module RubyCurses
       @last_regex = regex
       @search_start_ix = ix0
       @search_end_ix = ix1
-      @search_found_ix = nil
+      #@search_found_ix = nil
       @list.each_with_index do |row, ix|
         next if ix < ix0
         break if ix > ix1
@@ -135,13 +139,25 @@ module RubyCurses
     # continues previous search
     def find_next
       raise "No previous search" if @last_regex.nil?
-      start = @search_found_ix+1 || 0
+      start = @search_found_ix && @search_found_ix+1 || 0
       return find_match @last_regex, start, @search_end_ix
     end
     def find_prev
       raise "No previous search" if @last_regex.nil?
       ## TODO
-      #start = @search_found_ix+1 || 0
+      $log.debug " find_prev #{@search_found_ix} : #{@current_index}"
+      start = @search_found_ix 
+      start -= 1 unless start == 0
+      regex = @last_regex  
+      #@search_found_ix = nil
+      start.downto(0) do |ix| 
+        row = @list[ix]
+        if !row.match(regex).nil?
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
       #return find_match @last_regex, start, @search_end_ix
     end
 
@@ -569,7 +585,13 @@ module RubyCurses
         end
       when @KEY_FIND_PREV
         ix = @list.find_prev
-        set_focus_on(ix) unless ix.nil?
+        if ix.nil?
+          alert("No previous matching data for: #{regex}")
+        else
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
         if @cell_editing_allowed
