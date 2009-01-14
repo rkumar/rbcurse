@@ -1,9 +1,10 @@
 **2009-01-14 12:56**
 ## Forward and backward searching in Listbox ##
 
-C-f to start a search (asks for regex)
-M-f to keep searching forward
-M-F to reverse direction of search
+M-f to start a forward search (asks for regex)
+M-F to start a backward search (asks for regex)
+M-g to keep searching forward
+M-G to reverse direction of search
 
 
 * * *
