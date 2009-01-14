@@ -142,13 +142,14 @@ module RubyCurses
       start = @search_found_ix && @search_found_ix+1 || 0
       return find_match @last_regex, start, @search_end_ix
     end
-    def find_prev
+    def find_prev regex=@last_regex, start = @search_found_ix 
       raise "No previous search" if @last_regex.nil?
       ## TODO
       $log.debug " find_prev #{@search_found_ix} : #{@current_index}"
-      start = @search_found_ix 
       start -= 1 unless start == 0
-      regex = @last_regex  
+      @last_regex = regex
+      @search_start_ix = start
+      #regex = @last_regex  
       #@search_found_ix = nil
       start.downto(0) do |ix| 
         row = @list[ix]
@@ -439,7 +440,8 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
-      @KEY_ASK_FIND ||= ?\M-f
+      @KEY_ASK_FIND_FORWARD ||= ?\M-f
+      @KEY_ASK_FIND_BACKWARD ||= ?\M-F
       @KEY_FIND_NEXT ||= ?\M-g
       @KEY_FIND_PREV ||= ?\M-G
     end
@@ -562,9 +564,20 @@ module RubyCurses
         @repaint_required = true
       when 27, ?\C-c:
         editing_canceled @current_index
-      when @KEY_ASK_FIND
+      when @KEY_ASK_FIND_FORWARD
         regex = ask_search
         ix = @list.find_match regex
+        if ix.nil?
+          alert("No matching data for: #{regex}")
+        else
+          #set_focus_on(ix)
+          @oldrow = @current_index
+          @current_index = ix
+          bounds_check
+        end
+      when @KEY_ASK_FIND_BACKWARD
+        regex = ask_search
+        ix = @list.find_prev regex, @current_index
         if ix.nil?
           alert("No matching data for: #{regex}")
         else
