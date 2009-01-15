@@ -142,8 +142,8 @@ module RubyCurses
         when 127
           return "bs"
         else
-          others=[?\M--,?\M-+,?\M-=,?\M-',?\M-"]
-          s_others=%w[M-- M-+ M-= M-' M-"]
+          others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->]
+          s_others=%w[M-- M-+ M-= M-' M-"   M-;   M-:   M-\, M-. M-<]
           if others.include? keycode
             index =  others.index keycode
             return s_others[index]
@@ -167,7 +167,7 @@ module RubyCurses
       ##
       # bind an event to a block, optional args will also be passed when calling
       def bind event, *xargs, &blk
-        $log.debug "called EventHandler BIND #{event}, args:#{xargs} "
+        $log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
         @handler ||= {}
         @event_args ||= {}
         #@handler[event] = blk
@@ -180,6 +180,7 @@ module RubyCurses
       alias :add_binding :bind   # temporary, needs a proper name to point out that we are adding
 
       # NOTE: Do we have a way of removing bindings
+      # # TODO check if event is valid. Classes need to define what valid event names are
     
       ##
       # Fire all bindings for given event
@@ -187,13 +188,14 @@ module RubyCurses
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
       def fire_handler event, object
+        $log.debug " def fire_handler evt:#{event}, o: #{object}, #{self}, hdnler:#{@handler}"
         if !@handler.nil?
         #blk = @handler[event]
           ablk = @handler[event]
           if !ablk.nil?
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
-              $log.debug "called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
               blk.call object,  *aeve[ix]
             end
           end # if
@@ -1398,6 +1400,7 @@ module RubyCurses
         return @text
       else
         s = val[0]
+        s = s.to_s if !s.is_a? String  # 2009-01-15 17:32 
         if (( ix = s.index('&')) != nil)
           s.slice!(ix,1)
           @underline = ix unless @form.nil? # this setting a fake underline in messageboxes

@@ -14,6 +14,8 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+globally replace RVariable with Variable and remove Variable
+
 TEXTAREA : test with a wide box, larger than width of rows
            Give option of no wrap, and panning
 
@@ -23,6 +25,9 @@ EDITING TABLES:
 
 - We are not calling on_leave and on_enter of cell_editor component ??
 on_enter_cell on_leave_cell and other events
+
+- prepare_editor needs to register table as listener to editor so informed of changes to cell
+- on_enter on leave of editing component - user can get comp and listen but we need to fire
 
 NOT CLEAR - do i need on_enter_row and col and cell. or just cell.
 

@@ -47,15 +47,16 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
+      @window.printstring 0,30,"Demo of Ruby Curses Table: Edit, Resize, Insert, Move, Delete Row/Col", $datacolor
       r = 1; c = 30;
       data = [["You're beautiful",3,"James Blunt",3.21, true, "WIP"],
         ["Where are you",3,"London Beat",3.47, true, "WIP"],
-        ["I swear",nil,"Boyz II Men",112.7, true, "Cancel"],
         ["I'll always love my mama",92,"Intruders",412, true, "Fin"],
         ["I believe in love",4,"Paula Cole",110.0, false, "Cancel"],
         ["Red Sky at night",4,"Dave Gilmour",102.72, false, "Postp"],
         ["Midnight and you",8,"Barry White",12.72, false, "Todo"],
         ["Let the music play",9,"Barry White",12.2, false, "WIP"],
+        ["I swear",nil,"Boyz II Men",112.7, true, "Cancel"],
         ["Believe",9,"Elton John",12.2, false, "Todo"],
         ["Private Dancer",9,"Tina Turner",12.2, false, "Todo"],
         ["Liberian Girl",9,"Michael Jackson",12.2, false, "Todo"],
@@ -81,39 +82,51 @@ if $0 == __FILE__
         #
         ## key bindings fo texta
         # column widths 
+        $log.debug " tcm #{tcm.inspect}"
+        $log.debug " tcms #{tcm.columns}"
+        $log.debug " tcm0 #{tcm.column(0).identifier}"
+        $log.debug " tcm0 #{tcm.column(0).width}"
+          tcm.column(0).width 24
+          tcm.column(1).width 5
+          tcm.column(2).width 18
+          tcm.column(3).width 7
+          tcm.column(4).width 5
+          tcm.column(5).width 8
         texta.configure() do
-          tcm.column(0).width  24
-          tcm.column(1).width  5
-          tcm.column(2).width  18
-          tcm.column(3).width  7
-          tcm.column(4).width  5
-          tcm.column(5).width  8
-          bind_key(330) { texta.remove_column(tcm.column(sel_col.value))}
+          bind_key(330) { texta.remove_column(tcm.column(texta.focussed_col)) rescue ""  }
           bind_key(?+) {
             acolumn = texta.get_column selcolname
             w = acolumn.width + 1
             acolumn.width w
-            texta.table_structure_changed
+            #texta.table_structure_changed
           }
           bind_key(?-) {
             acolumn = texta.get_column selcolname
             w = acolumn.width - 1
             if w > 3
             acolumn.width w
-            texta.table_structure_changed
+            #texta.table_structure_changed
             end
           }
           bind_key(?>) {
             colcount = tcm.column_count-1
-            texta.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
+            #texta.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
+            col = texta.focussed_col
+            texta.move_column col, col+1 unless col == colcount
           }
           bind_key(?<) {
-            texta.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
+            col = texta.focussed_col
+            texta.move_column col, col-1 unless col == 0
+            #texta.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
           }
           #bind_key(KEY_RIGHT) { sel_col.value = sel_col.value+1; current_column sel_col.value}
           #bind_key(KEY_LEFT) { sel_col.value = sel_col.value-1;current_column sel_col.value}
         end
       keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+16, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
+      eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+19, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
+      texta.table_model.bind(:TABLE_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
+      texta.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
+      texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
       @help = "C-q to quit. UP, DOWN, C-n (Pg Dn), C-p (Pg Up), 0 Top, C-] End, space (select). Columns:- Narrow, + expand, > < switch"
       RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
 
@@ -128,6 +141,7 @@ if $0 == __FILE__
       texta.set_default_cell_renderer_for_class "TrueClass", bool_renderer
       texta.set_default_cell_renderer_for_class "FalseClass", bool_renderer
       texta.get_table_column_model.column(5).cell_editor =  combo_editor
+=begin
         field = Field.new @form do
           name   "value" 
           row  r+18
@@ -138,18 +152,22 @@ if $0 == __FILE__
         #  bind :ENTER do $editing = true end
         #  bind :LEAVE do $editing = false end
         end
-        buttrow = Ncurses.LINES-4
+=end
+        buttrow = r+21 #Ncurses.LINES-4
       b_newrow = Button.new @form do
         text "&New"
         row buttrow
-        col 20
+        col c
       end
+      tm = texta.table_model
       b_newrow.command { 
         cc = texta.get_table_column_model.column_count
+        # need to get datatypes etc, this is just a junk test
         tmp=[]
-        0.upto(cc-1) { tmp << "" }
-        data << tmp
-        texta.table_data_changed
+        #0.upto(cc-1) { tmp << "" }
+        0.upto(cc-1) { tmp << nil }
+        tm << tmp
+        #texta.table_data_changed
         keylabel.text = "Added a row"
 
       }
@@ -158,13 +176,13 @@ if $0 == __FILE__
       b_delrow = Button.new @form do
         text "&Delete"
         row buttrow
-        col 30
+        col c+10
       end
       b_delrow.command { |form| 
         row = texta.focussed_row
         if confirm("Do your really want to delete row #{row}?")== :YES
-          data.delete_at row
-          texta.table_data_changed
+          tm.delete_at row
+          #texta.table_data_changed
         else
           #$message.value = "Quit aborted"
         end
@@ -172,19 +190,19 @@ if $0 == __FILE__
       b_change = Button.new @form do
         text "&Update"
         row buttrow
-        col 40
+        col c+20
         command {
           r = texta.focussed_row
           c = sel_col.value
-          $log.debug " Update gets #{field.getvalue.class}"
-          texta.set_value_at(r, c, field.getvalue)
+          #$log.debug " Update gets #{field.getvalue.class}"
+          #texta.set_value_at(r, c, field.getvalue)
           texta.table_data_changed
         }
       end
       b_insert = Button.new @form do
         text "&Insert"
         row buttrow
-        col 50
+        col c+30
         command {
           # this does not trigger a data change since we are not updating model. so update
           # on pressing up or down

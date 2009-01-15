@@ -38,7 +38,7 @@ module RubyCurses
   # This uses the MVC architecture and is WIP as of 2009-01-04 18:37 
   # TODO cellrenderers should be able to get parents bgcolor and color (Jtables) if none defined for them.
   class Table < Widget
-    include RubyCurses::EventHandler
+    #include RubyCurses::EventHandler # widget does 2009-01-15 15:38 
     include RubyCurses::ListSelectable
     include RubyCurses::ListKeys
 
@@ -95,12 +95,14 @@ module RubyCurses
 
     def set_data data, colnames_array
       if data.is_a? Array
-        @table_model = RubyCurses::DefaultTableModel.new data, colnames_array
+        model = RubyCurses::DefaultTableModel.new data, colnames_array
+        table_model model
       elsif data.is_a? RubyCurses::TableModel
         table_model data
       end
       if colnames_array.is_a? Array
-        @table_column_model = DefaultTableColumnModel.new colnames_array
+        model = DefaultTableColumnModel.new colnames_array
+        table_column_model model
       elsif colnames_array.is_a? RubyCurses::TableColumnModel
         table_column_model  colnames_array
       end
@@ -129,11 +131,18 @@ module RubyCurses
       else
         raise "data error" if !val[0].is_a? RubyCurses::TableModel
         @table_model = val[0] 
+        ## table registers as a listener, or rather binds to event
+        @table_model.bind(:TABLE_MODEL_EVENT){|lde| table_data_changed(lde) }
       end
     end
     def table_column_model tcm
       raise "data error" if !tcm.is_a? RubyCurses::TableColumnModel
       @table_column_model = tcm
+      @table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT) {|e| 
+        table_structure_changed e
+      }
+      @table_column_model.bind(:PROPERTY_CHANGE){|e| column_property_changed(e)}
+
       @table_header.column_model(tcm) unless @table_header.nil?
     end
     def get_table_column_model
@@ -161,8 +170,6 @@ module RubyCurses
     def remove_column_selection_interval ix0, ix1
       raise "TODO "
     end
-
-
 
     def selected_column
       @table_column_model.selected_columns[0]
@@ -198,11 +205,11 @@ module RubyCurses
 
     def add_column tc
       @table_column_model << tc
-      table_structure_changed
+      #table_structure_changed # this should be called by tcm TODO with object
     end
     def remove_column tc
       @table_column_model.remove_column  tc
-      table_structure_changed
+      #table_structure_changed # this should be called by tcm TODO with object
     end
     def get_column identifier
       ix = @table_column_model.column_index identifier
@@ -213,7 +220,7 @@ module RubyCurses
     end
     def move_column ix, newix
       @table_column_model.move_column ix, newix
-      table_structure_changed
+      #table_structure_changed # this should be called by tcm TODO with object
     end
 
     #--- row and column  methods ---#
@@ -228,16 +235,34 @@ module RubyCurses
       @table_model.set_value_at row, model_index, value
     end
 
-    #--- event listener support  methods (p521) ---#
+    #--- event listener support  methods (p521) TODO ---#
 
-    def table_changed tabmodev
+    def table_data_changed tabmodev
+      #$log.debug " def table_data_changed got #{tabmodev}"
+      @repaint_required = true
     end
+    def table_structure_changed tablecolmodelevent
+      $log.debug " def table_structure_changed #{tablecolmodelevent}"
+      @table_changed = true
+      @repaint_required = true
+    end
+    def column_property_changed evt
+      $log.debug "JT def column_property_changed #{evt} "
+      @table_changed = true
+      @repaint_required = true
+    end
+=begin
+   # this could be complicating things. I don't need it in here.
     def column_added tabcolmodev
+      @repaint_required = true
     end
     def column_removed tabcolmodev
+      @repaint_required = true
     end
     def column_moved tabcolmodev
+      @repaint_required = true
     end
+=end
     ## to do for TrueClass and FalseClass
     def prepare_renderers
       @crh = Hash.new
@@ -366,10 +391,10 @@ module RubyCurses
       h = scrollatrow()
       rc = @table_model.row_count
       if @is_editing and (ch != 27 and ch != ?\C-c and ch != 13)
-        $log.debug " sending ch #{ch} to cell editor"
+        #$log.debug " sending ch #{ch} to cell editor"
         ret = @cell_editor.component.handle_key(ch)
         @repaint_required = true
-        $log.debug "RET #{ret} got from to cell editor"
+        #$log.debug "RET #{ret} got from to cell editor"
         return if ret != :UNHANDLED
       end
       case ch
@@ -378,7 +403,7 @@ module RubyCurses
       when KEY_DOWN  # show previous value
         next_row
       when 27, ?\C-c:
-        cancel_editing
+        editing_canceled
       when KEY_ENTER, 10, 13:
         toggle_cell_editing
 
@@ -400,26 +425,26 @@ module RubyCurses
         return :UNHANDLED if ret == :UNHANDLED
       end
     end
-    def cancel_editing
+    def editing_canceled
       @is_editing = false if @is_editing
       cancel_editor
     end
     def toggle_cell_editing
       @is_editing = !@is_editing
       if @is_editing 
-        start_editing
+        editing_started
       else
-        stop_editing
+        editing_stopped
       end
     end
-    def start_editing
-        $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
-        @editing_row, @editing_col = focussed_row(), focussed_col()
-        edit_cell_at focussed_row(), focussed_col()
+    def editing_started
+      $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
+      @editing_row, @editing_col = focussed_row(), focussed_col()
+      edit_cell_at focussed_row(), focussed_col()
     end
-    def stop_editing
-        set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
-        cancel_editor
+    def editing_stopped
+      set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+      cancel_editor
     end
     ##
     def previous_row
@@ -482,7 +507,7 @@ module RubyCurses
       end
       #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
       if @oldrow != @current_index
-        $log.debug "going to call on leave and on enter"
+        #$log.debug "going to call on leave and on enter"
         on_leave_row @oldrow #if respond_to? :on_leave_row     # to be defined by widget that has included this
         on_enter_row @current_index   #if respond_to? :on_enter_row  # to be defined by widget that has included this
       end
@@ -490,19 +515,19 @@ module RubyCurses
       @repaint_required = true
     end
     def on_leave_row arow
-      $log.debug " def on_leave_row #{arow}"
+      #$log.debug " def on_leave_row #{arow}"
       on_leave_cell arow, @current_column
     end
     def on_leave_column acol
-      $log.debug " def on_leave_column #{acol}"
+      #$log.debug " def on_leave_column #{acol}"
       on_leave_cell @current_index, acol
     end
     def on_enter_row arow
-      $log.debug " def on_enter_row #{arow}"
+      #$log.debug " def on_enter_row #{arow}"
       on_enter_cell arow, @current_column
     end
     def on_enter_column acol
-      $log.debug " def on_enter_column #{acol}"
+      #$log.debug " def on_enter_column #{acol}"
       on_enter_cell @current_index, acol
     end
     def on_leave_cell arow, acol
@@ -510,6 +535,12 @@ module RubyCurses
     end
     def on_enter_cell arow, acol
       $log.debug " def on_enter_cell #{arow}, #{acol}"
+      if @table_traversal_event.nil? 
+        @table_traversal_event ||= TableTraversalEvent.new @oldrow, @oldcol, arow, acol, self
+      else
+        @table_traversal_event.set(@oldrow, @oldcol, arow, acol, self)
+      end
+      fire_handler :TABLE_TRAVERSAL_EVENT, @table_traversal_event
     end
     # on enter of widget
     # the cursor should be appropriately positioned
@@ -533,17 +564,6 @@ module RubyCurses
     end
 
 
-    # temporary, while testing and fleshing out
-    def table_data_changed 
-      $log.debug " TEMPORARILY PLACED. REMOVE AFTER FINALIZED. table_data_changed"
-      #@data_changed = true
-      @repaint_required = true
-    end
-    def table_structure_changed 
-      $log.debug " TEMPORARILY PLACED. REMOVE AFTER FINALIZED. table_structure_changed"
-      @table_changed = true
-      @repaint_required = true
-    end
     def repaint
       return unless @repaint_required
       print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
@@ -623,15 +643,19 @@ module RubyCurses
 
   ## TC 
   # All column changes take place in ColumnModel not in data. TC keeps pointer to col in data via
+  # TODO - can't change width beyond min and max if set
+  # resizable - user  can't resize but programatically can
   # model_index
   class TableColumn
+    include RubyCurses::EventHandler # 2009-01-15 22:49 
     attr_reader :identifier
     attr_accessor :min_width, :max_width, :is_resizable
     attr_accessor :cell_renderer
     attr_accessor :model_index  # index inside TableModel
     # user may override or set for this column, else headers default will be used
     attr_accessor :header_renderer  
-    attr_reader :header_value
+    dsl_property :header_value
+    dsl_property :width
     ## added column_offset on 2009-01-12 19:01 
     attr_accessor :column_offset # where we've place this guy. in case we need to position cursor
     attr_accessor :cell_editor
@@ -642,10 +666,11 @@ module RubyCurses
       @model_index = model_index
       @identifier = identifier
       @header_value = header_value
+      @config={}
       instance_eval &block if block_given?
     end
     ## display this row on top
-    def width(*val)
+    def OLDwidth(*val)
       if val.empty?
         @width
       else
@@ -654,9 +679,14 @@ module RubyCurses
       end
     end
     ## table header will be picking header_value from here
-    def set_header_value w
+    def OLDset_header_value w
       @header_value = w
       # fire property change
+    end
+    def fire_property_change(text, oldval, newval)
+      #$log.debug "TC: def fire_property_change(#{text}, #{oldval}, #{newval})"
+      # need to send changeevent FIXME XXX
+      fire_handler :PROPERTY_CHANGE, self
     end
   end # class tc
 
@@ -703,19 +733,22 @@ module RubyCurses
   ## DTCM  DCM
   class DefaultTableColumnModel < TableColumnModel
     include Enumerable
+    include RubyCurses::EventHandler # widget does 2009-01-15 15:38 
     attr_accessor :column_selection_allowed
     
     ##
     #  takes a column names array
     def initialize cols=[]
       @columns = []
-      cols.each_with_index {|c, index| @columns << TableColumn.new(index, c, c, 10) }
+      ##cols.each_with_index {|c, index| @columns << TableColumn.new(index, c, c, 10) }
+      cols.each_with_index {|c, index| add_column(TableColumn.new(index, c, c, 10)) }
       @selected_columns = []
     end
     def column ix
       raise "Invalid arg #{ix}" if ix < 0 or ix > (@columns.length() -1)
       @columns[ix]
     end
+    def columns; @columns; end
     ##
     # yields a table column
     def each
@@ -743,13 +776,27 @@ module RubyCurses
     end
     def add_column tc
       @columns << tc
+      tc.bind(:PROPERTY_CHANGE){|e| column_property_changed(e)}
+      tmce = TableColumnModelEvent.new(nil, @columns.length-1, self, :INSERT)
+      fire_handler :TABLE_COLUMN_MODEL_EVENT, tmce
+    end
+    def column_property_changed evt
+      $log.debug "DTCM def column_property_changed #{evt} "
+      # need to send changeevent FIXME XXX
+      fire_handler :PROPERTY_CHANGE, self
     end
     def remove_column tc
+      ix = @columns.index tc
       @columns.delete  tc
+      tmce = TableColumnModelEvent.new(ix, nil, self, :DELETE)
+      fire_handler :TABLE_COLUMN_MODEL_EVENT, tmce
     end
     def move_column ix, newix
-      acol = remove_column column(ix)
+  #    acol = remove_column column(ix)
+      acol = @columns.delete_at ix 
       @columns.insert newix, acol
+      tmce = TableColumnModelEvent.new(ix, newix, self, :MOVE)
+      fire_handler :TABLE_COLUMN_MODEL_EVENT, tmce
     end
     ##
     # return index of column identified with identifier
@@ -789,7 +836,8 @@ module RubyCurses
 =end
     end # class 
 
-    class DefaultTableModel
+    class DefaultTableModel < TableModel
+      include RubyCurses::EventHandler # 2009-01-15 15:38 
       def initialize data, colnames_array
         @data = data
         @column_identifiers = colnames_array
@@ -806,6 +854,8 @@ module RubyCurses
       def set_value_at row, col, val
           # if editing allowed
           @data[row][col] = val
+          tme = TableModelEvent.new(row, row, col, self, :UPDATE)
+          fire_handler :TABLE_MODEL_EVENT, tme
       end
       ##
       # please avoid directly hitting this. Suggested to use get_value_at of jtable
@@ -815,15 +865,29 @@ module RubyCurses
       end
       def << obj
         @data << obj
+        tme = TableModelEvent.new(@data.length-1,@data.length-1, :ALL_COLUMNS, self, :INSERT)
+        fire_handler :TABLE_MODEL_EVENT, tme
+        # create tablemodelevent and fire_table_changed for all listeners 
       end
       def insert row, obj
         @data.insert row, obj
+        tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
+        fire_handler :TABLE_MODEL_EVENT, tme
+        # create tablemodelevent and fire_table_changed for all listeners 
       end
       def delete obj
+        row = @data.index obj
+        return if row.nil?
         @data.delete obj
+        tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :DELETE)
+        fire_handler :TABLE_MODEL_EVENT, tme
+        # create tablemodelevent and fire_table_changed for all listeners
       end
       def delete_at row
         @data.delete_at row
+        # create tablemodelevent and fire_table_changed for all listeners 
+        tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :DELETE)
+        fire_handler :TABLE_MODEL_EVENT, tme
       end
     end # class 
 
@@ -831,7 +895,7 @@ module RubyCurses
     # LSM 
     #
     class DefaultListSelectionModel
-      include EventHandler
+      include RubyCurses::EventHandler 
       attr_accessor :selection_mode
       attr_reader :anchor_selection_index
       attr_reader :lead_selection_index
@@ -889,5 +953,61 @@ module RubyCurses
       end
 
     end
+  ##
+  # When an event is fired by TableModel, contents are changed, then this object will be passed 
+  # to trigger
+  # type is :INSERT :UPDATE :DELETE :HEADER_ROW 
+  # columns: number or :ALL_COLUMNS
+  class TableModelEvent
+    attr_accessor :firstrow, :lastrow, :column, :source, :type
+    def initialize firstrow, lastrow, column, source, type
+      @firstrow = firstrow
+      @lastrow = lastrow
+      @column = column
+      @source = source
+      @type = type
+    end
+    def to_s
+      "#{@type.to_s}, firstrow: #{@firstrow}, lastrow: #{@lastrow}, column: #{@column}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
+  end
+  ##
+  # event sent when a column is added, removed or moved
+  # type :INSERT :DELETE :MOVE
+  # in the case of add query first col, for removed query second
+  class TableColumnModelEvent
+    attr_accessor :from_col, :to_col, :source, :type
+    def initialize from_col, to_col, source, type
+      @from_col = from_col
+      @to_col = to_col
+      @source = source
+      @type = type
+    end
+    def to_s
+      "#{@type.to_s}, from_col: #{@from_col}, to_col: #{@to_col}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
+  end
+  ## caller can create one and reuse NOTE TODO
+  class TableTraversalEvent
+    attr_accessor :oldrow, :oldcol, :newrow, :newcol, :source
+    def initialize oldrow, oldcol, newrow, newcol, source
+      @oldrow, @oldcol, @newrow, @newcol, @source = oldrow, oldcol, newrow, newcol, source
+    end
+    def set oldrow, oldcol, newrow, newcol, source
+      @oldrow, @oldcol, @newrow, @newcol, @source = oldrow, oldcol, newrow, newcol, source
+    end
+    def to_s
+      "TRAVERSAL oldrow: #{@oldrow}, oldcol: #{@oldcol}, newrow: #{@newrow}, newcol: #{@newcol}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
+  end
 
 end # module
