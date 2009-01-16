@@ -48,9 +48,13 @@ module RubyCurses
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     attr_accessor :current_index   # the row index universally
     #attr_accessor :current_column  # index of column (usually in current row )
-    attr_reader :editing_col, :editing_row 
-    attr_accessor :is_editing # boolean
+    attr_reader :editing_col, :editing_row  # r and col being edited, set to nil on leave
+    attr_accessor :is_editing # boolean is only true if cell_editing_allowed
     dsl_accessor :editing_policy   # :EDITING_AUTO
+    
+    # A table should only be editable if this is true regardless of other variables
+    # In addition, A column to be editable must either have editable as nil or true
+    dsl_accessor :cell_editing_allowed # 2009-01-16 22:55 
 
     def initialize form, config={}, &block
       super
@@ -223,6 +227,11 @@ module RubyCurses
       ix = @table_column_model.column_index identifier
       return @table_column_model.column ix
     end
+    ## 
+    # returns col by col ix added on 2009-01-16 23:45 
+    def column ix
+      @table_column_model.column(ix)
+    end
     def get_column_name ix
       @table_column_model.column(ix).identifier
     end
@@ -305,10 +314,17 @@ module RubyCurses
     def get_cell_editor row, col
     $log.debug " def get_cell_editor #{row}, #{col}"
       column = @table_column_model.column(col)
+      return nil if column.editable == false or (column.editable.nil? and @cell_editing_allowed!=true)
       editor = column.cell_editor
       return editor # can be nil
     end
     def edit_cell_at row, col
+      acolumn = column(col)
+      if acolumn.editable == false or (acolumn.editable.nil? and @cell_editing_allowed!=true)
+        $log.debug " editing not allowed in #{col}"
+        @is_editing = false
+        return nil
+      end
       editor = get_cell_editor row, col
       value = get_value_at row, col
       if editor.nil?
@@ -345,8 +361,11 @@ module RubyCurses
       @repaint_required = true
       set_form_col 
     end
+    ## Its too late to call components on_leave here
+    # since cursor would have moved elsewhere.
+    # Prior to moving out of a field, the on_leave should be called and exceptions caught FIXME
     def cancel_editor
-      # not really required, the refresh was required.
+      # not really required, the refresh was required. Ok, now i call components on_leave inside
       #@cell_editor.cancel_editor
       @editing_row, @editing_col = nil, nil
       @is_editing = false
@@ -416,6 +435,8 @@ module RubyCurses
       when 27, ?\C-c:
         editing_canceled
       when KEY_ENTER, 10, 13:
+        # actually it should fall through to the else
+        return :UNHANDLED unless @cell_editing_allowed
         toggle_cell_editing
 
       when @KEY_ROW_SELECTOR # ?\C-x #32:
@@ -436,15 +457,18 @@ module RubyCurses
         editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_bottom
       else
+        # there could be a case of editing here too!
         ret = process_key ch, self
         return :UNHANDLED if ret == :UNHANDLED
       end
     end
     def editing_canceled
+      return unless @cell_editing_allowed
       @is_editing = false if @is_editing
       cancel_editor
     end
     def toggle_cell_editing
+      return unless @cell_editing_allowed
       @is_editing = !@is_editing
       if @is_editing 
         editing_started
@@ -453,14 +477,19 @@ module RubyCurses
       end
     end
     def editing_started
+      return unless @cell_editing_allowed
       @is_editing = true # 2009-01-16 16:14 
       $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
       @editing_row, @editing_col = focussed_row(), focussed_col()
       edit_cell_at focussed_row(), focussed_col()
     end
     # EDST
+    # the defualt values are useful when user is ON the field and pressed ENTER
+    # when leaving a cell, this should have oldrow and oldcol, not default values
+    # this throws an exception if validation on field fails NOTE
     def editing_stopped row=focussed_row(), col=focussed_col()
-      $log.debug " set_value_at(#{row}, #{col}:#{@cell_editor.getvalue}"
+      return unless @cell_editing_allowed or @is_editing == false or column(col).editable == false
+      $log.debug "editing_stopped set_value_at(#{row}, #{col}: #{@cell_editor.getvalue}"
       set_value_at(row, col, @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
       cancel_editor
     end
@@ -579,7 +608,8 @@ module RubyCurses
     ## OLCE
     def on_leave_cell arow, acol
       $log.debug " def on_leave_cell #{arow}, #{acol}"
-      if @editing_policy == :EDITING_AUTO
+      #if @editing_policy == :EDITING_AUTO  # actually this should happen in all cases
+      if @is_editing # 2009-01-17 00:49 
         editing_stopped arow, acol
       end
     end
@@ -600,7 +630,12 @@ module RubyCurses
     # the cursor should be appropriately positioned
     def on_enter
       set_form_row
+      set_form_col # 2009-01-17 01:35 
       on_enter_cell focussed_row(), focussed_col()
+    end
+    def on_leave
+      $log.debug " on leave of table 2009-01-16 21:58 "
+      editing_stopped if @is_editing #  2009-01-16 21:58 
     end
     def set_form_row
       r,c = rowcol
@@ -711,6 +746,12 @@ module RubyCurses
     attr_accessor :header_renderer  
     dsl_property :header_value
     dsl_property :width
+    # some columns may not be editable. e.g in a Finder, file size or time not editable
+    # whereas name is.
+
+    # is this column editable. Set to false to disable a column from editing IF the table
+    # allows editing. Setting to true not required.
+    dsl_accessor :editable   # if not set takes tables value 2009-01-16 22:49 
     ## added column_offset on 2009-01-12 19:01 
     attr_accessor :column_offset # where we've place this guy. in case we need to position cursor
     attr_accessor :cell_editor
@@ -724,23 +765,9 @@ module RubyCurses
       @config={}
       instance_eval &block if block_given?
     end
-    ## display this row on top
-    def OLDwidth(*val)
-      if val.empty?
-        @width
-      else
-        @width = val[0] 
-      # fire property change
-      end
-    end
-    ## table header will be picking header_value from here
-    def OLDset_header_value w
-      @header_value = w
-      # fire property change
-    end
     def fire_property_change(text, oldval, newval)
       #$log.debug "TC: def fire_property_change(#{text}, #{oldval}, #{newval})"
-      # need to send changeevent FIXME XXX
+      # need to send changeevent FIXME XXX maybe dsl_prop should do this.
       fire_handler :PROPERTY_CHANGE, self
     end
   end # class tc

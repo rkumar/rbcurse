@@ -40,7 +40,9 @@ module RubyCurses
         raise "Unknown class #{@_class} in CellEditor getv"
       end
     end
+    # maybe this should check valid (on_leave) and throw exception
     def field_getvalue
+      @component.on_leave # throws exception! Added 2009-01-17 00:47 
       @component.getvalue
     end
     def checkbox_getvalue
@@ -88,12 +90,17 @@ module RubyCurses
       #widget.display_length = widget.display_length -1
       widget.bgcolor = 'yellow'
       widget.color = 'black'
+      widget.on_enter
       #widget.attr = Ncurses::A_REVERSE | Ncurses::A_BOLD
       #$log.debug " prepare editor value #{value} : fr:#{row}, fc:#{col}"
     end
     #This may not really be necessary since we paint the cell editor only if editing is on
     def cancel_editor
       widget = component()
+      # NOOO THIS IS CALLED BY CANCEL AND STOP
+      # somehow we need to ensure that if on_leave fails you can't get out. Here its a bit late
+      # i think FIXME TODO
+      #widget.on_leave # call so any triggers or validations can fire
       widget.focusable = false
       widget.visible = false
       widget.attr = Ncurses::A_REVERSE 

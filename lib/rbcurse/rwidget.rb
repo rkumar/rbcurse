@@ -572,6 +572,7 @@ module RubyCurses
     end
     ## do not override
     # form's trigger, fired when any widget loses focus
+    #  This wont get called in editor components in tables, since  they are formless XXX
     def on_leave f
       return if f.nil?
       f.state = :NORMAL
@@ -1452,12 +1453,13 @@ module RubyCurses
       mch = ?\M-a + (ch - ?a)
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
-    def on_enter
+    #    2009-01-17 01:48 removed so widgets can be called
+#    def on_enter
 #      $log.debug "ONENTER : #{@bgcolor} "
-    end
-    def on_leave
+#    end
+#    def on_leave
 #      $log.debug "ONLEAVE : #{@bgcolor} "
-    end
+#    end
     def getvalue
       @text_variable.nil? ? @text : @text_variable.get_value(@name)
     end

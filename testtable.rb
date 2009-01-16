@@ -73,6 +73,7 @@ if $0 == __FILE__
           height 15
           #title "A Table"
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
+          cell_editing_allowed true
           editing_policy :EDITING_AUTO
           set_data data, colnames
         end
@@ -90,6 +91,7 @@ if $0 == __FILE__
           tcm.column(0).width 24
           tcm.column(1).width 5
           tcm.column(2).width 18
+          #tcm.column(2).editable false
           tcm.column(3).width 7
           tcm.column(4).width 5
           tcm.column(5).width 8
@@ -125,10 +127,13 @@ if $0 == __FILE__
         end
       keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+16, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
       eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+19, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
+
+      # report some events
       texta.table_model.bind(:TABLE_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
       texta.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
       texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
-      @help = "C-q to quit. UP, DOWN, C-n (Pg Dn), C-p (Pg Up), 0 Top, C-] End, space (select). Columns:- Narrow, + expand, > < switch"
+
+      @help = "C-q to quit. M-Tab (next col) C-n (Pg Dn), C-p (Pg Up), M-0 Top, M-9 End, C-x (select). Columns:- Narrow, + expand, > < switch"
       RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
 
       str_renderer = TableCellRenderer.new ""
@@ -159,6 +164,7 @@ if $0 == __FILE__
         text "&New"
         row buttrow
         col c
+        bind(:ENTER) { eventlabel.text "New button adds a new row at the bottom " }
       end
       tm = texta.table_model
       b_newrow.command { 
@@ -170,6 +176,7 @@ if $0 == __FILE__
         tm << tmp
         #texta.table_data_changed
         keylabel.text = "Added a row"
+        alert("Added a row at bottom of table")
 
       }
 
@@ -178,6 +185,7 @@ if $0 == __FILE__
         text "&Delete"
         row buttrow
         col c+10
+        bind(:ENTER) { eventlabel.text "Deletes focussed row" }
       end
       b_delrow.command { |form| 
         row = texta.focussed_row
@@ -189,7 +197,7 @@ if $0 == __FILE__
         end
       }
       b_change = Button.new @form do
-        text "&Update"
+        text "&Lock"
         row buttrow
         col c+20
         command {
@@ -197,19 +205,31 @@ if $0 == __FILE__
           c = sel_col.value
           #$log.debug " Update gets #{field.getvalue.class}"
           #texta.set_value_at(r, c, field.getvalue)
-          texta.table_data_changed
+          toggle = texta.column(texta.focussed_col()).editable 
+          if toggle.nil? or toggle==true
+            toggle = false 
+            text "Un&lock"
+          else
+            toggle = true
+            text "&Lock  "
+          end
+          eventlabel.text "Set column  #{texta.focussed_col()} editable to #{toggle}"
+          texta.column(texta.focussed_col()).editable toggle
+          alert("Set column  #{texta.focussed_col()} editable to #{toggle}")
         }
+        bind(:ENTER) { eventlabel.text "Toggles editable state of current column " }
       end
       b_insert = Button.new @form do
         text "&Insert"
         row buttrow
-        col c+30
+        col c+32
         command {
           # this does not trigger a data change since we are not updating model. so update
           # on pressing up or down
-          0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
-          texta.table_data_changed
+          #0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
+          #texta.table_data_changed
         }
+        bind(:ENTER) { eventlabel.text "Does nothing " }
       end
 
 
