@@ -141,6 +141,10 @@ module RubyCurses
           return "delete"
         when 127
           return "bs"
+        when 353
+          return "btab"
+        when 481
+          return "M-S-tab"
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->]
           s_others=%w[M-- M-+ M-= M-' M-"   M-;   M-:   M-\, M-. M-<]
@@ -986,9 +990,13 @@ module RubyCurses
     when KEY_BACKSPACE, 127
       delete_prev_char if @editable
     when KEY_UP
-      @form.select_prev_field
+      $log.debug " FIELD GOT KEY_UP, NOW IGNORING 2009-01-16 17:52 "
+      #@form.select_prev_field # in a table this should not happen 2009-01-16 17:47 
+      return :UNHANDLED
     when KEY_DOWN
-      @form.select_next_field
+      $log.debug " FIELD GOT KEY_DOWN, NOW IGNORING 2009-01-16 17:52 "
+      #@form.select_next_field # in a table this should not happen 2009-01-16 17:47 
+      return :UNHANDLED
     when KEY_ENTER, 10, 13
       if respond_to? :fire
         fire
@@ -1495,9 +1503,13 @@ module RubyCurses
     def handle_key ch
       case ch
       when KEY_LEFT, KEY_UP
-          @form.select_prev_field
+        $log.debug " from 2009-01-16 18:18 buttons return UNHANDLED on UP DOWN LEFT RIGHT"
+        return :UNHANDLED
+        #  @form.select_prev_field
       when KEY_RIGHT, KEY_DOWN
-          @form.select_next_field
+        $log.debug " from 2009-01-16 18:18 buttons return UNHANDLED on UP DOWN LEFT RIGHT"
+        return :UNHANDLED
+        #  @form.select_next_field
       when KEY_ENTER, 10, 13, 32  # added space bar also
         if respond_to? :fire
           fire

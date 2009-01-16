@@ -1,3 +1,11 @@
+**2009-01-16 20:13**
+## Table - cyclic traversal to next column ##
+
+Trying this out. USe Alt-Tab for going to next cell if you are editing a cell.
+If not editing then RIGHT and LEFT work.
+
+frmincr200901162012.tgz
+* * *
 **2009-01-16 00:31**
 ## Tables: Events and Listeners implemented ##
 

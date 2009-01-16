@@ -48,8 +48,9 @@ module RubyCurses
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     attr_accessor :current_index   # the row index universally
     #attr_accessor :current_column  # index of column (usually in current row )
-    attr_reader :editing_column, :editing_row 
+    attr_reader :editing_col, :editing_row 
     attr_accessor :is_editing # boolean
+    dsl_accessor :editing_policy   # :EDITING_AUTO
 
     def initialize form, config={}, &block
       super
@@ -61,6 +62,7 @@ module RubyCurses
       @focusable= true
       @current_index ||= 0
       @current_column ||= 0
+      @oldrow = @oldcol = 0
       @current_column_offset ||= 0 # added 2009-01-12 19:06 current_column's offset
       @toprow ||= 0
       @to_print_borders ||= 1
@@ -74,8 +76,13 @@ module RubyCurses
       install_keys_bindings
     end
     def install_keys_bindings
-      bind_key(KEY_RIGHT) { current_column @current_column+1 }
-      bind_key(KEY_LEFT) { current_column @current_column-1}
+
+      # alt-tab next column
+      # alt-shift-tab prev column
+      bind_key(?\M-\C-i) { next_column }
+      bind_key(481) { previous_column }
+      bind_key(KEY_RIGHT) { next_column }
+      bind_key(KEY_LEFT) { previous_column }
     end
 
     def focussed_row
@@ -195,10 +202,11 @@ module RubyCurses
         v = @table_column_model.column_count-1 if v > @table_column_model.column_count-1
         @current_column = v 
         if @current_column != @oldcol
-          on_leave_column @current_column
+          on_leave_column @oldcol
           on_enter_column @current_column
         end
         set_form_col
+        @oldcol = @current_column # added on 2009-01-16 19:40 for next_col
       end
     end
 
@@ -341,6 +349,7 @@ module RubyCurses
       # not really required, the refresh was required.
       #@cell_editor.cancel_editor
       @editing_row, @editing_col = nil, nil
+      @is_editing = false
       @repaint_required = true
     end
     def get_default_cell_editor_for_class cname
@@ -391,16 +400,18 @@ module RubyCurses
       h = scrollatrow()
       rc = @table_model.row_count
       if @is_editing and (ch != 27 and ch != ?\C-c and ch != 13)
-        #$log.debug " sending ch #{ch} to cell editor"
+        $log.debug " sending ch #{ch} to cell editor"
         ret = @cell_editor.component.handle_key(ch)
         @repaint_required = true
-        #$log.debug "RET #{ret} got from to cell editor"
+        $log.debug "RET #{ret} got from to cell editor"
         return if ret != :UNHANDLED
       end
       case ch
       when KEY_UP  # show previous value
+        editing_stopped if @is_editing # 2009-01-16 16:06 
         previous_row
       when KEY_DOWN  # show previous value
+        editing_stopped if @is_editing # 2009-01-16 16:06 
         next_row
       when 27, ?\C-c:
         editing_canceled
@@ -412,13 +423,17 @@ module RubyCurses
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
       when ?\C-n:
+        editing_stopped if @is_editing # 2009-01-16 16:06 
         scroll_forward
       when ?\C-p:
+        editing_stopped if @is_editing # 2009-01-16 16:06 
         scroll_backward
       when 48, ?\C-[:
         # please note that C-[ gives 27, same as esc so will respond after ages
+        editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_top
       when ?\C-]:
+        editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_bottom
       else
         ret = process_key ch, self
@@ -438,12 +453,15 @@ module RubyCurses
       end
     end
     def editing_started
+      @is_editing = true # 2009-01-16 16:14 
       $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
       @editing_row, @editing_col = focussed_row(), focussed_col()
       edit_cell_at focussed_row(), focussed_col()
     end
-    def editing_stopped
-      set_value_at(focussed_row(), focussed_col(), @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+    # EDST
+    def editing_stopped row=focussed_row(), col=focussed_col()
+      $log.debug " set_value_at(#{row}, #{col}:#{@cell_editor.getvalue}"
+      set_value_at(row, col, @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
       cancel_editor
     end
     ##
@@ -455,8 +473,33 @@ module RubyCurses
     def next_row
       rc = row_count
       @oldrow = @current_index
-      @current_index += 1 if @current_index < rc
-      bounds_check
+      # don't go on if rc 2009-01-16 19:55  XXX
+      if @current_index < rc
+        @current_index += 1 
+        bounds_check
+      end
+    end
+    def next_column
+      v =  @current_column+1 
+      if v < @table_column_model.column_count
+        $log.debug " if v < #{@table_column_model.column_count} "
+        current_column v
+      else
+        if @current_index < row_count()-1
+          $log.debug " GOING TO NEXT ROW FROM NEXT COL : #{@current_index} : #{row_count}"
+          @current_column = 0
+          next_row
+        end
+      end
+    end
+    def previous_column
+      v =  @current_column-1 
+      if v < 0 and @current_index > 0
+        @current_column = @table_column_model.column_count-1
+        previous_row
+      else
+        current_column @current_column-1 
+      end
     end
     def goto_bottom
       @oldrow = @current_index
@@ -512,15 +555,18 @@ module RubyCurses
         on_enter_row @current_index   #if respond_to? :on_enter_row  # to be defined by widget that has included this
       end
       set_form_row
+      @oldrow = @current_index # added 2009-01-16 19:43 XXX
       @repaint_required = true
     end
     def on_leave_row arow
       #$log.debug " def on_leave_row #{arow}"
-      on_leave_cell arow, @current_column
+      #on_leave_cell arow, @current_column
+      on_leave_cell arow, @oldcol # 2009-01-16 19:41 XXX trying outt
     end
     def on_leave_column acol
       #$log.debug " def on_leave_column #{acol}"
-      on_leave_cell @current_index, acol
+      #on_leave_cell @current_index, acol
+      on_leave_cell @oldrow, acol
     end
     def on_enter_row arow
       #$log.debug " def on_enter_row #{arow}"
@@ -530,9 +576,14 @@ module RubyCurses
       #$log.debug " def on_enter_column #{acol}"
       on_enter_cell @current_index, acol
     end
+    ## OLCE
     def on_leave_cell arow, acol
       $log.debug " def on_leave_cell #{arow}, #{acol}"
+      if @editing_policy == :EDITING_AUTO
+        editing_stopped arow, acol
+      end
     end
+    ## OECE
     def on_enter_cell arow, acol
       $log.debug " def on_enter_cell #{arow}, #{acol}"
       if @table_traversal_event.nil? 
@@ -541,11 +592,15 @@ module RubyCurses
         @table_traversal_event.set(@oldrow, @oldcol, arow, acol, self)
       end
       fire_handler :TABLE_TRAVERSAL_EVENT, @table_traversal_event
+      if @editing_policy == :EDITING_AUTO
+        editing_started
+      end
     end
     # on enter of widget
     # the cursor should be appropriately positioned
     def on_enter
       set_form_row
+      on_enter_cell focussed_row(), focussed_col()
     end
     def set_form_row
       r,c = rowcol
@@ -852,6 +907,7 @@ module RubyCurses
       # please avoid directly hitting this. Suggested to use get_value_at of jtable
       # since columns could have been switched.
       def set_value_at row, col, val
+        $log.debug " def set_value_at #{row}, #{col}, #{val} "
           # if editing allowed
           @data[row][col] = val
           tme = TableModelEvent.new(row, row, col, self, :UPDATE)

@@ -23,21 +23,26 @@ FORM: on_enter, on_exit
 
 EDITING TABLES:
 
+>>> Keep option of editing live as in Listbox.  add option of automatic editing on enter
+
 - We are not calling on_leave and on_enter of cell_editor component ??
-on_enter_cell on_leave_cell and other events
 
 - prepare_editor needs to register table as listener to editor so informed of changes to cell
 - on_enter on leave of editing component - user can get comp and listen but we need to fire
 
-NOT CLEAR - do i need on_enter_row and col and cell. or just cell.
 
 editing cell in some other color so we know when editing is off. On pressing ENTER Or quit 
 change back colors.
-add option of automatic editing on enter
-
 
 Adding a row on a key, deleting a row on key/undelete
 searching
+
+some cols editable, some not (as in Finder). 
+on_leave stop any editor that may be active
+
+
+issue with auto_editing is how to go to next col since arrows are required in editing fields.
+however, check boxes etc should have auto editing.
 
 EDITING LISTS:
 
@@ -143,6 +148,7 @@ listbox searching - done 2009-01-14 13:30
 Cancelling edits in lists. DONE. C-c or ESC 2009-01-13 22:12 
 
 EDITING IN TABLES:
+on_enter_cell on_leave_cell and other events
 Now that lists have editable field/combo/check, try editing multicolumn tables.
 All that i need to do, is put celleditor and cellrenderer in TableColumn, and use that
 as done in list.

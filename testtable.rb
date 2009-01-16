@@ -73,6 +73,7 @@ if $0 == __FILE__
           height 15
           #title "A Table"
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
+          editing_policy :EDITING_AUTO
           set_data data, colnames
         end
         sel_col = RVariable.new 0
