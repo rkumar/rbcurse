@@ -1,6 +1,7 @@
 **2009-01-16 20:13**
-## Table - cyclic traversal to next column ##
+## Table - cyclic traversal to next column, auto editing of cells ##
 
+Automatic editing on tabbing in and out on Table.
 Trying this out. USe Alt-Tab for going to next cell if you are editing a cell.
 If not editing then RIGHT and LEFT work.
 
