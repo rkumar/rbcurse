@@ -43,7 +43,8 @@ module RubyCurses
     # maybe this should check valid (on_leave) and throw exception
     def field_getvalue
       @component.on_leave # throws exception! Added 2009-01-17 00:47 
-      @component.getvalue
+      @component.init_vars # 2009-01-18 01:13 should not carry over to next row curpos and pcol
+      return @component.getvalue
     end
     def checkbox_getvalue
       @component.getvalue

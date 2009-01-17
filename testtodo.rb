@@ -23,7 +23,7 @@ class TodoList
     @todomap['__STATUSES']
   end
   def get_modules
-    @todomap['TODO'].keys
+    @todomap['__MODULES']
   end
   def get_categories
     @todomap.keys.delete_if {|k| k.match(/^__/) }
@@ -37,13 +37,25 @@ class TodoList
         row << k
         r.each { |r1| row << r1 }
         d << row
-        $log.debug " ROW = #{row.inspect} "
+        #$log.debug " ROW = #{row.inspect} "
       end
     }
     return d
   end
+  def set_task_for_category categ, data
+    d = {}
+    data.each do |row|
+      #key = row.delete_at 0
+      key = row.first
+      d[key] ||= []
+      d[key] << row[1..-1]
+    end
+    @todomap[categ]=d
+    $log.debug " NEW DATA #{categ}: #{data}"
+  end
   def dump
-    File.open(@file, "w") { |f| YAML.dump( @todomap, f )}
+    f = "#{@file}"
+    File.open(f, "w") { |f| YAML.dump( @todomap, f )}
   end
 end
 if $0 == __FILE__
@@ -69,11 +81,11 @@ if $0 == __FILE__
       @form = Form.new @window
       title = "TODO APP"
       @window.printstring 0,(Ncurses.COLS-title.length)/2,title, $datacolor
-      r = 1; c = 15;
+      r = 1; c = 1;
       categ = ComboBox.new @form do
         name "categ"
         row r
-        col c
+        col 15
         display_length 10
         editable false
         list cats
@@ -98,17 +110,18 @@ if $0 == __FILE__
           editing_policy :EDITING_AUTO
           set_data data, colnames
         end
-        categ.bind(:LEAVE) do |fld| $log.debug " COMBO EXIT XXXXXXXX"; 
+        categ.bind(:CHANGED) do |fld| $log.debug " COMBO EXIT XXXXXXXX"; 
         data = todo.get_tasks_for_category fld.getvalue; 
         $log.debug " DATA is #{data.inspect} : #{data.length}"
         data = [[nil, 5, "NEW TASK", "TODO"]] if data.nil? or data.empty? or data.size == 0
         $log.debug " DATA is #{data.inspect} : #{data.length}"
         texta.table_model.data = data
         end
+
         sel_col = Variable.new 0
         sel_col.value = 0
         tcm = texta.get_table_column_model
-        selcolname = texta.get_column_name sel_col.value
+        selcolname = texta.get_column_name 0
         #
         ## key bindings fo texta
         # column widths 
@@ -170,6 +183,8 @@ if $0 == __FILE__
       texta.set_default_cell_renderer_for_class "FalseClass", bool_renderer
       texta.get_table_column_model.column(3).cell_editor =  combo_editor
       texta.get_table_column_model.column(0).cell_editor =  combo_editor1
+      ce = texta.get_default_cell_editor_for_class "String"
+      ce.component.maxlen = 80
 =begin
 =end
         buttrow = r+table_ht+8 #Ncurses.LINES-4
@@ -215,7 +230,7 @@ if $0 == __FILE__
         col c+20
         command {
           r = texta.focussed_row
-          c = sel_col.value
+          #c = sel_col.value
           #$log.debug " Update gets #{field.getvalue.class}"
           #texta.set_value_at(r, c, field.getvalue)
           toggle = texta.column(texta.focussed_col()).editable 
@@ -241,6 +256,9 @@ if $0 == __FILE__
           # on pressing up or down
           #0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
           #texta.table_data_changed
+          todo.set_task_for_category categ.getvalue, data
+          todo.dump
+          alert("Rewritten yaml file")
         }
         bind(:ENTER) { eventlabel.text "Does nothing " }
       end
@@ -255,8 +273,8 @@ if $0 == __FILE__
         keylabel.text = "Pressed #{ch} , #{s}"
         @form.handle_key(ch)
 
-        sel_col.value = tcm.column_count-1 if sel_col.value > tcm.column_count-1
-        sel_col.value = 0 if sel_col.value < 0
+        #sel_col.value = tcm.column_count-1 if sel_col.value > tcm.column_count-1
+        #sel_col.value = 0 if sel_col.value < 0
         selcolname = texta.get_column_name texta.focussed_col
         keylabel.text = "Pressed #{ch} , #{s}. Column selected #{texta.focussed_col}: Width:#{tcm.column(texta.focussed_col).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
         s = texta.get_value_at(texta.focussed_row, texta.focussed_col)

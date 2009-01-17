@@ -17,6 +17,9 @@ MUST DO:
 
 Field: ESC to put back original value.
 
+modified should be a method, in most cases will check orig value. 
+In some cases will use a flag (like textarea, where you don't wanna match old val)
+
 TEXTAREA : test with a wide box, larger than width of rows
            Give option of no wrap, and panning
 

@@ -40,10 +40,12 @@ module RubyCurses
     def initialize form, config={}, &block
       super
       @current_index ||= 0
-      set_buffer @list[@current_index].dup
+      # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
+      set_buffer @list[@current_index].dup if @buffer.nil? or @buffer.empty?
       init_vars
     end
     def init_vars
+      super
       @show_symbol ||= true
       @COMBO_SYMBOL ||= Ncurses::ACS_GEQUAL
     end

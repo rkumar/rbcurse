@@ -272,6 +272,7 @@ module RubyCurses
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
     dsl_property :visible # boolean     # 2008-12-09 11:29 
+    attr_accessor :modified          # boolean, value modified or not (moved from field 2009-01-18 00:14 )
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -590,6 +591,7 @@ module RubyCurses
     def on_enter f
       return if f.nil?
       f.state = :HIGHLIGHTED
+      f.modified = false
       f.on_enter if f.respond_to? :on_enter
       fire_handler :ENTER, f 
     end
@@ -843,7 +845,6 @@ module RubyCurses
 
     # any new widget that has editable should have modified also
     dsl_accessor :editable          # allow editing
-    attr_accessor :modified          # boolean, value modified or not
 
     attr_reader :form
     attr_reader :handler             # event handler
@@ -864,12 +865,15 @@ module RubyCurses
       @name = config.fetch("name", nil)
       @editable = config.fetch("editable", true)
       @focusable = config.fetch("focusable", true)
-      @curpos = 0                  # current cursor position in buffer
       @handler = {}
       @event_args = {}             # arguments passed at time of binding, to use when firing event
-      @modified = false
-      @pcol = 0   # needed for horiz scrolling
+      init_vars
       super
+    end
+    def init_vars
+      @pcol = 0   # needed for horiz scrolling
+      @curpos = 0                  # current cursor position in buffer
+      @modified = false
     end
     def text_variable tv
       @text_variable = tv

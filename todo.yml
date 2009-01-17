@@ -1,15 +1,12 @@
 --- 
-__STATUSES:
+FIXME: {}
+
+__STATUSES: 
 - WIP
 - TOTEST
 - TESTED
 - TODO
 - CANC
-
-DONE: {}
-
-FIXME: {}
-
 TODO: 
   LIST: 
   - - 0
@@ -22,9 +19,32 @@ TODO:
   - - 3
     - Columns editable or not
     - WIP
-  GEN: []
+  - - 5
+    - Use TAB for intercell navig. use M-TAB for next f
+    - TODO
+  - - 5
+    - Any way to start a table with no data and pop late
+    - TODO
+  - - 5
+    - table.set_data should check if models already created.
+    - TODO
+  - - 5
+    - increase the maxlen of this field please. Let us see how it goes.
+    - TESTED
+  - - 5
+    - cell editors pcol is not being reset each time
+    - TESTED
+  GEN: 
+  - - 5
+    - Modified should check if value changed, not UP etc
+    - TODO
+DONE: {}
 
-  FORM: []
-
-  FIELD: []
-
+__MODULES: 
+- LIST
+- TABLE
+- FIELD
+- FORM
+- GEN
+- BUTTON
+- MENU

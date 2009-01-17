@@ -104,6 +104,9 @@ module RubyCurses
       @height -3
     end
 
+    # 
+    # Sets the data in models
+    # Should replace if these are created. TODO FIXME
     def set_data data, colnames_array
       if data.is_a? Array
         model = RubyCurses::DefaultTableModel.new data, colnames_array
@@ -350,8 +353,8 @@ module RubyCurses
         end
         editor = get_default_cell_editor_for_class cls
         editor.component.display_length = @table_column_model.column(col).width
-        editor.component.maxlen = editor.component.display_length if editor.component.respond_to? :maxlen
-        $log.debug "EDIT_CELL_AT: #{cls}  #{editor.component.display_length} = #{@table_column_model.column(col).width}"
+        editor.component.maxlen = editor.component.display_length if editor.component.respond_to? :maxlen and editor.component.maxlen.nil? # 2009-01-18 00:59  XXX don't overwrite if user has set
+        #$log.debug "EDIT_CELL_AT: #{cls}  #{editor.component.display_length} = #{@table_column_model.column(col).width}i maxlen #{editor.component.maxlen}"
       end
       $log.debug " got an EDITOR #{editor} ::  #{editor.component} "
       # by now we should have something to edit with. We just need to prepare the widgey.
