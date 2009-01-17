@@ -114,7 +114,7 @@ if $0 == __FILE__
       field_list << checkbutton
       titlelabel = RubyCurses::Label.new @form, {'text' => 'Language', 'row'=>8, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white'}
       field_list << titlelabel
-      $radio = RubyCurses::RVariable.new
+      $radio = RubyCurses::Variable.new
       #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value}
       radio1 = RubyCurses::RadioButton.new @form do
         variable $radio

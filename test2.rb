@@ -51,17 +51,17 @@ if $0 == __FILE__
         r += 1
       end
 
-      $message = RVariable.new
+      $message = Variable.new
       $message.value = "Message Comes Here"
       message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
 
-      $results = RVariable.new
+      $results = Variable.new
       $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
         r += 1
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
-        $listdata = RVariable.new mylist
+        $listdata = Variable.new mylist
         listb = Listbox.new @form do
           name   "mylist" 
           row  r 
@@ -99,7 +99,7 @@ if $0 == __FILE__
         texta << " Or alt-c"
 
         alist = [true, false, true, false, true, false, true, false, true]
-        cblist = RVariable.new alist
+        cblist = Variable.new alist
         listcb = Listbox.new @form do
           name   "cblist" 
           row  1 
@@ -117,7 +117,7 @@ if $0 == __FILE__
         end
         colist = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
         colistdata = ["Todo", "Todo", "WIP","WIP", "Postp", "Cancel","Cancel", "Postp"]
-        colistv = RVariable.new colistdata
+        colistv = Variable.new colistdata
         listcb = Listbox.new @form do
           name   "colist" 
           row  16
@@ -199,7 +199,7 @@ if $0 == __FILE__
         mnemonic 'B'
       end
       row += 1
-      @cb_rev = RVariable.new false # related to checkbox reverse
+      @cb_rev = Variable.new false # related to checkbox reverse
       cbb = @cb_rev
       checkbutton1 = CheckBox.new @form do
         variable cbb # $cb_rev
@@ -250,7 +250,7 @@ if $0 == __FILE__
 
       row += 1
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
-      $radio = RVariable.new
+      $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
       $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
 

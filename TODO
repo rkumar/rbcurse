@@ -30,25 +30,16 @@ also, user may put a hook on on_leave, shoud check for exception and not proceed
 
 Unlike a field, a field or editing comp in a table can have many exit paths - page up down, up down, next col prev col etc. We need to validate the field in each case and disallow navigation if error raised.
 
->>> Keep option of editing live as in Listbox.  add option of automatic editing on enter
-
-- We are not calling on_leave and on_enter of cell_editor component ??
-
-- prepare_editor needs to register table as listener to editor so informed of changes to cell
-- on_enter on leave of editing component - user can get comp and listen but we need to fire
 
 
-editing cell in some other color so we know when editing is off. On pressing ENTER Or quit 
-change back colors.
+- prepare_editor needs to register table as listener to editor so informed of changes to cell NO
+
 
 Adding a row on a key, deleting a row on key/undelete
 searching
 
-some cols editable, some not (as in Finder). - TO TEST - DONE 2009-01-16 23:55 
-on_leave stop any editor that may be active - DONE 2009-01-16 23:55 
 
 
-issue with auto_editing is how to go to next col since arrows are required in editing fields.
 however, check boxes etc should have auto editing.
 
 WHEN we delete a row, what happens. Is its on_leave still fired ? XXX Or the on_leave of the next
@@ -158,6 +149,13 @@ listbox searching - done 2009-01-14 13:30
 Cancelling edits in lists. DONE. C-c or ESC 2009-01-13 22:12 
 
 EDITING IN TABLES:
+issue with auto_editing is how to go to next col since arrows are required in editing fields.
+ currently using alt-tab for next_col
+
+- We are not calling on_leave and on_enter of cell_editor component -done 01-16
+on_leave stop any editor that may be active - DONE 2009-01-16 23:55 
+some cols editable, some not (as in Finder). - TO TEST - DONE 2009-01-16 23:55 
+>>> Keep option of editing live as in Listbox.  add option of automatic editing on enter
 on_enter_cell on_leave_cell and other events
 Now that lists have editable field/combo/check, try editing multicolumn tables.
 All that i need to do, is put celleditor and cellrenderer in TableColumn, and use that

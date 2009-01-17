@@ -1132,68 +1132,13 @@ module RubyCurses
     end
   # ADD HERE FIELD
   end
-        ##
-        # Like Tk's TkVariable, a simple proxy that can be passed to a widget. The widget 
-        # will update the Variable. A variable can be used to link a field with a label or 
-        # some other widget.
-        # TODO: Currently it maintains a String, but it needs to be able to use a Hash or
-        # Array at least.
         
+  ##
+  # Like Tk's TkVariable, a simple proxy that can be passed to a widget. The widget 
+  # will update the Variable. A variable can be used to link a field with a label or 
+  # some other widget.
+  # This is the new version of Variable. Deleting old version on 2009-01-17 12:04 
   class Variable
-    attr_reader :source  # optional source of updater passed in value= method
-    def initialize value=""
-      @update_command = []
-      @args = []
-      @value = value
-    end
-    ##
-    # install trigger to call whenever a value is updated
-    def update_command *args, &block
-      $log.debug "Variable: update command set #{args}"
-      @update_command << block
-      @args << args
-    end
-#   def read_command &block
-#     @read_command = block
-#   end
-    ##
-    # value of the variable
-    #def value
-#     $log.debug "variable value called : #{@value} "
-    #  @value
-    #end
-    ##
-    # update the value of this variable.
-    # 2008-12-31 18:35 Added source so one can identify multiple sources that are updating.
-    # Idea is that mutiple fields (e.g. checkboxes) can share one var and update a hash through it.
-    # Source would contain some code or key relatin to each field.
-    def value (*val)
-      return @value if val.empty?
-      if val.size == 1
-        @value,@source = val
-      end
-      $log.debug "variable value= called : #{val}, source=#{source} "
-      return if @update_command.nil?
-      @update_command.each_with_index do |comm, ix|
-        comm.call(self, *@args[ix]) unless comm.nil?
-      end
-    end
-    def value= (val)
-      value val
-    end
-    ##
-    # since we could put a hash or array in as @value
-    def method_missing(sym, *args)
-      if @value.respond_to? sym
-        $log.debug("MISSING calling Variable  #{sym} called #{args[0]}")
-        @value.send(sym, args)
-      else
-        $log.error("ERROR VARIABLE MISSING #{sym} called by #{self}")
-        raise "ERROR VARIABLE MISSING #{sym} called by #{self}"
-      end
-    end
-  end
-  class RVariable
   
     def initialize value=""
       @update_command = []
@@ -1209,7 +1154,7 @@ module RubyCurses
     ##
     # install trigger to call whenever a value is updated
     def update_command *args, &block
-      $log.debug "RVariable: update command set #{args}"
+      $log.debug "Variable: update command set #{args}"
       @update_command << block
       @args << args
     end
@@ -1236,11 +1181,11 @@ module RubyCurses
       if @klass == 'String'
         @value = val
       elsif @klass == 'Hash'
-        $log.debug " RVariable setting hash #{key} to #{val}"
+        $log.debug " Variable setting hash #{key} to #{val}"
         oldval = @value[key]
         @value[key]=val
       elsif @klass == 'Array'
-        $log.debug " RVariable setting array #{key} to #{val}"
+        $log.debug " Variable setting array #{key} to #{val}"
         oldval = @value[key]
         @value[key]=val
       else

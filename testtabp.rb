@@ -15,7 +15,7 @@ class TestTabbedPane
     #$config_hash ||= {}
   end
   def run
-    $config_hash ||= RVariable.new Hash.new
+    $config_hash ||= Variable.new Hash.new
     #configvar.update_command(){ |v| $config_hash[v.source()] = v.value }
       @tp = RubyCurses::TabbedPane.new nil  do
         height 12
@@ -25,7 +25,7 @@ class TestTabbedPane
       end
       @tab1 = @tp.add_tab "&Language" 
       f1 = @tab1.form
-      #$radio = RVariable.new
+      #$radio = Variable.new
       radio1 = RadioButton.new f1 do
         #variable $radio
         variable $config_hash

@@ -77,7 +77,7 @@ if $0 == __FILE__
           editing_policy :EDITING_AUTO
           set_data data, colnames
         end
-        sel_col = RVariable.new 0
+        sel_col = Variable.new 0
         sel_col.value = 0
         tcm = texta.get_table_column_model
         selcolname = texta.get_column_name sel_col.value

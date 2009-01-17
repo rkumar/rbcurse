@@ -137,7 +137,7 @@ module RubyCurses
       col = 1
       @buttons = []
       ## create a button for each tab
-      $tabradio = RVariable.new
+      $tabradio = Variable.new
       @tabs.each do |tab|
         text = tab.text
         @buttons << RubyCurses::TabbedButton.new(@form) do
