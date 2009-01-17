@@ -406,6 +406,7 @@ module RubyCurses
     dsl_accessor :KEY_CLEAR_SELECTION
     dsl_accessor :KEY_NEXT_SELECTION
     dsl_accessor :KEY_PREV_SELECTION
+    dsl_accessor :valign  # 2009-01-17 18:32 
 
     def initialize form, config={}, &block
       @focusable = true
@@ -725,7 +726,7 @@ module RubyCurses
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
-      tm = @list
+      tm = list()
       tr = @toprow
       acolor = get_color $datacolor
       h = scrollatrow()
@@ -735,7 +736,7 @@ module RubyCurses
         if crow < rc
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
-            content = tm[crow]
+            content = tm[crow].dup   # 2009-01-17 18:37 chomp giving error in some cases frozen
             if content.is_a? String
               content.chomp!
               content.gsub!(/\t/, '  ') # don't display tab

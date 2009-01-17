@@ -59,16 +59,18 @@ module RubyCurses
     def initialize form, config={}, &block
       super
       init_locals
+      install_list_keys
+      install_keys_bindings
     end
 
     def init_locals
       @col_offset = @row_offset = 1
       @focusable= true
-      @current_index ||= 0
-      @current_column ||= 0
+      @current_index = 0
+      @current_column = 0
       @oldrow = @oldcol = 0
       @current_column_offset ||= 0 # added 2009-01-12 19:06 current_column's offset
-      @toprow ||= 0
+      @toprow = 0
       @to_print_borders ||= 1
       @show_grid ||= 1
       @curpos = 0
@@ -76,8 +78,6 @@ module RubyCurses
       # @selected_bgcolor ||= 'black'
       @table_changed = true
       @repaint_required = true
-      install_list_keys
-      install_keys_bindings
     end
     def install_keys_bindings
 
@@ -154,7 +154,8 @@ module RubyCurses
       }
       @table_column_model.bind(:PROPERTY_CHANGE){|e| column_property_changed(e)}
 
-      @table_header.column_model(tcm) unless @table_header.nil?
+      #@table_header.column_model(tcm) unless @table_header.nil?
+      @table_header.table_column_model=(tcm) unless @table_header.nil?
     end
     def get_table_column_model
       @table_column_model 
@@ -257,11 +258,16 @@ module RubyCurses
     def table_data_changed tabmodev
       #$log.debug " def table_data_changed got #{tabmodev}"
       @repaint_required = true
+      # next was required otherwise on_enter would bomb if data changed from outside
+      if row_count == 0
+        init_locals
+      end
     end
     def table_structure_changed tablecolmodelevent
       $log.debug " def table_structure_changed #{tablecolmodelevent}"
       @table_changed = true
       @repaint_required = true
+      init_locals
     end
     def column_property_changed evt
       $log.debug "JT def column_property_changed #{evt} "
@@ -645,12 +651,12 @@ module RubyCurses
     # set cursor on correct column, widget
     def set_form_col col=@curpos
       @curpos = col
-      @current_column_offset = get_column_offset
+      @current_column_offset = get_column_offset 
       @form.col = @col + @col_offset + @curpos + @current_column_offset
     end
     # protected
     def get_column_offset columnid=@current_column
-      return @table_column_model.column(columnid).column_offset
+      return @table_column_model.column(columnid).column_offset || 0
     end
 
 
@@ -726,8 +732,12 @@ module RubyCurses
         offset += width
       end
     end
-
-
+    # 2009-01-17 13:25 
+    def set_focus_on arow
+      @oldrow = @current_index
+      @current_index = arow
+      bounds_check if @oldrow != @current_index  
+    end
     attr_accessor :toprow # top visible
   end # class Table
 
@@ -915,9 +925,12 @@ module RubyCurses
       end
       def delete_at row
       end
+  
 =end
     end # class 
 
+    ##
+    # DTM
     class DefaultTableModel < TableModel
       include RubyCurses::EventHandler # 2009-01-15 15:38 
       def initialize data, colnames_array
@@ -944,6 +957,8 @@ module RubyCurses
       # please avoid directly hitting this. Suggested to use get_value_at of jtable
       # since columns could have been switched.
       def get_value_at row, col
+      $log.debug " def get_value_at #{row}, #{col} "
+        
         return @data[row][ col]
       end
       def << obj
@@ -972,7 +987,26 @@ module RubyCurses
         tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :DELETE)
         fire_handler :TABLE_MODEL_EVENT, tme
       end
-    end # class 
+      ## 
+      # added 2009-01-17 21:36 
+      # Use with  caution, does not call events per row
+      def delete_all
+        len = @data.length-1
+        @data=[]
+        tme = TableModelEvent.new(0, len,:ALL_COLUMNS,  self, :DELETE)
+        fire_handler :TABLE_MODEL_EVENT, tme
+      end
+      ##
+      # for those quick cases when you wish to replace all the data
+      # and not have an event per row being generated
+      def data=(data)
+        raise "Data nil or invalid" if data.nil? or data.size == 0
+        delete_all
+        @data = data
+        tme = TableModelEvent.new(0, @data.length-1,:ALL_COLUMNS,  self, :INSERT)
+        fire_handler :TABLE_MODEL_EVENT, tme
+      end
+    end # class  DTC
 
     ##
     # LSM 

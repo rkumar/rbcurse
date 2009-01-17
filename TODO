@@ -3,7 +3,8 @@ Note:
 TODO_OLD relates to the Application generator I was writing.
 There's a lot that works there. Given a table name you can do CRUD functions against it.
 
-However, that uses the ncurses fields and forms. After creating fields in ruby, i've ditched that, and will perhaps redo that with rbcurses.
+However, that uses the ncurses fields and forms. After creating fields in ruby,
+i've ditched that, and will perhaps redo that with rbcurses.
 
 This todo relates to rbcurse, our own ruby fields, forms, widgets and application related goodies.
 
@@ -16,13 +17,16 @@ MUST DO:
 
 Field: ESC to put back original value.
 
-
 TEXTAREA : test with a wide box, larger than width of rows
            Give option of no wrap, and panning
 
 FORM: on_enter, on_exit - currently the on_enter and leave is for widgets as in ncurses.
 
 EDITING TABLES:
+if table data nil to start with then tablemodel bindings will all fail!
+If you delete a row, then selections get messed, since row selectoin uses indexes into table
+
+Delete does not result in any on_enter event firing.
 
 cell_editors created on demand, not in beginning. thus, we can't attach a hook to a field.
 also, user may put a hook on on_leave, shoud check for exception and not proceed.
@@ -35,7 +39,7 @@ searching
 however, check boxes etc should have auto editing.
 
 WHEN we delete a row, what happens. Is its on_leave still fired ? XXX Or the on_leave of the next
-row!
+row! in such case no on_leave should happen.
 
 EDITING LISTS:
 
@@ -45,7 +49,6 @@ add and delete row
 - We are not calling on_leave and on_enter of cell_editor component ??
 
 POPUP LIST:
-
 
 make edits such (calling editor) so it can defined on a key. In Finder, we press Enter to get into
 edit mode.
