@@ -16,7 +16,6 @@ MUST DO:
 
 Field: ESC to put back original value.
 
-globally replace RVariable with Variable and remove Variable
 
 TEXTAREA : test with a wide box, larger than width of rows
            Give option of no wrap, and panning
@@ -30,15 +29,8 @@ also, user may put a hook on on_leave, shoud check for exception and not proceed
 
 Unlike a field, a field or editing comp in a table can have many exit paths - page up down, up down, next col prev col etc. We need to validate the field in each case and disallow navigation if error raised.
 
-
-
-- prepare_editor needs to register table as listener to editor so informed of changes to cell NO
-
-
 Adding a row on a key, deleting a row on key/undelete
 searching
-
-
 
 however, check boxes etc should have auto editing.
 
@@ -48,12 +40,11 @@ row!
 EDITING LISTS:
 
 make the keys definable as in table
-clean up handle_keys
+clean up handle_keys - done to some extent. Not ideal though.
 add and delete row
 - We are not calling on_leave and on_enter of cell_editor component ??
 
 POPUP LIST:
-if selected index is not visible, it needs to scroll down and make that visible !!!
 
 
 make edits such (calling editor) so it can defined on a key. In Finder, we press Enter to get into
@@ -145,6 +136,8 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+if selected index is not visible, it needs to scroll down and make that visible - done 2009-01-17 13:36 
+globally replace RVariable with Variable and remove Variable - 2009-01-17 12:13 
 listbox searching - done 2009-01-14 13:30 
 Cancelling edits in lists. DONE. C-c or ESC 2009-01-13 22:12 
 

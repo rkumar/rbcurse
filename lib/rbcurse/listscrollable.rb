@@ -61,7 +61,7 @@ module ListScrollable
   def bounds_check
     h = scrollatrow()
     rc = row_count
-    #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+    $log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
     @current_index = 0 if @current_index < 0  # not lt 0
     @current_index = rc-1 if @current_index >= rc # not gt rowcount
     @toprow = rc-h-1 if rc > h and @toprow > rc - h - 1 # toprow shows full page if possible
@@ -180,10 +180,20 @@ module ListScrollable
     bounds_check
     return ix
   end
+
+  ##
+  # ensures that the given row is focussed
+  # new version of older one that was not perfect.
+  # 2009-01-17 13:25 
+  def set_focus_on arow
+    @oldrow = @current_index
+    @current_index = arow
+    bounds_check if @oldrow != @current_index
+  end
   ##
   # 2008-12-18 18:05 
   # set focus on given index
-  def set_focus_on arow
+  def OLDset_focus_on arow
     return if arow > row_count()-1 or arow < 0
     @oldrow = @current_index
     total = row_count()
@@ -191,9 +201,12 @@ module ListScrollable
     sar = scrollatrow + 1
     @toprow = (@current_index / sar) * sar
 
+    $log.debug "1 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
     if total - @toprow < sar
       @toprow = (total - sar) 
     end
+    $log.debug "2 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
+    set_form_row # 2009-01-17 12:44 
     @repaint_required = true
     #bounds_check
   end

@@ -233,7 +233,7 @@ module RubyCurses
       #@window.wclear
       #@window.attroff(Ncurses.COLOR_PAIR($reversecolor));
       @window.wrefresh
-      @panel = @window.panel
+      @panel = @window.panel  # useless line ?
       Ncurses::Panel.update_panels
 #     @message_row = @message_col = 2
 #     print_borders
@@ -327,7 +327,7 @@ module RubyCurses
       selection_mode = @list_selection_mode 
       default_values = @default_values
       @list_config['color'] ||= 'black'
-      @list_config['bgcolor'] ||= 'cyan'
+      @list_config['bgcolor'] ||= 'yellow'
         @listbox = RubyCurses::Listbox.new @form, @list_config do
           name   "input" 
           row  r 
@@ -364,7 +364,6 @@ module RubyCurses
       @layout = { :height => height, :width => width, :top => top, :left => left } 
     end
     def destroy
-      #$log.debug "DESTROY : popuplist "
       @window.destroy if !@window.nil?
     end
   end # class PopupList
@@ -428,10 +427,11 @@ module RubyCurses
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
 
-      # i don't think this is working any longer. See how its done in find_next etc
-      # in any case set_focus should happen on entering the box right ?
-      set_focus_on (@list.selected_index || 0)
       init_vars
+
+      if !@list.selected_index.nil? 
+        set_focus_on @list.selected_index # the new version
+      end
     end
     def init_vars
       @to_print_borders ||= 1
@@ -603,10 +603,7 @@ module RubyCurses
         if ix.nil?
           alert("No matching data for: #{regex}")
         else
-          #set_focus_on(ix)
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
+          set_focus_on(ix)
         end
     end
     def ask_search_backward
@@ -615,10 +612,7 @@ module RubyCurses
       if ix.nil?
         alert("No matching data for: #{regex}")
       else
-        #set_focus_on(ix)
-        @oldrow = @current_index
-        @current_index = ix
-        bounds_check
+        set_focus_on(ix)
       end
     end
     def find_prev
@@ -635,13 +629,10 @@ module RubyCurses
     def find_next
         ix = @list.find_next
         regex = @last_regex 
-        #set_focus_on(ix) unless ix.nil?
         if ix.nil?
           alert("No more matching data for: #{regex}")
         else
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
+          set_focus_on(ix) unless ix.nil?
         end
     end
     def on_enter
@@ -683,7 +674,8 @@ module RubyCurses
       # set value and other things, color and bgcolor
     end
     def on_leave_row arow
-      $log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: list[row]:#{@list[arow]}"
+      #$log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: list[row]:#{@list[arow]}"
+      $log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: "
       #fire_handler :LEAVE_ROW, arow
       fire_handler :LEAVE_ROW, self
       editing_completed arow
