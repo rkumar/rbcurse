@@ -1,0 +1,30 @@
+--- 
+__STATUSES:
+- WIP
+- TOTEST
+- TESTED
+- TODO
+- CANC
+
+DONE: {}
+
+FIXME: {}
+
+TODO: 
+  LIST: 
+  - - 0
+    - call on_enter and on_leave of component
+    - WIP
+  TABLE: 
+  - - 0
+    - editing on enter
+    - WIP
+  - - 3
+    - Columns editable or not
+    - WIP
+  GEN: []
+
+  FORM: []
+
+  FIELD: []
+
