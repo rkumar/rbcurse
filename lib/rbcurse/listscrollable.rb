@@ -158,14 +158,16 @@ module ListScrollable
     row = focussed_index + 1
     row.upto(data.length-1) do |ix|
       val = data[ix].chomp
-      if val[0,1] == char #and val != currval
+      #if val[0,1] == char #and val != currval
+      if val[0,1].casecmp(char) == 0 #AND VAL != CURRval
         return ix
       end
     end
     row = focussed_index - 1
     0.upto(row) do |ix|
       val = data[ix].chomp
-      if val[0,1] == char #and val != currval
+      #if val[0,1] == char #and val != currval
+      if val[0,1].casecmp(char) == 0 #and val != currval
         return ix
       end
     end

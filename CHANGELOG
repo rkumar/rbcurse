@@ -1,3 +1,13 @@
+**2009-01-18 22:11**
+## listbox, combo case insensitive match ##
+
+Char matches use casecmp
+
+Field was not calling process_key(ch) - now calling super in handle_key, so process_key is called
+in handle_key.
+
+frmincr200901182210.tgz
+* * *
 ** 2009-01-18 12:37 **
 ## modified? and def modified tf##
 

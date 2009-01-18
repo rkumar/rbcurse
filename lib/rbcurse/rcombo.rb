@@ -72,6 +72,7 @@ module RubyCurses
     end
     ##
     # combo edit box key handling
+    # removed UP and DOWN and bound it, so it can be unbound
     def handle_key(ch)
       @current_index ||= 0
       case ch
@@ -171,7 +172,7 @@ module RubyCurses
     def next_match char
       start = @current_index
       start.upto(@list.length-1) do |ix|
-        if @list[ix][0,1] == char
+        if @list[ix][0,1].casecmp(char) == 0
           return @list[ix] unless @list[ix] == @buffer
         end
         @current_index += 1
@@ -180,7 +181,7 @@ module RubyCurses
       @current_index = 0
       start = [@list.length()-1, start].min
       0.upto(start) do |ix|
-        if @list[ix][0,1] == char
+        if @list[ix][0,1].casecmp(char) == 0
           return @list[ix] unless @list[ix] == @buffer
         end
         @current_index += 1

@@ -1023,14 +1023,14 @@ module RubyCurses
       cursor_forward
     when KEY_BACKSPACE, 127
       delete_prev_char if @editable
-    when KEY_UP
-      $log.debug " FIELD GOT KEY_UP, NOW IGNORING 2009-01-16 17:52 "
+    #when KEY_UP
+    #  $log.debug " FIELD GOT KEY_UP, NOW IGNORING 2009-01-16 17:52 "
       #@form.select_prev_field # in a table this should not happen 2009-01-16 17:47 
-      return :UNHANDLED
-    when KEY_DOWN
-      $log.debug " FIELD GOT KEY_DOWN, NOW IGNORING 2009-01-16 17:52 "
+    #  return :UNHANDLED
+    #when KEY_DOWN
+    #  $log.debug " FIELD GOT KEY_DOWN, NOW IGNORING 2009-01-16 17:52 "
       #@form.select_next_field # in a table this should not happen 2009-01-16 17:47 
-      return :UNHANDLED
+    #  return :UNHANDLED
     when KEY_ENTER, 10, 13
       if respond_to? :fire
         fire
@@ -1052,7 +1052,8 @@ module RubyCurses
       $log.debug " ADDED FIELD ESCAPE on 2009-01-18 12:27 XXX #{@original_value}"
       set_buffer @original_value 
     else
-      return :UNHANDLED
+      ret = super
+      return ret
     end
     0 # 2008-12-16 23:05 without this -1 was going back so no repaint
   end
