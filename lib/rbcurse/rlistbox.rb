@@ -736,8 +736,9 @@ module RubyCurses
         if crow < rc
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
-            content = tm[crow].dup   # 2009-01-17 18:37 chomp giving error in some cases frozen
+            content = tm[crow]   # 2009-01-17 18:37 chomp giving error in some cases says frozen
             if content.is_a? String
+              content = content.dup
               content.chomp!
               content.gsub!(/\t/, '  ') # don't display tab
               content.gsub!(/[^[:print:]]/, '')  # don't display non print characters

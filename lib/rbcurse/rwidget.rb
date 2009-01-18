@@ -611,6 +611,7 @@ module RubyCurses
       return if f.nil?
       f.state = :HIGHLIGHTED
       f.modified false
+      #f.set_modified false
       f.on_enter if f.respond_to? :on_enter
       fire_handler :ENTER, f 
     end
@@ -1162,7 +1163,7 @@ module RubyCurses
     ## save original value on enter, so we can check for modified.
     #  2009-01-18 12:25 
     def on_enter
-      @original_value = getvalue
+      @original_value = getvalue.dup rescue getvalue
       super
     end
     ##

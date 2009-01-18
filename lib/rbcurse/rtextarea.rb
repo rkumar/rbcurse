@@ -43,7 +43,7 @@ module RubyCurses
     dsl_accessor :auto_scroll # boolean, keeps view at end as data is inserted.
     dsl_accessor :print_footer
     dsl_accessor :editable          # allow editing
-    attr_accessor :modified          # boolean, value modified or not 2009-01-08 12:29 
+#    attr_accessor :modified          # boolean, value modified or not 2009-01-08 12:29  REM 2009-01-18 14:46 
 
     def initialize form, config={}, &block
       @focusable = true
