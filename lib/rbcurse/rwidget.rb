@@ -446,6 +446,12 @@ module RubyCurses
       @key_handler[keycode] = blk
       @key_args[keycode] = args
     end
+    ##
+    # remove a binding that you don't want
+    def unbind_key keycode
+      @key_args.delete keycode unless @key_args.nil?
+      @key_handler.delete keycode unless @key_handler.nil?
+    end
 
     # e.g. process_key ch, self
     # returns UNHANDLED if no block for it

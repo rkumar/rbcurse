@@ -184,7 +184,13 @@ if $0 == __FILE__
       texta.get_table_column_model.column(3).cell_editor =  combo_editor
       texta.get_table_column_model.column(0).cell_editor =  combo_editor1
       ce = texta.get_default_cell_editor_for_class "String"
+      # increase the maxlen of task
       ce.component.maxlen = 80
+      # I want up and down to go up and down rows inside the combo box, i can use M-down for changing.
+      combo_editor.component.unbind_key(KEY_UP)
+      combo_editor.component.unbind_key(KEY_DOWN)
+      combo_editor1.component.unbind_key(KEY_UP)
+      combo_editor1.component.unbind_key(KEY_DOWN)
 =begin
 =end
         buttrow = r+table_ht+8 #Ncurses.LINES-4
@@ -218,7 +224,7 @@ if $0 == __FILE__
         tm.insert frow+1, tmp
         texta.set_focus_on frow+1
         keylabel.text = "Added a row"
-        alert("Added a row below current one ")
+        alert("Added a row below current one. Use C-k to clear ")
 
       }
 

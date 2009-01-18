@@ -246,7 +246,7 @@ module RubyCurses
       #table_structure_changed # this should be called by tcm TODO with object
     end
 
-    #--- row and column  methods ---#
+    #--- row and column methods of Table ---#
     # must not give wrong results when columns switched!
     def get_value_at row, col
       model_index = @table_column_model.column(col).model_index
@@ -693,12 +693,14 @@ module RubyCurses
           offset = 0
     #      0.upto(cc-1) do |colix|
           # we loop through column_model and fetch data based on model index
+          # FIXED better to call table.get_value_at since we may now 
+          # introduce a view - 2009-01-18 18:21 
           tcm.each_with_index do |acolumn, colix|
             #acolumn = tcm.column(colix)
-            model_index = acolumn.model_index
+            #model_index = acolumn.model_index
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
-            content = tm.get_value_at(crow, model_index)
+            content = tm.get_value_at(crow, colix)
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = get_cell_renderer(crow, colix)
             if renderer.nil?
@@ -958,7 +960,7 @@ module RubyCurses
       # please avoid directly hitting this. Suggested to use get_value_at of jtable
       # since columns could have been switched.
       def set_value_at row, col, val
-        $log.debug " def set_value_at #{row}, #{col}, #{val} "
+       # $log.debug " def set_value_at #{row}, #{col}, #{val} "
           # if editing allowed
           @data[row][col] = val
           tme = TableModelEvent.new(row, row, col, self, :UPDATE)
@@ -968,7 +970,7 @@ module RubyCurses
       # please avoid directly hitting this. Suggested to use get_value_at of jtable
       # since columns could have been switched.
       def get_value_at row, col
-      $log.debug " def get_value_at #{row}, #{col} "
+      #$log.debug " def get_value_at #{row}, #{col} "
         
         return @data[row][ col]
       end

@@ -37,6 +37,15 @@ TODO:
   - - 5
     - cell editors pcol is not being reset each time
     - TESTED
+  - - 5
+    - Set column_class in TableColumn, to avoid hassles
+    - TODO
+  - - 5
+    - Can we disable down arrow in Chkbox in table?
+    - TOTEST
+  - - 2
+    - Table sorting and filtering is required - using VIEW
+    - TODO
   GEN: 
   - - 5
     - Modified should check if value changed, not UP etc
