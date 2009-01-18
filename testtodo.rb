@@ -188,10 +188,25 @@ if $0 == __FILE__
 =begin
 =end
         buttrow = r+table_ht+8 #Ncurses.LINES-4
+      b_save = Button.new @form do
+        text "&Save"
+        row buttrow
+        col c
+        command {
+          # this does not trigger a data change since we are not updating model. so update
+          # on pressing up or down
+          #0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
+          #texta.table_data_changed
+          todo.set_task_for_category categ.getvalue, data
+          todo.dump
+          alert("Rewritten yaml file")
+        }
+        bind(:ENTER) { eventlabel.text "Save changes to todo.yml " }
+      end
       b_newrow = Button.new @form do
         text "&New"
         row buttrow
-        col c
+        col c+10
         bind(:ENTER) { eventlabel.text "New button adds a new row below current " }
       end
       b_newrow.command { 
@@ -211,7 +226,7 @@ if $0 == __FILE__
       b_delrow = Button.new @form do
         text "&Delete"
         row buttrow
-        col c+10
+        col c+20
         bind(:ENTER) { eventlabel.text "Deletes focussed row" }
       end
       b_delrow.command { |form| 
@@ -227,7 +242,7 @@ if $0 == __FILE__
       b_change = Button.new @form do
         text "&Lock"
         row buttrow
-        col c+20
+        col c+30
         command {
           r = texta.focussed_row
           #c = sel_col.value
@@ -246,21 +261,6 @@ if $0 == __FILE__
           alert("Set column  #{texta.focussed_col()} editable to #{toggle}")
         }
         bind(:ENTER) { eventlabel.text "Toggles editable state of current column " }
-      end
-      b_insert = Button.new @form do
-        text "&Insert"
-        row buttrow
-        col c+32
-        command {
-          # this does not trigger a data change since we are not updating model. so update
-          # on pressing up or down
-          #0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
-          #texta.table_data_changed
-          todo.set_task_for_category categ.getvalue, data
-          todo.dump
-          alert("Rewritten yaml file")
-        }
-        bind(:ENTER) { eventlabel.text "Does nothing " }
       end
 
 

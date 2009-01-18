@@ -15,7 +15,7 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
-Field: ESC to put back original value.
+Field: ESC to put back original value. totest
 
 modified should be a method, in most cases will check orig value. 
 In some cases will use a flag (like textarea, where you don't wanna match old val)

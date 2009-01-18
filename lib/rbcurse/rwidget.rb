@@ -272,7 +272,7 @@ module RubyCurses
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
     dsl_property :visible # boolean     # 2008-12-09 11:29 
-    attr_accessor :modified          # boolean, value modified or not (moved from field 2009-01-18 00:14 )
+    #attr_accessor :modified          # boolean, value modified or not (moved from field 2009-01-18 00:14 )
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -288,7 +288,23 @@ module RubyCurses
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
     end
+    def init_vars
+      # just in case anyone does a super. Not putting anything here
+      # since i don't want anyone accidentally overriding
+    end
 
+    # modified
+    ##
+    # typically read will be overridden to check if value changed from what it was on enter.
+    # getter and setter for modified (added 2009-01-18 12:31 )
+    def modified?
+      @modified
+    end
+    def set_modified tf=true
+      @modified = tf
+      @form.modified = true if tf
+    end
+    alias :modified :set_modified
     ##
     # getter and setter for text_variable
     def text_variable(*val)
@@ -436,13 +452,16 @@ module RubyCurses
     # after form handles basic keys, it gives unhandled key to current field, if current field returns
     # unhandled, then it checks this map.
     # added 2009-01-06 19:13 since widgets need to handle keys properly
+    # added 2009-01-18 12:58 returns ret val of blk.call
+    # so that if block does not handle, the key can still be handled
+    # e.g. table last row, last col does not handle, so it will auto go to next field
     def process_key keycode, object
       return :UNHANDLED if @key_handler.nil?
       blk = @key_handler[keycode]
       return :UNHANDLED if blk.nil?
-      $log.debug "called process_key #{object}, #{@key_args[keycode]}"
-      blk.call object,  *@key_args[keycode]
-      0
+      #$log.debug "called process_key #{object}, #{@key_args[keycode]}"
+      return blk.call object,  *@key_args[keycode]
+      #0
     end
     ## 
     # to be added at end of handle_key of widgets so instlalled actions can be checked
@@ -583,7 +602,7 @@ module RubyCurses
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
       ## to test XXX in combo boxes the box may not be editable by be modified by selection.
-      if f.respond_to? :editable and f.modified
+      if f.respond_to? :editable and f.modified?
         $log.debug " Form about to fire CHANGED for #{f} "
         f.fire_handler(:CHANGED, f) 
       end
@@ -591,7 +610,7 @@ module RubyCurses
     def on_enter f
       return if f.nil?
       f.state = :HIGHLIGHTED
-      f.modified = false
+      f.modified false
       f.on_enter if f.respond_to? :on_enter
       fire_handler :ENTER, f 
     end
@@ -771,18 +790,20 @@ module RubyCurses
         case ch
         when -1
           return
-        when 9
-          ret = select_next_field
-          return ret if ret == :NO_NEXT_FIELD
-        when 353 ## backtab added 2008-12-14 18:41 
-          ret = select_prev_field
-          return ret if ret == :NO_PREV_FIELD
         else
           field =  get_current_field
+          handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
           # some widgets like textarea and list handle up and down
           if handled == :UNHANDLED or handled == -1 or field.nil?
             case ch
+            when 9, ?\M-\C-i  # tab and M-tab in case widget eats tab (such as Table)
+              ret = select_next_field
+              return ret if ret == :NO_NEXT_FIELD
+              # alt-shift-tab  or backtab (in case Table eats backtab)
+            when 353, 481 ## backtab added 2008-12-14 18:41 
+              ret = select_prev_field
+              return ret if ret == :NO_PREV_FIELD
             when KEY_UP
               select_prev_field
             when KEY_DOWN
@@ -851,6 +872,7 @@ module RubyCurses
     attr_reader :type                # datatype of field, currently only sets chars_allowed
     attr_reader :curpos              # cursor position in buffer current
     attr_accessor :datatype              # crrently set during set_buffer
+    attr_reader :original_value              # value on entering field
 
     def initialize form, config={}, &block
       @form = form
@@ -1017,8 +1039,11 @@ module RubyCurses
     when ?\C-u
       @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
     when 32..126
-      $log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
+      #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
+    when 27 # escape
+      $log.debug " ADDED FIELD ESCAPE on 2009-01-18 12:27 XXX #{@original_value}"
+      set_buffer @original_value 
     else
       return :UNHANDLED
     end
@@ -1094,10 +1119,6 @@ module RubyCurses
       set_modified 
       addcol -1
     end
-    def set_modified tf=true
-      @modified = tf
-      @form.modified = true if tf
-    end
     def addcol num
       if num < 0
         if @form.col <= @col + @col_offset
@@ -1131,8 +1152,24 @@ module RubyCurses
           raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
         end
       end
+      # here is where we should set the forms modified to true - 2009-01-18 12:36 XXX
+      if modified?
+        set_modified true
+      end
       super
       #return valid
+    end
+    ## save original value on enter, so we can check for modified.
+    #  2009-01-18 12:25 
+    def on_enter
+      @original_value = getvalue
+      super
+    end
+    ##
+    # overriding widget, check for value change
+    #  2009-01-18 12:25 
+    def modified?
+      getvalue() != @original_value
     end
   # ADD HERE FIELD
   end

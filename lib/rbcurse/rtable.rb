@@ -58,12 +58,12 @@ module RubyCurses
 
     def initialize form, config={}, &block
       super
-      init_locals
+      init_vars
       install_list_keys
       install_keys_bindings
     end
 
-    def init_locals
+    def init_vars
       @col_offset = @row_offset = 1
       @focusable= true
       @current_index = 0
@@ -83,8 +83,10 @@ module RubyCurses
 
       # alt-tab next column
       # alt-shift-tab prev column
-      bind_key(?\M-\C-i) { next_column }
-      bind_key(481) { previous_column }
+      #bind_key(?\M-\C-i) { next_column }
+      #bind_key(481) { previous_column }
+      bind_key(9) { next_column }
+      bind_key(353) { previous_column }
       bind_key(KEY_RIGHT) { next_column }
       bind_key(KEY_LEFT) { previous_column }
     end
@@ -263,14 +265,14 @@ module RubyCurses
       @repaint_required = true
       # next was required otherwise on_enter would bomb if data changed from outside
       if row_count == 0
-        init_locals
+        init_vars
       end
     end
     def table_structure_changed tablecolmodelevent
       $log.debug " def table_structure_changed #{tablecolmodelevent}"
       @table_changed = true
       @repaint_required = true
-      init_locals
+      init_vars
     end
     def column_property_changed evt
       $log.debug "JT def column_property_changed #{evt} "
@@ -527,11 +529,17 @@ module RubyCurses
           $log.debug " GOING TO NEXT ROW FROM NEXT COL : #{@current_index} : #{row_count}"
           @current_column = 0
           next_row
+        else
+          return :UNHANDLED
         end
       end
     end
     def previous_column
       v =  @current_column-1 
+      # returning unhandled so focus can go to prev field auto
+      if v < 0 and @current_index <= 0
+        return :UNHANDLED
+      end
       if v < 0 and @current_index > 0
         @current_column = @table_column_model.column_count-1
         previous_row
