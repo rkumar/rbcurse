@@ -12,6 +12,7 @@ require 'lib/rbcurse/celleditor'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/comboboxcellrenderer'
 require 'lib/rbcurse/keylabelprinter'
+require 'lib/rbcurse/applicationheader'
 
 class TodoList
   def initialize file
@@ -99,8 +100,9 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       title = "TODO APP"
+      @header = ApplicationHeader.new @form, title, {"text2"=>"Some Text", "text_center"=>"Task Entry"}
       status_row = RubyCurses::Label.new @form, {'text' => "", "row" => Ncurses.LINES-4, "col" => 0, "display_length"=>60}
-      @window.printstring 0,(Ncurses.COLS-title.length)/2,title, $datacolor
+      #@window.printstring 0,(Ncurses.COLS-title.length)/2,title, $datacolor
       r = 1; c = 1;
       categ = ComboBox.new @form do
         name "categ"
@@ -189,7 +191,7 @@ if $0 == __FILE__
       # report some events
       #texta.table_model.bind(:TABLE_MODEL_EVENT){|e| #eventlabel.text = "Event: #{e}"}
       #texta.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
-      #texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
+      texta.bind(:TABLE_TRAVERSAL_EVENT){|e| @header.text_right "Row #{e.newrow+1} of #{texta.row_count}" }
 
 
       str_renderer = TableCellRenderer.new ""
@@ -270,7 +272,7 @@ if $0 == __FILE__
         tm = texta.table_model
         tm.insert frow+1, tmp
         texta.set_focus_on frow+1
-        #keylabel.text = "Added a row"
+        status_row.text = "Added a row"
         alert("Added a row below current one. Use C-k to clear task.")
 
       }
@@ -284,12 +286,11 @@ if $0 == __FILE__
       end
       b_delrow.command { |form| 
         row = texta.focussed_row
-        if confirm("Do your really want to delete row #{row}?")== :YES
+        if confirm("Do your really want to delete row #{row+1}?")== :YES
           tm = texta.table_model
           tm.delete_at row
-          #texta.table_data_changed
         else
-          #$message.value = "Quit aborted"
+          status_row.text = "Delete cancelled"
         end
       }
       b_change = Button.new @form do
@@ -336,7 +337,6 @@ if $0 == __FILE__
         todo.set_tasks_for_category "DONE", d
         tm = texta.table_model
         ret = tm.delete_at row
-        $log.debug " DELETED ZZZ #{ret.inspect}"
         alert("Moved row #{row} to Done #{ret}")
       }
       @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
@@ -351,7 +351,7 @@ if $0 == __FILE__
       while((ch = @window.getchar()) != ?\C-q )
         colcount = tcm.column_count-1
         s = keycode_tos ch
-        #keylabel.text = "Pressed #{ch} , #{s}"
+        #status_row.text = "Pressed #{ch} , #{s}"
         @form.handle_key(ch)
 
         #sel_col.value = tcm.column_count-1 if sel_col.value > tcm.column_count-1
