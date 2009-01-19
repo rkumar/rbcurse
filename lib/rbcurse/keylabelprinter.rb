@@ -8,9 +8,11 @@ module RubyCurses
 
     def initialize form, key_labels, config={}, &block
 
-      @key_labels = key_labels
       super form, config, &block
       @mode ||= :normal
+      #@key_labels = key_labels
+      @key_hash = {}
+      @key_hash[@mode] = key_labels
       @editable = false
       @focusable = false
       @cols ||= Ncurses.COLS-1
@@ -20,8 +22,14 @@ module RubyCurses
       @footer_color_pair ||= $bottomcolor
       @footer_mnemonic_color_pair ||= $reversecolor #2
     end
+    def key_labels mode=@mode
+      @key_hash[mode]
+    end
     def getvalue
-      #@text_variable && @text_variable.value || @text
+      @key_hash
+    end
+    def set_key_labels _key_labels, mode=:normal
+      @key_hash[mode] = _key_labels
     end
 
     ##
@@ -29,14 +37,14 @@ module RubyCurses
     def repaint
       return unless @repaint_required
       r,c = rowcol
-      print_key_labels(arr = @key_labels, mode=@mode)
+      print_key_labels(arr = key_labels(), mode=@mode)
       @repaint_required = false
     end
     def append_key_label key, label, mode=@mode
       @key_labels << [key, label] if !@key_labels.include? [key, label]
       @repaint_required = true
     end
-    def print_key_labels(arr = @key_labels, mode=@mode)
+    def print_key_labels(arr = key_labels(), mode=@mode)
       #return if !@show_key_labels # XXX
       @win ||= @form.window
       @padding = @cols / (arr.length/2)
@@ -98,11 +106,12 @@ module RubyCurses
     # @return true if updated, else false
     def update_application_key_label(display_code, new_display_code, text)
       @repaint_required = true
-      @key_labels.each_index do |ix|
-        lab = @key_labels[ix]
+      labels = key_labels()
+      labels.each_index do |ix|
+        lab = labels[ix]
         if lab[0] == display_code
-          @key_labels[ix] = [new_display_code , text]
-          $log.debug("updated #{@key_labels[ix]}")
+          labels[ix] = [new_display_code , text]
+          $log.debug("updated #{labels[ix]}")
           return true
         end
       end
@@ -114,7 +123,8 @@ module RubyCurses
     # remember to call restore_application_key_labels after updating/inserting
     def insert_application_key_label(index, display_code, text)
       @repaint_required = true
-      @key_labels.insert(index, [display_code , text] )
+      labels = key_labels()
+      labels.insert(index, [display_code , text] )
     end
     # ADD HERE KEYLABEL
   end

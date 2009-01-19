@@ -473,11 +473,11 @@ module RubyCurses
       when ?\C-p:
         editing_stopped if @is_editing # 2009-01-16 16:06 
         scroll_backward
-      when 48, ?\C-[:
+      when 48, @KEY_GOTO_TOP
         # please note that C-[ gives 27, same as esc so will respond after ages
         editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_top
-      when ?\C-]:
+      when @KEY_GOTO_BOTTOM
         editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_bottom
       else
@@ -675,11 +675,13 @@ module RubyCurses
     # on enter of widget
     # the cursor should be appropriately positioned
     def on_enter
+      super
       set_form_row
       set_form_col # 2009-01-17 01:35 
       on_enter_cell focussed_row(), focussed_col()
     end
     def on_leave
+      super
       $log.debug " on leave of table 2009-01-16 21:58 "
       editing_stopped if @is_editing #  2009-01-16 21:58 
     end

@@ -61,9 +61,19 @@ class TodoList
 end
 def get_key_labels
   key_labels = [
-    ['g', 'Goto'], ['/', 'Search'],
-    ['x', 'Sel'], ['C-e', 'ClrSel'],
-    ['Spc','PgDn'], ['-','PgUp']
+    ['C-q', 'Exit'], nil,
+    ['M-s', 'Save'], ['M-m', 'Move']
+  ]
+  return key_labels
+end
+def get_key_labels_table
+  key_labels = [
+    ['M-n','NewRow'], ['M-d','DelRow'],
+    ['C-x','Select'], nil,
+    ['M-0', 'Top'], ['M-9', 'End'],
+    ['C-p', 'PgUp'], ['C-n', 'PgDn'],
+    ['M-Tab','Nxt Fld'], ['Tab','Nxt Col'],
+    ['+','Widen'], ['-','Narrow']
   ]
   return key_labels
 end
@@ -89,6 +99,7 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       title = "TODO APP"
+      status_row = RubyCurses::Label.new @form, {'text' => "", "row" => Ncurses.LINES-4, "col" => 0, "display_length"=>60}
       @window.printstring 0,(Ncurses.COLS-title.length)/2,title, $datacolor
       r = 1; c = 1;
       categ = ComboBox.new @form do
@@ -101,6 +112,8 @@ if $0 == __FILE__
         set_buffer 'TODO'
         set_label Label.new @form, {'text' => "Category", 'color'=>'cyan','col'=>1, "mnemonic"=>"C"}
         list_config 'height' => 4
+        bind(:ENTER){ status_row.text "Select a category and <TAB> out. KEY_UP, KEY_DOWN, M-Down" }
+        bind(:LEAVE){ status_row.text "" }
       end
       data = todo.get_tasks_for_category 'TODO'
       @data = data
@@ -178,8 +191,6 @@ if $0 == __FILE__
       #texta.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
       #texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
 
-      @help = "C-q to quit. M-Tab (next col) C-n (Pg Dn), C-p (Pg Up), M-0 Top, M-9 End, C-x (select). Columns:- Narrow, + expand, > < switch"
-      #RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
 
       str_renderer = TableCellRenderer.new ""
       num_renderer = TableCellRenderer.new "", { "justify" => :right }
@@ -243,13 +254,13 @@ if $0 == __FILE__
           todo.dump
           alert("Rewritten yaml file")
         }
-        #bind(:ENTER) { eventlabel.text "Save changes to todo.yml " }
+        bind(:ENTER) { status_row.text "Save changes to todo.yml " }
       end
       b_newrow = Button.new @form do
         text "&New"
         row buttrow
         col c+10
-        #bind(:ENTER) { eventlabel.text "New button adds a new row below current " }
+        bind(:ENTER) { status_row.text "New button adds a new row below current " }
       end
       b_newrow.command { 
         cc = texta.get_table_column_model.column_count
@@ -269,7 +280,7 @@ if $0 == __FILE__
         text "&Delete"
         row buttrow
         col c+20
-        #bind(:ENTER) { eventlabel.text "Deletes focussed row" }
+        bind(:ENTER) { status_row.text "Deletes focussed row" }
       end
       b_delrow.command { |form| 
         row = texta.focussed_row
@@ -302,13 +313,13 @@ if $0 == __FILE__
           texta.column(texta.focussed_col()).editable toggle
           alert("Set column  #{texta.focussed_col()} editable to #{toggle}")
         }
-        #bind(:ENTER) { eventlabel.text "Toggles editable state of current column " }
+        bind(:ENTER) { status_row.text "Toggles editable state of current column " }
       end
       b_move = Button.new @form do
         text "&Move"
         row buttrow
         col c+40
-        #bind(:ENTER) { eventlabel.text "Move current row to Done" }
+        bind(:ENTER) { status_row.text "Move current row to Done" }
       end
       b_move.command { |form| 
         return if categ.getvalue == "DONE"
@@ -329,6 +340,9 @@ if $0 == __FILE__
         alert("Moved row #{row} to Done #{ret}")
       }
       @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
+      @klp.set_key_labels get_key_labels_table, :table
+      texta.bind(:ENTER){ $log.debug " MODE TABEL ENTER"; @klp.mode :table }
+      texta.bind(:LEAVE){$log.debug " MODE TABLE LEAVE";  @klp.mode :normal }
 
 
       @form.repaint
