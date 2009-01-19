@@ -1,3 +1,16 @@
+**2009-01-19 15:53**
+## Table Changed Event ##
+
+One may either trap the CHANGED event of a component OR
+a TABLE_EDITING_EVENT which gives us previous and new values, previous row and col.
+This will fire for each cell exited, and on editing stopped (if a user presses ENTER after editing).
+
+One example would be to set a date_modified if any column of a row changes. 
+
+Also am firing CHANGED from table for its cells.
+
+frmincr200901191548.tgz
+* * *
 **2009-01-18 22:11**
 ## listbox, combo case insensitive match ##
 

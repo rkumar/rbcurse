@@ -11,14 +11,12 @@ TODO:
   LIST: 
   - - 0
     - call on_enter and on_leave of component
-    - WIP
+    - TOTEST
+    - 2009-01-19 15:38:27.091120 +05:30
   - - 5
     - case insensitive char search in list and combo
-    - TODO
-  TABLE: 
-  - - 0
-    - editing on enter
     - TESTED
+  TABLE: 
   - - 3
     - Columns editable or not
     - TESTED
@@ -32,26 +30,37 @@ TODO:
     - table.set_data should check if models already created.
     - TODO
   - - 5
-    - increase the maxlen of this field please. Let us see how it goes.
-    - TESTED
-  - - 5
     - cell editors pcol is not being reset each time
     - TESTED
   - - 5
     - Set column_class in TableColumn, to avoid hassles
     - TODO
-  - - 5
-    - Can we disable down arrow in Chkbox in table?
-    - TOTEST
   - - 2
     - Table sorting and filtering is required - using VIEW
+    - TODO
+  - - 5
+    - Searching
     - TODO
   GEN: 
   - - 5
     - Modified should check if value changed, not UP etc
     - TOTEST
-DONE: {}
-
+  - - 5
+    - Make  widget of Keylabelprinter
+    - TODO
+DONE: 
+  TABLE: 
+  - - 5
+    - increase the maxlen of this field please. Let us see how it goes.
+    - TESTED
+  - - 5
+    - Can we disable down arrow in Chkbox in table?
+    - TESTED
+    - 2009-01-19 00:00:00.242912 +05:30
+  - - 0
+    - editing on enter
+    - TESTED
+    - Mon, 19 Jan 2009 00:01:37 +0530
 __MODULES: 
 - LIST
 - TABLE

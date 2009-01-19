@@ -75,6 +75,12 @@ module RubyCurses
     # removed UP and DOWN and bound it, so it can be unbound
     def handle_key(ch)
       @current_index ||= 0
+      # added 2009-01-18 22:44 no point moving horiz or passing up to Field if not edit
+      if !@editable
+        if ch == KEY_LEFT or ch == KEY_RIGHT
+          return :UNHANDLED
+        end
+      end
       case ch
       #when KEY_UP  # show previous value
       #  previous_row

@@ -42,7 +42,7 @@ class TodoList
     }
     return d
   end
-  def set_task_for_category categ, data
+  def set_tasks_for_category categ, data
     d = {}
     data.each do |row|
       #key = row.delete_at 0
@@ -94,6 +94,7 @@ if $0 == __FILE__
         list_config 'height' => 4
       end
       data = todo.get_tasks_for_category 'TODO'
+      @data = data
       $log.debug " data is #{data}"
       colnames = %w[ Module Prior Task Status]
 
@@ -112,6 +113,7 @@ if $0 == __FILE__
         end
         categ.bind(:CHANGED) do |fld| $log.debug " COMBO EXIT XXXXXXXX"; 
         data = todo.get_tasks_for_category fld.getvalue; 
+        @data = data
         $log.debug " DATA is #{data.inspect} : #{data.length}"
         data = [[nil, 5, "NEW TASK", "TODO"]] if data.nil? or data.empty? or data.size == 0
         $log.debug " DATA is #{data.inspect} : #{data.length}"
@@ -159,13 +161,13 @@ if $0 == __FILE__
             #texta.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
           }
         end
-      keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+table_ht+3, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
-      eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+table_ht+6, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
+      #keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+table_ht+3, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
+      #eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+table_ht+6, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
 
       # report some events
-      texta.table_model.bind(:TABLE_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
-      texta.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
-      texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
+      #texta.table_model.bind(:TABLE_MODEL_EVENT){|e| #eventlabel.text = "Event: #{e}"}
+      #texta.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
+      #texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
 
       @help = "C-q to quit. M-Tab (next col) C-n (Pg Dn), C-p (Pg Up), M-0 Top, M-9 End, C-x (select). Columns:- Narrow, + expand, > < switch"
       RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
@@ -191,8 +193,32 @@ if $0 == __FILE__
       combo_editor.component.unbind_key(KEY_DOWN)
       combo_editor1.component.unbind_key(KEY_UP)
       combo_editor1.component.unbind_key(KEY_DOWN)
+      texta.bind(:TABLE_EDITING_EVENT) do |evt|
+        return if evt.oldvalue != evt.newvalue
+        $log.debug " TABLE_EDITING : #{evt} "
+        if evt.type == :EDITING_STOPPED
+          if evt.col == 3
+            if @data[evt.row].size == 4
+              @data[evt.row] << Time.now
+            else
+              @data[evt.row][4] == Time.now
+            end
+          end
+        end
+      end
 =begin
+      combo_editor.component.bind(:CHANGED){
+        alert("CHANGED, #{texta.focussed_row}, #{@data[texta.focussed_row].size}")
+        if @data.size == 4
+          @data[texta.focussed_row] << Time.now
+        else
+          @data[texta.focussed_row][4] == Time.now
+        end
+        $log.debug "THSI ROW #{@data[texta.focussed_row]}"
+        $log.debug "DATAAAA: #{@data}"
+      }
 =end
+      #combo_editor.component.bind(:LEAVE){ alert "LEAVE"; $log.debug " LEAVE FIRED" }
         buttrow = r+table_ht+8 #Ncurses.LINES-4
       b_save = Button.new @form do
         text "&Save"
@@ -203,17 +229,17 @@ if $0 == __FILE__
           # on pressing up or down
           #0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
           #texta.table_data_changed
-          todo.set_task_for_category categ.getvalue, data
+          todo.set_tasks_for_category categ.getvalue, data
           todo.dump
           alert("Rewritten yaml file")
         }
-        bind(:ENTER) { eventlabel.text "Save changes to todo.yml " }
+        #bind(:ENTER) { eventlabel.text "Save changes to todo.yml " }
       end
       b_newrow = Button.new @form do
         text "&New"
         row buttrow
         col c+10
-        bind(:ENTER) { eventlabel.text "New button adds a new row below current " }
+        #bind(:ENTER) { eventlabel.text "New button adds a new row below current " }
       end
       b_newrow.command { 
         cc = texta.get_table_column_model.column_count
@@ -223,8 +249,8 @@ if $0 == __FILE__
         tm = texta.table_model
         tm.insert frow+1, tmp
         texta.set_focus_on frow+1
-        keylabel.text = "Added a row"
-        alert("Added a row below current one. Use C-k to clear ")
+        #keylabel.text = "Added a row"
+        alert("Added a row below current one. Use C-k to clear task.")
 
       }
 
@@ -233,7 +259,7 @@ if $0 == __FILE__
         text "&Delete"
         row buttrow
         col c+20
-        bind(:ENTER) { eventlabel.text "Deletes focussed row" }
+        #bind(:ENTER) { eventlabel.text "Deletes focussed row" }
       end
       b_delrow.command { |form| 
         row = texta.focussed_row
@@ -262,12 +288,35 @@ if $0 == __FILE__
             toggle = true
             text "&Lock  "
           end
-          eventlabel.text "Set column  #{texta.focussed_col()} editable to #{toggle}"
+          #eventlabel.text "Set column  #{texta.focussed_col()} editable to #{toggle}"
           texta.column(texta.focussed_col()).editable toggle
           alert("Set column  #{texta.focussed_col()} editable to #{toggle}")
         }
-        bind(:ENTER) { eventlabel.text "Toggles editable state of current column " }
+        #bind(:ENTER) { eventlabel.text "Toggles editable state of current column " }
       end
+      b_move = Button.new @form do
+        text "&Move"
+        row buttrow
+        col c+40
+        #bind(:ENTER) { eventlabel.text "Move current row to Done" }
+      end
+      b_move.command { |form| 
+        return if categ.getvalue == "DONE"
+        row = texta.focussed_row
+        d = todo.get_tasks_for_category "DONE"
+        r = []
+        tcm = texta.get_table_column_model
+        tcm.each_with_index do |acol, colix|
+          r << texta.get_value_at(row, colix)
+        end
+        # here i ignore the 5th row tht coud have been added
+        r << Time.now
+        d << r
+        todo.set_tasks_for_category "DONE", d
+        tm = texta.table_model
+        tm.delete_at row
+        alert("Moved row to Done")
+      }
 
 
       @form.repaint
@@ -276,13 +325,13 @@ if $0 == __FILE__
       while((ch = @window.getchar()) != ?\C-q )
         colcount = tcm.column_count-1
         s = keycode_tos ch
-        keylabel.text = "Pressed #{ch} , #{s}"
+        #keylabel.text = "Pressed #{ch} , #{s}"
         @form.handle_key(ch)
 
         #sel_col.value = tcm.column_count-1 if sel_col.value > tcm.column_count-1
         #sel_col.value = 0 if sel_col.value < 0
         selcolname = texta.get_column_name texta.focussed_col
-        keylabel.text = "Pressed #{ch} , #{s}. Column selected #{texta.focussed_col}: Width:#{tcm.column(texta.focussed_col).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
+        #keylabel.text = "Pressed #{ch} , #{s}. Column selected #{texta.focussed_col}: Width:#{tcm.column(texta.focussed_col).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
         s = texta.get_value_at(texta.focussed_row, texta.focussed_col)
         #s = s.to_s
       ##  $log.debug " updating Field #{s}, #{s.class}"

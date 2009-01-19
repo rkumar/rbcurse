@@ -48,6 +48,8 @@ module RubyCurses
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     attr_accessor :current_index   # the row index universally
     #attr_accessor :current_column  # index of column (usually in current row )
+    # a changed event of an editor component can utitlize this if it wishes to know
+    # the row or col that was exited.
     attr_reader :editing_col, :editing_row  # r and col being edited, set to nil on leave
     attr_accessor :is_editing # boolean is only true if cell_editing_allowed
     dsl_accessor :editing_policy   # :EDITING_AUTO
@@ -162,6 +164,7 @@ module RubyCurses
       #@table_header.column_model(tcm) unless @table_header.nil?
       @table_header.table_column_model=(tcm) unless @table_header.nil?
     end
+    # FIX THIS SO NO GET_ XXX
     def get_table_column_model
       @table_column_model 
     end
@@ -338,6 +341,7 @@ module RubyCurses
       end
       editor = get_cell_editor row, col
       value = get_value_at row, col
+      @old_cell_value = value # for event
       if editor.nil?
         
         cls = value.nil? ? get_value_at(0,col).class.to_s : value.class.to_s
@@ -501,7 +505,17 @@ module RubyCurses
     def editing_stopped row=focussed_row(), col=focussed_col()
       return unless @cell_editing_allowed or @is_editing == false or column(col).editable == false
       $log.debug "editing_stopped set_value_at(#{row}, #{col}: #{@cell_editor.getvalue}"
+      # next line should be in on_leave_cell but that's not being called FIXME from everywhere
+      @cell_editor.on_leave row,col # added here since this is called whenever a cell is exited
+
+      value = @cell_editor.getvalue
       set_value_at(row, col, @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+      if @table_editing_event.nil? 
+        @table_editing_event ||= TableEditingEvent.new row, col, self, @old_cell_value, value, :EDITING_STOPPED
+      else
+        @table_editing_event.set row, col, self, @old_cell_value, value, :EDITING_STOPPED
+      end
+      fire_handler :TABLE_EDITING_EVENT, @table_editing_event
       cancel_editor
     end
     ##
@@ -700,7 +714,7 @@ module RubyCurses
             #model_index = acolumn.model_index
             focussed = @current_index == crow ? true : false 
             selected = is_row_selected crow
-            content = tm.get_value_at(crow, colix)
+            content = get_value_at(crow, colix)  # tables
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = get_cell_renderer(crow, colix)
             if renderer.nil?
@@ -1134,6 +1148,22 @@ module RubyCurses
     end
     def to_s
       "TRAVERSAL oldrow: #{@oldrow}, oldcol: #{@oldcol}, newrow: #{@newrow}, newcol: #{@newcol}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
+  end
+  ## caller can create one and reuse NOTE TODO
+  class TableEditingEvent
+    attr_accessor :row, :col, :source, :oldvalue, :newvalue, :type
+    def initialize row, col, source, oldvalue, newvalue, type
+      set row, col, source, oldvalue, newvalue, type
+    end
+    def set row, col, source, oldvalue, newvalue, type
+      @row, @col, @source, @oldvalue, @newvalue, @type = row, col, source, oldvalue, newvalue, type
+    end
+    def to_s
+      "TABLEDITING #{@type} row: #{@row}, col: #{@col}, oldval: #{@oldvalue}, newvalue: #{@newvalue}, source: #{@source}"
     end
     def inspect
       to_s

@@ -42,7 +42,7 @@ module RubyCurses
     end
     # maybe this should check valid (on_leave) and throw exception
     def field_getvalue
-      @component.on_leave # throws exception! Added 2009-01-17 00:47 
+      #@component.on_leave # throws exception! Added 2009-01-17 00:47 
       @component.init_vars # 2009-01-18 01:13 should not carry over to next row curpos and pcol
       return @component.getvalue
     end
@@ -50,6 +50,7 @@ module RubyCurses
       @component.getvalue
     end
     def combobox_getvalue
+      #@component.on_leave # added 2009-01-19 12:12 
       @component.getvalue
       #@component.selected_item
     end
@@ -69,6 +70,15 @@ module RubyCurses
     end
     def component
       @component
+    end
+    # should be called from on_leave_cell of table, but is beng called from editing_stopped FIXME
+    def on_leave row, col
+      f = @component
+      f.on_leave
+      if f.respond_to? :editable and f.modified?
+        $log.debug " Table about to fire CHANGED for #{f} "
+        f.fire_handler(:CHANGED, f) 
+      end
     end
     def prepare_editor parent, row, col,  value
       #value = value.dup if value.respond_to? :dup
