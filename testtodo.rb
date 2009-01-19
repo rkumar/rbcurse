@@ -194,7 +194,7 @@ if $0 == __FILE__
       combo_editor1.component.unbind_key(KEY_UP)
       combo_editor1.component.unbind_key(KEY_DOWN)
       texta.bind(:TABLE_EDITING_EVENT) do |evt|
-        return if evt.oldvalue != evt.newvalue
+        #return if evt.oldvalue != evt.newvalue
         $log.debug " TABLE_EDITING : #{evt} "
         if evt.type == :EDITING_STOPPED
           if evt.col == 3
@@ -314,8 +314,9 @@ if $0 == __FILE__
         d << r
         todo.set_tasks_for_category "DONE", d
         tm = texta.table_model
-        tm.delete_at row
-        alert("Moved row to Done")
+        ret = tm.delete_at row
+        $log.debug " DELETED ZZZ #{ret.inspect}"
+        alert("Moved row #{row} to Done #{ret}")
       }
 
 
@@ -332,7 +333,7 @@ if $0 == __FILE__
         #sel_col.value = 0 if sel_col.value < 0
         selcolname = texta.get_column_name texta.focussed_col
         #keylabel.text = "Pressed #{ch} , #{s}. Column selected #{texta.focussed_col}: Width:#{tcm.column(texta.focussed_col).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
-        s = texta.get_value_at(texta.focussed_row, texta.focussed_col)
+        #s = texta.get_value_at(texta.focussed_row, texta.focussed_col)
         #s = s.to_s
       ##  $log.debug " updating Field #{s}, #{s.class}"
       ##  field.set_buffer s unless field.state == :HIGHLIGHTED # $editing

@@ -7,6 +7,23 @@ __STATUSES:
 - TESTED
 - TODO
 - CANC
+DONE: 
+  TABLE: 
+  - - 5
+    - increase the maxlen of this field please. Let us see how it goes.
+    - TESTED
+  - - 5
+    - Can we disable down arrow in Chkbox in table?
+    - TESTED
+    - 2009-01-19 00:00:00.242912 +05:30
+  - - 0
+    - editing on enter
+    - TESTED
+    - Mon, 19 Jan 2009 00:01:37 +0530
+  - - 5
+    - cell editors pcol is not being reset each time
+    - TESTED
+    - 2009-01-19 17:47:00.419937 +05:30
 TODO: 
   LIST: 
   - - 0
@@ -30,9 +47,6 @@ TODO:
     - table.set_data should check if models already created.
     - TODO
   - - 5
-    - cell editors pcol is not being reset each time
-    - TESTED
-  - - 5
     - Set column_class in TableColumn, to avoid hassles
     - TODO
   - - 2
@@ -48,19 +62,6 @@ TODO:
   - - 5
     - Make  widget of Keylabelprinter
     - TODO
-DONE: 
-  TABLE: 
-  - - 5
-    - increase the maxlen of this field please. Let us see how it goes.
-    - TESTED
-  - - 5
-    - Can we disable down arrow in Chkbox in table?
-    - TESTED
-    - 2009-01-19 00:00:00.242912 +05:30
-  - - 0
-    - editing on enter
-    - TESTED
-    - Mon, 19 Jan 2009 00:01:37 +0530
 __MODULES: 
 - LIST
 - TABLE

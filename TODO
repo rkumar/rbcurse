@@ -33,6 +33,7 @@ if table data nil to start with then tablemodel bindings will all fail! XXX
 If you delete a row, then selections get messed, since row selectoin uses indexes into table
 
 Delete does not result in any on_enter event firing. But then we are dealing with row???
+OUCH - on_enter reqired otherwise editor has old value!
 
 
 also, user may put a hook on on_leave, shoud check for exception and not proceed.

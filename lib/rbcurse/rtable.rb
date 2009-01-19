@@ -270,6 +270,12 @@ module RubyCurses
       if row_count == 0
         init_vars
       end
+      if @is_editing
+        @is_editing = false # 2009-01-19 18:18 testing this out XXX
+      # we need to refresh the editor if you deleted a row while sitting on it
+      # otherwise it shows the old value
+        editing_started 
+      end
     end
     def table_structure_changed tablecolmodelevent
       $log.debug " def table_structure_changed #{tablecolmodelevent}"
@@ -339,8 +345,9 @@ module RubyCurses
         @is_editing = false
         return nil
       end
-      editor = get_cell_editor row, col
+      return nil if row >= row_count
       value = get_value_at row, col
+      editor = get_cell_editor row, col
       @old_cell_value = value # for event
       if editor.nil?
         
@@ -495,6 +502,10 @@ module RubyCurses
       return unless @cell_editing_allowed
       @is_editing = true # 2009-01-16 16:14 
       $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
+      # on deleting last row, we need to go back 2009-01-19 18:31 
+      if focussed_row >= row_count
+        bounds_check
+      end
       @editing_row, @editing_col = focussed_row(), focussed_col()
       edit_cell_at focussed_row(), focussed_col()
     end
@@ -509,13 +520,15 @@ module RubyCurses
       @cell_editor.on_leave row,col # added here since this is called whenever a cell is exited
 
       value = @cell_editor.getvalue
-      set_value_at(row, col, @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
-      if @table_editing_event.nil? 
-        @table_editing_event ||= TableEditingEvent.new row, col, self, @old_cell_value, value, :EDITING_STOPPED
-      else
-        @table_editing_event.set row, col, self, @old_cell_value, value, :EDITING_STOPPED
+      if value != @old_cell_value
+        set_value_at(row, col, @cell_editor.getvalue) #.dup 2009-01-10 21:42 boolean can't duplicate
+        if @table_editing_event.nil? 
+          @table_editing_event ||= TableEditingEvent.new row, col, self, @old_cell_value, value, :EDITING_STOPPED
+        else
+          @table_editing_event.set row, col, self, @old_cell_value, value, :EDITING_STOPPED
+        end
+        fire_handler :TABLE_EDITING_EVENT, @table_editing_event
       end
-      fire_handler :TABLE_EDITING_EVENT, @table_editing_event
       cancel_editor
     end
     ##
@@ -986,6 +999,7 @@ module RubyCurses
       def get_value_at row, col
       #$log.debug " def get_value_at #{row}, #{col} "
         
+        raise "IndexError get_value_at #{row}, #{col}" if @data.nil? or row >= @data.size
         return @data[row][ col]
       end
       def << obj
@@ -1003,16 +1017,18 @@ module RubyCurses
       def delete obj
         row = @data.index obj
         return if row.nil?
-        @data.delete obj
+        ret = @data.delete obj
         tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :DELETE)
         fire_handler :TABLE_MODEL_EVENT, tme
         # create tablemodelevent and fire_table_changed for all listeners
+        return ret
       end
       def delete_at row
-        @data.delete_at row
+        ret = @data.delete_at row
         # create tablemodelevent and fire_table_changed for all listeners 
         tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :DELETE)
         fire_handler :TABLE_MODEL_EVENT, tme
+        return ret
       end
       ## 
       # added 2009-01-17 21:36 
