@@ -25,7 +25,7 @@ class TodoList
     @todomap['__STATUSES']
   end
   def get_modules
-    @todomap['__MODULES']
+    @todomap['__MODULES'].sort
   end
   def get_categories
     @todomap.keys.delete_if {|k| k.match(/^__/) }
@@ -144,10 +144,7 @@ if $0 == __FILE__
         texta.table_model.data = data
         end
 
-        sel_col = Variable.new 0
-        sel_col.value = 0
         tcm = texta.get_table_column_model
-        selcolname = texta.get_column_name 0
         #
         ## key bindings fo texta
         # column widths 
@@ -268,11 +265,11 @@ if $0 == __FILE__
         cc = texta.get_table_column_model.column_count
         frow = texta.focussed_row
         mod = texta.get_value_at(frow,0)
-        tmp = [mod, 5, "NEW TASK", "TODO"]
+        tmp = [mod, 5, "", "TODO", Time.now]
         tm = texta.table_model
         tm.insert frow+1, tmp
         texta.set_focus_on frow+1
-        status_row.text = "Added a row"
+        status_row.text = "Added a row. Please press Save before changing Category."
         alert("Added a row below current one. Use C-k to clear task.")
 
       }
@@ -337,12 +334,15 @@ if $0 == __FILE__
         todo.set_tasks_for_category "DONE", d
         tm = texta.table_model
         ret = tm.delete_at row
-        alert("Moved row #{row} to Done #{ret}")
+        alert("Moved row #{row} to Done.")
       }
       @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
       @klp.set_key_labels get_key_labels_table, :table
-      texta.bind(:ENTER){ $log.debug " MODE TABEL ENTER"; @klp.mode :table }
-      texta.bind(:LEAVE){$log.debug " MODE TABLE LEAVE";  @klp.mode :normal }
+      texta.bind(:ENTER){ @klp.mode :table ;
+        status_row.text = "Please press Save (M-s) before changing Category."
+      }
+      texta.bind(:LEAVE){@klp.mode :normal; 
+      }
 
 
       @form.repaint
@@ -353,15 +353,6 @@ if $0 == __FILE__
         s = keycode_tos ch
         #status_row.text = "Pressed #{ch} , #{s}"
         @form.handle_key(ch)
-
-        #sel_col.value = tcm.column_count-1 if sel_col.value > tcm.column_count-1
-        #sel_col.value = 0 if sel_col.value < 0
-        selcolname = texta.get_column_name texta.focussed_col
-        #keylabel.text = "Pressed #{ch} , #{s}. Column selected #{texta.focussed_col}: Width:#{tcm.column(texta.focussed_col).width} #{selcolname}. Focussed Row: #{texta.focussed_row}, Rows: #{texta.table_model.row_count}, Cols: #{colcount}"
-        #s = texta.get_value_at(texta.focussed_row, texta.focussed_col)
-        #s = s.to_s
-      ##  $log.debug " updating Field #{s}, #{s.class}"
-      ##  field.set_buffer s unless field.state == :HIGHLIGHTED # $editing
 
         @form.repaint
         @window.wrefresh

@@ -15,9 +15,6 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
-Some actions are done by FORM only such as calling :CHANGED.So when we take over as in 
-tables, you can't trap :CHANGED !
-
 handle_keys logic: some cases can return unhandled in which case we must still check furhter. So else
 should be taken and put outside the loop and run if no one handled (a flag)
 
@@ -26,14 +23,11 @@ In some cases will use a flag (like textarea, where you don't wanna match old va
 TEXTAREA : test with a wide box, larger than width of rows
            Give option of no wrap, and panning
 
-FORM: on_enter, on_exit - currently the on_enter and leave is for widgets as in ncurses.
 
 EDITING TABLES:
 if table data nil to start with then tablemodel bindings will all fail! XXX
 If you delete a row, then selections get messed, since row selectoin uses indexes into table
 
-Delete does not result in any on_enter event firing. But then we are dealing with row???
-OUCH - on_enter reqired otherwise editor has old value!
 
 
 also, user may put a hook on on_leave, shoud check for exception and not proceed.
@@ -114,9 +108,10 @@ Sorting of tables using intermediate view that maps jtable to model - not imp
 TABBED:
 Tabbed Pane may want to add OK, or OK_CANCEL buttons.
 
+FORM: on_enter, on_exit - currently the on_enter and leave is for widgets as in ncurses.
 
 - Listbox : status or detail, row m or n.
-  Search up and down
+  Search up and down - DONE
 
 - Text Area: INS/OVW
 - TextArea: choice of word wrap, col wrap or no wrap.
@@ -131,8 +126,6 @@ LABEL to take ampersand also. ?? No there could be legit ampersands. Also only i
    managing_focus() : true means it will eat a tab (insert a tab in case of textarea).
 
 
-Textarea "del" does not delete newline, although C-k does look into that.
-
 Tabbedpane needs to look okay if change colors. At least should be able to switch to reverse.
 
 Menuitem: disabled, what if no action (not armed).
@@ -146,6 +139,9 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+Delete does not result in any on_enter event firing. But then we are dealing with row???
+OUCH - on_enter reqired otherwise editor has old value!
+
 COMBO: either choice of disabling arrow keys for table. or have sep editing option for table
 so some fields not accidentally changed. - unbind
 
