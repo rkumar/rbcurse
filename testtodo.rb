@@ -11,6 +11,7 @@ require 'lib/rbcurse/rtable'
 require 'lib/rbcurse/celleditor'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/comboboxcellrenderer'
+require 'lib/rbcurse/keylabelprinter'
 
 class TodoList
   def initialize file
@@ -57,6 +58,14 @@ class TodoList
     f = "#{@file}"
     File.open(f, "w") { |f| YAML.dump( @todomap, f )}
   end
+end
+def get_key_labels
+  key_labels = [
+    ['g', 'Goto'], ['/', 'Search'],
+    ['x', 'Sel'], ['C-e', 'ClrSel'],
+    ['Spc','PgDn'], ['-','PgUp']
+  ]
+  return key_labels
 end
 if $0 == __FILE__
   include RubyCurses
@@ -170,7 +179,7 @@ if $0 == __FILE__
       #texta.bind(:TABLE_TRAVERSAL_EVENT){|e| eventlabel.text = "Event: #{e}"}
 
       @help = "C-q to quit. M-Tab (next col) C-n (Pg Dn), C-p (Pg Up), M-0 Top, M-9 End, C-x (select). Columns:- Narrow, + expand, > < switch"
-      RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
+      #RubyCurses::Label.new @form, {'text' => @help, "row" => Ncurses.LINES-3, "col" => 2, "color" => "yellow", "height"=>2}
 
       str_renderer = TableCellRenderer.new ""
       num_renderer = TableCellRenderer.new "", { "justify" => :right }
@@ -220,6 +229,7 @@ if $0 == __FILE__
 =end
       #combo_editor.component.bind(:LEAVE){ alert "LEAVE"; $log.debug " LEAVE FIRED" }
         buttrow = r+table_ht+8 #Ncurses.LINES-4
+        buttrow = Ncurses.LINES-5
       b_save = Button.new @form do
         text "&Save"
         row buttrow
@@ -318,6 +328,7 @@ if $0 == __FILE__
         $log.debug " DELETED ZZZ #{ret.inspect}"
         alert("Moved row #{row} to Done #{ret}")
       }
+      @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
 
 
       @form.repaint

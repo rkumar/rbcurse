@@ -270,10 +270,12 @@ module RubyCurses
       if row_count == 0
         init_vars
       end
+      # the next block to be only called if user is inside editing. Often data will be refreshed by
+      # a search field and this gets called.
       if @is_editing
         @is_editing = false # 2009-01-19 18:18 testing this out XXX
-      # we need to refresh the editor if you deleted a row while sitting on it
-      # otherwise it shows the old value
+        # we need to refresh the editor if you deleted a row while sitting on it
+        # otherwise it shows the old value
         editing_started 
       end
     end

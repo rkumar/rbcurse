@@ -171,7 +171,7 @@ module RubyCurses
       ##
       # bind an event to a block, optional args will also be passed when calling
       def bind event, *xargs, &blk
-        $log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
+        #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
         @handler ||= {}
         @event_args ||= {}
         #@handler[event] = blk
@@ -192,14 +192,14 @@ module RubyCurses
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
       def fire_handler event, object
-        $log.debug " def fire_handler evt:#{event}, o: #{object}, #{self}, hdnler:#{@handler}"
+        #$log.debug " def fire_handler evt:#{event}, o: #{object}, #{self}, hdnler:#{@handler}"
         if !@handler.nil?
         #blk = @handler[event]
           ablk = @handler[event]
           if !ablk.nil?
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
-              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+              #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
               blk.call object,  *aeve[ix]
             end
           end # if
