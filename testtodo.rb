@@ -139,7 +139,7 @@ if $0 == __FILE__
         data = todo.get_tasks_for_category fld.getvalue; 
         @data = data
         $log.debug " DATA is #{data.inspect} : #{data.length}"
-        data = [[nil, 5, "NEW TASK", "TODO"]] if data.nil? or data.empty? or data.size == 0
+        data = [[nil, 5, "NEW ", "TODO", Time.now]] if data.nil? or data.empty? or data.size == 0
         $log.debug " DATA is #{data.inspect} : #{data.length}"
         texta.table_model.data = data
         end

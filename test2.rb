@@ -462,6 +462,15 @@ if $0 == __FILE__
       item = RubyCurses::MenuItem.new "PasteM"
       savemenu.add(item)
       menu.add(savemenu)
+
+      savemenu2 = RubyCurses::Menu.new "EditM2"
+      item = RubyCurses::MenuItem.new "CutM"
+      savemenu2.add(item)
+      item = RubyCurses::MenuItem.new "DeleteM"
+      savemenu2.add(item)
+      item = RubyCurses::MenuItem.new "PasteM"
+      savemenu2.add(item)
+      savemenu.add(savemenu2)
       # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
       @mb.toggle_key = KEY_F2
       @form.set_menu_bar  @mb

@@ -1,5 +1,5 @@
 =begin
-  * Name: menu and related classes
+  * Name: rpopupmenu - this is based on the crappy menubar code and needs a rewrite.
   * Description   
   * Author: rkumar
 TODO 
@@ -102,6 +102,10 @@ module RubyCurses
       @parent.window.wrefresh
     end
     def repaint # menuitem.repaint
+      if @parent.nil? or @parent.window.nil?
+        $log.debug " #{self} parent nil"
+        return
+      end
       r = @row
       @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], $reversecolor)
       if !@accelerator.nil?
@@ -119,7 +123,7 @@ module RubyCurses
      $log.debug "DESTRY menuitem #{@text}"
     end
   end
-  class Menu
+  class Menu < MenuItem  
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
@@ -130,20 +134,33 @@ module RubyCurses
     attr_reader :window
     attr_reader :panel
     attr_reader :current_menu
+    attr_reader :row_margin
+    @@menus = []
+    @@row = 0
+    @@col = 0
 
     def initialize text, &block
-      @text = text
+      super text, nil, &block
       @items = []
       @enabled = true
       @current_menu = []
       instance_eval &block if block_given?
+      @row ||=10
+      @col ||=10
+      @@menus ||= []
     end
     def to_s
       @text
     end
-    # item could be menuitem or another menu
+    # item could be menuitem or another menu or a string
     def add menuitem
       @items << menuitem
+      return self
+    end
+    ##
+    # added 2009-01-20 13:27 NEW
+    def insert menuitem, ix
+      @items.insert ix, menuitem
       return self
     end
     def insert_separator ix
@@ -152,6 +169,16 @@ module RubyCurses
     def add_separator 
       @items << MenuSeparator.new
     end
+    def get_item i
+      @items[i]
+    end
+    def remove n
+      if n.is_a? Fixnum
+        @items.delete_at n
+      else
+        @items.delete n
+      end
+    end
     # menu - 
     def fire
       $log.debug "menu fire called: #{text}  " 
@@ -159,7 +186,11 @@ module RubyCurses
         #repaint
         create_window
         if !@parent.is_a? RubyCurses::MenuBar 
+          $log.debug " ADDING self to current menu: #{self}"
           @parent.current_menu << self
+          @@menus << self
+          
+          $log.debug "DDD #{@@menus} << #{self}"
         end
       else
         ### shouod this not just show ?
@@ -252,11 +283,12 @@ module RubyCurses
           @parent.window.printstring( @row, @col, " %s " % text, $reversecolor)
           @window.hide if !@window.nil?
         else
-          $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col}  " 
+          $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col} will pop !! " 
           # parent is a menu
           highlight false
-          @parent.current_menu.pop
-          destroy
+          #@parent.current_menu.pop
+          #@@menus.pop
+          #destroy
         end
     end
     def highlight tf=true # menu
@@ -269,11 +301,15 @@ module RubyCurses
       @parent.window.mvchgat(y=@row, x=1, @parent.width, att, $reversecolor, nil)
       @parent.window.wrefresh
     end
-    def create_window # menu
+    def create_window # menu XXX
       margin = 3
       @width = array_width @items
-      $log.debug "create window menu #{@text}: #{@row} ,#{@col},wd #{@width}   " 
-      @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+1, :left => @col } 
+      $log.debug "create window menu #{@text}: #{@row} ,#{@col},parent: #{@parent}, wd #{@width}   " 
+      #$log.debug "create window menu parent: #{@parent.row},   "  unless @parent.nil?
+      @row_margin = 1 #+ @@row
+      @row_margin = @parent.row+@parent.row_margin  unless @parent.nil?
+      #@row = @parent.row unless @parent.nil?
+      @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+@row_margin, :left => @col } 
       @win = VER::Window.new(@layout)
       @window = @win
       @win.bkgd(Ncurses.COLOR_PAIR($datacolor));
@@ -281,13 +317,9 @@ module RubyCurses
         @window.printstring( 0, 0, "+%s+" % ("-"*@width), $reversecolor)
         r = 1
         @items.each do |item|
-          #if item == :SEPARATOR
-          #  @window.printstring( r, 0, "|%s|" % ("-"*@width), $reversecolor)
-          #else
             item.row = r
             item.col = 0
             item.col = @col+@width+margin # margins???
- #         $log.debug "create window menu loop passing col : #{item.col} " 
             item.width = @width
             #item.window = @window
             item.parent = self
@@ -323,11 +355,17 @@ module RubyCurses
     # item could be menuitem or another menu
     #
     def handle_key ch
-      if !@current_menu.empty?
-        cmenu = @current_menu.last
+      #if !@current_menu.empty?
+      #  cmenu = @current_menu.last
+      #else 
+      #  cmenu = self
+      #end
+      if !@@menus.empty?
+        cmenu = @@menus.last
       else 
         cmenu = self
       end
+      $log.debug " CMENU is #{cmenu}: #{@@menus} "
       case ch
       when KEY_DOWN
           cmenu.select_next_item
@@ -337,14 +375,16 @@ module RubyCurses
         return cmenu.fire
       when KEY_LEFT
         if cmenu.parent.is_a? RubyCurses::Menu 
-       $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
-       $log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
+          $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
+          $log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
-       $log.debug " ABOU TO DESTROY DUE TO LEFT"
+          $log.debug " ABOU TO DESTROY DUE TO LEFT"
           cmenu.parent.current_menu.pop
+          @@menus.pop
           cmenu.destroy
         else
+          $log.debug " returning UNHANDLED 370"
           return :UNHANDLED
         end
       when KEY_RIGHT
@@ -356,6 +396,7 @@ module RubyCurses
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
           $log.debug " ABOU TO DESTROY DUE TO RIGHT"
           cmenu.parent.current_menu.pop
+          @@menus.pop
           cmenu.destroy
         end
         return :UNHANDLED
@@ -390,6 +431,55 @@ module RubyCurses
         select_item 0
     end
   end
+  class PopupMenu < Menu
+    def initialize text, &block
+      @row_margin = 0
+      @@row = 0
+      @@col = 0
+      super
+      instance_eval &block if block_given?
+    end
+    def show component, x, y
+      @component = component
+      @@row = component.row
+      @@col = component.col
+      create_window
+      handle_keys
+    end
+    def handle_keys  # popup
+      @toggle_key ||= 27 # default switch off with ESC, if nothing else defined
+      begin
+      catch(:menubarclose) do
+      while((ch = @window.getchar()) != @toggle_key )
+        case ch
+        when -1
+          next
+        else
+          handle_key ch
+        end
+        Ncurses::Panel.update_panels();
+        Ncurses.doupdate();
+
+        @window.wrefresh
+      end
+      end # catch
+      ensure
+        #ensure is required becos one can throw a :close
+      destroy  # Note that we destroy the menu bar upon exit
+      end
+    end
+    def destroy
+      $log.debug "DESTRY popup "
+      @visible = false
+      panel = @window.panel
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      @window.delwin if !@window.nil?
+      @items.each do |item|
+        item.destroy
+      end
+      @window = nil
+    end
+  end # class
   ##
   # An application related menubar.
   # Currently, I am adding this to a form. But should this not be application specific ?
@@ -451,7 +541,7 @@ module RubyCurses
       @toggle_key ||= 27 # default switch off with ESC, if nothing else defined
       set_menu 0
       begin
-      catch(:menubarclose) do
+      catch(:popupclose) do
       while((ch = @window.getchar()) != @toggle_key )
        $log.debug "menuubar inside handle_keys :  #{ch}"  if ch != -1
         case ch
