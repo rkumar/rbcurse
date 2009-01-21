@@ -90,12 +90,13 @@ class TodoApp
   def make_popup
     require 'lib/rbcurse/rpopupmenu'
     tablemenu = RubyCurses::PopupMenu.new "Table"
-    tablemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
+    #tablemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
+    tablemenu.add(item = RubyCurses::MenuItem.new("&Open"))
 
     tablemenu.insert_separator 1
     #tablemenu.add(RubyCurses::MenuItem.new "New",'N')
     tablemenu.add(@new_act)
-    tablemenu.add(item = RubyCurses::MenuItem.new("Save",'S'))
+    tablemenu.add(item = RubyCurses::MenuItem.new("&Save"))
     tablemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
     tablemenu.add(item = RubyCurses::MenuItem.new("Wrap Text",'W'))
     tablemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
@@ -387,7 +388,8 @@ class TodoApp
     end
   end
   def create_table_actions atable
-    @new_act = Action.new("New Row", "mnemonic"=>"N") { 
+    #@new_act = Action.new("New Row", "mnemonic"=>"N") { 
+    @new_act = Action.new("&New Row") { 
       cc = atable.get_table_column_model.column_count
       frow = atable.focussed_row
       mod = atable.get_value_at(frow,0)

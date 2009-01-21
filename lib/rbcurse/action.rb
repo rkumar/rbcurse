@@ -16,6 +16,7 @@ module RubyCurses
     def initialize name, config={}, &block
       super &block
       @name = name
+      @name.freeze
       @enabled = true
       config_setup config # @config.each_pair { |k,v| variable_set(k,v) }
     end

@@ -1411,7 +1411,7 @@ module RubyCurses
       if val.empty?
         return @text
       else
-        s = val[0]
+        s = val[0].dup
         s = s.to_s if !s.is_a? String  # 2009-01-15 17:32 
         if (( ix = s.index('&')) != nil)
           s.slice!(ix,1)

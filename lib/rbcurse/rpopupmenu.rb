@@ -64,14 +64,15 @@ module RubyCurses
     attr_accessor :enabled
     attr_accessor :mnemonic  # changed reader to accessor 
     def initialize txt, mnemonic=nil, &block
+      @mnemonic = mnemonic
       text txt
       @enabled = true
-      @mnemonic = mnemonic
       instance_eval &block if block_given?
     end
     ##
     # changed so ampersand can be mnemonic esp when action comes in
     def text s
+      s = s.dup # since actions are being shared
       if (( ix = s.index('&')) != nil)
         s.slice!(ix,1)
         #@underline = ix unless @form.nil? # this setting a fake underline in messageboxes
@@ -438,7 +439,7 @@ module RubyCurses
 #       $log.debug "inside check_mnemonics #{item.mnemonic}"
         if key == item.mnemonic.downcase
           item.fire
-          return :CLOSE #0
+          return :CLOSE #0 # added 2009-01-22 00:04 
         end
       end
       return :UNHANDLED
