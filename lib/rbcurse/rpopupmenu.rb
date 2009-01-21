@@ -152,8 +152,19 @@ module RubyCurses
     def to_s
       @text
     end
-    # item could be menuitem or another menu or a string
+    # create a Menuitem given an Action
+    # if menuitem.kind_of? RubyCurses::Action
+    def create_action_component action
+        m = MenuItem.new(action.name, action.mnemonic)
+        m.command { action.call }
+        return m
+    end
+    # item could be menuitem or another menu or a string or a Action
+    # suppoer for action added 2009-01-21 18:08 
     def add menuitem
+      if menuitem.kind_of? RubyCurses::Action
+        menuitem = create_action_component menuitem
+      end
       @items << menuitem
       return self
     end
@@ -455,7 +466,9 @@ module RubyCurses
         when -1
           next
         else
-          handle_key ch
+          ret = handle_key ch
+          $log.debug " POPUP got #{ret} added 2009-01-21 18:18 "
+          break if ret == :CLOSE
         end
         Ncurses::Panel.update_panels();
         Ncurses.doupdate();

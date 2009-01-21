@@ -13,6 +13,7 @@ require 'lib/rbcurse/celleditor'
 require 'lib/rbcurse/comboboxcellrenderer'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/applicationheader'
+require 'lib/rbcurse/action'
 
 class TodoList
   def initialize file
@@ -92,7 +93,8 @@ class TodoApp
     tablemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
 
     tablemenu.insert_separator 1
-    tablemenu.add(RubyCurses::MenuItem.new "New",'N')
+    #tablemenu.add(RubyCurses::MenuItem.new "New",'N')
+    tablemenu.add(@new_act)
     tablemenu.add(item = RubyCurses::MenuItem.new("Save",'S'))
     tablemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
     tablemenu.add(item = RubyCurses::MenuItem.new("Wrap Text",'W'))
@@ -120,6 +122,7 @@ class TodoApp
     title = "TODO APP"
     @header = ApplicationHeader.new @form, title, {"text2"=>"Some Text", "text_center"=>"Task Entry"}
     status_row = RubyCurses::Label.new @form, {'text' => "", "row" => Ncurses.LINES-4, "col" => 0, "display_length"=>60}
+    @status_row = status_row
     #@window.printstring 0,(Ncurses.COLS-title.length)/2,title, $datacolor
     r = 1; c = 1;
     categ = ComboBox.new @form do
@@ -282,18 +285,8 @@ class TodoApp
       col c+10
       bind(:ENTER) { status_row.text "New button adds a new row below current " }
     end
-    new_cmd = lambda { 
-      cc = atable.get_table_column_model.column_count
-      frow = atable.focussed_row
-      mod = atable.get_value_at(frow,0)
-      tmp = [mod, 5, "", "TODO", Time.now]
-      tm = atable.table_model
-      tm.insert frow+1, tmp
-      atable.set_focus_on frow+1
-      status_row.text = "Added a row. Please press Save before changing Category."
-      alert("Added a row below current one. Use C-k to clear task.")
-    }
-    b_newrow.command { new_cmd.call }
+    create_table_actions atable
+    b_newrow.command { @new_act.call }
 
     # using ampersand to set mnemonic
     b_delrow = Button.new @form do
@@ -382,6 +375,20 @@ class TodoApp
     ensure
     @window.destroy if !@window.nil?
     end
+  end
+  def create_table_actions atable
+    @new_act = Action.new("New Row", "mnemonic"=>"N") { 
+      cc = atable.get_table_column_model.column_count
+      frow = atable.focussed_row
+      mod = atable.get_value_at(frow,0)
+      tmp = [mod, 5, "", "TODO", Time.now]
+      tm = atable.table_model
+      tm.insert frow+1, tmp
+      atable.set_focus_on frow+1
+      @status_row.text = "Added a row. Please press Save before changing Category."
+      alert("Added a row below current one. Use C-k to clear task.")
+    }
+
   end
 end
 if $0 == __FILE__

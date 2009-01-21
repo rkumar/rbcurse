@@ -1,3 +1,11 @@
+**2009-01-21 18:30**
+## Class Action ##
+
+Added a class Action to centralize actions or behavior.
+Popupmenu creates a jmenuitem with an action.
+
+frmincr200901211826.tgz
+* * *
 **2009-01-20 22:50**
 ## Class PopupMenu ##
 

@@ -11,6 +11,7 @@ require 'lib/rbcurse/rtable'
 require 'lib/rbcurse/celleditor'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/comboboxcellrenderer'
+require 'lib/rbcurse/action'
 
 ##
 # a renderer which paints alternate lines with
