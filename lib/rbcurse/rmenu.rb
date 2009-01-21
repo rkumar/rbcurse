@@ -3,6 +3,8 @@
   * Description   
   * Author: rkumar
 TODO 
+FIXME : works with 2 levels, but focus does not go into third level. This has been fixed in rpopupmenu
+      and needs to be fixed here. DONE 2009-01-21 12:50 
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
     - separate file created on 2008-12-24 17:58 
@@ -119,7 +121,8 @@ module RubyCurses
      $log.debug "DESTRY menuitem #{@text}"
     end
   end
-  class Menu
+  ##class Menu
+  class Menu < MenuItem  ## NEW 
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
@@ -130,13 +133,21 @@ module RubyCurses
     attr_reader :window
     attr_reader :panel
     attr_reader :current_menu
+    attr_reader :row_margin  ## 2009-01-21 12:06  NEW
+    @@menus = []
+    @@row = 0
+    @@col = 0
 
     def initialize text, &block
+      super text, nil, &block
       @text = text
       @items = []
       @enabled = true
       @current_menu = []
       instance_eval &block if block_given?
+      @row ||=10
+      @col ||=10
+      @@menus ||= []
     end
     def to_s
       @text
@@ -152,6 +163,18 @@ module RubyCurses
     def add_separator 
       @items << MenuSeparator.new
     end
+    ## added 2009-01-21 12:09 NEW
+    def get_item i
+      @items[i]
+    end
+    ## added 2009-01-21 12:09 NEW
+    def remove n
+      if n.is_a? Fixnum
+        @items.delete_at n
+      else
+        @items.delete n
+      end
+    end
     # menu - 
     def fire
       $log.debug "menu fire called: #{text}  " 
@@ -160,6 +183,7 @@ module RubyCurses
         create_window
         if !@parent.is_a? RubyCurses::MenuBar 
           @parent.current_menu << self
+          @@menus << self # NEW
         end
       else
         ### shouod this not just show ?
@@ -255,8 +279,9 @@ module RubyCurses
           $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col}  " 
           # parent is a menu
           highlight false
-          @parent.current_menu.pop
-          destroy
+          #@parent.current_menu.pop
+          #@@menus.pop
+          #destroy
         end
     end
     def highlight tf=true # menu
@@ -323,8 +348,13 @@ module RubyCurses
     # item could be menuitem or another menu
     #
     def handle_key ch
-      if !@current_menu.empty?
-        cmenu = @current_menu.last
+      #if !@current_menu.empty?
+      #  cmenu = @current_menu.last
+      #else 
+      #  cmenu = self
+      #end
+      if !@@menus.empty?
+        cmenu = @@menus.last
       else 
         cmenu = self
       end
@@ -343,6 +373,7 @@ module RubyCurses
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
        $log.debug " ABOU TO DESTROY DUE TO LEFT"
           cmenu.parent.current_menu.pop
+          @@menus.pop ## NEW
           cmenu.destroy
         else
           return :UNHANDLED
@@ -356,6 +387,7 @@ module RubyCurses
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
           $log.debug " ABOU TO DESTROY DUE TO RIGHT"
           cmenu.parent.current_menu.pop
+          @@menus.pop
           cmenu.destroy
         end
         return :UNHANDLED
@@ -503,6 +535,7 @@ module RubyCurses
       end # catch
       ensure
         #ensure is required becos one can throw a :close
+        $log.debug " DESTROY IN ENSURE"
       destroy  # Note that we destroy the menu bar upon exit
       end
     end
