@@ -1379,9 +1379,10 @@ module RubyCurses
   ##
   # action buttons
   # TODO: phasing out underline, and giving mnemonic and ampersand preference
+  #  - Action: may have to listen to Action property changes so enabled, name etc change can be reflected
   class Button < Widget
-  dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
-  dsl_accessor :mnemonic
+    dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
+    dsl_accessor :mnemonic
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
@@ -1395,6 +1396,14 @@ module RubyCurses
       @col_offset = @surround_chars[0].length 
       #@text = @name if @text.nil?
       #bind_hotkey # 2008-12-23 22:41 remarked
+    end
+    ##
+    # set button based on Action
+    #  2009-01-21 19:59 
+    def action a
+      text a.name
+      mnemonic a.mnemonic unless a.mnemonic.nil?
+      command { a.call }
     end
     ##
     # sets text, checking for ampersand, uses that for hotkey and underlines

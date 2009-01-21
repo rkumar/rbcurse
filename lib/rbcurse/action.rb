@@ -2,6 +2,7 @@ require 'lib/rbcurse/rwidget'
 include Ncurses
 include RubyCurses
 module RubyCurses
+  ## encapsulates behaviour allowing centralization
   class Action < Proc
     include EventHandler
     include ConfigSetup
@@ -17,6 +18,11 @@ module RubyCurses
       @name = name
       @enabled = true
       config_setup config # @config.each_pair { |k,v| variable_set(k,v) }
+    end
+    def call
+      return unless @enabled
+      fire_handler :FIRE, self
+      super
     end
   end # class
 end # module

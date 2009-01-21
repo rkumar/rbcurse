@@ -3,6 +3,7 @@
   * Description   
   * Author: rkumar
 TODO 
+    - Action: may have to listen to Action property changes so enabled, name etc change can be reflected
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
     - separate file created on 2008-12-24 17:58 
@@ -61,12 +62,22 @@ module RubyCurses
     attr_accessor :width
     attr_accessor :accelerator
     attr_accessor :enabled
-    attr_accessor :text, :mnemonic  # changed reader to accessor 
-    def initialize text, mnemonic=nil, &block
-      @text = text
+    attr_accessor :mnemonic  # changed reader to accessor 
+    def initialize txt, mnemonic=nil, &block
+      text txt
       @enabled = true
       @mnemonic = mnemonic
       instance_eval &block if block_given?
+    end
+    ##
+    # changed so ampersand can be mnemonic esp when action comes in
+    def text s
+      if (( ix = s.index('&')) != nil)
+        s.slice!(ix,1)
+        #@underline = ix unless @form.nil? # this setting a fake underline in messageboxes
+        @mnemonic = s[ix,1]
+      end
+      @text = s
     end
     def to_s
       "#{@text} #{@accelerator}"
@@ -107,13 +118,13 @@ module RubyCurses
         return
       end
       r = @row
-      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], $reversecolor)
+      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, @text], $reversecolor)
       if !@accelerator.nil?
         @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, $reversecolor)
       elsif !@mnemonic.nil?
         m = @mnemonic
-        ix = text.index(m) || text.index(m.swapcase)
-        charm = text[ix,1]
+        ix = @text.index(m) || @text.index(m.swapcase)
+        charm = @text[ix,1]
         #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
         # prev line changed since not working in vt100 and vt200
         @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
@@ -129,7 +140,7 @@ module RubyCurses
     attr_accessor :col
     attr_accessor :width
     attr_accessor :enabled
-    attr_reader :text
+    #attr_reader :text
     attr_reader :items
     attr_reader :window
     attr_reader :panel
@@ -160,17 +171,17 @@ module RubyCurses
         return m
     end
     # item could be menuitem or another menu or a string or a Action
-    # suppoer for action added 2009-01-21 18:08 
+    # support for action added 2009-01-21 18:08 
     def add menuitem
-      if menuitem.kind_of? RubyCurses::Action
-        menuitem = create_action_component menuitem
-      end
-      @items << menuitem
+      insert menuitem, @items.size
       return self
     end
     ##
     # added 2009-01-20 13:27 NEW
     def insert menuitem, ix
+      if menuitem.kind_of? RubyCurses::Action
+        menuitem = create_action_component menuitem
+      end
       @items.insert ix, menuitem
       return self
     end
@@ -192,7 +203,7 @@ module RubyCurses
     end
     # menu - 
     def fire
-      $log.debug "menu fire called: #{text}  " 
+      $log.debug "menu fire called: #{@text}  " 
       if @window.nil?
         #repaint
         create_window
@@ -205,7 +216,7 @@ module RubyCurses
         end
       else
         ### shouod this not just show ?
-        $log.debug "menu fire called: #{text} ELSE XXX WHEN IS THIS CALLED ? 658  " 
+        $log.debug "menu fire called: #{@text} ELSE XXX WHEN IS THIS CALLED ? 658  " 
         return @items[@active_index].fire # this should happen if selected. else selected()
       end
       #@action.call if !@action.nil?
@@ -214,9 +225,9 @@ module RubyCurses
     # DRAW menuitems
     def repaint # menu.repaint
       return if @items.nil? or @items.empty?
-      $log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
+      $log.debug "menu repaint: #{@text} row #{@row} col #{@col}  " 
       if !@parent.is_a? RubyCurses::MenuBar 
-        @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, text], $reversecolor)
+        @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, @text], $reversecolor)
         @parent.window.refresh
       end
       if @window.nil?
@@ -269,32 +280,32 @@ module RubyCurses
       end
     end
     def on_enter # menu.on_enter
-      $log.debug "menu onenter: #{text} #{@row} #{@col}  " 
+      $log.debug "menu onenter: #{@text} #{@row} #{@col}  " 
       # call parent method. XXX
         if @parent.is_a? RubyCurses::MenuBar 
-          @parent.window.printstring( @row, @col, " %s " % text, $datacolor)
+          @parent.window.printstring( @row, @col, " %s " % @text, $datacolor)
         else
           highlight
         end
         if !@window.nil? #and @parent.selected
-          $log.debug "menu onenter: #{text} calling window,show"
+          $log.debug "menu onenter: #{@text} calling window,show"
           @window.show
           select_item 0
         elsif @parent.is_a? RubyCurses::MenuBar and  @parent.selected
           # only on the top level do we open a window if a previous one was opened
-          $log.debug "menu onenter: #{text} calling repaint CLASS: #{@parent.class}"
+          $log.debug "menu onenter: #{@text} calling repaint CLASS: #{@parent.class}"
         #  repaint
           create_window
         end
     end
     def on_leave # menu.on_leave
-      $log.debug "menu onleave: #{text} #{@row} #{@col}  " 
+      $log.debug "menu onleave: #{@text} #{@row} #{@col}  " 
       # call parent method. XXX
         if @parent.is_a? RubyCurses::MenuBar 
-          @parent.window.printstring( @row, @col, " %s " % text, $reversecolor)
+          @parent.window.printstring( @row, @col, " %s " % @text, $reversecolor)
           @window.hide if !@window.nil?
         else
-          $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col} will pop !! " 
+          $log.debug "MENU SUBMEN. menu onleave: #{@text} #{@row} #{@col} will pop !! " 
           # parent is a menu
           highlight false
           #@parent.current_menu.pop
@@ -303,7 +314,7 @@ module RubyCurses
         end
     end
     def highlight tf=true # menu
-          $log.debug "MENU SUBMENU menu highlight: #{text} #{@row} #{@col}, PW #{@parent.width}  " 
+          $log.debug "MENU SUBMENU menu highlight: #{@text} #{@row} #{@col}, PW #{@parent.width}  " 
       color = tf ? $datacolor : $reversecolor
       att = tf ? Ncurses::A_REVERSE : Ncurses::A_NORMAL
       #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
@@ -427,7 +438,7 @@ module RubyCurses
 #       $log.debug "inside check_mnemonics #{item.mnemonic}"
         if key == item.mnemonic.downcase
           item.fire
-          return 0
+          return :CLOSE #0
         end
       end
       return :UNHANDLED

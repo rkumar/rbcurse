@@ -464,11 +464,11 @@ if $0 == __FILE__
       menu.add(savemenu)
 
       savemenu2 = RubyCurses::Menu.new "EditM2"
-      item = RubyCurses::MenuItem.new "CutM"
+      item = RubyCurses::MenuItem.new "CutM2"
       savemenu2.add(item)
-      item = RubyCurses::MenuItem.new "DeleteM"
+      item = RubyCurses::MenuItem.new "DeleteM2"
       savemenu2.add(item)
-      item = RubyCurses::MenuItem.new "PasteM"
+      item = RubyCurses::MenuItem.new "PasteM2"
       savemenu2.add(item)
       savemenu.add(savemenu2)
       # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.

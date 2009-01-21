@@ -90,9 +90,14 @@ module RubyCurses
     def fire
       $log.debug ">>>fire menuitem : #{@text} #{@command} "
       @command.call self, *@args if !@command.nil?
+      @parent.clear_menus
       return :CLOSE # added 2009-01-02 00:09 to close only actions, not submenus
     end
     def highlight tf=true
+      if @parent.nil? or @parent.window.nil?
+        $log.debug "HL XXX #{self} parent nil"
+        $log.debug "HL XXX #{self} - > #{@parent} parent nil"
+      end
       if tf
         color = $datacolor
         #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
@@ -101,9 +106,13 @@ module RubyCurses
       else
         repaint
       end
-      @parent.window.wrefresh
+      @parent.window.wrefresh  unless @parent.window.nil? ## XXX 2009-01-21 22:00 
     end
     def repaint # menuitem.repaint
+      if @parent.nil? or @parent.window.nil?
+        $log.debug "repaint #{self} parent nil"
+      #  return
+      end
       r = @row
       @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], $reversecolor)
       if !@accelerator.nil?
@@ -134,6 +143,8 @@ module RubyCurses
     attr_reader :panel
     attr_reader :current_menu
     attr_reader :row_margin  ## 2009-01-21 12:06  NEW
+    ## this keeps a stack of menus. if we coud somehow put this in
+    # menubar would be great.
     @@menus = []
     @@row = 0
     @@col = 0
@@ -148,6 +159,10 @@ module RubyCurses
       @row ||=10
       @col ||=10
       @@menus ||= []
+    end
+    ## called upon firing so when we next show menubar there are not any left overs in here.
+    def clear_menus
+      @@menus = []
     end
     def to_s
       @text
@@ -213,7 +228,7 @@ module RubyCurses
     # recursive if given one not enabled goes to next enabled
     def select_item ix0
       return if @items.nil? or @items.empty?
-       $log.debug "insdie select  item :  #{ix0}" 
+       $log.debug "insdie select  item :  #{ix0} active: #{@active_index}" 
       if !@active_index.nil?
         @items[@active_index].on_leave 
       end
@@ -348,15 +363,15 @@ module RubyCurses
     # item could be menuitem or another menu
     #
     def handle_key ch
-      #if !@current_menu.empty?
-      #  cmenu = @current_menu.last
-      #else 
-      #  cmenu = self
-      #end
-      if !@@menus.empty?
-        cmenu = @@menus.last
+      if !@current_menu.empty?
+        cmenu = @current_menu.last
       else 
         cmenu = self
+      end
+      if !@@menus.empty?
+       cmenu = @@menus.last
+      else 
+       cmenu = self
       end
       case ch
       when KEY_DOWN
@@ -437,11 +452,14 @@ module RubyCurses
     attr_accessor :toggle_key              # key used to popup, should be set prior to attaching to form
     def initialize &block
       @window = nil
-      @active_index = 0
       @items = []
+      init_vars
       @visible = false
       @cols = Ncurses.COLS-1
       instance_eval &block if block_given?
+    end
+    def init_vars
+      @active_index = 0
     end
     def focusable
       false
@@ -543,10 +561,12 @@ module RubyCurses
       @items[@active_index]
     end
     def toggle
+      @items.each { |i| $log.debug " ITEM DDD : #{i.text}" }
       @visible = !@visible
       if !@visible
         hide
       else
+        init_vars
         show
       end
     end

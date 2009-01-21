@@ -279,20 +279,30 @@ class TodoApp
       }
       bind(:ENTER) { status_row.text "Save changes to todo.yml " }
     end
+    create_table_actions atable
+=begin
     b_newrow = Button.new @form do
       text "&New"
       row buttrow
       col c+10
       bind(:ENTER) { status_row.text "New button adds a new row below current " }
     end
-    create_table_actions atable
     b_newrow.command { @new_act.call }
+=end
+    ## We use Action to create a button: to test out ampersand with MI and Button
+    new_act = @new_act
+    b_newrow = Button.new @form do
+      action new_act
+      row buttrow
+      col c+10
+      bind(:ENTER) { status_row.text "New button adds a new row below current " }
+    end
 
     # using ampersand to set mnemonic
     b_delrow = Button.new @form do
       text "&Delete"
       row buttrow
-      col c+20
+      col c+25
       bind(:ENTER) { status_row.text "Deletes focussed row" }
     end
     b_delrow.command { |form| 
@@ -307,7 +317,7 @@ class TodoApp
     b_change = Button.new @form do
       text "&Lock"
       row buttrow
-      col c+30
+      col c+35
       command {
         r = atable.focussed_row
         #c = sel_col.value
@@ -330,7 +340,7 @@ class TodoApp
     b_move = Button.new @form do
       text "&Move"
       row buttrow
-      col c+40
+      col c+45
       bind(:ENTER) { status_row.text "Move current row to Done" }
     end
     b_move.command { |form| 
