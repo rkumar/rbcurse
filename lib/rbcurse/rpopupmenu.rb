@@ -7,6 +7,8 @@ TODO
     - menu bar : what to do if adding a menu, or option later.
       we dnt show disabld options in a way that user can know its disabled
     - separate file created on 2008-12-24 17:58 
+
+     Mnemonic should highlight the row if its a menu.
 NOTE : this program works but is one of the first programs and is untouched. It needs to be rewritten
       since its quite crappy.
       Also, we should move to Action classes as against just blokcs of code. And action class would have
@@ -100,6 +102,7 @@ module RubyCurses
     def fire
       $log.debug ">>>fire menuitem : #{@text} #{@command} "
       @command.call self, *@args if !@command.nil?
+      @parent.clear_menus
       return :CLOSE # added 2009-01-02 00:09 to close only actions, not submenus
     end
     def highlight tf=true
@@ -119,10 +122,13 @@ module RubyCurses
         return
       end
       r = @row
-      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, @text], $reversecolor)
+      acolor = $reversecolor
+      acolor = get_color($reversecolor, 'green', 'white') if !@enabled
+      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, @text], acolor)
       if !@accelerator.nil?
-        @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, $reversecolor)
-      elsif !@mnemonic.nil?
+        @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, acolor)
+      end
+      if !@mnemonic.nil?
         m = @mnemonic
         ix = @text.index(m) || @text.index(m.swapcase)
         charm = @text[ix,1]
@@ -164,11 +170,15 @@ module RubyCurses
     def to_s
       @text
     end
+    def clear_menus
+      @@menus = []
+    end
     # create a Menuitem given an Action
     # if menuitem.kind_of? RubyCurses::Action
     def create_action_component action
         m = MenuItem.new(action.name, action.mnemonic)
         m.command { action.call }
+        m.accelerator = action.accelerator
         return m
     end
     # item could be menuitem or another menu or a string or a Action
@@ -229,6 +239,15 @@ module RubyCurses
       $log.debug "menu repaint: #{@text} row #{@row} col #{@col}  " 
       if !@parent.is_a? RubyCurses::MenuBar 
         @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, @text], $reversecolor)
+        # added 2009-01-23 00:49 
+        if !@mnemonic.nil?
+          m = @mnemonic
+          ix = @text.index(m) || @text.index(m.swapcase)
+          charm = @text[ix,1]
+          #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
+          # prev line changed since not working in vt100 and vt200
+          @parent.window.printstring( @row, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+        end
         @parent.window.refresh
       end
       if @window.nil?
@@ -438,8 +457,8 @@ module RubyCurses
         next if !item.respond_to? :mnemonic or item.mnemonic.nil?
 #       $log.debug "inside check_mnemonics #{item.mnemonic}"
         if key == item.mnemonic.downcase
-          item.fire
-          return :CLOSE #0 # added 2009-01-22 00:04 
+          ret = item.fire
+          return ret # 0 # 2009-01-23 00:43 menuitem returns CLOSE, menu 0
         end
       end
       return :UNHANDLED

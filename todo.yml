@@ -12,38 +12,17 @@ FIXME:
     - "Confirm dialog: arrow keys not navigating anylonger"
     - TODO
     - 2009-01-20 11:45:27.031136 +05:30
+  GEN: 
+  - - 9
+    - Message Box sizing
+    - TODO
+    - 2009-01-22 20:39:21.220964 +05:30
 __STATUSES: 
 - TODO
 - WIP
 - TOTEST
 - TESTED
 - CANC
-DONE: 
-  TABLE: 
-  - - 5
-    - increase the maxlen of this field please. Let us see how it goes.
-    - TESTED
-  - - 5
-    - Can we disable down arrow in Chkbox in table?
-    - TESTED
-    - 2009-01-19 00:00:00.242912 +05:30
-  - - 0
-    - editing on enter
-    - TESTED
-    - Mon, 19 Jan 2009 00:01:37 +0530
-  - - 5
-    - cell editors pcol is not being reset each time
-    - TESTED
-    - 2009-01-19 17:47:00.419937 +05:30
-  - - 5
-    - Use TAB for intercell navig. use M-TAB for next f
-    - TESTED
-    - 2009-01-20 00:38:19.606544 +05:30
-  GEN: 
-  - - 5
-    - Make  widget of Keylabelprinter
-    - TESTED
-    - 2009-01-20 00:38:43.052790 +05:30
 TODO: 
   LIST: 
   - - 0
@@ -90,16 +69,51 @@ TODO:
   - - 5
     - Focus Traversable vs focusable
     - TODO
-  - - 9
-    - Message Box sizing
+  - - 5
+    - "Action class: fire event for listeners"
     - TODO
+    - 2009-01-22 20:09:50.624075 +05:30
   FIELD: 
   - - 5
-    - "Field: OVERWRITE mode"
+    - "Field: OVERWRITE Mode"
     - TODO
   - - 5
-    - "Field: Auto-skip when reaching end"
+    - "Field: Auto-skip when reaching end of maxlen"
     - TODO
+DONE: 
+  TABLE: 
+  - - 5
+    - increase the maxlen of this field please. Let us see how it goes.
+    - TESTED
+  - - 5
+    - Can we disable down arrow in Chkbox in table?
+    - TESTED
+    - 2009-01-19 00:00:00.242912 +05:30
+  - - 0
+    - editing on enter
+    - TESTED
+    - Mon, 19 Jan 2009 00:01:37 +0530
+  - - 5
+    - cell editors pcol is not being reset each time
+    - TESTED
+    - 2009-01-19 17:47:00.419937 +05:30
+  - - 5
+    - Use TAB for intercell navig. use M-TAB for next f
+    - TESTED
+    - 2009-01-20 00:38:19.606544 +05:30
+  GEN: 
+  - - 5
+    - Make  widget of Keylabelprinter
+    - TESTED
+    - 2009-01-20 00:38:43.052790 +05:30
+  - - 5
+    - "Added Action class shared by Button Menuitem "
+    - TESTED
+    - 2009-01-22 18:08:28.026892 +05:30
+  - - 5
+    - "Added PopupMenu 2009-01-22 18:09 "
+    - TESTED
+    - 2009-01-22 18:09:34.437147 +05:30
 __MODULES: 
 - BUTTON
 - FIELD

@@ -87,7 +87,7 @@ class TodoApp
     @todo = TodoList.new "todo.yml"
     @todo.load
   end
-  def make_popup
+  def make_popup table
     require 'lib/rbcurse/rpopupmenu'
     tablemenu = RubyCurses::PopupMenu.new "Table"
     #tablemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
@@ -97,22 +97,50 @@ class TodoApp
     #tablemenu.add(RubyCurses::MenuItem.new "New",'N')
     tablemenu.add(@new_act)
     tablemenu.add(item = RubyCurses::MenuItem.new("&Save"))
-    tablemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
-    tablemenu.add(item = RubyCurses::MenuItem.new("Wrap Text",'W'))
-    tablemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
-    item.command() {
-      #throw(:menubarclose);
-      #throw(:close)
-    }
+    item.command() { @save_cmd.call }
+
     item=RubyCurses::MenuItem.new "Select"
     item.accelerator = "Ctrl-X"
+    item.command() { table.toggle_row_selection() }
+    #item.enabled = false
     tablemenu.add(item)
-    item=RubyCurses::MenuItem.new "New Row"
-    item.accelerator = "Alt-N"
+
+    item=RubyCurses::MenuItem.new "Clr Selection"
+    item.accelerator = "Alt-e"
+    item.command() { table.clear_selection() }
+    item.enabled = table.selected_row_count > 0 ? true : false
     tablemenu.add(item)
+
     item=RubyCurses::MenuItem.new "Delete"
     item.accelerator = "Alt-D"
+    item.command() { @del_cmd.call }
     tablemenu.add(item)
+
+    gotomenu = RubyCurses::Menu.new "&Goto"
+
+    item = RubyCurses::MenuItem.new "Top"
+    item.accelerator = "Alt-0"
+    item.command() { table.goto_top }
+    gotomenu.add(item)
+
+    item = RubyCurses::MenuItem.new "Bottom"
+    item.accelerator = "Alt-9"
+    item.command() { table.goto_bottom }
+    gotomenu.add(item)
+
+    item = RubyCurses::MenuItem.new "Next Page"
+    item.accelerator = "Ctrl-n"
+    item.command() { table.scroll_forward }
+    gotomenu.add(item)
+
+    item = RubyCurses::MenuItem.new "Prev Page"
+    item.accelerator = "Ctrl-p"
+    item.command() { table.scroll_backward }
+    gotomenu.add(item)
+
+    tablemenu.add(gotomenu)
+
+
     tablemenu.show @atable, 0,1
   end
   def run
@@ -121,8 +149,8 @@ class TodoApp
     cats = todo.get_categories
     modules = todo.get_modules
     title = "TODO APP"
-    @header = ApplicationHeader.new @form, title, {"text2"=>"Some Text", "text_center"=>"Task Entry"}
-    status_row = RubyCurses::Label.new @form, {'text' => "", "row" => Ncurses.LINES-4, "col" => 0, "display_length"=>60}
+    @header = ApplicationHeader.new @form, title, {:text2=>"Some Text", :text_center=>"Task Entry"}
+    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>60}
     @status_row = status_row
     # setting ENTER across all objects on a form
     @form.bind(:ENTER) {|f| status_row.text = f.help_text unless f.help_text.nil? }
@@ -207,7 +235,7 @@ class TodoApp
         atable.move_column col, col-1 unless col == 0
         #atable.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
       }
-      bind_key(?\M-h, app) {|tab,td| $log.debug " BIND... #{tab.class}, #{td.class}"; app.make_popup }
+      bind_key(?\M-h, app) {|tab,td| $log.debug " BIND... #{tab.class}, #{td.class}"; app.make_popup atable}
     end
     #keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+table_ht+3, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
     #eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+table_ht+6, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
@@ -252,37 +280,20 @@ class TodoApp
         end
       end
     end
-=begin
-      combo_editor.component.bind(:CHANGED){
-        alert("CHANGED, #{atable.focussed_row}, #{@data[atable.focussed_row].size}")
-        if @data.size == 4
-          @data[atable.focussed_row] << Time.now
-        else
-          @data[atable.focussed_row][4] == Time.now
-        end
-        $log.debug "THSI ROW #{@data[atable.focussed_row]}"
-        $log.debug "DATAAAA: #{@data}"
-      }
-=end
     #combo_editor.component.bind(:LEAVE){ alert "LEAVE"; $log.debug " LEAVE FIRED" }
     buttrow = r+table_ht+8 #Ncurses.LINES-4
     buttrow = Ncurses.LINES-5
+    create_table_actions atable, todo, data, categ.getvalue
+    save_cmd = @save_cmd
     b_save = Button.new @form do
       text "&Save"
       row buttrow
       col c
       command {
-        # this does not trigger a data change since we are not updating model. so update
-        # on pressing up or down
-        #0.upto(100) { |i| data << ["test", rand(100), "abc:#{i}", rand(100)/2.0]}
-        #atable.table_data_changed
-        todo.set_tasks_for_category categ.getvalue, data
-        todo.dump
-        alert("Rewritten yaml file")
+        save_cmd.call
       }
       help_text "Save changes to todo.yml " 
     end
-    create_table_actions atable
 =begin
     b_newrow = Button.new @form do
       text "&New"
@@ -310,14 +321,8 @@ class TodoApp
       #bind(:ENTER) { status_row.text "Deletes focussed row" }
       help_text "Deletes focussed row" 
     end
-    b_delrow.command { |form| 
-      row = atable.focussed_row
-      if confirm("Do your really want to delete row #{row+1}?")== :YES
-        tm = atable.table_model
-        tm.delete_at row
-      else
-        status_row.text = "Delete cancelled"
-      end
+    b_delrow.command { 
+      @del_cmd.call
     }
     b_change = Button.new @form do
       text "&Lock"
@@ -349,9 +354,20 @@ class TodoApp
       help_text "Move current row to Done" 
     end
     b_move.command { |form| 
-      return if categ.getvalue == "DONE"
+      #mods = cats.delete categ.getvalue
+
+      mods = cats - [categ.getvalue]
+      @mb = RubyCurses::MessageBox.new do
+        title "Change Module"
+        message "Move to? "
+        type :custom
+        button_type :custom
+        buttons mods
+      end
+      #return if categ.getvalue == "DONE"
+      amod = mods[@mb.selected_index]
       row = atable.focussed_row
-      d = todo.get_tasks_for_category "DONE"
+      d = todo.get_tasks_for_category amod
       r = []
       tcm = atable.get_table_column_model
       tcm.each_with_index do |acol, colix|
@@ -360,10 +376,11 @@ class TodoApp
       # here i ignore the 5th row tht coud have been added
       r << Time.now
       d << r
-      todo.set_tasks_for_category "DONE", d
+      todo.set_tasks_for_category amod, d
       tm = atable.table_model
       ret = tm.delete_at row
-      alert("Moved row #{row} to Done.")
+      todo.set_tasks_for_category categ.getvalue, data
+      alert("Moved row #{row} to #{amod}.")
     }
     @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
     @klp.set_key_labels get_key_labels_table, :table
@@ -391,7 +408,7 @@ class TodoApp
     @window.destroy if !@window.nil?
     end
   end
-  def create_table_actions atable
+  def create_table_actions atable, todo, data, categ
     #@new_act = Action.new("New Row", "mnemonic"=>"N") { 
     @new_act = Action.new("&New Row") { 
       cc = atable.get_table_column_model.column_count
@@ -403,6 +420,21 @@ class TodoApp
       atable.set_focus_on frow+1
       @status_row.text = "Added a row. Please press Save before changing Category."
       alert("Added a row below current one. Use C-k to clear task.")
+    }
+    @new_act.accelerator "Alt-N"
+    @save_cmd = lambda {
+        todo.set_tasks_for_category categ, data
+        todo.dump
+        alert("Rewritten yaml file")
+    }
+    @del_cmd = lambda { 
+      row = atable.focussed_row
+      if confirm("Do your really want to delete row #{row+1}?")== :YES
+        tm = atable.table_model
+        tm.delete_at row
+      else
+        @status_row.text = "Delete cancelled"
+      end
     }
 
   end

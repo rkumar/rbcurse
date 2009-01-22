@@ -114,9 +114,11 @@ module RubyCurses
       #  return
       end
       r = @row
-      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], $reversecolor)
+      acolor = $reversecolor
+      acolor = get_color($reversecolor, 'green', 'white') if !@enabled
+      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], acolor)
       if !@accelerator.nil?
-        @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, $reversecolor)
+        @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, acolor)
       elsif !@mnemonic.nil?
         m = @mnemonic
         ix = text.index(m) || text.index(m.swapcase)
@@ -421,8 +423,8 @@ module RubyCurses
         next if !item.respond_to? :mnemonic or item.mnemonic.nil?
 #       $log.debug "inside check_mnemonics #{item.mnemonic}"
         if key == item.mnemonic.downcase
-          item.fire
-          return 0
+          ret = item.fire
+          return ret #0 2009-01-23 00:45 
         end
       end
       return :UNHANDLED

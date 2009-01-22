@@ -116,6 +116,7 @@ module RubyCurses
       when "yes_no_cancel"
         make_buttons ["&Yes", "&No", "&Cancel"]
       when "custom"
+        raise "Blank list of buttons passed to custom" if @buttons.nil? or @buttons.size == 0
         make_buttons @buttons
       else
         $log.debug "No type passed for creating messagebox. Using default (OK)"

@@ -12,6 +12,7 @@ module RubyCurses
     dsl_accessor :tooltip_text
     dsl_accessor :help_text
     dsl_accessor :mnemonic
+    dsl_accessor :accelerator
 
     def initialize name, config={}, &block
       super &block

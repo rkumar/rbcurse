@@ -25,6 +25,8 @@ TEXTAREA : test with a wide box, larger than width of rows
 
 
 EDITING TABLES:
+Page down keeps selection on 3rd row from last.
+
 if table data nil to start with then tablemodel bindings will all fail! XXX
 If you delete a row, then selections get messed, since row selectoin uses indexes into table
 
@@ -34,7 +36,6 @@ also, user may put a hook on on_leave, shoud check for exception and not proceed
 
 Unlike a field, a field or editing comp in a table can have many exit paths - page up down, up down, next col prev col etc. We need to validate the field in each case and disallow navigation if error raised.
 
-Adding a row on a key, deleting a row on key/undelete
 searching
 
 however, check boxes etc should have auto editing.
@@ -46,7 +47,6 @@ EDITING LISTS:
 
 make the keys definable as in table
 clean up handle_keys - done to some extent. Not ideal though.
-add and delete row
 - We are not calling on_leave and on_enter of cell_editor component ??
 
 POPUP LIST:
@@ -79,6 +79,8 @@ sizing of messageboxes
   setScrollOffset, making a row visible
   set_buffer alias set_text or setvalue ?
 
+Action: setting enabled should affect component.
+Listeners and event firing.
 
 -----------
 ## ISSUES
@@ -96,8 +98,6 @@ it.
     |  TO ADD  |
     +----------+
 
-Each widget coukd hve its own popup menu (like right click) with its own options. Hey, we don't have
-a popup menu.
 
 LISTBOX EDITING:
 option to edit on a key: is_editing stuff
@@ -117,7 +117,6 @@ FORM: on_enter, on_exit - currently the on_enter and leave is for widgets as in 
 - TextArea: choice of word wrap, col wrap or no wrap.
 - TextView: choice of word wrap, col wrap or no wrap.
 
-LABEL to take ampersand also. ?? No there could be legit ampersands. Also only if label_for.
 
 
 3. Field and TextArea: OVERWRITE mode, 
@@ -128,7 +127,6 @@ LABEL to take ampersand also. ?? No there could be legit ampersands. Also only i
 
 Tabbedpane needs to look okay if change colors. At least should be able to switch to reverse.
 
-Menuitem: disabled, what if no action (not armed).
 
 
 if there is no next, should onleave be fired ?
@@ -139,6 +137,12 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+Menuitem: disabled, what if no action (not armed). disabled - cyan color. If no
+action, that's okay since we can have listeners that will act on index
+selected.
+LABEL to take ampersand also. ?? No there could be legit ampersands. Also only if label_for.
+Each widget coukd hve its own popup menu (like right click) with its own options. Hey, we don't have
+a popup menu. 2009-01-21
 Delete does not result in any on_enter event firing. But then we are dealing with row???
 OUCH - on_enter reqired otherwise editor has old value!
 
