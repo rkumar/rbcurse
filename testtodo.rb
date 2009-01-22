@@ -124,6 +124,8 @@ class TodoApp
     @header = ApplicationHeader.new @form, title, {"text2"=>"Some Text", "text_center"=>"Task Entry"}
     status_row = RubyCurses::Label.new @form, {'text' => "", "row" => Ncurses.LINES-4, "col" => 0, "display_length"=>60}
     @status_row = status_row
+    # setting ENTER across all objects on a form
+    @form.bind(:ENTER) {|f| status_row.text = f.help_text unless f.help_text.nil? }
     #@window.printstring 0,(Ncurses.COLS-title.length)/2,title, $datacolor
     r = 1; c = 1;
     categ = ComboBox.new @form do
@@ -136,7 +138,7 @@ class TodoApp
       set_buffer 'TODO'
       set_label Label.new @form, {'text' => "Category", 'color'=>'cyan','col'=>1, "mnemonic"=>"C"}
       list_config 'height' => 4
-      bind(:ENTER){ status_row.text "Select a category and <TAB> out. KEY_UP, KEY_DOWN, M-Down" }
+      help_text "Select a category and <TAB> out. KEY_UP, KEY_DOWN, M-Down" 
       bind(:LEAVE){ status_row.text "" }
     end
     data = todo.get_tasks_for_category 'TODO'
@@ -278,7 +280,7 @@ class TodoApp
         todo.dump
         alert("Rewritten yaml file")
       }
-      bind(:ENTER) { status_row.text "Save changes to todo.yml " }
+      help_text "Save changes to todo.yml " 
     end
     create_table_actions atable
 =begin
@@ -296,7 +298,8 @@ class TodoApp
       action new_act
       row buttrow
       col c+10
-      bind(:ENTER) { status_row.text "New button adds a new row below current " }
+      help_text "New button adds a new row below current "
+      #bind(:ENTER) { status_row.text "New button adds a new row below current " }
     end
 
     # using ampersand to set mnemonic
@@ -304,7 +307,8 @@ class TodoApp
       text "&Delete"
       row buttrow
       col c+25
-      bind(:ENTER) { status_row.text "Deletes focussed row" }
+      #bind(:ENTER) { status_row.text "Deletes focussed row" }
+      help_text "Deletes focussed row" 
     end
     b_delrow.command { |form| 
       row = atable.focussed_row
@@ -336,13 +340,13 @@ class TodoApp
         atable.column(atable.focussed_col()).editable toggle
         alert("Set column  #{atable.focussed_col()} editable to #{toggle}")
       }
-      bind(:ENTER) { status_row.text "Toggles editable state of current column " }
+      help_text "Toggles editable state of current column "
     end
     b_move = Button.new @form do
       text "&Move"
       row buttrow
       col c+45
-      bind(:ENTER) { status_row.text "Move current row to Done" }
+      help_text "Move current row to Done" 
     end
     b_move.command { |form| 
       return if categ.getvalue == "DONE"

@@ -243,6 +243,10 @@ module RubyCurses
         @config.each_pair { |k,v| variable_set(k,v) }
       end
     end # module config
+    ##
+    # Basic widget class. 
+    # NOTE: I may soon remove the config hash. I don't use it and its just making things heavy.
+    # Unless someone convinces me otherwise.
   class Widget
     include DSL
     include EventHandler
@@ -250,9 +254,9 @@ module RubyCurses
     include RubyCurses::Utils
     dsl_property :text
     #dsl_accessor :text_variable
-    dsl_accessor :underline                        # offset of text to underline DEPRECATED
+    #dsl_accessor :underline                        # offset of text to underline DEPRECATED
     dsl_property :width                # desired width of text
-    dsl_accessor :wrap_length                      # wrap length of text, if applic UNUSED
+    #dsl_accessor :wrap_length                      # wrap length of text, if applic UNUSED
 
     # next 3 to be checked if used or not. Copied from TK.
     dsl_property :select_foreground, :select_background  # color init_pair
@@ -265,14 +269,15 @@ module RubyCurses
     dsl_property :color, :bgcolor      # normal foreground and background
     dsl_property :attr                 # attribute bold, normal, reverse
     dsl_accessor :name                 # name to refr to or recall object by_name
-    attr_accessor :id, :zorder
+    attr_accessor :id #, :zorder
     attr_accessor :curpos              # cursor position inside object
-    attr_reader  :config
+    attr_reader  :config             # COULD GET AXED SOON NOTE
     attr_accessor  :form              # made accessor 2008-11-27 22:32 so menu can set
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
     dsl_property :visible # boolean     # 2008-12-09 11:29 
     #attr_accessor :modified          # boolean, value modified or not (moved from field 2009-01-18 00:14 )
+    dsl_accessor :help_text          # added 2009-01-22 17:41 can be used for status/tooltips
     
     def initialize form, aconfig={}, &block
       @form = form
