@@ -66,12 +66,12 @@ module ColorMap
 end # modul
 if $0 == __FILE__
 require 'logger'
-#require 'lib/ver/ncurses'
 require 'lib/ver/window'
 include Ncurses
 include ColorMap
   # Initialize curses
   begin
+    VER::start_ncurses
     @window = VER::Window.root_window
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
