@@ -1528,6 +1528,17 @@ module RubyCurses
         return :UNHANDLED
       end
     end
+    # temporary method, shoud be a proper class
+    def self.button_layout buttons, row, startcol=0, cols=Ncurses.COLS-1, gap=5
+      col = startcol
+      buttons.each_with_index do |b, ix|
+        $log.debug " BUTTON #{b}: #{b.col} "
+        b.col col
+        $log.debug " after BUTTON #{b}: #{b.col} "
+        len = b.text.length + gap
+        col += len
+      end
+    end
   end #BUTTON
   
   ##

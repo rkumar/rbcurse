@@ -2,6 +2,10 @@
   * Name: table widget
   * Description: 
   * Author: rkumar (arunachalesha)
+
+
+  TODO: NOTE: Needs to be tested under conditions such as no data, deleting all data
+     A few higher level methods check for no data but lower level ones do not.
   
   --------
   * Date:   2008-12-27 21:33 
@@ -16,6 +20,7 @@ require 'lib/ver/ncurses'
 require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/table/tablecellrenderer'
+require 'lib/rbcurse/table/tabledatecellrenderer'
 require 'lib/rbcurse/checkboxcellrenderer'
 require 'lib/rbcurse/listselectable'
 require 'lib/rbcurse/listkeys'
@@ -94,9 +99,11 @@ module RubyCurses
     end
 
     def focussed_row
+      raise "No data in table" if row_count < 1
       @current_index
     end
     def focussed_col
+      raise "No data in table" if row_count < 1
       @current_column
     end
     # added 2009-01-07 13:05 so new scrollable can use
@@ -269,6 +276,7 @@ module RubyCurses
       # next was required otherwise on_enter would bomb if data changed from outside
       if row_count == 0
         init_vars
+        return #  added 2009-01-23 15:15 
       end
       # the next block to be only called if user is inside editing. Often data will be refreshed by
       # a search field and this gets called.
@@ -310,6 +318,7 @@ module RubyCurses
       @crh['Float'] = TableCellRenderer.new "", {"justify" => :right, "parent" => self}
       @crh['TrueClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>7}
       @crh['FalseClass'] = CheckBoxCellRenderer.new "", {"parent" => self, "display_length"=>7}
+      @crh['Time'] = TableDateCellRenderer.new "", {"parent" => self, "display_length"=>16}
       #@crh['String'] = TableCellRenderer.new "", {"bgcolor" => "cyan", "color"=>"white", "parent" => self}
       #@crh['Fixnum'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue","bgcolor"=>"cyan" }
       #@crh['Float'] = TableCellRenderer.new "", {"display_length" => 6, "justify" => :right, "color"=>"blue", "bgcolor"=>"cyan" }
@@ -501,7 +510,7 @@ module RubyCurses
       end
     end
     def editing_started
-      return unless @cell_editing_allowed
+      return if !@cell_editing_allowed or row_count < 1
       @is_editing = true # 2009-01-16 16:14 
       $log.debug " turning on editing cell at #{focussed_row}, #{focussed_col}"
       # on deleting last row, we need to go back 2009-01-19 18:31 
@@ -517,6 +526,7 @@ module RubyCurses
     # this throws an exception if validation on field fails NOTE
     def editing_stopped row=focussed_row(), col=focussed_col()
       return unless @cell_editing_allowed or @is_editing == false or column(col).editable == false
+      return if row_count < 1
       $log.debug "editing_stopped set_value_at(#{row}, #{col}: #{@cell_editor.getvalue}"
       # next line should be in on_leave_cell but that's not being called FIXME from everywhere
       @cell_editor.on_leave row,col # added here since this is called whenever a cell is exited

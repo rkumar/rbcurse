@@ -2,12 +2,14 @@ require 'rubygems'
 require 'ncurses'
 require 'logger'
 module RubyCurses
-  class TableCellRenderer
+  class TableDateCellRenderer
     include DSL
     #include EventHandler
     include ConfigSetup
     include RubyCurses::Utils
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
+    dsl_accessor :format     # date or numeric format
+    dsl_accessor :format_hint     # date :DATE_ONLY, :TIME_ONLY, :LONG
     dsl_accessor :display_length     #  please give this to ensure the we only print this much
     dsl_accessor :height    # if you want a multiline label.
     dsl_accessor :text    # text of label
@@ -26,9 +28,24 @@ module RubyCurses
     def init_vars
       @justify ||= :left
       @display_length ||= 10
+      @format ||= "%Y/%m/%d %H:%M" 
+      case @format_hint
+      when :LONG
+        @format = nil
+      when :DATE_ONLY
+        @format = "%Y/%m/%d" 
+      when :TIME_ONLY
+        @format ||= "%H/%M" 
+      when :TIME_ONLY_12
+        @format ||= "%I/%M%p" 
+      end
+      # use %I:%M%p for 12 hour ampm"
     end
     def transform value
-      return value.to_s
+      if @format.nil?
+        return value.to_s
+      end
+      return value.strftime(@format)
     end
 
     ##
@@ -80,6 +97,6 @@ module RubyCurses
           r += 1
         end
     end
-  # ADD HERE LABEL
+  # ADD HERE
   end
 end

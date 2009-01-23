@@ -25,7 +25,8 @@ TEXTAREA : test with a wide box, larger than width of rows
 
 
 EDITING TABLES:
-Page down keeps selection on 3rd row from last.
+Page down keeps selection on 3rd row from last. This happens since bounds_check tries to keep
+table full.
 
 if table data nil to start with then tablemodel bindings will all fail! XXX
 If you delete a row, then selections get messed, since row selectoin uses indexes into table
