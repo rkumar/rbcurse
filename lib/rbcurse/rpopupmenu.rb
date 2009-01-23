@@ -223,6 +223,7 @@ module RubyCurses
         create_window
         if !@parent.is_a? RubyCurses::MenuBar 
           $log.debug " ADDING self to current menu: #{self}"
+          # xxx highlight true
           @parent.current_menu << self
           @@menus << self
           
@@ -458,10 +459,11 @@ module RubyCurses
     def check_mnemonics cmenu, ch
 #     $log.debug "inside check_mnemonics #{ch}"
       key = ch.chr.downcase rescue ""
-      cmenu.items.each do |item|
+      cmenu.items.each_with_index do |item, ix|
         next if !item.respond_to? :mnemonic or item.mnemonic.nil?
 #       $log.debug "inside check_mnemonics #{item.mnemonic}"
         if key == item.mnemonic.downcase
+          cmenu.select_item ix # 2009-01-23 13:32  so focus moves to menu
           ret = item.fire
           return ret # 0 # 2009-01-23 00:43 menuitem returns CLOSE, menu 0
         end
