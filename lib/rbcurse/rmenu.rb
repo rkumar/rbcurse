@@ -556,6 +556,7 @@ module RubyCurses
       ensure
         #ensure is required becos one can throw a :close
         $log.debug " DESTROY IN ENSURE"
+      current_menu.clear_menus #@@menus = [] # added 2009-01-23 13:21 
       destroy  # Note that we destroy the menu bar upon exit
       end
     end

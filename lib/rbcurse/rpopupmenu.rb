@@ -127,6 +127,8 @@ module RubyCurses
       @parent.window.printstring( @row, 0, "|%-*s|" % [@width, @text], acolor)
       if !@accelerator.nil?
         @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, acolor)
+      else
+        #@parent.window.printstring( r, (@width+1)-1, ".", acolor)
       end
       if !@mnemonic.nil?
         m = @mnemonic
@@ -134,7 +136,8 @@ module RubyCurses
         charm = @text[ix,1]
         #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
         # prev line changed since not working in vt100 and vt200
-        @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+        #@parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+          @parent.window.mvchgat(y=r, x=ix+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
       end
     end
     def destroy
@@ -188,7 +191,7 @@ module RubyCurses
       return self
     end
     ##
-    # added 2009-01-20 13:27 NEW
+    # added 2009-01-20 13:28 NEW
     def insert menuitem, ix
       if menuitem.kind_of? RubyCurses::Action
         menuitem = create_action_component menuitem
@@ -246,7 +249,9 @@ module RubyCurses
           charm = @text[ix,1]
           #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
           # prev line changed since not working in vt100 and vt200
-          @parent.window.printstring( @row, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+          #@parent.window.printstring( @row, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+          # 2009-01-23 13:03 replaced reverse with ul
+          @parent.window.mvchgat(y=@row, x=ix+1, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, $reversecolor, nil)
         end
         @parent.window.refresh
       end
@@ -413,7 +418,7 @@ module RubyCurses
           cmenu.select_next_item
       when KEY_UP
         cmenu.select_prev_item
-      when KEY_ENTER, 10, 13, 32 # added 32 2008-11-27 23:50 
+      when KEY_ENTER, 10, 13, 32 # added 32 2008-11-28 23:50 
         return cmenu.fire
       when KEY_LEFT
         if cmenu.parent.is_a? RubyCurses::Menu 
@@ -509,6 +514,7 @@ module RubyCurses
       end # catch
       ensure
         #ensure is required becos one can throw a :close
+      @@menus = [] # added 2009-01-23 13:21 
       destroy  # Note that we destroy the menu bar upon exit
       end
     end
