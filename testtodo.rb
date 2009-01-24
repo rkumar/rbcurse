@@ -407,7 +407,14 @@ class TodoApp
       todo.set_tasks_for_category categ.getvalue, data
       alert("Moved row #{row} to #{amod}.")
     }
-      buttons = [b_save, b_newrow, b_delrow, b_move ]
+    b_view = Button.new @form do
+      text "View"
+      row r
+      col 65
+      help_text "View sort and filter tasks in another window"
+      command { require 'viewtodo'; todo = TodoApp.new; todo.run }
+    end
+      buttons = [b_save, b_newrow, b_delrow, b_move , b_view ]
       Button.button_layout buttons, buttrow
     @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
     @klp.set_key_labels get_key_labels_table, :table

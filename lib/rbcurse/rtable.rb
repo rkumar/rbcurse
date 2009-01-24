@@ -276,6 +276,7 @@ module RubyCurses
       # next was required otherwise on_enter would bomb if data changed from outside
       if row_count == 0
         init_vars
+        set_form_col # added 2009-01-24 14:32 since cursor was still showing on existing col
         return #  added 2009-01-23 15:15 
       end
       # the next block to be only called if user is inside editing. Often data will be refreshed by

@@ -1533,6 +1533,7 @@ module RubyCurses
       col = startcol
       buttons.each_with_index do |b, ix|
         $log.debug " BUTTON #{b}: #{b.col} "
+        b.row = row
         b.col col
         $log.debug " after BUTTON #{b}: #{b.col} "
         len = b.text.length + gap

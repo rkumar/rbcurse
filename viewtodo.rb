@@ -51,9 +51,30 @@ class TodoList
       return @records.select { |row| row[0] == categ }
     end
   end
-  def sort categ, column
+  def sort categ, column, descending=false
     d = get_records_for_category categ
-    d = d.sort { |y,x| y[column] <=> x[column] }
+    d = d.sort { |y,x| 
+      if descending
+        if x[column].nil?
+          $log.debug "sort -1"
+          -1
+        elsif y[column].nil?
+          $log.debug "sort 1"
+          1
+        else
+          $log.debug "sort <> #{x[column]} <=> #{y[column]} "
+          x[column] <=> y[column] 
+        end
+      else
+        if x[column].nil?
+         1 
+        elsif y[column].nil?
+          -1
+        else
+          y[column] <=> x[column] 
+        end
+      end
+    }
     return d
   end
   def set_tasks_for_category categ, data
@@ -101,7 +122,9 @@ end
 def get_key_labels
   key_labels = [
     ['C-q', 'Exit'], nil,
-    ['M-s', 'Save'], ['M-m', 'Move']
+    ['M-c', 'Category'], nil,
+    ['M-f', 'Filter Fld'], ['M-p', 'Pattern'],
+    ['M-s', 'Sort'], ['M-i', 'Filter']
   ]
   return key_labels
 end
@@ -120,6 +143,7 @@ class TodoApp
   def initialize
     @window = VER::Window.root_window
     @form = Form.new @window
+    @sort_dir = true
 
     @todo = TodoList.new "todo.yml"
     @todo.load
@@ -131,7 +155,7 @@ class TodoApp
     cats.insert 0,""
     modules = todo.get_modules
     title = "TODO APP"
-    @header = ApplicationHeader.new @form, title, {:text2=>"Some Text", :text_center=>"Task Entry"}
+    @header = ApplicationHeader.new @form, title, {:text2=>"Some Text", :text_center=>"Task View"}
     status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>60}
     @status_row = status_row
     # setting ENTER across all objects on a form
@@ -160,7 +184,7 @@ class TodoApp
       display_length 10
       editable false
       list colnames_cbl
-      set_label Label.new @form, {'text' => "Filter", 'color'=>'cyan',"mnemonic"=>"F"}
+      set_label Label.new @form, {'text' => "Filter on:", 'color'=>'cyan',"mnemonic"=>"F"}
       list_config 'height' => 6
       help_text "Select a field to filter on"
     end
@@ -171,8 +195,27 @@ class TodoApp
       bgcolor 'cyan'
       color 'white'
       display_length 10
-      help_text "Value to filter on"
+      set_label Label.new @form, {'text' => "Pattern:", 'color'=>'cyan',:bgcolor => 'black',"mnemonic"=>"P"}
+      help_text "Pattern/Regex to filter on"
     end
+    b_filter = Button.new @form do
+      text "Fi&lter"
+      row r
+      col 65
+      help_text "Filter on selected filter column and value"
+      #bind(:ENTER) { status_row.text "New button adds a new row below current " }
+    end
+    b_filter.command { 
+      alert("Data is blank") if data.nil? or data.size == 0
+      raise("Data is blank") if data.nil? or data.size == 0
+      raise("selected is blank") if col_combo.selected_item.nil?
+      raise("col_val is blank") if col_value.getvalue.nil?
+
+      $log.debug "#{col_combo.selected_index},   .#{col_value.getvalue}" 
+      d = data.select {|row| row[col_combo.selected_index-1].to_s.match(col_value.getvalue) }
+      atable.table_model.data = d unless d.nil? or d.size == 0
+    }
+
 
     data = todo.get_records_for_category 'TODO'
     @data = data
@@ -279,24 +322,6 @@ class TodoApp
 =end
     ## We use Action to create a button: to test out ampersand with MI and Button
     new_act = @new_act
-    b_filter = Button.new @form do
-      text "Fi&lter"
-      row buttrow
-      col c+10
-      help_text "Filter on selected filter column and value"
-      #bind(:ENTER) { status_row.text "New button adds a new row below current " }
-    end
-    b_filter.command { 
-      alert("Data is blank") if data.nil? or data.size == 0
-      raise("Data is blank") if data.nil? or data.size == 0
-      raise("selected is blank") if col_combo.selected_item.nil?
-      raise("col_val is blank") if col_value.getvalue.nil?
-
-      $log.debug "#{col_combo.selected_index},   .#{col_value.getvalue}" 
-      d = data.select {|row| row[col_combo.selected_index-1].to_s.match(col_value.getvalue) }
-      atable.table_model.data = d unless d.nil? or d.size == 0
-    }
-
     # using ampersand to set mnemonic
     b_sort = Button.new @form do
       text "&Sort"
@@ -306,7 +331,15 @@ class TodoApp
       help_text "Sort focussed row" 
     end
     b_sort.command { 
-      d = @todo.sort categ.getvalue, atable.focussed_col
+      if @sorted_key == atable.focussed_col
+        @sort_dir = !@sort_dir
+      else
+        @sort_dir = true
+      end
+      @sorted_key = atable.focussed_col
+
+      $log.debug " SORT =  #{categ.getvalue}, #{atable.focussed_col}, sort:#{@sort_dir}"
+      d = @todo.sort categ.getvalue, atable.focussed_col, @sort_dir
       atable.table_model.data = d
     }
 =begin
@@ -465,7 +498,6 @@ if $0 == __FILE__
     $log.level = Logger::DEBUG
 
     colors = Ncurses.COLORS
-    $log.debug "START #{colors} colors  ---------"
 
     catch(:close) do
       t = TodoApp.new
