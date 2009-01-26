@@ -198,6 +198,8 @@ class TodoApp
       set_label Label.new @form, {'text' => "Pattern:", 'color'=>'cyan',:bgcolor => 'black',"mnemonic"=>"P"}
       help_text "Pattern/Regex to filter on"
     end
+    data = todo.get_records_for_category 'TODO'
+    @data = data
     b_filter = Button.new @form do
       text "Fi&lter"
       row r
@@ -205,20 +207,8 @@ class TodoApp
       help_text "Filter on selected filter column and value"
       #bind(:ENTER) { status_row.text "New button adds a new row below current " }
     end
-    b_filter.command { 
-      alert("Data is blank") if data.nil? or data.size == 0
-      raise("Data is blank") if data.nil? or data.size == 0
-      raise("selected is blank") if col_combo.selected_item.nil?
-      raise("col_val is blank") if col_value.getvalue.nil?
-
-      $log.debug "#{col_combo.selected_index},   .#{col_value.getvalue}" 
-      d = data.select {|row| row[col_combo.selected_index-1].to_s.match(col_value.getvalue) }
-      atable.table_model.data = d unless d.nil? or d.size == 0
-    }
 
 
-    data = todo.get_records_for_category 'TODO'
-    @data = data
     table_ht = 15
     atable = Table.new @form do
       name   "tasktable" 
@@ -237,6 +227,16 @@ class TodoApp
       @data = data
       atable.table_model.data = data
     end
+    b_filter.command { 
+      alert("Data is blank") if data.nil? or data.size == 0
+      raise("Data is blank") if data.nil? or data.size == 0
+      raise("selected is blank") if col_combo.selected_item.nil?
+      raise("col_val is blank") if col_value.getvalue.nil?
+
+      $log.debug "#{col_combo.selected_index},   .#{col_value.getvalue}" 
+      d = data.select {|row| row[col_combo.selected_index-1].to_s.match(col_value.getvalue) }
+      atable.table_model.data = d unless d.nil? or d.size == 0
+    }
 
     tcm = atable.get_table_column_model
     #

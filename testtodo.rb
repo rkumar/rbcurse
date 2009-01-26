@@ -470,21 +470,21 @@ class TodoApp
   def create_table_actions atable, todo, data, categ
     #@new_act = Action.new("New Row", "mnemonic"=>"N") { 
     @new_act = Action.new("&New Row") { 
+      mod = nil
       cc = atable.get_table_column_model.column_count
       if atable.row_count < 1
-        mod = nil
         frow = 0
       else
         frow = atable.focussed_row
-        frow += 1
-        mod = atable.get_value_at(frow,0)
+        #frow += 1 # why ?
+        mod = atable.get_value_at(frow,0) unless frow.nil?
       end
       tmp = [mod, 5, "", "TODO", Time.now]
       tm = atable.table_model
       tm.insert frow, tmp
       atable.set_focus_on frow
       @status_row.text = "Added a row. Please press Save before changing Category."
-      alert("Added a row below current one. Use C-k to clear task.")
+      alert("Added a row before current one. Use C-k to clear task.")
     }
     @new_act.accelerator "Alt-N"
     @save_cmd = lambda {
@@ -494,11 +494,13 @@ class TodoApp
     }
     @del_cmd = lambda { 
       row = atable.focussed_row
+      if !row.nil?
       if confirm("Do your really want to delete row #{row+1}?")== :YES
         tm = atable.table_model
         tm.delete_at row
       else
         @status_row.text = "Delete cancelled"
+      end
       end
     }
 

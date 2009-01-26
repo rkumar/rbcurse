@@ -103,11 +103,13 @@ module RubyCurses
     end
 
     def focussed_row
-      raise "No data in table" if row_count < 1
+      #raise "No data in table" if row_count < 1
+      return nil if row_count < 1
       @current_index
     end
     def focussed_col
-      raise "No data in table" if row_count < 1
+      return nil if row_count < 1
+      #raise "No data in table" if row_count < 1
       @current_column
     end
     # added 2009-01-07 13:05 so new scrollable can use

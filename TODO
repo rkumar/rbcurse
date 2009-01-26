@@ -37,7 +37,7 @@ also, user may put a hook on on_leave, shoud check for exception and not proceed
 
 Unlike a field, a field or editing comp in a table can have many exit paths - page up down, up down, next col prev col etc. We need to validate the field in each case and disallow navigation if error raised.
 
-searching
+- searching DONE 2009-01-26 22:20 
 
 however, check boxes etc should have auto editing.
 
