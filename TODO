@@ -99,6 +99,9 @@ it.
     |  TO ADD  |
     +----------+
 
+TABLE:
+auto resizeing of columns so they expand to fill total width - recursively add one to each
+till max_width reached or total filled.
 
 LISTBOX EDITING:
 option to edit on a key: is_editing stuff

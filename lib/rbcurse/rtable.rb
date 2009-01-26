@@ -96,6 +96,10 @@ module RubyCurses
       bind_key(353) { previous_column }
       bind_key(KEY_RIGHT) { next_column }
       bind_key(KEY_LEFT) { previous_column }
+      bind_key(@KEY_ASK_FIND_FORWARD) { ask_search_forward }
+      bind_key(@KEY_ASK_FIND_BACKWARD) { ask_search_backward }
+      bind_key(@KEY_FIND_NEXT) { find_next }
+      bind_key(@KEY_FIND_PREV) { find_prev }
     end
 
     def focussed_row
@@ -794,6 +798,44 @@ module RubyCurses
       bounds_check if @oldrow != @current_index  
     end
     attr_accessor :toprow # top visible
+    def ask_search_backward
+      regex =  get_string("Enter regex to search (backward)")
+      ix = @table_model.find_prev regex, @current_index
+      if ix.nil?
+        alert("No matching data for: #{regex}")
+      else
+        set_focus_on(ix)
+      end
+    end
+    def find_prev 
+      ix = @table_model.find_prev
+      regex = @table_model.last_regex 
+      if ix.nil?
+        alert("No previous matching data for: #{regex}")
+      else
+        set_focus_on(ix)
+      end
+    end
+    def ask_search_forward
+      regex =  get_string("Enter regex to search (forward)")
+      #ix = @table_model.find_next regex, @current_index
+      ix = @table_model.find_match regex, @current_index
+      if ix.nil?
+        alert("No matching data for: #{regex}")
+      else
+        set_focus_on(ix)
+      end
+    end
+    # table find_next
+    def find_next 
+      ix = @table_model.find_next
+      regex = @table_model.last_regex 
+      if ix.nil?
+        alert("No more matching data for: #{regex}")
+      else
+        set_focus_on(ix)
+      end
+    end
   end # class Table
 
   ## TC 
@@ -987,6 +1029,7 @@ module RubyCurses
     ##
     # DTM
     class DefaultTableModel < TableModel
+      attr_reader :last_regex
       include RubyCurses::EventHandler # 2009-01-15 15:38 
       def initialize data, colnames_array
         @data = data
@@ -1064,6 +1107,55 @@ module RubyCurses
         tme = TableModelEvent.new(0, @data.length-1,:ALL_COLUMNS,  self, :INSERT)
         fire_handler :TABLE_MODEL_EVENT, tme
       end
+      def ask_search_forward
+        regex = get_string "Enter regex to search for:"
+        ix = get_list_data_model.find_match regex
+        if ix.nil?
+          alert("No matching data for: #{regex}")
+        else
+          set_focus_on(ix)
+        end
+      end
+      # continues previous search
+    ##
+    def find_match regex, ix0=0, ix1=row_count()
+      $log.debug " find_match got #{regex} #{ix0} #{ix1}"
+      @last_regex = regex
+      @search_start_ix = ix0
+      @search_end_ix = ix1
+      @data.each_with_index do |row, ix|
+        next if ix < ix0
+        break if ix > ix1
+        if row.grep(/#{regex}/) != [] 
+        #if !row.match(regex).nil?
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
+    end
+      def find_prev regex=@last_regex, start = @search_found_ix 
+        raise "No previous search" if @last_regex.nil?
+        $log.debug " find_prev #{@search_found_ix} : #{@current_index}"
+        start -= 1 unless start == 0
+        @last_regex = regex
+        @search_start_ix = start
+        start.downto(0) do |ix| 
+          row = @data[ix]
+          if row.grep(/#{regex}/) != [] 
+            @search_found_ix = ix
+            return ix 
+          end
+        end
+        return nil
+        #return find_match @last_regex, start, @search_end_ix
+      end
+      ## dtm findnext
+    def find_next
+      raise "No more search" if @last_regex.nil?
+      start = @search_found_ix && @search_found_ix+1 || 0
+      return find_match @last_regex, start, @search_end_ix
+    end
     end # class  DTC
 
     ##

@@ -163,6 +163,31 @@ class TodoApp
 
     tablemenu.add(gotomenu)
 
+    searchmenu = RubyCurses::Menu.new "&Search"
+
+    item = RubyCurses::MenuItem.new "Find forward"
+    item.accelerator = "Alt-f"
+    item.command() { table.ask_search_forward }
+    searchmenu.add(item)
+
+    item = RubyCurses::MenuItem.new "Find backward"
+    item.accelerator = "Alt-F"
+    item.command() { table.ask_search_backward }
+    searchmenu.add(item)
+
+    item = RubyCurses::MenuItem.new "Find Next"
+    item.accelerator = "Alt-g"
+    item.enabled = false if table.table_model.last_regex.nil?
+    item.command() { table.find_next }
+    searchmenu.add(item)
+
+    item = RubyCurses::MenuItem.new "Find Prev"
+    item.accelerator = "Alt-G"
+    item.enabled = false if table.table_model.last_regex.nil?
+    item.command() { table.find_prev }
+    searchmenu.add(item)
+
+    tablemenu.add(searchmenu)
 
     tablemenu.show @atable, 0,1
   end

@@ -627,6 +627,7 @@ module RubyCurses
           bounds_check
         end
     end
+    # table find_next
     def find_next
         ix = @list.find_next
         regex = @last_regex 
