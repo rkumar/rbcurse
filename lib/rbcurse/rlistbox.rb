@@ -380,7 +380,7 @@ module RubyCurses
     include RubyCurses::ListKeys
     dsl_accessor :height
     dsl_accessor :title
-    dsl_accessor :title_attrib   # bold, reverse, normal
+    dsl_property :title_attrib   # bold, reverse, normal
 #   dsl_accessor :list    # the array of data to be sent by user
     attr_reader :toprow
   #  attr_reader :prow
@@ -576,7 +576,7 @@ module RubyCurses
         find_prev
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
-        ret = 0
+        ret = :UNHANDLED # changed on 2009-01-27 13:14 not going into unhandled, tab not released
         if @cell_editing_allowed
           @repaint_required = true
           # hack - on_enter_row should fire when this widget gets focus. first row that is DONE

@@ -381,6 +381,8 @@ module RubyCurses
         att = Ncurses::A_BLINK
       when 'reverse'
         att = Ncurses::A_REVERSE
+      else
+        att = Ncurses::A_NORMAL
       end
       #$log.debug "att #{att}"
 
