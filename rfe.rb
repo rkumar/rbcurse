@@ -27,6 +27,7 @@ class FileExplorer
       dir = File.expand_path dir
       cd dir
       pwd = pwd()
+      @pwd = pwd
       list.title = pwd
       default_pattern ||= "*.*"
       flist = Dir.glob(default_pattern)
@@ -57,6 +58,9 @@ class FileExplorer
   def format_string f, stat
     "%-*s %s" % [@wid-10,f, readable_file_size(stat.size,1)]
   end
+  def cur_dir
+    @pwd
+  end
   def draw_screen dir=nil
     pwd = FileUtils.pwd
     r = @row
@@ -72,6 +76,7 @@ class FileExplorer
         flist << format_string(f, stat)
       }
     title = pwd
+    @pwd = title
 
         lista = Listbox.new @form do
           name   "lista" 
@@ -83,12 +88,12 @@ class FileExplorer
           title pwd
           title_attrib 'reverse'
         end
-        lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse' }
+        lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse'; cd cur_dir() }
         lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
 
 
-        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split()[0]; @rfe.status_row.text = File.stat(file).inspect }
-        lista.bind(:ENTER_ROW) {|list| row_cmd.call(list) }
+        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split()[0]; @rfe.status_row.text = File.stat("#{@pwd}/#{file}").inspect }
+        lista.bind(:ENTER_ROW) {|list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(list) }
         @list = lista
 
   end
