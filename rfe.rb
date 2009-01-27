@@ -14,13 +14,15 @@ require 'lib/rbcurse/action'
 require 'fileutils'
 
 class FileExplorer
+  include FileUtils
 
   def initialize form, rfe, row, col, height, width
     @form = form
     @rfe = rfe
     @row, @col, @ht, @wid = row, col, height, width
   end
-  def change_dir dir, list=current_list()
+  def change_dir dir
+    list = @list
     begin
       dir = File.expand_path dir
       cd dir
@@ -35,7 +37,7 @@ class FileExplorer
       list.list_data_model.remove_all
       list.list_data_model.insert 0, *fl
     rescue => err
-      @status_row.text = err.to_s
+      @rfe.status_row.text = err.to_s
     end
   end
   GIGA_SIZE = 1073741824.0
@@ -81,17 +83,17 @@ class FileExplorer
           title pwd
           title_attrib 'reverse'
         end
-        lista.bind(:ENTER) {|l| @rfe.current_list(l); l.title_attrib 'reverse' }
+        lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse' }
         lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
 
 
         row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split()[0]; @rfe.status_row.text = File.stat(file).inspect }
         lista.bind(:ENTER_ROW) {|list| row_cmd.call(list) }
+        @list = lista
 
   end
 end
 class RFe
-  include FileUtils
   attr_reader :status_row
   def initialize
     @window = VER::Window.root_window
@@ -114,7 +116,7 @@ class RFe
     @listb.draw_screen
     @form.bind_key(?c){
       dir=get_string("Give directory to change to:")
-      change_dir dir
+      @current_list.change_dir dir
     }
     @form.repaint
     @window.wrefresh
