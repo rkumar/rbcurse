@@ -15,6 +15,7 @@ require 'fileutils'
 
 class FileExplorer
   include FileUtils
+  attr_reader :wdir
 
   def initialize form, rfe, row, col, height, width
     @form = form
@@ -26,9 +27,9 @@ class FileExplorer
     begin
       dir = File.expand_path dir
       cd dir
-      pwd = pwd()
-      @pwd = pwd
-      list.title = pwd
+      wdir = pwd()
+      @wdir = pwd()
+      list.title = pwd()
       default_pattern ||= "*.*"
       flist = Dir.glob(default_pattern)
       fl = []
@@ -59,10 +60,10 @@ class FileExplorer
     "%-*s\t%s" % [@wid-10,f, readable_file_size(stat.size,1)]
   end
   def cur_dir
-    @pwd
+    @wdir
   end
   def draw_screen dir=nil
-    pwd = FileUtils.pwd
+    wdir = FileUtils.pwd
     r = @row
     c = @col
     #cola = 1
@@ -75,8 +76,8 @@ class FileExplorer
       fl.each {|f| stat = File.stat(f)
         flist << format_string(f, stat)
       }
-    title = pwd
-    @pwd = title
+    title = pwd()
+    @wdir = title
 
         lista = Listbox.new @form do
           name   "lista" 
@@ -85,17 +86,23 @@ class FileExplorer
           width wid
           height ht
           list flist
-          title pwd
+          title wdir
           title_attrib 'reverse'
         end
+        @list = lista
         lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse'; cd cur_dir() }
         lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
 
 
-        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{@pwd}/#{file}").inspect }
+        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{cur_dir()}/#{file}").inspect }
         lista.bind(:ENTER_ROW) {|list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(list) }
-        @list = lista
 
+  end
+  def filename
+    @list.list_data_model[@list.current_index].split(/\t/)[0].strip
+  end
+  def filepath
+    @wdir +"/"+ @list.list_data_model[@list.current_index].split(/\t/)[0].strip
   end
 end
 class RFe
@@ -116,12 +123,25 @@ class RFe
   def init_vars
 
   end
+  def move
+    fp = @current_list.filepath
+    fn = @current_list.filename
+    $log.debug " FP #{fp}"
+    other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
+    $log.debug " OL #{other_list.cur_dir}"
+    str= "move #{fn} to #{other_list.cur_dir}"
+    $log.debug " MOVE #{fp}"
+    confirm "#{str}"
+  end
   def draw_screens
     @lista.draw_screen
     @listb.draw_screen
     @form.bind_key(?c){
       dir=get_string("Give directory to change to:")
       @current_list.change_dir dir
+    }
+    @form.bind_key(?\M-m){
+      move()
     }
     @form.repaint
     @window.wrefresh
