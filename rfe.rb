@@ -56,7 +56,7 @@ class FileExplorer
     end
   end
   def format_string f, stat
-    "%-*s %s" % [@wid-10,f, readable_file_size(stat.size,1)]
+    "%-*s\t%s" % [@wid-10,f, readable_file_size(stat.size,1)]
   end
   def cur_dir
     @pwd
@@ -92,7 +92,7 @@ class FileExplorer
         lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
 
 
-        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split()[0]; @rfe.status_row.text = File.stat("#{@pwd}/#{file}").inspect }
+        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{@pwd}/#{file}").inspect }
         lista.bind(:ENTER_ROW) {|list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(list) }
         @list = lista
 
