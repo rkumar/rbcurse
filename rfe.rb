@@ -49,7 +49,7 @@ class FileExplorer
   # Return the file size with a readable style.
   def readable_file_size(size, precision)
     case
-      when size == 1 : "1 B"
+      #when size == 1 : "1 B"
       when size < KILO_SIZE : "%d B" % size
       when size < MEGA_SIZE : "%.#{precision}f K" % (size / KILO_SIZE)
       when size < GIGA_SIZE : "%.#{precision}f M" % (size / MEGA_SIZE)
@@ -110,10 +110,10 @@ class RFe
   def initialize
     @window = VER::Window.root_window
     @form = Form.new @window
-    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-2, :col => 0, :display_length=>Ncurses.COLS-2}
+    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>Ncurses.COLS-2}
     @status_row = status_row
     colb = Ncurses.COLS/2
-    ht = Ncurses.LINES - 5
+    ht = Ncurses.LINES - 7
     wid = Ncurses.COLS/2 - 0
     @lista = FileExplorer.new @form, self, row=2, col=1, ht, wid
     @listb = FileExplorer.new @form, self, row=2, col=colb, ht, wid
@@ -133,9 +133,56 @@ class RFe
     $log.debug " MOVE #{fp}"
     confirm "#{str}"
   end
+  def opt_file c
+    fp = @current_list.filepath
+    fn = @current_list.filename
+    $log.debug " FP #{fp}"
+    other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
+    $log.debug " OL #{other_list.cur_dir}"
+    case c
+    when 'c'
+      str= "copy #{fn} to #{other_list.cur_dir}"
+      if confirm("#{str}")=='y'
+      $log.debug " COPY #{str}"
+      end
+    when 'm'
+      str= "move #{fn} to #{other_list.cur_dir}"
+      if confirm("#{str}")=='y'
+      $log.debug " MOVE #{str}"
+      end
+    when 'd'
+      str= "delete #{fn} "
+      if confirm("#{str}")=='y'
+      $log.debug " delete #{fp}"
+      end
+    when 'u'
+      str= "move #{fn} to #{other_list.cur_dir}"
+      if confirm("#{str}")=='y'
+      $log.debug " MOVE #{str}"
+      end
+    when 'v'
+      str= "view #{fp}"
+      if confirm("#{str}")=='y'
+      $log.debug " VIEW #{fp}"
+      end
+    end
+  end
   def draw_screens
     @lista.draw_screen
     @listb.draw_screen
+    @form.bind_key(?\C-f){
+      @klp.mode :file
+      @klp.repaint
+      while((ch = @window.getchar()) != ?\C-c )
+        if "cmdsuv".index(ch.chr) == nil
+          Ncurses.beep
+        else
+          opt_file ch.chr
+          break
+        end
+      end
+      @klp.mode :normal
+    }
     @form.bind_key(?c){
       dir=get_string("Give directory to change to:")
       @current_list.change_dir dir
@@ -143,6 +190,9 @@ class RFe
     @form.bind_key(?\M-m){
       move()
     }
+    @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
+    @klp.set_key_labels get_key_labels(:file), :file
+    @klp.set_key_labels get_key_labels(:view), :view
     @form.repaint
     @window.wrefresh
     Ncurses::Panel.update_panels
@@ -172,6 +222,43 @@ class RFe
         @current_list = val[0] 
       end
     end
+def get_key_labels categ=nil
+  if categ.nil?
+  key_labels = [
+    ['C-q', 'Exit'], ['C-v', 'View'], 
+    ['C-f', 'File'], ['C-d', 'Dir'],
+    ['C-x','Select'], nil,
+    ['M-0', 'Top'], ['M-9', 'End'],
+    ['C-p', 'PgUp'], ['C-n', 'PgDn']
+  ]
+  elsif categ == :file
+  key_labels = [
+    ['c', 'Copy'], ['m', 'Move'],
+    ['d', 'Delete'], ['v', 'View'],
+    ['s', 'Select'], ['u', 'Unselect'],
+    ['p', 'Page'], ['x', 'Exec Cmd'],
+    ['C-c', 'Cancel']
+  ]
+  elsif categ == :view
+  key_labels = [
+    ['c', 'Date'], ['m', 'Size'],
+    ['d', 'Delete'], ['v', 'View'],
+    ['C-c', 'Cancel']
+  ]
+  end
+  return key_labels
+end
+def get_key_labels_table
+  key_labels = [
+    ['M-n','NewRow'], ['M-d','DelRow'],
+    ['C-x','Select'], nil,
+    ['M-0', 'Top'], ['M-9', 'End'],
+    ['C-p', 'PgUp'], ['C-n', 'PgDn'],
+    ['M-Tab','Nxt Fld'], ['Tab','Nxt Col'],
+    ['+','Widen'], ['-','Narrow']
+  ]
+  return key_labels
+end
 end
 if $0 == __FILE__
   include RubyCurses
