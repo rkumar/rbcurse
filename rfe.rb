@@ -7,6 +7,7 @@ require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/rlistbox'
+require 'lib/rbcurse/rtextview'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/applicationheader'
@@ -16,13 +17,18 @@ require 'fileutils'
 class FileExplorer
   include FileUtils
   attr_reader :wdir
+  attr_reader :list
+  attr_reader :dir
+  attr_reader :entries
 
   def initialize form, rfe, row, col, height, width
     @form = form
     @rfe = rfe
     @row, @col, @ht, @wid = row, col, height, width
+    @dir = Dir.new(Dir.getwd)
   end
   def change_dir dir
+
     list = @list
     begin
       dir = File.expand_path dir
@@ -30,17 +36,23 @@ class FileExplorer
       wdir = pwd()
       @wdir = pwd()
       list.title = pwd()
-      default_pattern ||= "*.*"
-      flist = Dir.glob(default_pattern)
-      fl = []
-      flist.each {|f| stat = File.stat(f)
-        fl << format_string(f, stat)
-      }
-      list.list_data_model.remove_all
-      list.list_data_model.insert 0, *fl
+      @dir = Dir.new(Dir.getwd)
+      rescan
     rescue => err
       @rfe.status_row.text = err.to_s
     end
+  end
+  def rescan
+    fl = []
+    flist = @dir.entries
+    flist.shift
+    #fl << format_string("..", nil)
+    flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
+      fl << format_string(f, stat)
+    }
+    @entries = flist
+    list.list_data_model.remove_all
+    list.list_data_model.insert 0, *fl
   end
   GIGA_SIZE = 1073741824.0
   MEGA_SIZE = 1048576.0
@@ -56,8 +68,21 @@ class FileExplorer
       else "%.#{precision}f G" % (size / GIGA_SIZE)
     end
   end
-  def format_string f, stat
-    "%-*s\t%s" % [@wid-10,f, readable_file_size(stat.size,1)]
+  def date_format t
+    t.strftime "%Y/%m/%d"
+  end
+  def format_string fn, stat
+    max_len = 30
+    f = fn.dup
+    if File.directory? f
+      #"%-*s\t(dir)" % [max_len,f]
+      #f = "/"+f # disallows search on keypress
+      f = f + "/ "
+    end
+    if f.size > max_len
+      f = f[0..max_len-1]
+    end
+    "%-*s\t%10s\t%s" % [max_len,f,  readable_file_size(stat.size,1), date_format(stat.mtime)]
   end
   def cur_dir
     @wdir
@@ -70,39 +95,46 @@ class FileExplorer
     #colb = Ncurses.COLS/2
     ht = @ht
     wid = @wid
-    default_pattern ||= "*.*"
-    fl = Dir.glob(default_pattern)
-      flist = []
-      fl.each {|f| stat = File.stat(f)
-        flist << format_string(f, stat)
-      }
+    #fl = Dir.glob(default_pattern)
+    #flist << format_string("..", nil)
+    fl = @dir.entries
+    fl.shift
+    flist = []
+    fl.each {|f| stat = File.stat(f)
+      flist << format_string(f, stat)
+    }
+    @entries = fl
     title = pwd()
     @wdir = title
 
-        lista = Listbox.new @form do
-          name   "lista" 
-          row  r 
-          col  c
-          width wid
-          height ht
-          list flist
-          title wdir
-          title_attrib 'reverse'
-        end
-        @list = lista
-        lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse'; cd cur_dir() }
-        lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
+    lista = Listbox.new @form do
+      name   "lista" 
+      row  r 
+      col  c
+      width wid
+      height ht
+      list flist
+      title wdir
+      title_attrib 'reverse'
+    end
+    @list = lista
+    lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse';  }
+    lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
 
 
-        row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{cur_dir()}/#{file}").inspect }
-        lista.bind(:ENTER_ROW) {|list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(list) }
+    #row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{cur_dir()}/#{file}").inspect }
+    row_cmd = lambda {|lb, list| file = list.entries[lb.current_index]; @rfe.status_row.text = file; # File.stat("#{cur_dir()}/#{file}").inspect 
+    }
+    lista.bind(:ENTER_ROW, self) {|lb,list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(lb,list) }
 
   end
   def filename
-    @list.list_data_model[@list.current_index].split(/\t/)[0].strip
+    #@list.list_data_model[@list.current_index].split(/\t/)[0].strip
+    @entries[@list.current_index]
   end
   def filepath
-    @wdir +"/"+ @list.list_data_model[@list.current_index].split(/\t/)[0].strip
+    #@wdir +"/"+ @list.list_data_model[@list.current_index].split(/\t/)[0].strip
+    @wdir + "/" + @entries[@list.current_index]
   end
 end
 class RFe
@@ -128,10 +160,77 @@ class RFe
     fn = @current_list.filename
     $log.debug " FP #{fp}"
     other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
+    other_dir = other_list.cur_dir
     $log.debug " OL #{other_list.cur_dir}"
     str= "move #{fn} to #{other_list.cur_dir}"
     $log.debug " MOVE #{fp}"
-    confirm "#{str}"
+    #confirm "#{str}"
+      mb = RubyCurses::MessageBox.new do
+        title "Move"
+        message "Move #{fn} to"
+       type :input
+       width 60
+        default_value other_dir
+       button_type :ok_cancel
+       default_button 0
+      end
+      #confirm "selected :#{mb.input_value}, #{mb.selected_index}"
+      if mb.selected_index == 0
+        # need to redraw directories
+        FileUtils.move(fp, mb.input_value)
+        #@current_list.list.list_data_model.delete fp # ???
+        #@lista.list.list_data_changed
+        #@listb.list.list_data_changed
+        @lista.rescan
+        @listb.rescan
+      end 
+  end
+  def view 
+    fp = @current_list.filepath
+    wt = 0
+    wl = 0
+    wh = Ncurses.LINES-wt
+    ww = Ncurses.COLS-wl
+    @layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
+    @v_window = VER::Window.new(@layout)
+    @v_form = RubyCurses::Form.new @v_window
+    fp = @current_list.filepath
+    @textview = TextView.new @v_form do
+      name   "myView" 
+      row  0
+      col  0
+      width ww
+      height wh-2
+      title fp
+      title_attrib 'bold'
+      print_footer true
+      footer_attrib 'bold'
+    end
+    #content = File.open(fp,"r").readlines
+    content = get_contents(fp)
+    @textview.set_content content #, :WRAP_WORD
+    @v_form.repaint
+    @v_window.wrefresh
+    Ncurses::Panel.update_panels
+    begin
+    while((ch = @v_window.getchar()) != ?\C-q )
+      break if ch == KEY_F3
+      @v_form.handle_key ch
+      @v_form.repaint
+      ##@v_window.wrefresh
+    end
+    ensure
+      @v_window.destroy if !@v_window.nil?
+    end
+  end
+  def get_contents fp
+    case File.extname(fp)
+    when '.tgz','.gz'
+      cmd = "tar -ztvf #{fp}"
+      content = %x[#{cmd}]
+    else
+      content = File.open(fp,"r").readlines
+    end
   end
   def opt_file c
     fp = @current_list.filepath
@@ -142,28 +241,35 @@ class RFe
     case c
     when 'c'
       str= "copy #{fn} to #{other_list.cur_dir}"
-      if confirm("#{str}")=='y'
+      if confirm("#{str}")==:YES
       $log.debug " COPY #{str}"
       end
     when 'm'
       str= "move #{fn} to #{other_list.cur_dir}"
-      if confirm("#{str}")=='y'
-      $log.debug " MOVE #{str}"
-      end
+      move
+      #if confirm("#{str}")==:YES
+      #$log.debug " MOVE #{str}"
+      #end
     when 'd'
       str= "delete #{fn} "
-      if confirm("#{str}")=='y'
+      if confirm("#{str}")==:YES
       $log.debug " delete #{fp}"
       end
     when 'u'
       str= "move #{fn} to #{other_list.cur_dir}"
-      if confirm("#{str}")=='y'
+      if confirm("#{str}")==:YES
       $log.debug " MOVE #{str}"
       end
     when 'v'
       str= "view #{fp}"
-      if confirm("#{str}")=='y'
+      #if confirm("#{str}")==:YES
       $log.debug " VIEW #{fp}"
+      view
+      #end
+    when 'r'
+      str= "ruby #{fn}"
+      if confirm("#{str}")=='y'
+      $log.debug " #{str} "
       end
     end
   end
@@ -174,7 +280,7 @@ class RFe
       @klp.mode :file
       @klp.repaint
       while((ch = @window.getchar()) != ?\C-c )
-        if "cmdsuv".index(ch.chr) == nil
+        if "cmdsuvr".index(ch.chr) == nil
           Ncurses.beep
         else
           opt_file ch.chr
@@ -189,6 +295,15 @@ class RFe
     }
     @form.bind_key(?\M-m){
       move()
+    }
+    @form.bind_key(KEY_F3){
+      view()
+    }
+    @form.bind_key(?\C-m){
+      dir = @current_list.filename
+      if File.directory? dir
+        @current_list.change_dir dir
+      end
     }
     @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
     @klp.set_key_labels get_key_labels(:file), :file
@@ -237,6 +352,7 @@ def get_key_labels categ=nil
     ['d', 'Delete'], ['v', 'View'],
     ['s', 'Select'], ['u', 'Unselect'],
     ['p', 'Page'], ['x', 'Exec Cmd'],
+    ['r', 'ruby'], nil,
     ['C-c', 'Cancel']
   ]
   elsif categ == :view

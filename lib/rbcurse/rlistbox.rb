@@ -95,8 +95,8 @@ module RubyCurses
       fire_handler :LIST_DATA_EVENT, lde
     end
     def remove_all
+      lde = ListDataEvent.new(0, @list.size, self, :INTERVAL_REMOVED)
       @list = []
-      lde = ListDataEvent.new(0, 0, self, :INTERVAL_REMOVED)
       fire_handler :LIST_DATA_EVENT, lde
     end
     def delete obj
@@ -429,6 +429,7 @@ module RubyCurses
       # when the combo box has a certain row in focus, the popup should have the same row in focus
 
       init_vars
+      install_list_keys
 
       if !@list.selected_index.nil? 
         set_focus_on @list.selected_index # the new version
@@ -444,7 +445,6 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
-      install_list_keys
     end
     def install_bindings
 
@@ -565,7 +565,7 @@ module RubyCurses
         clear_selection #if @select_mode == 'multiple'
         @repaint_required = true
       when 27, ?\C-c:
-        editing_canceled @current_index
+        editing_canceled @current_index if @cell_editing_allowed
       when @KEY_ASK_FIND_FORWARD
         ask_search_forward
       when @KEY_ASK_FIND_BACKWARD
@@ -694,6 +694,7 @@ module RubyCurses
       @repaint_required = true
     end
     def editing_canceled arow=@current_index
+      return unless @cell_editing_allowed
       prepare_editor @cell_editor, arow
       @repaint_required = true
     end
@@ -783,6 +784,11 @@ module RubyCurses
       @repaint_required = false
     end
     def list_data_changed
+      if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
+        init_vars
+        @current_index = 0
+        set_form_row
+      end
       @repaint_required = true
     end
 

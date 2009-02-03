@@ -20,6 +20,8 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
+
 handle_keys logic: some cases can return unhandled in which case we must still check furhter. So else
 should be taken and put outside the loop and run if no one handled (a flag)
 
