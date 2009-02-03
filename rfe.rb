@@ -43,16 +43,66 @@ class FileExplorer
     end
   end
   def rescan
-    fl = []
     flist = @dir.entries
     flist.shift
+    @entries = flist
+    populate @entries
+  end
+  def populate flist
     #fl << format_string("..", nil)
+    fl = []
     flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
       fl << format_string(f, stat)
     }
-    @entries = flist
     list.list_data_model.remove_all
     list.list_data_model.insert 0, *fl
+  end
+  def sort key, reverse=false
+    key ||= @sort_key
+    case key
+    when  :size
+      @entries.sort! {|x,y| xs = File.stat(x); ys = File.stat(y); 
+        if reverse
+          xs.size <=> ys.size 
+        else
+          ys.size <=> xs.size 
+        end
+      }
+    when  :mtime
+      @entries.sort! {|x,y| xs = File.stat(x); ys = File.stat(y); 
+        if reverse
+          xs.mtime <=> ys.mtime 
+        else
+          ys.mtime <=> xs.mtime 
+        end
+      }
+    when  :atime
+      @entries.sort! {|x,y| xs = File.stat(x); ys = File.stat(y); 
+        if reverse
+          xs.atime <=> ys.atime 
+        else
+          ys.atime <=> xs.atime 
+        end
+      }
+    when  :name
+      @entries.sort! {|x,y| x <=> y 
+        if reverse
+          x <=> y
+        else
+          y <=> x
+        end
+      }
+    when  :ext
+      @entries.sort! {|x,y| 
+        if reverse
+          File.extname(x) <=> File.extname(y) 
+        else
+          File.extname(y) <=> File.extname(x) 
+        end
+      }
+    end
+    @sort_key = key
+    populate @entries
   end
   GIGA_SIZE = 1073741824.0
   MEGA_SIZE = 1048576.0
@@ -136,6 +186,7 @@ class FileExplorer
     #@wdir +"/"+ @list.list_data_model[@list.current_index].split(/\t/)[0].strip
     @wdir + "/" + @entries[@list.current_index]
   end
+
 end
 class RFe
   attr_reader :status_row
@@ -224,6 +275,8 @@ class RFe
     end
   end
   def get_contents fp
+    return nil unless File.readable? fp 
+    return Dir.new(fp).entries if File.directory? fp
     case File.extname(fp)
     when '.tgz','.gz'
       cmd = "tar -ztvf #{fp}"
@@ -271,7 +324,15 @@ class RFe
       if confirm("#{str}")=='y'
       $log.debug " #{str} "
       end
+    when 'e'
+      str= "edit #{fp}"
+      #if confirm("#{str}")==:YES
+      edit fp
     end
+  end
+  def edit fp=@current_list.filepath
+    $log.debug " edit #{fp}"
+    shell_out "/opt/local/bin/vim #{fp}"
   end
   def draw_screens
     @lista.draw_screen
@@ -280,7 +341,7 @@ class RFe
       @klp.mode :file
       @klp.repaint
       while((ch = @window.getchar()) != ?\C-c )
-        if "cmdsuvr".index(ch.chr) == nil
+        if "cmdsuvre".index(ch.chr) == nil
           Ncurses.beep
         else
           opt_file ch.chr
@@ -298,6 +359,12 @@ class RFe
     }
     @form.bind_key(KEY_F3){
       view()
+    }
+    @form.bind_key(KEY_F4){
+      edit()
+    }
+    @form.bind_key(KEY_F7){
+      @current_list.sort()
     }
     @form.bind_key(?\C-m){
       dir = @current_list.filename
@@ -326,6 +393,7 @@ class RFe
 
   end
   # TODO make these 2 into classes with their environment and cwd etc
+  # sort : make easy message boxes with given checkboxes or radio buttons
 
 # current_list
     ##
@@ -343,6 +411,7 @@ def get_key_labels categ=nil
     ['C-q', 'Exit'], ['C-v', 'View'], 
     ['C-f', 'File'], ['C-d', 'Dir'],
     ['C-x','Select'], nil,
+    ['F3', 'View'], ['F4', 'Edit'],
     ['M-0', 'Top'], ['M-9', 'End'],
     ['C-p', 'PgUp'], ['C-n', 'PgDn']
   ]
@@ -352,7 +421,7 @@ def get_key_labels categ=nil
     ['d', 'Delete'], ['v', 'View'],
     ['s', 'Select'], ['u', 'Unselect'],
     ['p', 'Page'], ['x', 'Exec Cmd'],
-    ['r', 'ruby'], nil,
+    ['r', 'ruby'], ['e', "Edit"],
     ['C-c', 'Cancel']
   ]
   elsif categ == :view
@@ -374,6 +443,12 @@ def get_key_labels_table
     ['+','Widen'], ['-','Narrow']
   ]
   return key_labels
+end
+def shell_out command
+  Ncurses.endwin
+  system command
+  Ncurses.refresh
+  Ncurses.curs_set 0
 end
 end
 if $0 == __FILE__
