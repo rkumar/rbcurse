@@ -22,11 +22,11 @@ module RubyCurses
 
       @bgcolor = @orig_bgcolor
       @color = @orig_color
-      @attr = @orig_attr
+      @row_attr = @orig_attr
       path = @parent.cur_dir()+"/"+value
       stat = File.stat(path)
       if File.directory? path
-        @attr = Ncurses::A_BOLD
+        @row_attr = Ncurses::A_BOLD
         #@color = 'yellow'
       end
       value = format_string(value, path,  stat)
@@ -56,7 +56,7 @@ module RubyCurses
     if File.directory? path
       #"%-*s\t(dir)" % [max_len,f]
       #f = "/"+f # disallows search on keypress
-      f = f + "/ "
+      f = "/"+f 
     end
     if f.size > max_len
       f = f[0..max_len-1]

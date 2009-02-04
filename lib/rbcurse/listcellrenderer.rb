@@ -41,8 +41,8 @@ module RubyCurses
     def prepare_default_colors focussed, selected
         @color_pair = get_color $datacolor
         #acolor =get_color $datacolor, @color || @parent.color, @bgcolor || @parent.bgcolor #unless @parent.nil?
-        #@attr = Ncurses::A_NORMAL
-        @attr ||= Ncurses::A_NORMAL # added 2009-02-04 18:35 since overriding in rfe
+        @attr = @row_attr || Ncurses::A_NORMAL
+        ##@row_attr = Ncurses::A_NORMAL # added 2009-02-04 18:35 since overriding in rfe
 
 
         ## determine bg and fg and attr
