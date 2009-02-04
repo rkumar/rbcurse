@@ -501,10 +501,12 @@ def sort_popup
   return mb.selected_index, $radio.value, mform.by_name["Reverse"].value, mform.by_name["case sensitive"].value
 end
 def shell_out command
+  @window.hide
   Ncurses.endwin
   system command
   Ncurses.refresh
   Ncurses.curs_set 0
+  @window.show
 end
 end
 if $0 == __FILE__
