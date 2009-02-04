@@ -7,7 +7,7 @@ require 'lib/ver/window'
 require 'lib/rbcurse/rwidget'
 require 'lib/rbcurse/rcombo'
 require 'lib/rbcurse/rlistbox'
-require 'lib/rbcurse/rtextview'
+require 'rfe_renderer'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'lib/rbcurse/keylabelprinter'
 require 'lib/rbcurse/applicationheader'
@@ -26,17 +26,18 @@ class FileExplorer
     @rfe = rfe
     @row, @col, @ht, @wid = row, col, height, width
     @dir = Dir.new(Dir.getwd)
+    @wdir = @dir.path
   end
-  def change_dir dir
+
+  def change_dir adir
 
     list = @list
     begin
-      dir = File.expand_path dir
-      cd dir
-      wdir = pwd()
-      @wdir = pwd()
+      #dir = File.expand_path dir
+      cd "#{@dir.path}/#{adir}"
       list.title = pwd()
       @dir = Dir.new(Dir.getwd)
+      @wdir = @dir.path
       rescan
     rescue => err
       @rfe.status_row.text = err.to_s
@@ -50,12 +51,13 @@ class FileExplorer
   end
   def populate flist
     #fl << format_string("..", nil)
-    fl = []
-    flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
-      fl << format_string(f, stat)
-    }
+    #fl = []
+    #flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
+    #  fl << format_string(f, stat)
+    #}
     list.list_data_model.remove_all
-    list.list_data_model.insert 0, *fl
+    #list.list_data_model.insert 0, *fl
+    list.list_data_model.insert 0, *flist
   end
   def sort key, reverse=false
     key ||= @sort_key
@@ -121,7 +123,7 @@ class FileExplorer
   def date_format t
     t.strftime "%Y/%m/%d"
   end
-  def format_string fn, stat
+  def oldformat_string fn, stat
     max_len = 30
     f = fn.dup
     if File.directory? f
@@ -135,7 +137,7 @@ class FileExplorer
     "%-*s\t%10s\t%s" % [max_len,f,  readable_file_size(stat.size,1), date_format(stat.mtime)]
   end
   def cur_dir
-    @wdir
+    @dir.path
   end
   def draw_screen dir=nil
     wdir = FileUtils.pwd
@@ -149,13 +151,14 @@ class FileExplorer
     #flist << format_string("..", nil)
     fl = @dir.entries
     fl.shift
-    flist = []
-    fl.each {|f| stat = File.stat(f)
-      flist << format_string(f, stat)
-    }
+    #flist = []
+    #fl.each {|f| stat = File.stat(f)
+    #  flist << format_string(f, stat)
+    #}
     @entries = fl
     title = pwd()
     @wdir = title
+    rfe = self
 
     lista = Listbox.new @form do
       name   "lista" 
@@ -163,9 +166,11 @@ class FileExplorer
       col  c
       width wid
       height ht
-      list flist
+      #list flist
+      list fl
       title wdir
       title_attrib 'reverse'
+      cell_renderer RfeRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => rfe, "display_length"=> wid-2}
     end
     @list = lista
     lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse';  }
@@ -173,7 +178,7 @@ class FileExplorer
 
 
     #row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{cur_dir()}/#{file}").inspect }
-    row_cmd = lambda {|lb, list| file = list.entries[lb.current_index]; @rfe.status_row.text = file; # File.stat("#{cur_dir()}/#{file}").inspect 
+    row_cmd = lambda {|lb, list| file = list.entries[lb.current_index]; @rfe.status_row.text = list.cur_dir+"::"+file; # File.stat("#{cur_dir()}/#{file}").inspect 
     }
     lista.bind(:ENTER_ROW, self) {|lb,list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(lb,list) }
 
@@ -184,7 +189,7 @@ class FileExplorer
   end
   def filepath
     #@wdir +"/"+ @list.list_data_model[@list.current_index].split(/\t/)[0].strip
-    @wdir + "/" + @entries[@list.current_index]
+    cur_dir() + "/" + @entries[@list.current_index]
   end
 
 end
@@ -237,6 +242,7 @@ class RFe
       end 
   end
   def view 
+    require 'lib/rbcurse/rtextview'
     fp = @current_list.filepath
     wt = 0
     wl = 0
@@ -364,11 +370,14 @@ class RFe
       edit()
     }
     @form.bind_key(KEY_F7){
-      @current_list.sort()
+      selected_index, sort_key, reverse, case_sensitive = sort_popup
+      if selected_index == 0
+        @current_list.sort(sort_key, reverse)
+      end
     }
     @form.bind_key(?\C-m){
       dir = @current_list.filename
-      if File.directory? dir
+      if File.directory? @current_list.filepath
         @current_list.change_dir dir
       end
     }
@@ -394,6 +403,8 @@ class RFe
   end
   # TODO make these 2 into classes with their environment and cwd etc
   # sort : make easy message boxes with given checkboxes or radio buttons
+  # sort : .. remains on top always !
+  # create list box cell renderer and do fornatting in that, using @entries
 
 # current_list
     ##
@@ -443,6 +454,51 @@ def get_key_labels_table
     ['+','Widen'], ['-','Narrow']
   ]
   return key_labels
+end
+def sort_popup
+  mform = RubyCurses::Form.new nil
+  field_list = []
+  r = 4
+  $radio = RubyCurses::Variable.new
+  rtextvalue = [:name, :ext, :size, :mtime, :atime]
+  ["Name", "Extension", "Size", "Modify Time", "Access Time" ].each_with_index do |rtext,ix|
+    field = RubyCurses::RadioButton.new mform do
+      variable $radio
+      text rtext
+      value rtextvalue[ix]
+      color 'black'
+      bgcolor 'white'
+      row r
+      col 5
+    end
+    field_list << field
+    r += 1
+  end
+  r = 4
+  ["Reverse", "case sensitive"].each do |cbtext|
+    field = RubyCurses::CheckBox.new mform do
+      text cbtext
+      name cbtext
+      color 'black'
+      bgcolor 'white'
+      row r
+      col 30
+    end
+    field_list << field
+    r += 1
+  end
+  mb = RubyCurses::MessageBox.new mform do
+    title "Sort Options"
+    button_type :ok_cancel
+    default_button 0
+  end
+  if mb.selected_index == 0
+    $log.debug " SORT POPUP #{$radio.value}"
+    #$log.debug " SORT POPUP #{mb.inspect}"
+    $log.debug " SORT POPUP #{mform.by_name["Reverse"].value}"
+    $log.debug " SORT POPUP #{mform.by_name["case sensitive"].value}"
+  end
+  return mb.selected_index, $radio.value, mform.by_name["Reverse"].value, mform.by_name["case sensitive"].value
 end
 def shell_out command
   Ncurses.endwin
