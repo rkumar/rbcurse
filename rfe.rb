@@ -20,6 +20,7 @@ class FileExplorer
   attr_reader :list
   attr_reader :dir
   attr_reader :entries
+  attr_accessor :filter_pattern
 
   def initialize form, rfe, row, col, height, width
     @form = form
@@ -27,6 +28,7 @@ class FileExplorer
     @row, @col, @ht, @wid = row, col, height, width
     @dir = Dir.new(Dir.getwd)
     @wdir = @dir.path
+    @filter_pattern = '*'
   end
 
   def change_dir adir
@@ -43,6 +45,12 @@ class FileExplorer
       @rfe.status_row.text = err.to_s
     end
   end
+  def filter list
+    list.delete_if { |f|
+      !File.directory? @wdir +"/"+ f and !File.fnmatch?(@filter_pattern, f)
+    }
+    #$log.debug " FILTER CALLED AFTER  #{list.size}, #{list.entries}"
+  end
   def rescan
     flist = @dir.entries
     flist.shift
@@ -55,11 +63,14 @@ class FileExplorer
     #flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
     #  fl << format_string(f, stat)
     #}
+    filter(flist) if @filter_pattern != '*'
     list.list_data_model.remove_all
     #list.list_data_model.insert 0, *fl
     list.list_data_model.insert 0, *flist
   end
   def sort key, reverse=false
+    # remove parent before sorting, keep at top
+    first = @entries.delete_at 0
     key ||= @sort_key
     case key
     when  :size
@@ -104,6 +115,7 @@ class FileExplorer
       }
     end
     @sort_key = key
+    @entries.insert 0, first # keep parent on top
     populate @entries
   end
   GIGA_SIZE = 1073741824.0
@@ -151,6 +163,7 @@ class FileExplorer
     #flist << format_string("..", nil)
     fl = @dir.entries
     fl.shift
+    filter(fl)
     #flist = []
     #fl.each {|f| stat = File.stat(f)
     #  flist << format_string(f, stat)
@@ -375,6 +388,9 @@ class RFe
         @current_list.sort(sort_key, reverse)
       end
     }
+    @form.bind_key(KEY_F6){
+      filter()
+    }
     @form.bind_key(?\C-m){
       dir = @current_list.filename
       if File.directory? @current_list.filepath
@@ -500,12 +516,18 @@ def sort_popup
   end
   return mb.selected_index, $radio.value, mform.by_name["Reverse"].value, mform.by_name["case sensitive"].value
 end
+def filter
+  f = get_string("Enter a filter pattern", 20, "*")
+  f = "*" if f.nil? or f == ""
+  @current_list.filter_pattern = f
+  @current_list.rescan
+end
 def shell_out command
   @window.hide
   Ncurses.endwin
   system command
   Ncurses.refresh
-  Ncurses.curs_set 0
+  #Ncurses.curs_set 0  # why ?
   @window.show
 end
 end
