@@ -90,9 +90,10 @@ module RubyCurses
       @list[off0]
     end
     def delete_at off0
-      @list.delete off0
+      ret=@list.delete_at off0
       lde = ListDataEvent.new(off0, off0, self, :INTERVAL_REMOVED)
       fire_handler :LIST_DATA_EVENT, lde
+      return ret
     end
     def remove_all
       lde = ListDataEvent.new(0, @list.size, self, :INTERVAL_REMOVED)
@@ -101,10 +102,11 @@ module RubyCurses
     end
     def delete obj
       off0 = @list.index obj
-      return if off0.nil?
-      @list.delete off0
+      return nil if off0.nil?
+      ret=@list.delete off0
       lde = ListDataEvent.new(off0, off0, self, :INTERVAL_REMOVED)
       fire_handler :LIST_DATA_EVENT, lde
+      return ret
     end
     def include?(obj)
       return @list.include?(obj)

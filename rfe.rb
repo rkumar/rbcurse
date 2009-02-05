@@ -17,9 +17,9 @@ require 'fileutils'
 class FileExplorer
   include FileUtils
   attr_reader :wdir
-  attr_reader :list
+  attr_reader :list # listbox
   attr_reader :dir
-  attr_reader :entries
+  attr_reader :entries # avoid, can be outdated
   attr_accessor :filter_pattern
 
   def initialize form, rfe, row, col, height, width
@@ -196,13 +196,18 @@ class FileExplorer
     lista.bind(:ENTER_ROW, self) {|lb,list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(lb,list) }
 
   end
+  def list_data
+    @list.list_data_model
+  end
+  def current_index
+    @list.current_index
+  end
   def filename
-    #@list.list_data_model[@list.current_index].split(/\t/)[0].strip
-    @entries[@list.current_index]
+    #@entries[@list.current_index]
+    list_data()[current_index()]
   end
   def filepath
-    #@wdir +"/"+ @list.list_data_model[@list.current_index].split(/\t/)[0].strip
-    cur_dir() + "/" + @entries[@list.current_index]
+    cur_dir() + "/" + filename()
   end
 
 end
@@ -326,7 +331,10 @@ class RFe
     when 'd'
       str= "delete #{fn} "
       if confirm("#{str}")==:YES
-      $log.debug " delete #{fp}"
+        $log.debug " delete #{fp}"
+        FileUtils.rm fp
+        ret=@current_list.list.list_data_model.delete_at @current_list.list.current_index  # ???
+        $log.debug " DEL RET #{ret},#{@current_list.list.current_index}"
       end
     when 'u'
       str= "move #{fn} to #{other_list.cur_dir}"
@@ -421,10 +429,10 @@ class RFe
     end
 
   end
-  # TODO make these 2 into classes with their environment and cwd etc
-  # sort : make easy message boxes with given checkboxes or radio buttons
-  # sort : .. remains on top always !
-  # create list box cell renderer and do fornatting in that, using @entries
+  # TODO 
+  # 
+  # 
+  # 
 
 # current_list
     ##
