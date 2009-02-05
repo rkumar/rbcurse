@@ -182,7 +182,7 @@ class FileExplorer
       #list flist
       list fl
       title wdir
-      title_attrib 'reverse'
+      #title_attrib 'reverse'
       cell_renderer RfeRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => rfe, "display_length"=> wid-2}
     end
     @list = lista
@@ -254,6 +254,7 @@ class RFe
         @listb.rescan
       end 
   end
+  ## TODO : make this separate and callable with its own keylabels
   def view 
     require 'lib/rbcurse/rtextview'
     fp = @current_list.filepath
@@ -391,6 +392,9 @@ class RFe
     @form.bind_key(KEY_F6){
       filter()
     }
+    @form.bind_key(KEY_F8){
+      popup()
+    }
     @form.bind_key(?\C-m){
       dir = @current_list.filename
       if File.directory? @current_list.filepath
@@ -439,6 +443,7 @@ def get_key_labels categ=nil
     ['C-f', 'File'], ['C-d', 'Dir'],
     ['C-x','Select'], nil,
     ['F3', 'View'], ['F4', 'Edit'],
+    ['F6', 'Filter'], ['F7', 'Sort'],
     ['M-0', 'Top'], ['M-9', 'End'],
     ['C-p', 'PgUp'], ['C-n', 'PgDn']
   ]
@@ -521,6 +526,11 @@ def filter
   f = "*" if f.nil? or f == ""
   @current_list.filter_pattern = f
   @current_list.rescan
+end
+def popup
+  #sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"], "checkbox_defaults"=>[true, false]})
+  sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"]})
+  $log.debug " POPUP: #{sel}: #{inp}, #{hash['case sensitive']}, #{hash['reverse']}"
 end
 def shell_out command
   @window.hide
