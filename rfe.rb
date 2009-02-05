@@ -187,13 +187,13 @@ class FileExplorer
     end
     @list = lista
     lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse';  }
-    lista.bind(:LEAVE) {|l| l.title_attrib 'normal'; $log.debug " LEAVING #{l}" }
+    lista.bind(:LEAVE) {|l| l.title_attrib 'normal';  }
 
 
     #row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{cur_dir()}/#{file}").inspect }
     row_cmd = lambda {|lb, list| file = list.entries[lb.current_index]; @rfe.status_row.text = list.cur_dir+"::"+file; # File.stat("#{cur_dir()}/#{file}").inspect 
     }
-    lista.bind(:ENTER_ROW, self) {|lb,list|$log.debug " ENTERRIW #{cur_dir()}"; row_cmd.call(lb,list) }
+    lista.bind(:ENTER_ROW, self) {|lb,list| row_cmd.call(lb,list) }
 
   end
   def list_data
@@ -252,11 +252,34 @@ class RFe
       if mb.selected_index == 0
         # need to redraw directories
         FileUtils.move(fp, mb.input_value)
-        #@current_list.list.list_data_model.delete fp # ???
-        #@lista.list.list_data_changed
-        #@listb.list.list_data_changed
-        @lista.rescan
-        @listb.rescan
+        @current_list.list.list_data_model.delete_at @current_list.list.current_index  # ???
+        other_list.rescan
+      end 
+  end
+  def copy
+    fp = @current_list.filepath
+    fn = @current_list.filename
+    $log.debug " FP #{fp}"
+    other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
+    other_dir = other_list.cur_dir
+    $log.debug " OL #{other_list.cur_dir}"
+    str= "copy #{fn} to #{other_list.cur_dir}"
+    $log.debug " copy #{fp}"
+    #confirm "#{str}"
+      mb = RubyCurses::MessageBox.new do
+        title "Copy"
+        message "Copy #{fn} to"
+       type :input
+       width 60
+        default_value other_dir
+       button_type :ok_cancel
+       default_button 0
+      end
+      #confirm "selected :#{mb.input_value}, #{mb.selected_index}"
+      if mb.selected_index == 0
+        # need to redraw directories
+        FileUtils.copy(fp, mb.input_value)
+        other_list.rescan
       end 
   end
   ## TODO : make this separate and callable with its own keylabels
@@ -313,15 +336,11 @@ class RFe
   def opt_file c
     fp = @current_list.filepath
     fn = @current_list.filename
-    $log.debug " FP #{fp}"
     other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
-    $log.debug " OL #{other_list.cur_dir}"
     case c
     when 'c'
-      str= "copy #{fn} to #{other_list.cur_dir}"
-      if confirm("#{str}")==:YES
-      $log.debug " COPY #{str}"
-      end
+    #  str= "copy #{fn} to #{other_list.cur_dir}"
+      copy
     when 'm'
       str= "move #{fn} to #{other_list.cur_dir}"
       move
