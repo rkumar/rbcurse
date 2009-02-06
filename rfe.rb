@@ -54,10 +54,11 @@ class FileExplorer
   def rescan
     flist = @dir.entries
     flist.shift
-    @entries = flist
-    populate @entries
+    #populate @entries
+    populate flist
   end
   def populate flist
+    @entries = flist
     #fl << format_string("..", nil)
     #fl = []
     #flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
@@ -70,11 +71,12 @@ class FileExplorer
   end
   def sort key, reverse=false
     # remove parent before sorting, keep at top
-    first = @entries.delete_at 0
+    first = @entries.delete_at(0) if @entries[0]==".."
     key ||= @sort_key
+    cdir=cur_dir()+"/"
     case key
     when  :size
-      @entries.sort! {|x,y| xs = File.stat(x); ys = File.stat(y); 
+      @entries.sort! {|x,y| xs = File.stat(cdir+x); ys = File.stat(cdir+y); 
         if reverse
           xs.size <=> ys.size 
         else
@@ -82,7 +84,7 @@ class FileExplorer
         end
       }
     when  :mtime
-      @entries.sort! {|x,y| xs = File.stat(x); ys = File.stat(y); 
+      @entries.sort! {|x,y| xs = File.stat(cdir+x); ys = File.stat(cdir+y); 
         if reverse
           xs.mtime <=> ys.mtime 
         else
@@ -90,7 +92,7 @@ class FileExplorer
         end
       }
     when  :atime
-      @entries.sort! {|x,y| xs = File.stat(x); ys = File.stat(y); 
+      @entries.sort! {|x,y| xs = File.stat(cdir+x); ys = File.stat(cdir+y); 
         if reverse
           xs.atime <=> ys.atime 
         else
@@ -108,14 +110,14 @@ class FileExplorer
     when  :ext
       @entries.sort! {|x,y| 
         if reverse
-          File.extname(x) <=> File.extname(y) 
+          File.extname(cdir+x) <=> File.extname(cdir+y) 
         else
-          File.extname(y) <=> File.extname(x) 
+          File.extname(cdir+y) <=> File.extname(cdir+x) 
         end
       }
     end
     @sort_key = key
-    @entries.insert 0, first # keep parent on top
+    @entries.insert 0, first unless first.nil?  # keep parent on top
     populate @entries
   end
   GIGA_SIZE = 1073741824.0
@@ -283,17 +285,21 @@ class RFe
       end 
   end
   ## TODO : make this separate and callable with its own keylabels
-  def view 
+  def view  content=nil
     require 'lib/rbcurse/rtextview'
-    fp = @current_list.filepath
     wt = 0
     wl = 0
     wh = Ncurses.LINES-wt
     ww = Ncurses.COLS-wl
+    if content.nil?
+      fp = @current_list.filepath
+      content = get_contents(fp)
+    else
+      fp=""
+    end
     @layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
     @v_window = VER::Window.new(@layout)
     @v_form = RubyCurses::Form.new @v_window
-    fp = @current_list.filepath
     @textview = TextView.new @v_form do
       name   "myView" 
       row  0
@@ -306,7 +312,6 @@ class RFe
       footer_attrib 'bold'
     end
     #content = File.open(fp,"r").readlines
-    content = get_contents(fp)
     @textview.set_content content #, :WRAP_WORD
     @v_form.repaint
     @v_window.wrefresh
@@ -420,7 +425,7 @@ class RFe
       filter()
     }
     @form.bind_key(KEY_F8){
-      popup()
+      grep_popup()
     }
     @form.bind_key(?\C-m){
       dir = @current_list.filename
@@ -554,9 +559,75 @@ def filter
   @current_list.filter_pattern = f
   @current_list.rescan
 end
+def grep_popup
+  last_regex = @last_regex || ""
+  last_pattern = @last_pattern || "*"
+  mform = RubyCurses::Form.new nil
+  r = 4
+    field = RubyCurses::Field.new mform do
+      name "regex"
+      row r
+      col 30
+      set_buffer last_regex
+      set_label Label.new @form, {'text' => 'Regex', 'col'=>5, :color=>'black',:bgcolor=>'white','mnemonic'=> 'R'}
+    end
+    r += 1
+    field = RubyCurses::Field.new mform do
+      name "filepattern"
+      row r
+      col 30
+      set_buffer last_pattern
+      set_label Label.new @form, {'text' => 'File Pattern','col'=>5, :color=>'black',:bgcolor=>'white','mnemonic'=> 'F'}
+    end
+    r += 1
+  ["Recurse", "case insensitive"].each do |cbtext|
+    field = RubyCurses::CheckBox.new mform do
+      text cbtext
+      name cbtext
+      color 'black'
+      bgcolor 'white'
+      row r
+      col 5
+    end
+    r += 1
+  end
+  mb = RubyCurses::MessageBox.new mform do
+    title "Grep Options"
+    button_type :ok_cancel
+    default_button 0
+  end
+  if mb.selected_index == 0
+    @last_regex = mform.by_name["regex"].getvalue
+    inp = mform.by_name["regex"].getvalue
+    fp = mform.by_name["filepattern"].getvalue
+    @last_pattern = fp
+    flags=""
+    flags << " -i "  if mform.by_name["case insensitive"].value==true
+    flags << " -R " if mform.by_name["Recurse"].value==true
+    cmd = "cd #{@current_list.cur_dir()};grep -l #{flags} #{inp} #{fp}"
+    filestr = %x[ #{cmd} ]
+    files = nil
+    files = filestr.split(/\n/) unless filestr.nil?
+    #view filestr
+    @current_list.populate files
+  end
+  return mb.selected_index, mform.by_name["regex"].getvalue, mform.by_name["filepattern"].getvalue, mform.by_name["Recurse"].value, mform.by_name["case insensitive"].value
+end
 def popup
+  deflt = @last_regexp || ""
   #sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"], "checkbox_defaults"=>[true, false]})
-  sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"]})
+  sel, inp, hash = get_string_with_options("Enter a grep pattern", 20, deflt, {"checkboxes" => ["case insensitive","not-including"]})
+  if sel == 0
+    @last_regexp = inp
+    flags=""
+    flags << " -i " if hash["case insensitive"]==true
+    flags << " -v " if hash["not-including"]==true
+    cmd = "grep -l #{flags} #{inp} *"
+    filestr = %x[ #{cmd} ]
+    files = nil
+    files = filestr.split(/\n/) unless filestr.nil?
+    view filestr
+  end
   $log.debug " POPUP: #{sel}: #{inp}, #{hash['case sensitive']}, #{hash['reverse']}"
 end
 def shell_out command
