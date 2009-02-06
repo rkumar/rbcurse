@@ -57,7 +57,7 @@ module RubyCurses
 
     ##
     # 
-    def repaint graphic, r=@row,c=@col, value=@text, focussed=false, selected=false
+    def repaint graphic, r=@row,c=@col, row_index=-1,value=@text, focussed=false, selected=false
         #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor= #{acolor} j:#{@justify} dlL: #{@display_length} "
 
       prepare_default_colors focussed, selected

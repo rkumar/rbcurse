@@ -18,12 +18,17 @@ module RubyCurses
     ##
     ##
     # 
-    def repaint graphic, r=@row,c=@col, value=@text, focussed=false, selected=false
+    def repaint graphic, r=@row,c=@col, row_index=-1, value=@text, focussed=false, selected=false
 
       @bgcolor = @orig_bgcolor
       @color = @orig_color
       @row_attr = @orig_attr
-      path = @parent.cur_dir()+"/"+value
+      value = @parent.entries[row_index]
+      if value[0,1]=="/"
+        path = value.dup
+      else
+        path = @parent.cur_dir()+"/"+value 
+      end
       stat = File.stat(path)
       if File.directory? path
         @row_attr = Ncurses::A_BOLD

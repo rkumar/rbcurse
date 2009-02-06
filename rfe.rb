@@ -31,12 +31,15 @@ class FileExplorer
     @filter_pattern = '*'
   end
 
+  # changes to given dir
+  # ensure that path is provided since other list
+  # may have cd'd elsewhere
   def change_dir adir
-
     list = @list
     begin
       #dir = File.expand_path dir
-      cd "#{@dir.path}/#{adir}"
+      #cd "#{@dir.path}/#{adir}"
+      cd adir
       list.title = pwd()
       @dir = Dir.new(Dir.getwd)
       @wdir = @dir.path
@@ -58,13 +61,13 @@ class FileExplorer
     populate flist
   end
   def populate flist
-    @entries = flist
     #fl << format_string("..", nil)
     #fl = []
     #flist.each {|f| ff = "#{@wdir}/#{f}"; stat = File.stat(ff)
     #  fl << format_string(f, stat)
     #}
     filter(flist) if @filter_pattern != '*'
+    @entries = flist
     list.list_data_model.remove_all
     #list.list_data_model.insert 0, *fl
     list.list_data_model.insert 0, *flist
@@ -193,7 +196,7 @@ class FileExplorer
 
 
     #row_cmd = lambda {|list| file = list.list_data_model[list.current_index].split(/\t/)[0].strip; @rfe.status_row.text = File.stat("#{cur_dir()}/#{file}").inspect }
-    row_cmd = lambda {|lb, list| file = list.entries[lb.current_index]; @rfe.status_row.text = list.cur_dir+"::"+file; # File.stat("#{cur_dir()}/#{file}").inspect 
+    row_cmd = lambda {|lb, list| file = list.entries[lb.current_index]; @rfe.status_row.text = file; # File.stat("#{cur_dir()}/#{file}").inspect 
     }
     lista.bind(:ENTER_ROW, self) {|lb,list| row_cmd.call(lb,list) }
 
@@ -209,7 +212,12 @@ class FileExplorer
     list_data()[current_index()]
   end
   def filepath
-    cur_dir() + "/" + filename()
+    f = filename()
+    if f[0,1]=='/'
+      f
+    else
+      cur_dir() + "/" + filename()
+    end
   end
 
 end
@@ -402,10 +410,6 @@ class RFe
       end
       @klp.mode :normal
     }
-    @form.bind_key(?c){
-      dir=get_string("Give directory to change to:")
-      @current_list.change_dir dir
-    }
     @form.bind_key(?\M-m){
       move()
     }
@@ -415,20 +419,23 @@ class RFe
     @form.bind_key(KEY_F4){
       edit()
     }
-    @form.bind_key(KEY_F7){
+    @form.bind_key(KEY_F6){
       selected_index, sort_key, reverse, case_sensitive = sort_popup
       if selected_index == 0
         @current_list.sort(sort_key, reverse)
       end
     }
-    @form.bind_key(KEY_F6){
+    @form.bind_key(KEY_F5){
       filter()
     }
-    @form.bind_key(KEY_F8){
+    @form.bind_key(KEY_F7){
       grep_popup()
     }
+    @form.bind_key(KEY_F8){
+      system_popup()
+    }
     @form.bind_key(?\C-m){
-      dir = @current_list.filename
+      dir = @current_list.filepath
       if File.directory? @current_list.filepath
         @current_list.change_dir dir
       end
@@ -475,7 +482,8 @@ def get_key_labels categ=nil
     ['C-f', 'File'], ['C-d', 'Dir'],
     ['C-x','Select'], nil,
     ['F3', 'View'], ['F4', 'Edit'],
-    ['F6', 'Filter'], ['F7', 'Sort'],
+    ['F5', 'Filter'], ['F6', 'Sort'],
+    ['F7', 'Grep'], ['F8', 'System'],
     ['M-0', 'Top'], ['M-9', 'End'],
     ['C-p', 'PgUp'], ['C-n', 'PgDn']
   ]
@@ -612,6 +620,19 @@ def grep_popup
     @current_list.populate files
   end
   return mb.selected_index, mform.by_name["regex"].getvalue, mform.by_name["filepattern"].getvalue, mform.by_name["Recurse"].value, mform.by_name["case insensitive"].value
+end
+def system_popup
+  deflt = @last_system || ""
+  inp = get_string("Enter a system command", 30, deflt)
+  #sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"], "checkbox_defaults"=>[true, false]})
+  if !inp.nil?
+    @last_system = inp
+    filestr = %x[ #{inp} ]
+    files = nil
+    files = filestr.split(/\n/) unless filestr.nil?
+    $log.debug " SYSTEM got #{files.size}, #{files.inspect}"
+    @current_list.populate files
+  end
 end
 def popup
   deflt = @last_regexp || ""

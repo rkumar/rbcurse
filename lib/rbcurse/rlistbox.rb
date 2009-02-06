@@ -725,6 +725,11 @@ module RubyCurses
     def create_default_cell_renderer
       return RubyCurses::ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-2-@left_margin}
     end
+    ##
+    # this method chops the data to length before giving it to the
+    # renderer, this can cause problems if the renderer does some
+    # processing. also, it pans the data horizontally giving the renderer
+    # a section of it.
     def repaint
       return unless @repaint_required
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
@@ -773,7 +778,9 @@ module RubyCurses
             #renderer.row_selected_symbol @row_selected_symbol
             #renderer.left_margin @left_margin
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
-            renderer.repaint @form.window, r+hh, c+@left_margin, content, focussed, selected
+            ## added crow on 2009-02-06 23:03 
+            # since data is being truncated and renderer may need index
+            renderer.repaint @form.window, r+hh, c+@left_margin, crow, content, focussed, selected
         else
           # clear rows
           @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
