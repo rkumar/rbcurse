@@ -30,6 +30,9 @@ class FileExplorer
     @wdir = @dir.path
     @filter_pattern = '*'
   end
+  def title str
+    @list.title = str
+  end
 
   # changes to given dir
   # ensure that path is provided since other list
@@ -388,6 +391,24 @@ class RFe
       str= "edit #{fp}"
       #if confirm("#{str}")==:YES
       edit fp
+    when 'x'
+      str= "exec #{fp}"
+      exec_popup fp
+    end
+  end
+  def exec_popup fp
+    last_exec_def1 = @last_exec_def1 || ""
+    last_exec_def2 = @last_exec_def2 || false
+
+    sel, inp, hash = get_string_with_options("Enter a command to execute on #{fp}", 30, last_exec_def1, {"checkboxes" => ["view result"], "checkbox_defaults"=>[last_exec_def2]})
+    if sel == 0
+      @last_exec_def1 = inp
+      @last_exec_def2 = hash["view result"]
+      cmd = "#{inp} #{fp}"
+      filestr = %x[ #{cmd} ]
+      if hash["view result"]==true
+        view filestr
+      end
     end
   end
   def edit fp=@current_list.filepath
@@ -401,7 +422,7 @@ class RFe
       @klp.mode :file
       @klp.repaint
       while((ch = @window.getchar()) != ?\C-c )
-        if "cmdsuvre".index(ch.chr) == nil
+        if "cmdsuvrex".index(ch.chr) == nil
           Ncurses.beep
         else
           opt_file ch.chr
@@ -631,6 +652,7 @@ def system_popup
     files = nil
     files = filestr.split(/\n/) unless filestr.nil?
     $log.debug " SYSTEM got #{files.size}, #{files.inspect}"
+    @current_list.title inp
     @current_list.populate files
   end
 end
