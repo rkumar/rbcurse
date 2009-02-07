@@ -645,19 +645,28 @@ def grep_popup
 end
 def system_popup
   deflt = @last_system || ""
+  options=["run in shell","view output","file explorer"]
   #inp = get_string("Enter a system command", 30, deflt)
-  sel, inp, hash = get_string_with_options("Enter a system command", 40, deflt, {"radiobuttons" => ["run in shell","view output","file explorer"], "radio_default"=>@last_system_radio || "run in shell"})
+  sel, inp, hash = get_string_with_options("Enter a system command", 40, deflt, {"radiobuttons" => options, "radio_default"=>@last_system_radio || options[0]})
   if sel == 0
-  if !inp.nil?
-    @last_system = inp
-    @last_system_radio = hash["radio"]
-    filestr = %x[ #{inp} ]
-    files = nil
-    files = filestr.split(/\n/) unless filestr.nil?
-    $log.debug " SYSTEM got #{files.size}, #{files.inspect}"
-    @current_list.title inp
-    @current_list.populate files
-  end
+    if !inp.nil?
+      @last_system = inp
+      @last_system_radio = hash["radio"]
+      case hash["radio"]
+      when options[0]
+        shell_out inp
+      when options[1]
+        filestr = %x[ #{inp} ]
+        view filestr
+      when options[2]
+        filestr = %x[ #{inp} ]
+        files = nil
+        files = filestr.split(/\n/) unless filestr.nil?
+        @current_list.title inp
+        @current_list.populate files
+        $log.debug " SYSTEM got #{files.size}, #{files.inspect}"
+      end
+    end
   end
 end
 def popup
