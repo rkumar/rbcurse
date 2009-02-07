@@ -638,22 +638,26 @@ def grep_popup
     files = nil
     files = filestr.split(/\n/) unless filestr.nil?
     #view filestr
+    @current_list.title "grep #{inp}"
     @current_list.populate files
   end
   return mb.selected_index, mform.by_name["regex"].getvalue, mform.by_name["filepattern"].getvalue, mform.by_name["Recurse"].value, mform.by_name["case insensitive"].value
 end
 def system_popup
   deflt = @last_system || ""
-  inp = get_string("Enter a system command", 30, deflt)
-  #sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"], "checkbox_defaults"=>[true, false]})
+  #inp = get_string("Enter a system command", 30, deflt)
+  sel, inp, hash = get_string_with_options("Enter a system command", 40, deflt, {"radiobuttons" => ["run in shell","view output","file explorer"], "radio_default"=>@last_system_radio || "run in shell"})
+  if sel == 0
   if !inp.nil?
     @last_system = inp
+    @last_system_radio = hash["radio"]
     filestr = %x[ #{inp} ]
     files = nil
     files = filestr.split(/\n/) unless filestr.nil?
     $log.debug " SYSTEM got #{files.size}, #{files.inspect}"
     @current_list.title inp
     @current_list.populate files
+  end
   end
 end
 def popup

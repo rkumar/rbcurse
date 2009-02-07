@@ -86,8 +86,8 @@ def get_string_with_options(message, len=20, default="", config={})
   title = config["title"] || "Input required"
   input_config = config["input_config"] || {}
   checks = config["checkboxes"] 
-  
   checkbox_defaults = config["checkbox_defaults"] || []
+
   height = config["height"] || 1
   display_length = config["display_length"] || 30
 
@@ -105,18 +105,38 @@ def get_string_with_options(message, len=20, default="", config={})
     maxlen len
     set_buffer default
   end
-  r += 2
-  checks.each_with_index do |cbtext,ix|
-    field = RubyCurses::CheckBox.new mform do
-      text cbtext
-      name cbtext
-      value checkbox_defaults[ix]||false
-      color 'black'
-      bgcolor 'white'
-      row r
-      col c
+  if !checks.nil?
+    r += 2
+    checks.each_with_index do |cbtext,ix|
+      field = RubyCurses::CheckBox.new mform do
+        text cbtext
+        name cbtext
+        value checkbox_defaults[ix]||false
+        color 'black'
+        bgcolor 'white'
+        row r
+        col c
+      end
+      r += 1
     end
-    r += 1
+  end
+  radios = config["radiobuttons"] 
+  radio_default = config["radio_default"] || radios[0]
+  if !radios.nil?
+    radio = RubyCurses::Variable.new radio_default
+    r += 2
+    radios.each_with_index do |cbtext,ix|
+      field = RubyCurses::RadioButton.new mform do
+        variable radio
+        text cbtext
+        value cbtext
+        color 'black'
+        bgcolor 'white'
+        row r
+        col c
+      end
+      r += 1
+    end
   end
   mb = RubyCurses::MessageBox.new mform do
     title title
@@ -124,9 +144,12 @@ def get_string_with_options(message, len=20, default="", config={})
     default_button 0
   end
   hash = {}
+  if !checks.nil?
   checks.each do |c|
     hash[c] = mform.by_name[c].getvalue
   end
+  end
+  hash["radio"] = radio.get_value
   # returns button index (0 = OK), value of field, hash containing values of checkboxes
   return mb.selected_index, mform.by_name['input'].getvalue, hash
 end
