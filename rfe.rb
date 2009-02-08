@@ -33,6 +33,12 @@ class FileExplorer
   def title str
     @list.title = str
   end
+  def selected_color
+    @list.selected_color
+  end
+  def selected_bgcolor
+    @list.selected_bgcolor
+  end
 
   # changes to given dir
   # ensure that path is provided since other list
@@ -405,7 +411,7 @@ class RFe
       @last_exec_def1 = inp
       @last_exec_def2 = hash["view result"]
       cmd = "#{inp} #{fp}"
-      filestr = %x[ #{cmd} ]
+      filestr = %x[ #{cmd} 2>/dev/null ]
       if hash["view result"]==true
         view filestr
       end
@@ -433,6 +439,13 @@ class RFe
     }
     @form.bind_key(?\M-m){
       move()
+    }
+    @form.bind_key(32){
+      begin
+      cmd="qlmanage -p #{@current_list.filepath} 2>/dev/null"
+      %x[#{cmd}]
+      rescue Interrupt
+      end
     }
     @form.bind_key(KEY_F3){
       view()

@@ -121,8 +121,8 @@ def get_string_with_options(message, len=20, default="", config={})
     end
   end
   radios = config["radiobuttons"] 
-  radio_default = config["radio_default"] || radios[0]
   if !radios.nil?
+    radio_default = config["radio_default"] || radios[0]
     radio = RubyCurses::Variable.new radio_default
     r += 2
     radios.each_with_index do |cbtext,ix|
@@ -149,7 +149,7 @@ def get_string_with_options(message, len=20, default="", config={})
     hash[c] = mform.by_name[c].getvalue
   end
   end
-  hash["radio"] = radio.get_value
+  hash["radio"] = radio.get_value unless radio.nil?
   # returns button index (0 = OK), value of field, hash containing values of checkboxes
   return mb.selected_index, mform.by_name['input'].getvalue, hash
 end
