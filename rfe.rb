@@ -19,6 +19,8 @@ class FileExplorer
   attr_reader :wdir
   attr_reader :list # listbox
   attr_reader :dir
+  attr_reader :prev_dirs
+  attr_reader :other_list # the opposite list
   attr_reader :entries # avoid, can be outdated
   attr_accessor :filter_pattern
 
@@ -29,6 +31,7 @@ class FileExplorer
     @dir = Dir.new(Dir.getwd)
     @wdir = @dir.path
     @filter_pattern = '*'
+    @prev_dirs=[]
   end
   def title str
     @list.title = str
@@ -52,10 +55,18 @@ class FileExplorer
       list.title = pwd()
       @dir = Dir.new(Dir.getwd)
       @wdir = @dir.path
+      @prev_dirs << @wdir
       rescan
     rescue => err
       @rfe.status_row.text = err.to_s
     end
+  end
+  def goto_previous_dir
+    d = @prev_dirs.pop
+    if !d.nil? and d == @wdir
+      d = @prev_dirs.pop
+    end
+    change_dir d unless d.nil?
   end
   def filter list
     list.delete_if { |f|
@@ -165,8 +176,11 @@ class FileExplorer
   def cur_dir
     @dir.path
   end
+  alias :current_dir :cur_dir
   def draw_screen dir=nil
+    cd dir unless dir.nil?
     wdir = FileUtils.pwd
+    @prev_dirs << wdir
     r = @row
     c = @col
     #cola = 1
@@ -246,7 +260,20 @@ class RFe
     init_vars
   end
   def init_vars
-
+    @bookmarks=[]
+    @config_name = File.expand_path("~/.rfe.yml")
+    if File.exist? @config_name
+      @config = YAML::load( File.open(@config_name));
+      if !@config.nil?
+        @bookmarks = @config["bookmarks"]||[]
+        @last_dirs = @config["last_dirs"]
+      end
+    end
+    @config ||={}
+  end
+  def save_config
+    @config["last_dirs"]=[@lista.current_dir(),@listb.current_dir()]
+    File.open(@config_name, "w") { | f | YAML.dump( @config, f )} 
   end
   def move
     fp = @current_list.filepath
@@ -402,6 +429,53 @@ class RFe
       exec_popup fp
     end
   end
+  def opt_dir c
+    fp = @current_list.filepath
+    fn = @current_list.filename
+    case c
+    when 'O'
+    #  str= "copy #{fn} to #{other_list.cur_dir}"
+      if File.directory? @current_list.filepath
+        @current_list.change_dir fp
+      end
+    when 'o'
+      if File.directory? @current_list.filepath
+        @other_list.change_dir fp
+      end
+      @open_in_other = true # ???basically keep opening in other
+    when 'd'
+      str= "delete #{fn} "
+      if confirm("#{str}")==:YES
+        $log.debug " delete #{fp}"
+        FileUtils.rm fp
+        ret=@current_list.list.list_data_model.delete_at @current_list.list.current_index  # ???
+        $log.debug " DEL RET #{ret},#{@current_list.list.current_index}"
+      end
+    when 'u'
+      str= "move #{fn} to #{other_list.cur_dir}"
+      if confirm("#{str}")==:YES
+      $log.debug " MOVE #{str}"
+      end
+    when 'b'
+      dd = @current_list.wdir 
+      @bookmarks << dd unless @bookmarks.include? dd
+    when 'u'
+      dd = @current_list.wdir 
+      @bookmarks.delete dd
+    when 'l'
+      @current_list.populate @bookmarks
+    when 's'
+      @config["bookmarks"] = @bookmarks
+      save_config
+    when 'e'
+      str= "edit #{fp}"
+      #if confirm("#{str}")==:YES
+      edit fp
+    when 'x'
+      str= "exec #{fp}"
+      exec_popup fp
+    end
+  end
   def exec_popup fp
     last_exec_def1 = @last_exec_def1 || ""
     last_exec_def2 = @last_exec_def2 || false
@@ -422,11 +496,24 @@ class RFe
     shell_out "/opt/local/bin/vim #{fp}"
   end
   def draw_screens
-    @lista.draw_screen
-    @listb.draw_screen
+    lasta = lastb = nil
+    if !@config["last_dirs"].nil?
+      lasta = @config["last_dirs"][0]
+      lastb = @config["last_dirs"][1]
+    end
+    @lista.draw_screen lasta
+    @listb.draw_screen lastb
+
+    @form.bind_key(?@){
+      @current_list.change_dir File.expand_path("~/")
+    }
+    @form.bind_key(?^){
+      @current_list.change_dir @current_list.prev_dirs[0] unless @current_list.prev_dirs.empty?
+    }
     @form.bind_key(?\C-f){
       @klp.mode :file
       @klp.repaint
+      ## FIXME chr could fail !!
       while((ch = @window.getchar()) != ?\C-c )
         if "cmdsuvrex".index(ch.chr) == nil
           Ncurses.beep
@@ -437,8 +524,24 @@ class RFe
       end
       @klp.mode :normal
     }
-    @form.bind_key(?\M-m){
-      move()
+    @form.bind_key(?\C-d){
+      @klp.mode :dir
+      @klp.repaint
+      keys = @klp.get_current_keys
+      ## FIXME chr could fail !!
+      while((ch = @window.getchar()) != ?\C-c )
+        if !keys.include?(ch.chr) 
+          Ncurses.beep
+        else
+          opt_dir ch.chr
+          break
+        end
+      end
+      @klp.mode :normal
+    }
+    # backspace
+    @form.bind_key(127){
+      @current_list.goto_previous_dir
     }
     @form.bind_key(32){
       begin
@@ -477,6 +580,7 @@ class RFe
     @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
     @klp.set_key_labels get_key_labels(:file), :file
     @klp.set_key_labels get_key_labels(:view), :view
+    @klp.set_key_labels get_key_labels(:dir), :dir
     @form.repaint
     @window.wrefresh
     Ncurses::Panel.update_panels
@@ -490,7 +594,8 @@ class RFe
       @window.wrefresh
     end
     ensure
-    @window.destroy if !@window.nil?
+      @window.destroy if !@window.nil?
+      save_config
     end
 
   end
@@ -507,6 +612,7 @@ class RFe
         @current_list
       else
         @current_list = val[0] 
+        @other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
       end
     end
 def get_key_labels categ=nil
@@ -534,6 +640,15 @@ def get_key_labels categ=nil
   key_labels = [
     ['c', 'Date'], ['m', 'Size'],
     ['d', 'Delete'], ['v', 'View'],
+    ['C-c', 'Cancel']
+  ]
+  elsif categ == :dir
+  key_labels = [
+    ['o', 'open'], ['O', 'Open in right'],
+    ['d', 'Delete'], ['R', 'Del Recurse'],
+    ['t', 'tree'], ['p', 'Previous'],
+    ['b', 'Bookmark'], ['u', 'Unbookmark'],
+    ['l', 'List'],  ['s', 'Save'],
     ['C-c', 'Cancel']
   ]
   end

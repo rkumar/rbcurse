@@ -25,6 +25,15 @@ module RubyCurses
     def key_labels mode=@mode
       @key_hash[mode]
     end
+    # returns the keys as printed. these may or may not help
+    # in validation depedign on what you passed as zeroth index
+    def get_current_keys
+      a = []
+      @key_hash[@mode].each do |arr|
+        a << arr[0] unless arr.nil?
+      end
+      return a
+    end
     def getvalue
       @key_hash
     end
@@ -74,9 +83,12 @@ module RubyCurses
       #@win.wrefresh   # needed else secod row not shown after askchoice XXX
     end
     def print_key_labels_row(posy, posx, arr)
+      # FIXME: this logic of padding needs to take into account
+      # width of window
       padding = 8
       padding = 4 if arr.length > 5
-      padding = 0 if arr.length > 7
+      padding = 2 if arr.length > 7
+      padding = 0 if arr.length > 9
       #padding = @padding # XXX 2008-11-13 23:01 
       my_form_win = @win
       @win.printstring(posy,0, "%-*s" % [@cols," "], @footer_color_pair, @attr)

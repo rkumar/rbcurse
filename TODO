@@ -11,7 +11,10 @@ This todo relates to rbcurse, our own ruby fields, forms, widgets and applicatio
 
 APPS TO DO:
 
-Something like Pilot file browser.
+sql viewer: this will properly test tables with each query sending totally different data struct
+or just diff rows. Also, we can address empty tables.
+
+Something like Pilot file browser - wip, two paned.
 
 MUST DO:
 ========
