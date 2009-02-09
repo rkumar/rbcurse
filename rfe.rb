@@ -181,6 +181,8 @@ class FileExplorer
     cd dir unless dir.nil?
     wdir = FileUtils.pwd
     @prev_dirs << wdir
+    @dir = Dir.new(Dir.getwd)
+    @wdir = @dir.path
     r = @row
     c = @col
     #cola = 1
