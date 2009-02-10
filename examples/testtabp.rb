@@ -1,13 +1,11 @@
 # this is a test program, tests out tabbed panes. type F1 to exit
 #
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rtabbedpane'
+require 'rbcurse'
+require 'rbcurse/rtabbedpane'
 
 class TestTabbedPane
   def initialize

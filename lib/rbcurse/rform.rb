@@ -20,12 +20,10 @@ TODO
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/scrollable'
-require 'lib/rbcurse/selectable'
-require 'lib/rbcurse/rinputdataevent'
+require 'rbcurse'
+require 'rbcurse/scrollable'
+require 'rbcurse/selectable'
+require 'rbcurse/rinputdataevent'
 
 include Ncurses
 include RubyCurses

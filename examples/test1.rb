@@ -5,16 +5,14 @@
 #  TERM=xterm-color does but does not trap F1, f2 etc
 #  TERM=xterm does not but other things are fine.
 #
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
 #require 'lib/rbcurse/mapper'
 #require 'lib/rbcurse/keylabelprinter'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rmessagebox'
+require 'rbcurse'
+require 'rbcurse/rmessagebox'
 
 if $0 == __FILE__
   # Initialize curses

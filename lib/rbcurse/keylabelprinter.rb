@@ -1,4 +1,4 @@
-require 'lib/rbcurse/rwidget'
+require 'rbcurse/rwidget'
 include Ncurses
 include RubyCurses
 module RubyCurses

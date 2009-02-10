@@ -12,9 +12,7 @@
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
+require 'rbcurse'
 
 include Ncurses
 include RubyCurses

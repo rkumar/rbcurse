@@ -1,13 +1,11 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 # this program tests out various widgets.
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
+require 'rbcurse'
 #require 'lib/rbcurse/rform'
-require 'lib/rbcurse/rpopupmenu'
+require 'rbcurse/rpopupmenu'
 if $0 == __FILE__
   include RubyCurses
 
@@ -24,12 +22,12 @@ if $0 == __FILE__
 
     catch(:close) do
       colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors  ---------"
+      $log.debug "START #{colors} colors  #{$datacolor} ---------"
       @form = Form.new @window
       @form.window.printstring 0, 25, "Demo of Ruby Curses PopupMenu", $normalcolor, 'reverse'
       r = 1; fc = 12;
       row = 10; col = 10
-      colorlabel = Label.new @form, {'text' => "A label:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
+      colorlabel = Label.new @form, {'text' => "A label:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'A'}
 
       #@mb = RubyCurses::MenuBar.new
       #filemenu = RubyCurses::Menu.new "File"

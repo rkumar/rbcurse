@@ -1,4 +1,4 @@
-require 'lib/rbcurse/colormap'
+require 'rbcurse/colormap'
 module VER
 include ColorMap
   module_function

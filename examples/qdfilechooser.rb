@@ -1,12 +1,12 @@
 # this is a test program, tests out messageboxes. type F1 to exit
 # a quick dirty file chooser in 2 lines of code.
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
+require 'ver/ncurses'
+require 'ver/window'
+require 'rbcurse/rwidget'
 
 ##
 # a quick dirty file chooser - only temporary till we make something better.

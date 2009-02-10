@@ -23,9 +23,8 @@ a user friendly string to identifiy the action, as well as a disabled option.
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
+require 'rbcurse'
+require 'rbcurse/action'
 
 include Ncurses
 include RubyCurses
@@ -722,8 +721,9 @@ module RubyCurses
    def text=(t) # stack level too deep if no = .????
     @checkbox.text t
    end
+   ## added @ with text, else crashing on testmenu.rb
     def to_s
-      "    #{text} "
+      "    #{@text} "
     end
     def getvalue
       checkbox.getvalue

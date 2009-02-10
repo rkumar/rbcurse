@@ -23,12 +23,10 @@ TODO
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/mapper'
-require 'lib/rbcurse/colormap'
-#require 'lib/rbcurse/rdialogs'
-#require 'lib/rbcurse/listcellrenderer'
+require 'rbcurse/mapper'
+require 'rbcurse/colormap'
+#require 'rbcurse/rdialogs'
+#require 'rbcurse/listcellrenderer'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets

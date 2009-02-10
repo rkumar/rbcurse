@@ -1,16 +1,13 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-#require 'lib/ver/keyboard'
-require 'lib/ver/window'
 #require 'lib/rbcurse/mapper'
 #require 'lib/rbcurse/keylabelprinter'
 #require 'lib/rbcurse/commonio'
 #require 'lib/rbcurse/rwidget'
 #require 'lib/rbcurse/rform'
-require 'lib/rbcurse/rcombo'
+require 'rbcurse/rcombo'
 if $0 == __FILE__
   include RubyCurses
 

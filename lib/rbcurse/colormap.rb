@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'ncurses'
+require 'ver/ncurses'
 module ColorMap
   ## private
   # returns a color constant for a human color string

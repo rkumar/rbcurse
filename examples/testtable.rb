@@ -1,17 +1,15 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-#require 'lib/ver/keyboard'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rcombo'
-require 'lib/rbcurse/rtable'
-require 'lib/rbcurse/celleditor'
-#require 'lib/rbcurse/table/tablecellrenderer'
-require 'lib/rbcurse/comboboxcellrenderer'
-require 'lib/rbcurse/action'
+#require 'ver/keyboard'
+require 'rbcurse'
+require 'rbcurse/rcombo'
+require 'rbcurse/rtable'
+require 'rbcurse/celleditor'
+#require 'rbcurse/table/tablecellrenderer'
+require 'rbcurse/comboboxcellrenderer'
+require 'rbcurse/action'
 
 ##
 # a renderer which paints alternate lines with

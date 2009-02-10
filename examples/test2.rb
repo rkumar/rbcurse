@@ -1,23 +1,22 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 # this program tests out various widgets.
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-#require 'lib/rbcurse/rform'
-require 'lib/rbcurse/rtextarea'
-require 'lib/rbcurse/rtextview'
-require 'lib/rbcurse/rmenu'
-require 'lib/rbcurse/rcombo'
-require 'lib/rbcurse/listcellrenderer'
-require 'lib/rbcurse/checkboxcellrenderer'
-require 'lib/rbcurse/comboboxcellrenderer'
-require 'lib/rbcurse/celleditor'
+require 'rbcurse'
+require 'rbcurse/rwidget'
+#require 'rbcurse/rform'
+require 'rbcurse/rtextarea'
+require 'rbcurse/rtextview'
+require 'rbcurse/rmenu'
+require 'rbcurse/rcombo'
+require 'rbcurse/listcellrenderer'
+require 'rbcurse/checkboxcellrenderer'
+require 'rbcurse/comboboxcellrenderer'
+require 'rbcurse/celleditor'
 require 'qdfilechooser'
-require 'lib/rbcurse/rlistbox'
-require 'lib/rbcurse/rmessagebox'
+require 'rbcurse/rlistbox'
+require 'rbcurse/rmessagebox'
 if $0 == __FILE__
   include RubyCurses
 
@@ -146,7 +145,7 @@ if $0 == __FILE__
           print_footer true
           footer_attrib 'bold'
         end
-        content = File.open("README.txt","r").readlines
+        content = File.open("../README.txt","r").readlines
         @textview.set_content content #, :WRAP_WORD
         @textview.top_row 21
 

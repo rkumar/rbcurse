@@ -31,7 +31,7 @@ Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 * tabbedpane (multiple forms using tabbed metaphor)
 * combobox
 * labels with mnemonics (hotkeys)
-* multi-column table (new, wip) - no column selection or editing as yet
+* multi-column table - with cell selection and editing
 
 Above may be created using DSL like syntax, or hashes.
 

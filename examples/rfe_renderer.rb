@@ -1,7 +1,3 @@
-require 'rubygems'
-require 'ncurses'
-require 'logger'
-require 'lib/rbcurse/rwidget'
 module RubyCurses
 
   ## 

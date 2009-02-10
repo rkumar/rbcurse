@@ -1,4 +1,4 @@
-require 'lib/ver/ncurses'
+require 'ver/ncurses'
 module VER
   # Responsibilities:
   # * Interface to Ncurses::WINDOW and Ncurses::Panel

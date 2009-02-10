@@ -1,4 +1,4 @@
-require 'lib/rbcurse/orderedhash'
+require 'rbcurse/orderedhash'
 class Mapper
   attr_reader :keymap
   attr_reader :view

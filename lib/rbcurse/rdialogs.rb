@@ -15,10 +15,8 @@ TODO:
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rmessagebox'
+require 'rbcurse/rwidget'
+require 'rbcurse/rmessagebox'
 
 ##
 # pops up a modal box with a message and an OK button.

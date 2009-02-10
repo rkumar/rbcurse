@@ -16,14 +16,12 @@
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/table/tablecellrenderer'
-require 'lib/rbcurse/table/tabledatecellrenderer'
-require 'lib/rbcurse/checkboxcellrenderer'
-require 'lib/rbcurse/listselectable'
-require 'lib/rbcurse/listkeys'
+require 'rbcurse'
+require 'rbcurse/table/tablecellrenderer'
+require 'rbcurse/table/tabledatecellrenderer'
+require 'rbcurse/checkboxcellrenderer'
+require 'rbcurse/listselectable'
+require 'rbcurse/listkeys'
 
 include Ncurses
 include RubyCurses

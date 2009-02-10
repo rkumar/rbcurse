@@ -23,6 +23,8 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
+Tabledemo: testtable.rb: checkboxes not showing X (true) when row not focussed!
+
 TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 
 handle_keys logic: some cases can return unhandled in which case we must still check furhter. So else

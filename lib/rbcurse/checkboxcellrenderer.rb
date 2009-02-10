@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/rbcurse/listcellrenderer'
+require 'rbcurse/listcellrenderer'
 module RubyCurses
 
   ## 

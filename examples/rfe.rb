@@ -1,19 +1,21 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rcombo'
-require 'lib/rbcurse/rlistbox'
+require 'rbcurse'
+require 'rbcurse/rcombo'
+require 'rbcurse/rlistbox'
 require 'rfe_renderer'
 #require 'lib/rbcurse/table/tablecellrenderer'
-require 'lib/rbcurse/keylabelprinter'
-require 'lib/rbcurse/applicationheader'
-require 'lib/rbcurse/action'
+require 'rbcurse/keylabelprinter'
+require 'rbcurse/applicationheader'
+require 'rbcurse/action'
 require 'fileutils'
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 
+# TODO
+# operations on selected files: move, delete, zip
+# This class represents the finder pane. There are 2 
+# on this sample app
 class FileExplorer
   include FileUtils
   attr_reader :wdir
@@ -332,7 +334,7 @@ class RFe
   end
   ## TODO : make this separate and callable with its own keylabels
   def view  content=nil
-    require 'lib/rbcurse/rtextview'
+    require 'rbcurse/rtextview'
     wt = 0
     wl = 0
     wh = Ncurses.LINES-wt
@@ -756,6 +758,7 @@ def grep_popup
     default_button 0
   end
   if mb.selected_index == 0
+    return if mform.by_name["regex"].getvalue()==""
     @last_regex = mform.by_name["regex"].getvalue
     inp = mform.by_name["regex"].getvalue
     fp = mform.by_name["filepattern"].getvalue

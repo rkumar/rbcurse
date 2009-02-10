@@ -10,12 +10,9 @@ TODO
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'lib/ver/ncurses'
-require 'lib/ver/window'
-require 'lib/rbcurse/rdialogs'
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/listcellrenderer'
-require 'lib/rbcurse/listkeys'
+require 'rbcurse'
+require 'rbcurse/listcellrenderer'
+require 'rbcurse/listkeys'
 
 
 include Ncurses
@@ -373,10 +370,10 @@ module RubyCurses
   # this is the new LISTBOX, based on new scrollable.
   #
   class Listbox < Widget
-    require 'lib/rbcurse/listscrollable'
-    require 'lib/rbcurse/listselectable'
-    require 'lib/rbcurse/defaultlistselectionmodel'
-    require 'lib/rbcurse/celleditor'
+    require 'rbcurse/listscrollable'
+    require 'rbcurse/listselectable'
+    require 'rbcurse/defaultlistselectionmodel'
+    require 'rbcurse/celleditor'
     include ListScrollable
     include ListSelectable
     include RubyCurses::ListKeys

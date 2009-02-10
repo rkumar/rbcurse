@@ -1,3 +1,10 @@
+**2009-02-11 00:57**
+## Path changes in order to make first gem ##
+
+the first gem is ready 0.1.0. So various path changes (removed all the lib's in require)
+
+frmincr200902110056.tgz
+* * *
 **2009-01-21 18:30**
 ## Class Action ##
 

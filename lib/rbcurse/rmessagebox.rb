@@ -7,8 +7,8 @@
   * file separated on 2009-01-13 22:39 
 
 =end
-require 'lib/rbcurse/rwidget'
-require 'lib/rbcurse/rlistbox'
+require 'rbcurse/rwidget'
+require 'rbcurse/rlistbox'
 
 module RubyCurses
   ##
@@ -175,6 +175,7 @@ module RubyCurses
         when -1
           return
         when KEY_F1, 27, ?\C-q   
+          @selected_index = -1
           @stop = true
           return
         when KEY_ENTER, 10, 13
