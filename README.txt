@@ -2,22 +2,29 @@
 
 * http://totalrecall.wordpress.com   << CORRECTED !!!
 
+* rbcurse on rubyforge: http://rbcurse.rubyforge.org/
+
 * See latest changes on http://github.com/rkumar/rbcurse/tree/master/CHANGELOG
 
-* For a working example, execute test2.rb (exit with F1, Or Cancel
-  button/Alt-C).
+* Many working demos in examples folder, such as:
+
+  * test2.rb (exit with F1, Or Cancel button/Alt-C) contains various
+    widgets. F2 for menubar toggling
+
+  * rfe.rb is a ruby file explorer
+
+  * testtodo.rb is a test TODO application
 
 * Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
-  and http://www.benegal.org/files/screen/
+ (OLD)
+  and http://www.benegal.org/files/screen/ (new)
+  and on blog, http://totalrecall.wordpress.com   
 
-  Full screen sample: http://www.benegal.org/files/screen/nc_ss_full.png
 
 == DESCRIPTION:
 
-A small widget library written in ruby for creating ncurses
+A small but comprehensive widget library written in ruby for creating ncurses
 applications.
-See lib/rbcurse/rwidgets.rb and lib/rbcurse/rform.rb.
-Test programs are in base dir: test1.rb, test2.rb, testtabp.rb
 
 == FEATURES
 
@@ -37,12 +44,11 @@ Above may be created using DSL like syntax, or hashes.
 
 == Sample programs:
 
+*  rfe : file explorer or Finder like app
+*  testtodo.rb  : a todo app based on a yaml file
 *  test2.rb  most widgets (including menus)
-   http://github.com/rkumar/rbcurse/tree/master/test2.rb
 *  test1.rb  various kinds of messageboxes (input, list, custom)
-   http://github.com/rkumar/rbcurse/tree/master/test1.rb
 *  testtabp.rb  tabbed pane
-   http://github.com/rkumar/rbcurse/tree/master/testtabp.rb
 *  testcombo.rb  combos with various insert policies and vertical
    alignments
 
@@ -70,7 +76,7 @@ I am developing and testing under "screen" under OS X Leopard.
 == SYNOPSIS:
 
 See lib/rbcurse/rwidgets.rb.
-For test programs, see test1, test2, testcombo etc in root folder.
+For test programs, see test1, test2, testcombo etc in examples folder.
 
 This depends only on "window" provided by ncurses. Does not use forms
 and fields. Minor changes and improvements may have happened to sample
