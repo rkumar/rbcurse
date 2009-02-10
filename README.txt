@@ -17,7 +17,7 @@
 
 * Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
  (OLD)
-  and http://www.benegal.org/files/screen/ (new)
+  and http://www.benegal.org/files/screen/?M=D   (new)
   and on blog, http://totalrecall.wordpress.com   
 
 
