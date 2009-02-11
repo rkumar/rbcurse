@@ -756,7 +756,8 @@ module RubyCurses
             width = renderer.display_length + 1
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             acolumn.column_offset = offset
-            renderer.repaint @form.window, r+hh, c+(offset), content, focussed, selected
+            # added crow on 2009-02-11 22:46 
+            renderer.repaint @form.window, r+hh, c+(offset), crow, content, focussed, selected
             offset += width
           end
         else
@@ -787,7 +788,7 @@ module RubyCurses
         renderer.display_length acolumn.width unless acolumn.nil?
         width = renderer.display_length + 1
         content = tc.header_value
-        renderer.repaint @form.window, r, c+(offset), content, false, false
+        renderer.repaint @form.window, r, c+(offset),0, content, false, false
         offset += width
       end
     end

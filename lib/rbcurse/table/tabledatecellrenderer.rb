@@ -50,7 +50,7 @@ module RubyCurses
 
     ##
     # XXX need to move wrapping etc up and done once. 
-    def repaint graphic, r=@row,c=@col, value=@text, focussed=false, selected=false
+    def repaint graphic, r=@row,c=@col, row_index=-1,value=@text, focussed=false, selected=false
         lablist = []
         #value=value.to_s # ??
         value=transform value
