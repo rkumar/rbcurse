@@ -756,6 +756,15 @@ module RubyCurses
             width = renderer.display_length + 1
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             acolumn.column_offset = offset
+            # trying to ensure that no overprinting
+            #  $log.debug "  c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+            #  $log.debug "  #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+            if c+offset+width > @col+@width
+              $log.debug " TABLE BREAKING SINCE "
+              $log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+              $log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+              break
+            end
             # added crow on 2009-02-11 22:46 
             renderer.repaint @form.window, r+hh, c+(offset), crow, content, focussed, selected
             offset += width
@@ -788,6 +797,10 @@ module RubyCurses
         renderer.display_length acolumn.width unless acolumn.nil?
         width = renderer.display_length + 1
         content = tc.header_value
+        if c+offset+width > @col+@width
+          $log.debug " TABLE: experimental code to NOT print if chance of exceeding table width"
+          break
+        end
         renderer.repaint @form.window, r, c+(offset),0, content, false, false
         offset += width
       end
