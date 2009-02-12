@@ -23,7 +23,7 @@ MUST DO:
     |  TO FIX  |
     +----------+
 
-Tabledemo: testtable.rb: checkboxes not showing X (true) when row not focussed!
+Tabledemo: testtable.rb: checkboxes not showing X (true) when row not focussed! - Done, rel as 0.1.1
 
 TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 

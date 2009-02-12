@@ -127,7 +127,7 @@ code below. See test programs for latest, working code.
         end
         field.insert 5, "hello ruby", "so long python", "farewell java", "RIP .Net"
 
-=== create a textarea for entry (this can be buggy at present)
+=== create a textarea for entry 
 
         texta = TextArea.new @form do
           name   "mytext" 
@@ -287,21 +287,16 @@ code below. See test programs for latest, working code.
 
 (following is provided with source)
 
-* uses the window class created by "manveru" (michael) - this can be
-  removed if not needed. (lib/ver/window)
+* uses the window class created by "manveru" (michael) 
   It is provided with this package, and has some alterations from the
   original. I have added a method getchar() which traps and returns
   ALT/META, META+CTRL, META+SHIFT+CONTROL, ALT+Fn etc. 
 
-  So basically do not remove it unless you have very different
-  requirements.
 
 == INSTALL:
 
-* currently, just unzip/untar in a folder. Please change the path in
-  the top line of the test programs.
-
-(Please advice me how i can improve installation procedure)
+sudo gem install ncurses-ruby
+sudo gem install rbcurse
 
 == LICENSE:
 
