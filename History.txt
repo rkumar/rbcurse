@@ -1,0 +1,13 @@
+=== 0.1.1 / 2009-02-12
+
+* Bugfix
+
+  * Parameter added to table cell renderer's repaint got missed in one
+  * or 2 classes. Only affects Tables.
+
+=== 0.1.0 / 2009-02-11
+
+* 1 major enhancement
+
+  * Birthday!
+
