@@ -1,3 +1,24 @@
+** 2009-02-13 13:48 **
+## added button_type to tabbed pane ##
+
+Now buttons at bottom of tabbed pane. Will return selected_index
+to caller.
+Uploaded to github, will be included in 0.1.2.
+
+* * *
+** 2009-02-12 22:48 **
+## Code to stop table from printing a column if exceeding bounds ##
+
+Uploaded to github, will be included in 0.1.2.
+
+EXPERIMENTAL CODE: Affects only tables. Now table will not print a column or header
+if columns width causes it to exceed width of table.
+
+This means if you have a single column which is wider than table
+then it wont print. In Listboxes we always truncate data and pass to
+renderer. We could do that here, but it could get messy.
+
+* * *
 **2009-02-12 **
 ## Missed one parameter in Table's repaint, and some Table Cell Renderers
 

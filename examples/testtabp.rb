@@ -20,6 +20,7 @@ class TestTabbedPane
         width  50
         row 5
         col 10
+        button_type :ok
       end
       @tab1 = @tp.add_tab "&Language" 
       f1 = @tab1.form
@@ -95,6 +96,7 @@ if $0 == __FILE__
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
     n = TestTabbedPane.new
+    n.run
   rescue => ex
   ensure
     VER::stop_ncurses

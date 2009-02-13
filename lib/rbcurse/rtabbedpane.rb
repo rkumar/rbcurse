@@ -74,6 +74,9 @@ module RubyCurses
     include EventHandler
     dsl_accessor :row, :col
     dsl_accessor :height, :width
+    dsl_accessor :button_type      # ok, ok_cancel, yes_no
+    dsl_accessor :buttons           # used if type :custom
+    attr_reader :selected_index
     def initialize win, aconfig={}, &block
       @parent = win
       @tabs ||= []
@@ -161,6 +164,7 @@ module RubyCurses
         }
  
       end
+      create_buttons
       @form.repaint
     end
     def display_form form
@@ -183,7 +187,14 @@ module RubyCurses
       return form
     end
     def handle_keys
-      while (( ch=@window.getchar()) != KEY_F1)
+      begin
+      while (( ch=@window.getchar()) != 999)
+        if ch == ?\C-q
+          @selected_index = -1  # this signifies cancel by ?C-q
+          @stop = true
+          return
+        end
+        return if @stop
         @current_form ||= @form
         ret = @current_form.handle_key(ch)
         case ret
@@ -220,14 +231,65 @@ module RubyCurses
           @form.repaint
           #return :UNHANDLED if ret == :UNHANDLED
         end
+        return if @stop
         @current_form.window.wrefresh
         @window.refresh
       end
-      destroy
+      ensure
+        destroy
+      end
     end
     def destroy
       @window.destroy
       @forms.each { |f| w = f.window; w.destroy unless w.nil? }
+    end
+    def create_buttons
+      case @button_type.to_s.downcase
+      when "ok"
+        make_buttons ["&OK"]
+      when "ok_cancel" #, "input", "list", "field_list"
+        make_buttons %w[&OK &Cancel]
+      when "yes_no"
+        make_buttons %w[&Yes &No]
+      when "yes_no_cancel"
+        make_buttons ["&Yes", "&No", "&Cancel"]
+      when "custom"
+        raise "Blank list of buttons passed to custom" if @buttons.nil? or @buttons.size == 0
+        make_buttons @buttons
+      else
+        $log.debug "No buttontype passed for creating tabbedpane. Using default (OK)"
+        make_buttons ["&OK"]
+      end
+    end
+    def make_buttons names
+      total = names.inject(0) {|total, item| total + item.length + 4}
+      bcol = center_column total
+
+      brow = @layout[:height]-2
+      button_ct=0
+      names.each_with_index do |bname, ix|
+        text = bname
+        #underline = @underlines[ix] if !@underlines.nil?
+
+        button = Button.new @form do
+          text text
+          name bname
+          row brow
+          col bcol
+          #underline underline
+          highlight_background $reversecolor 
+          color $datacolor
+          bgcolor $datacolor
+        end
+        index = button_ct
+        button.command { |form| @selected_index = index; @stop = true; $log.debug "Pressed Button #{bname}";}
+        button_ct += 1
+        bcol += text.length+6
+      end
+    end
+    def center_column textlen
+      width = @layout[:width]
+      return (width-textlen)/2
     end
 
     ##
