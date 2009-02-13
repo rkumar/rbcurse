@@ -1472,6 +1472,7 @@ module RubyCurses
       @text_variable.nil? ? @text : @text_variable.get_value(@name)
     end
 
+    # ensure text has been passed or action
     def getvalue_for_paint
       ret = getvalue
       @text_offset = @surround_chars[0].length

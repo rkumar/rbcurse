@@ -3,8 +3,13 @@
 module RubyCurses
   module ListSelectable
 
-    def list_selection_model lsm
-      @list_selection_model = lsm
+    ## modified on 2009-02-13 23:41 to return model if no param passed
+    def list_selection_model(*lsm)
+      if lsm.empty?
+        @list_selection_model 
+      else
+        @list_selection_model = lsm[0]
+      end
       #@list_selection_model.selection_mode = @selection_mode || :MULTIPLE
     end
     def create_default_list_selection_model
@@ -15,6 +20,7 @@ module RubyCurses
     end
 
     def add_row_selection_interval ix0, ix1
+      $log.debug " def add_row_selection_interval #{ix0}, ix1"
       # if row_selection_allowed
       @list_selection_model.add_selection_interval ix0, ix1
     end
@@ -63,5 +69,20 @@ module RubyCurses
     alias :selected_index :selected_row
     attr_accessor :row_selection_allowed
     attr_accessor :column_selection_allowed
+  end
+  class ListSelectionEvent
+    attr_accessor :firstrow, :lastrow, :source, :type
+    def initialize firstrow, lastrow, source, type
+      @firstrow = firstrow
+      @lastrow = lastrow
+      @source = source
+      @type = type
+    end
+    def to_s
+      "#{@type.to_s}, firstrow: #{@firstrow}, lastrow: #{@lastrow}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
   end
 end

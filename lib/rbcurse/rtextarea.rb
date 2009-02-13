@@ -27,6 +27,8 @@ module RubyCurses
   ## a multiline text editing widget
   # TODO - giving data to user - adding newlines, and withog adding.
   #  - respect newlines for incoming data
+  #  we need a set_text method, passing nil or blank clears
+  #  current way is not really good. remove_all sucks.
   #   
   class TextArea < Widget
     include ListScrollable
@@ -90,6 +92,7 @@ module RubyCurses
     end
     def remove_all
       @list = []
+      set_modified  # added 2009-02-13 22:28 so repaints
     end
     ## 
     # trying to wrap and insert
@@ -622,6 +625,7 @@ module RubyCurses
       end
       str
     end
+    alias :get_text :to_s
     ## ---- for listscrollable ---- ##
     def scrollatrow
       @height-2

@@ -22,8 +22,19 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
+Table - if more columns than displayable, how about panning ?
 
-Tabledemo: testtable.rb: checkboxes not showing X (true) when row not focussed! - Done, rel as 0.1.1
+DefaultListSelectionModel does not fire a ListSelectionEvent - done 2009-02-14 00:27 
+Gen: when binding, we should check if that event is fireable. So widgets shold register their events first.
+
+Table: if cell_selection_allowed not true we should be able to select row as a whole (which should be
+default).
+Table: newlines scrood up display (select name, sql from sqlite_master)
+Table: adhoc queries, need to fill up width
+
+TextArea: get_content returns a list (UGH) - should be get_text
+TextArea: remove_all (should it not be clear() ) -- should be set_text with blank
+TextArea: that first blank line is a pain - do something quick
 
 TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 
@@ -122,7 +133,6 @@ EDITING IN TABLES:
 Sorting of tables using intermediate view that maps jtable to model - not imp
 
 TABBED:
-Tabbed Pane may want to add OK, or OK_CANCEL buttons.
 
 FORM: on_enter, on_exit - currently the on_enter and leave is for widgets as in ncurses.
 
@@ -153,6 +163,8 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+Tabbed Pane may want to add OK, or OK_CANCEL buttons. - done
+Tabledemo: testtable.rb: checkboxes not showing X (true) when row not focussed! - Done, rel as 0.1.1
 Menuitem: disabled, what if no action (not armed). disabled - cyan color. If no
 action, that's okay since we can have listeners that will act on index
 selected.

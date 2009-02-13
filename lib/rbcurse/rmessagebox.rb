@@ -234,7 +234,7 @@ module RubyCurses
       # XXX this needs to go up and decide height of window
       if @message_height.nil?
         @message_height = (message.length/display_length)+1
-        $log.debug " print_message: mh:#{@message_height}"
+        $log.debug " print_message: mh:#{@message_height}, ml: #{message.length}"
       end
       @message_height ||= 1
       width = @layout[:width]
@@ -251,6 +251,7 @@ module RubyCurses
         @message_col = (width-message.length)/2
       end
       @message_row = row
+      # FIXME : wont print if newline at end of message !!!
       #@window.printstring( row, @message_col , message, color=$reversecolor)
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
       #@window.printstring( row, @message_col , message, color=$reversecolor)

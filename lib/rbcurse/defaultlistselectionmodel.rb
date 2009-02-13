@@ -1,3 +1,6 @@
+require 'rbcurse/listselectable'
+##
+# Added ListSelectionEvents on 2009-02-13 23:33 
 module RubyCurses
   class DefaultListSelectionModel
     include EventHandler
@@ -9,10 +12,15 @@ module RubyCurses
       @anchor_selection_index = -1
       @lead_selection_index = -1
       @selection_mode = :MULTIPLE
+      $log.debug " created DefaultListSelectionModel XXX"
     end
 
     def clear_selection
+      ix0 = @selected_indices.first
+      ix1 = @selected_indices.last
       @selected_indices=[]
+      lse = ListSelectionEvent.new(ix0, ix1, self, :DELETE)
+      fire_handler :LIST_SELECTION_EVENT, lse
     end
     def is_selected_index ix
       @selected_indices.include? ix
@@ -28,17 +36,23 @@ module RubyCurses
     end
     ## TODO should go in sorted, and no dupes
     def add_selection_interval ix0, ix1
+      $log.debug " def add_selection_interval #{ix0}, ix1"
       if @selection_mode != :MULTIPLE
         clear_selection
       end
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
+      lse = ListSelectionEvent.new(ix0, ix1, self, :INSERT)
+      fire_handler :LIST_SELECTION_EVENT, lse
+      $log.debug " DLSM firing LIST_SELECTION EVENT #{lse}"
     end
     def remove_selection_interval ix0, ix1
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       @selected_indices.delete_if {|x| x >= ix0 and x <= ix1}
+      lse = ListSelectionEvent.new(ix0, ix1, self, :DELETE)
+      fire_handler :LIST_SELECTION_EVENT, lse
     end
     def insert_index_interval ix0, len
       @anchor_selection_index = ix0

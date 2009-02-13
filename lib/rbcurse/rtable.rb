@@ -123,17 +123,24 @@ module RubyCurses
     # Sets the data in models
     # Should replace if these are created. TODO FIXME
     def set_data data, colnames_array
+      # next 2 added in case set_data called again
+      @table_changed = true
+      @repaint_required = true
       if data.is_a? Array
         model = RubyCurses::DefaultTableModel.new data, colnames_array
         table_model model
       elsif data.is_a? RubyCurses::TableModel
         table_model data
+      else
+        raise "set_data: don't know how to handle data: #{data.class.to_s}"
       end
       if colnames_array.is_a? Array
         model = DefaultTableColumnModel.new colnames_array
         table_column_model model
       elsif colnames_array.is_a? RubyCurses::TableColumnModel
         table_column_model  colnames_array
+      else
+        raise "set_data: don't know how to handle column data: #{colnames_array.class.to_s}"
       end
       create_default_list_selection_model
       create_table_header
@@ -165,7 +172,7 @@ module RubyCurses
       end
     end
     def table_column_model tcm
-      raise "data error" if !tcm.is_a? RubyCurses::TableColumnModel
+      raise "data error: table_column_model wrong class" if !tcm.is_a? RubyCurses::TableColumnModel
       @table_column_model = tcm
       @table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT) {|e| 
         table_structure_changed e
@@ -760,9 +767,9 @@ module RubyCurses
             #  $log.debug "  c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
             #  $log.debug "  #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
             if c+offset+width > @col+@width
-              $log.debug " TABLE BREAKING SINCE "
-              $log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
-              $log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+              #$log.debug " TABLE BREAKING SINCE "
+              #$log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+              #$log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               break
             end
             # added crow on 2009-02-11 22:46 
@@ -1174,8 +1181,8 @@ module RubyCurses
 
     ##
     # LSM 
-    #
-    class DefaultListSelectionModel
+    # XXX UNUSED
+    class OLDDefaultListSelectionModel
       include RubyCurses::EventHandler 
       attr_accessor :selection_mode
       attr_reader :anchor_selection_index
@@ -1185,6 +1192,7 @@ module RubyCurses
         @anchor_selection_index = -1
         @lead_selection_index = -1
         @selection_mode = :MULTIPLE
+        $log.debug " OLD VERSION OF LIST SELECTION MODEL IN rtable.rb"
       end
 
       def clear_selection
