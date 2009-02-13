@@ -13,13 +13,15 @@
 
   * rfe.rb is a ruby file explorer
 
+  * sqlc.rb is a ruby sql client demo (using testd.db at
+     http://www.benegal.org/files/screen/testd.db)
+
   * testtodo.rb is a test TODO application
 
-* Screenshots on http://github.com/rkumar/rbcurse/wikis/screenshots
- (OLD)
-  and http://www.benegal.org/files/screen/?M=D   (new)
+* Screenshots on 
+  http://www.benegal.org/files/screen/?M=D   (new)
   and on blog, http://totalrecall.wordpress.com   
-
+  and http://github.com/rkumar/rbcurse/wikis/screenshots (old)
 
 == DESCRIPTION:
 
