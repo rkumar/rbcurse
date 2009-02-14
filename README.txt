@@ -23,6 +23,10 @@
   and on blog, http://totalrecall.wordpress.com   
   and http://github.com/rkumar/rbcurse/wikis/screenshots (old)
 
+* Todo (for 0.1.2): http://rubyforge.org/pm/task.php?group_id=7775&group_project_id=13812&func=browse
+
+* Next Major Release: http://rubyforge.org/pm/task.php?group_project_id=13813&group_id=7775&func=browse
+
 == DESCRIPTION:
 
 A small but comprehensive widget library written in ruby for creating ncurses

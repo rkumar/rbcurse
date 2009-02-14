@@ -171,7 +171,12 @@ module RubyCurses
         @table_model.bind(:TABLE_MODEL_EVENT){|lde| table_data_changed(lde) }
       end
     end
-    def table_column_model tcm
+    # updated this so no param will return the tcm 2009-02-14 12:31 
+    def table_column_model(*val)
+      if val.empty?
+        return @table_column_model
+      end
+      tcm = val[0]
       raise "data error: table_column_model wrong class" if !tcm.is_a? RubyCurses::TableColumnModel
       @table_column_model = tcm
       @table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT) {|e| 
@@ -182,8 +187,9 @@ module RubyCurses
       #@table_header.column_model(tcm) unless @table_header.nil?
       @table_header.table_column_model=(tcm) unless @table_header.nil?
     end
-    # FIX THIS SO NO GET_ XXX
+    # @deprecated, avoid usage
     def get_table_column_model
+      $log.debug " DEPRECATED. Pls use table_column_model()"
       @table_column_model 
     end
     # 
@@ -770,6 +776,17 @@ module RubyCurses
               #$log.debug " TABLE BREAKING SINCE "
               #$log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               #$log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
+              # experimental to print subset of last
+              space_left = (@width-3)-(offset)
+              if content.length > space_left
+                clen = space_left
+                renderer.display_length clen
+              else
+                clen = -1
+                renderer.display_length content.length
+              end
+              #$log.debug " TABLE BREAKING SINCE sl: #{space_left},#{crow},#{colix}: #{clen} "
+              renderer.repaint @form.window, r+hh, c+(offset), crow, content[0..clen], focussed, selected
               break
             end
             # added crow on 2009-02-11 22:46 
@@ -806,6 +823,16 @@ module RubyCurses
         content = tc.header_value
         if c+offset+width > @col+@width
           $log.debug " TABLE: experimental code to NOT print if chance of exceeding table width"
+              space_left = (@width-3)-(offset)
+              if content.length > space_left
+                clen = space_left
+                renderer.display_length clen
+              else
+                clen = -1
+                renderer.display_length space_left
+              end
+              #$log.debug " TABLE BREAKING SINCE sl: #{space_left},#{crow},#{colix}: #{clen} "
+              renderer.repaint @form.window, r, c+(offset), 0, content[0..clen], false, false
           break
         end
         renderer.repaint @form.window, r, c+(offset),0, content, false, false

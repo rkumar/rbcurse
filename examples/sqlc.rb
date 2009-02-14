@@ -12,7 +12,9 @@ require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
 
-
+# pls get testd.db from
+# http://www.benegal.org/files/screen/testd.db
+# or put some other sqlite3 db name there.
 
 ## must give me @content, @columns, @datatypes (opt)
 class Datasource
@@ -49,6 +51,56 @@ class Datasource
   def get_metadata table
     get_data "select * from #{table} limit 1"
     return @columns
+  end
+  ##
+  # returns columns_widths, and updates that variable
+  def estimate_column_widths tablewidth, columns
+    colwidths = {}
+    min_column_width = (tablewidth/columns.length) -1
+    $log.debug("min: #{min_column_width}, #{tablewidth}")
+    @content.each_with_index do |row, cix|
+      break if cix >= 20
+      row.each_index do |ix|
+        col = row[ix]
+        colwidths[ix] ||= 0
+        colwidths[ix] = [colwidths[ix], col.length].max
+      end
+    end
+    total = 0
+    colwidths.each_pair do |k,v|
+      name = columns[k.to_i]
+      colwidths[name] = v
+      total += v
+    end
+    colwidths["__TOTAL__"] = total
+    column_widths = colwidths
+    @max_data_widths = column_widths.dup
+
+    columns.each_with_index do | col, i|
+        if @datatypes[i].match(/(real|int)/) != nil
+          wid = column_widths[i]
+       #   cw = [column_widths[i], [8,min_column_width].min].max
+          $log.debug("XXX #{wid}. #{columns[i].length}")
+          cw = [wid, columns[i].length].max
+          $log.debug("int #{col} #{column_widths[i]}, #{cw}")
+        elsif @datatypes[i].match(/(date)/) != nil
+          cw = [column_widths[i], [12,min_column_width].min].max
+          #cw = [12,min_column_width].min
+          $log.debug("date #{col}  #{column_widths[i]}, #{cw}")
+        else
+          cw = [column_widths[i], min_column_width].max
+          if column_widths[i] <= col.length and col.length <= min_column_width
+            cw = col.length
+          end
+          $log.debug("else #{col} #{column_widths[i]}, #{col.length} #{cw}")
+        end
+        column_widths[i] = cw
+        total += cw
+    end
+    column_widths["__TOTAL__"] = total
+    $log.debug("Estimated col widths: #{column_widths.inspect}")
+    @column_widths = column_widths
+    return column_widths
   end
 
   # added to enable query form to allow movement into table only if
@@ -290,12 +342,16 @@ class Sqlc
       query =  sql
       begin
       @content = @db.get_data query
+      cw = @db.estimate_column_widths @atable.width, @db.columns
       $log.debug " SQL GOT #{@content.size}"
       $log.debug " SQL columns #{@db.columns.inspect}"
       rescue => exc
         alert exc.to_s
       end
       @atable.set_data @content, @db.columns
+      @atable.table_column_model.each_with_index do |col, ix|
+        col.width cw[ix]
+      end
       @status_row.text = "#{@content.size} rows retrieved"
       @atable.repaint
   end
