@@ -143,6 +143,8 @@ module RubyCurses
           return "btab"
         when 481
           return "M-S-tab"
+        when 393..402
+          return "M-F"+ (keycode-392).to_s
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->]
           s_others=%w[M-- M-+ M-= M-' M-"   M-;   M-:   M-\, M-. M-<]

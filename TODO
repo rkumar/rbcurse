@@ -22,9 +22,8 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-Table - if more columns than displayable, how about panning ?
-
-DefaultListSelectionModel does not fire a ListSelectionEvent - done 2009-02-14 00:27 
+TextArea - that stupid newline i put.
+TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 Gen: when binding, we should check if that event is fireable. So widgets shold register their events first.
 
 Table: if cell_selection_allowed not true we should be able to select row as a whole (which should be
@@ -36,7 +35,6 @@ TextArea: get_content returns a list (UGH) - should be get_text
 TextArea: remove_all (should it not be clear() ) -- should be set_text with blank
 TextArea: that first blank line is a pain - do something quick
 
-TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 
 handle_keys logic: some cases can return unhandled in which case we must still check furhter. So else
 should be taken and put outside the loop and run if no one handled (a flag)
@@ -163,6 +161,8 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+DefaultListSelectionModel does not fire a ListSelectionEvent - done 2009-02-14 00:27 
+Table - if more columns than displayable, how about panning ?
 Tabbed Pane may want to add OK, or OK_CANCEL buttons. - done
 Tabledemo: testtable.rb: checkboxes not showing X (true) when row not focussed! - Done, rel as 0.1.1
 Menuitem: disabled, what if no action (not armed). disabled - cyan color. If no

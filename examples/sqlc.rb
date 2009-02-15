@@ -44,6 +44,7 @@ class Datasource
   def get_data command
     @columns, *rows = @db.execute2(command)
     @content = rows
+    return nil if @content.nil? or @content[0].nil?
     @datatypes = @content[0].types #if @datatypes.nil?
     @command = command
     return @content
@@ -222,16 +223,7 @@ class Sqlc
     tcm = atable.get_table_column_model
     b_run.command { 
       query =  sqlarea.get_text
-      begin
-      @content = @db.get_data query
-      $log.debug " SQL GOT #{@content.size}"
-      $log.debug " SQL columns #{@db.columns.inspect}"
-      rescue => exc
-        alert exc.to_s
-      end
-      atable.set_data @content, @db.columns
-      @status_row.text = "#{@content.size} rows retrieved"
-      atable.repaint
+      run_query query
     }
     #
     ## key bindings fo atable
@@ -311,6 +303,7 @@ class Sqlc
   tablelist.bind_key(32) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
+    columnlist.list_data_model.remove_all
     columnlist.list_data_model.insert 0, *@db.get_metadata(table)
   }
   tablelist.bind_key(13) {  
@@ -342,16 +335,20 @@ class Sqlc
       query =  sql
       begin
       @content = @db.get_data query
+      if @content.nil?
+        @status_row.text = "0 rows retrieved"
+        return
+      end
       cw = @db.estimate_column_widths @atable.width, @db.columns
-      $log.debug " SQL GOT #{@content.size}"
-      $log.debug " SQL columns #{@db.columns.inspect}"
       rescue => exc
         alert exc.to_s
+        return
       end
       @atable.set_data @content, @db.columns
       @atable.table_column_model.each_with_index do |col, ix|
         col.width cw[ix]
       end
+      @atable.table_structure_changed(nil)
       @status_row.text = "#{@content.size} rows retrieved"
       @atable.repaint
   end

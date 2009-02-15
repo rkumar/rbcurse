@@ -78,6 +78,7 @@ module RubyCurses
       @toprow = 0
       @to_print_borders ||= 1
       @show_grid ||= 1
+      @_first_column_print = 0 # intro for horiz scrolling 2009-02-14 16:20 
       @curpos = 0
       # @selected_color ||= 'yellow'
       # @selected_bgcolor ||= 'black'
@@ -507,6 +508,10 @@ module RubyCurses
       when @KEY_GOTO_BOTTOM
         editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_bottom
+      when @KEY_SCROLL_RIGHT
+        scroll_right
+      when @KEY_SCROLL_LEFT
+        scroll_left
       else
         # there could be a case of editing here too!
         ret = process_key ch, self
@@ -733,6 +738,7 @@ module RubyCurses
     def repaint
       return unless @repaint_required
       print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
+      @_first_column_print ||= 0
       cc = @table_model.column_count
       rc = @table_model.row_count
       tcm = @table_column_model
@@ -747,18 +753,19 @@ module RubyCurses
       # TCM should give modelindex of col which is used to fetch data from TM
       r += 1 # save for header
       0.upto(h) do |hh|
-        crow = tr+hh
+        crow = tr+hh  # crow is the row
         if crow < rc
-          offset = 0
+          offset = 0 # offset of column
     #      0.upto(cc-1) do |colix|
+          focussed = @current_index == crow ? true : false 
+          selected = is_row_selected crow
           # we loop through column_model and fetch data based on model index
           # FIXED better to call table.get_value_at since we may now 
           # introduce a view - 2009-01-18 18:21 
           tcm.each_with_index do |acolumn, colix|
+            next if colix < @_first_column_print
             #acolumn = tcm.column(colix)
             #model_index = acolumn.model_index
-            focussed = @current_index == crow ? true : false 
-            selected = is_row_selected crow
             content = get_value_at(crow, colix)  # tables
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = get_cell_renderer(crow, colix)
@@ -777,7 +784,8 @@ module RubyCurses
               #$log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               #$log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               # experimental to print subset of last
-              space_left = (@width-3)-(offset)
+              space_left = (@width-3)-(offset) # 3 due to boundaries
+              space_left = 0 if space_left < 0
               if content.length > space_left
                 clen = space_left
                 renderer.display_length clen
@@ -815,6 +823,7 @@ module RubyCurses
       tcm = @table_column_model ## could have been overridden, should we use this at all
       offset = 0
       header_model.each_with_index do |tc, colix|
+        next if colix < @_first_column_print # added for scrolling rt and left 2009-02-14 17:49 
         acolumn = tcm.column colix
         renderer = tc.cell_renderer
         renderer = @table_header.default_renderer if renderer.nil?
@@ -822,8 +831,10 @@ module RubyCurses
         width = renderer.display_length + 1
         content = tc.header_value
         if c+offset+width > @col+@width
-          $log.debug " TABLE: experimental code to NOT print if chance of exceeding table width"
+          #$log.debug " TABLE: experimental code to NOT print if chance of exceeding table width"
+          # 2009-02-14 14:24 now printing, but truncating data for last column
               space_left = (@width-3)-(offset)
+              space_left = 0 if space_left < 0
               if content.length > space_left
                 clen = space_left
                 renderer.display_length clen
@@ -884,6 +895,22 @@ module RubyCurses
         set_focus_on(ix)
       end
     end
+    def scroll_right
+      cc = @table_model.column_count
+      if @_first_column_print < cc
+        @_first_column_print += 1
+        @repaint_required = true
+        @table_changed = true    # so columns are modified
+      end
+    end
+    def scroll_left
+      if @_first_column_print > 0
+        @_first_column_print -= 1
+        @repaint_required = true
+        @table_changed = true
+      end
+    end
+    # ADD METHODS HERE
   end # class Table
 
   ## TC 

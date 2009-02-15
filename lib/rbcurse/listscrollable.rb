@@ -63,7 +63,7 @@ module ListScrollable
     rc = row_count
     $log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
     @current_index = 0 if @current_index < 0  # not lt 0
-    @current_index = rc-1 if @current_index >= rc # not gt rowcount
+    @current_index = rc-1 if @current_index >= rc and rc>0 # not gt rowcount
     @toprow = rc-h-1 if rc > h and @toprow > rc - h - 1 # toprow shows full page if possible
     # curr has gone below table,  move toprow forward
     if @current_index - @toprow > h
@@ -72,7 +72,7 @@ module ListScrollable
       # curr has gone above table,  move toprow up
       @toprow = @current_index
     end
-    #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+    $log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
     if @oldrow != @current_index
       $log.debug "going to call on leave and on enter"
       on_leave_row @oldrow if respond_to? :on_leave_row     # to be defined by widget that has included this

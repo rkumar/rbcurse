@@ -60,7 +60,7 @@ module RubyCurses
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
       if @list.empty?
-        @list << "\r"
+      #  @list << "\r"   # removed this on 2009-02-15 17:25 lets see how it goes
       end
      # @scrollatrow = @height-2
       @content_rows = @list.length
@@ -648,7 +648,7 @@ module RubyCurses
         if crow < rc
             #focussed = @current_index == crow ? true : false 
             #selected = is_row_selected crow
-            content = tm[crow].chomp
+          content = tm[crow].chomp rescue ""
             content.gsub!(/\t/, '  ') # don't display tab
             content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
             if !content.nil? 

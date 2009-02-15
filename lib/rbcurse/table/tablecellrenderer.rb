@@ -51,6 +51,7 @@ module RubyCurses
           lablist << value
         end
         len = @display_length || value.length
+        $log.debug "less ZERO #{@display_length} || #{value.length}, ri: #{row_index}" if len < 0
         acolor = get_color $datacolor
         #acolor =get_color $datacolor, @color || @parent.color, @bgcolor || @parent.bgcolor #unless @parent.nil?
         _attr = Ncurses::A_NORMAL

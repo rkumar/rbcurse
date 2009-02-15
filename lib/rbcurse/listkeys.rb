@@ -13,6 +13,8 @@ module RubyCurses
       @KEY_FIND_PREV ||= ?\M-G
       @KEY_SCROLL_FORWARD ||= ?\C-n
       @KEY_SCROLL_BACKWARD ||= ?\C-p
+      @KEY_SCROLL_RIGHT ||= ?\M-8
+      @KEY_SCROLL_LEFT ||= ?\M-7
 
       @KEY_CLEAR_SELECTION ||= ?\M-e
       @KEY_PREV_SELECTION ||= ?\M-"
