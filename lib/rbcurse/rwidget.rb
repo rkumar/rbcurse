@@ -146,8 +146,8 @@ module RubyCurses
         when 393..402
           return "M-F"+ (keycode-392).to_s
         else
-          others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->]
-          s_others=%w[M-- M-+ M-= M-' M-"   M-;   M-:   M-\, M-. M-<]
+          others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->,?\M-?,?\M-/]
+          s_others=%w[M-- M-+ M-= M-' M-"   M-;   M-:   M-, M-. M-< M-> M-? M-/ ]
           if others.include? keycode
             index =  others.index keycode
             return s_others[index]
@@ -884,7 +884,7 @@ module RubyCurses
     attr_reader :form
     attr_reader :handler             # event handler
     attr_reader :type                # datatype of field, currently only sets chars_allowed
-    attr_reader :curpos              # cursor position in buffer current
+    #attr_reader :curpos              # cursor position in buffer current, in WIDGET 
     attr_accessor :datatype              # crrently set during set_buffer
     attr_reader :original_value              # value on entering field
 

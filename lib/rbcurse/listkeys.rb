@@ -7,10 +7,10 @@ module RubyCurses
       @KEY_ROW_SELECTOR ||= ?\C-x
       @KEY_GOTO_TOP ||= ?\M-0
       @KEY_GOTO_BOTTOM ||= ?\M-9
-      @KEY_ASK_FIND_FORWARD ||= ?\M-f
-      @KEY_ASK_FIND_BACKWARD ||= ?\M-F
-      @KEY_FIND_NEXT ||= ?\M-g
-      @KEY_FIND_PREV ||= ?\M-G
+      #@KEY_ASK_FIND_FORWARD ||= ?\M-f
+      #@KEY_ASK_FIND_BACKWARD ||= ?\M-F
+      #@KEY_FIND_NEXT ||= ?\M-g
+      #@KEY_FIND_PREV ||= ?\M-G
       @KEY_SCROLL_FORWARD ||= ?\C-n
       @KEY_SCROLL_BACKWARD ||= ?\C-p
       @KEY_SCROLL_RIGHT ||= ?\M-8

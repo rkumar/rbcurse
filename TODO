@@ -23,6 +23,9 @@ MUST DO:
     |  TO FIX  |
     +----------+
 TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
+TextView's set_form_col does not scroll horiz. That has to be done prior, so set_form_col cannot be used as is expecting that to happen. And example is in C-e.
+Listbox search: since this search sets form col too, it messes with form col here.
+
 Gen: when binding, we should check if that event is fireable. So widgets shold register their events first.
 
 Table: if cell_selection_allowed not true we should be able to select row as a whole (which should be

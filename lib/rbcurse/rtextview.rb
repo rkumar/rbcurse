@@ -59,6 +59,7 @@ module RubyCurses
       #init_scrollable
       print_borders
       @maxlen ||= @width-2
+      install_keys
       init_vars
     end
     def init_vars
@@ -223,6 +224,11 @@ module RubyCurses
           #wrong curpos wiill be reported
           set_form_col @maxlen-1
         end
+        # search related added on 2009-02-15 21:36 
+      when @KEY_ASK_FIND
+        ask_search
+      when @KEY_FIND_MORE
+        find_more
       else
         $log.debug("TEXTVIEW XXX ch #{ch}")
         return :UNHANDLED

@@ -79,6 +79,7 @@ module ListScrollable
       on_enter_row @current_index   if respond_to? :on_enter_row  # to be defined by widget that has included this
     end
     set_form_row
+    #set_form_col 0 # added 2009-02-15 23:33  # this works for lists but we don't want this in TextArea's
     @repaint_required = true
   end
   # the cursor should be appropriately positioned
@@ -212,5 +213,105 @@ module ListScrollable
     @repaint_required = true
     #bounds_check
   end
+    def install_keys
+=begin
+      @KEY_ASK_FIND_FORWARD ||= ?\M-f
+      @KEY_ASK_FIND_BACKWARD ||= ?\M-F
+      @KEY_FIND_NEXT ||= ?\M-g
+      @KEY_FIND_PREV ||= ?\M-G
+=end
+      @KEY_ASK_FIND ||= ?\M-f
+      @KEY_FIND_MORE ||= ?\M-g
+    end
+    def ask_search
+      options = ["Search backwards", "case insensitive", "Wrap around"]
+      sel,regex,hash =  get_string_with_options("Enter regex to search", 20, @last_regex||"", "checkboxes"=>options, "checkbox_defaults"=>[@search_direction_prev,@search_case,@search_wrap])
+      return if sel != 0
+      @search_direction_prev =  hash[options[0]]
+      @search_case = hash[options[1]]
+      @search_wrap = hash[options[2]]
+      if @search_direction_prev == true
+        ix = _find_prev regex, @current_index
+      else
+        ix = _find_next regex, @current_index
+      end
+      if ix.nil?
+        alert("No matching data for: #{regex}")
+      else
+        set_focus_on(ix)
+        set_form_col @find_offset
+        @cell_editor.component.curpos = (@find_offset||0) if @cell_editing_allowed
+      end
+    end
+    def find_more
+      if @search_direction_prev 
+        find_prev
+      else
+        find_next
+      end
+    end
+    # find forwards
+    # Using this to start a search or continue search
+    def _find_next regex=@last_regex, start = @search_found_ix 
+      raise "No previous search" if regex.nil?
+      $log.debug " _find_next #{@search_found_ix} : #{@current_index}"
+      fend = @list.size-1
+      start += 1 unless start == fend
+      @last_regex = regex
+      @search_start_ix = start
+      start.upto(fend) do |ix| 
+        row = @list[ix]
+        m=row.match(regex)
+        if !m.nil?
+          @find_offset = m.offset(0)[0]
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
+    end
+    def find_next
+        ix = _find_next
+        regex = @last_regex 
+        if ix.nil?
+          alert("No more matching data for: #{regex}")
+        else
+          set_focus_on(ix) 
+          set_form_col @find_offset
+        @cell_editor.component.curpos = (@find_offset||0) if @cell_editing_allowed
+        end
+    end
+    def find_prev
+        ix = _find_prev
+        regex = @last_regex 
+        if ix.nil?
+          alert("No previous matching data for: #{regex}")
+        else
+          set_focus_on(ix)
+          set_form_col @find_offset
+          @cell_editor.component.curpos = (@find_offset||0) if @cell_editing_allowed
+        end
+    end
+    ##
+    # find backwards
+    # Using this to start a search or continue search
+    def _find_prev regex=@last_regex, start = @search_found_ix 
+      raise "No previous search" if regex.nil?
+      $log.debug " _find_prev #{@search_found_ix} : #{@current_index}"
+      return nil if start == 0
+      start -= 1 unless start == 0
+      @last_regex = regex
+      @search_start_ix = start
+      start.downto(0) do |ix| 
+        row = @list[ix]
+        m=row.match(regex)
+        if !m.nil?
+          @find_offset = m.offset(0)[0]
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
+    end
 
 end

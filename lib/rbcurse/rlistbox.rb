@@ -65,6 +65,7 @@ module RubyCurses
       @list.index(obj)
     end
     def length ; @list.length; end
+    alias :size :length
 
     def insert off0, *data
       @list.insert off0, *data
@@ -428,6 +429,7 @@ module RubyCurses
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
 
+      install_keys
       init_vars
       install_list_keys
 
@@ -567,13 +569,17 @@ module RubyCurses
       when 27, ?\C-c:
         editing_canceled @current_index if @cell_editing_allowed
       when @KEY_ASK_FIND_FORWARD
-        ask_search_forward
+      # ask_search_forward
       when @KEY_ASK_FIND_BACKWARD
-        ask_search_backward
+      # ask_search_backward
       when @KEY_FIND_NEXT
-        find_next
+      # find_next
       when @KEY_FIND_PREV
-        find_prev
+      # find_prev
+      when @KEY_ASK_FIND
+        ask_search
+      when @KEY_FIND_MORE
+        find_more
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
         ret = :UNHANDLED # changed on 2009-01-27 13:14 not going into unhandled, tab not released
@@ -619,7 +625,7 @@ module RubyCurses
       end
     end
     ## listbox find_prev
-    def find_prev
+    def OLDfind_prev
         ix = @list.find_prev
         regex = @last_regex 
         if ix.nil?
@@ -631,7 +637,7 @@ module RubyCurses
         end
     end
     # table find_next
-    def find_next
+    def OLDfind_next
         ix = @list.find_next
         regex = @last_regex 
         if ix.nil?
@@ -672,7 +678,8 @@ module RubyCurses
       col = c+@left_margin # @form.col
       # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
       editor.prepare_editor self, row, col, value
-      set_form_col @left_margin
+      editor.component.curpos = 0 # reset it after search, if user scrols down
+      set_form_col 0 #@left_margin
 
       # set original value so we can cancel
       # set row and col,
@@ -800,6 +807,9 @@ module RubyCurses
         set_form_row
       end
       @repaint_required = true
+    end
+    def set_form_col col=0
+      super col+@left_margin
     end
 
   end # class listb
