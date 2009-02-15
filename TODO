@@ -22,7 +22,6 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-TextArea - that stupid newline i put.
 TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 Gen: when binding, we should check if that event is fireable. So widgets shold register their events first.
 
@@ -82,7 +81,7 @@ Don;t update other widgets unless datachanged or properties changed. As in table
 Properties: redraw only when property change or data change, not each time. Esp for label.
 TODO for field and buttons.
 
-fire_handler LIST_COMBO_SELECT
+fire_handler LIST_COMBO_SELECT <-- nope this is a bad name taken from Tk. LIST_SELECTION_EVENT is proper.
 
 textarea check if print border in initialize. NOPE>
 
@@ -161,6 +160,7 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+TextArea - that stupid newline i put. DONE but more testing
 DefaultListSelectionModel does not fire a ListSelectionEvent - done 2009-02-14 00:27 
 Table - if more columns than displayable, how about panning ?
 Tabbed Pane may want to add OK, or OK_CANCEL buttons. - done

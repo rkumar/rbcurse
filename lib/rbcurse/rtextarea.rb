@@ -68,7 +68,14 @@ module RubyCurses
     #  init_scrollable
       print_borders
       @maxlen ||= @width-2
+      install_keys
       init_vars
+    end
+    def install_keys
+      @KEY_ASK_FIND_FORWARD ||= ?\M-f
+      @KEY_ASK_FIND_BACKWARD ||= ?\M-F
+      @KEY_FIND_NEXT ||= ?\M-g
+      @KEY_FIND_PREV ||= ?\M-G
     end
     def init_vars
       @repaint_required = true
@@ -262,6 +269,14 @@ module RubyCurses
       when ?\C-e
         cursor_eol
         #set_form_col @buffer.length
+      when @KEY_ASK_FIND_FORWARD
+        ask_search_forward
+      when @KEY_ASK_FIND_BACKWARD
+        ask_search_backward
+      when @KEY_FIND_NEXT
+        find_next
+      when @KEY_FIND_PREV
+        find_prev
       else
         #$log.debug(" textarea ch #{ch}")
         ret = putc ch
@@ -671,6 +686,86 @@ module RubyCurses
       end
       @table_changed = false
       @repaint_required = false
+    end
+    def ask_search_forward
+        regex =  get_string("Enter regex to search", 20, @last_regex||"")
+        ix = _find_next regex, @current_index
+        if ix.nil?
+          alert("No matching data for: #{regex}")
+        else
+          set_focus_on(ix)
+          set_form_col @find_offset
+        end
+    end
+    def ask_search_backward
+      regex =  get_string("Enter regex to search (backward)", 20, @last_regex||"")
+      ix = _find_prev regex, @current_index
+      if ix.nil?
+        alert("No matching data for: #{regex}")
+      else
+        set_focus_on(ix)
+        set_form_col @find_offset
+      end
+    end
+    # find forwards
+    # Using this to start a search or continue search
+    def _find_next regex=@last_regex, start = @search_found_ix 
+      raise "No previous search" if regex.nil?
+      $log.debug " _find_next #{@search_found_ix} : #{@current_index}"
+      fend = @list.size-1
+      start += 1 unless start == fend
+      @last_regex = regex
+      @search_start_ix = start
+      start.upto(fend) do |ix| 
+        row = @list[ix]
+        m=row.match(regex)
+        if !m.nil?
+          @find_offset = m.offset(0)[0]
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
+    end
+    def find_next
+        ix = _find_next
+        regex = @last_regex 
+        if ix.nil?
+          alert("No more matching data for: #{regex}")
+        else
+          set_focus_on(ix) 
+          set_form_col @find_offset
+        end
+    end
+    def find_prev
+        ix = _find_prev
+        regex = @last_regex 
+        if ix.nil?
+          alert("No previous matching data for: #{regex}")
+        else
+          set_focus_on(ix)
+          set_form_col @find_offset
+        end
+    end
+    ##
+    # find backwards
+    # Using this to start a search or continue search
+    def _find_prev regex=@last_regex, start = @search_found_ix 
+      raise "No previous search" if regex.nil?
+      $log.debug " _find_prev #{@search_found_ix} : #{@current_index}"
+      start -= 1 unless start == 0
+      @last_regex = regex
+      @search_start_ix = start
+      start.downto(0) do |ix| 
+        row = @list[ix]
+        m=row.match(regex)
+        if !m.nil?
+          @find_offset = m.offset(0)[0]
+          @search_found_ix = ix
+          return ix 
+        end
+      end
+      return nil
     end
   end # class textarea
   ##

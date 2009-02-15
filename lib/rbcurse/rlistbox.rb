@@ -44,6 +44,7 @@ module RubyCurses
     include Enumerable
     include RubyCurses::EventHandler
     attr_accessor :selected_index
+    attr_reader :last_regex # should i really keep here as public or maintain in listbox
 
     def initialize anarray
       @list = anarray.dup
@@ -143,10 +144,10 @@ module RubyCurses
       return find_match @last_regex, start, @search_end_ix
     end
     ##
-    # find backwards
+    # find backwards, list_data_model
     # Using this to start a search or continue search
     def find_prev regex=@last_regex, start = @search_found_ix 
-      raise "No previous search" if @last_regex.nil?
+      raise "No previous search" if regex.nil? # @last_regex.nil?
       $log.debug " find_prev #{@search_found_ix} : #{@current_index}"
       start -= 1 unless start == 0
       @last_regex = regex
@@ -606,8 +607,10 @@ module RubyCurses
           set_focus_on(ix)
         end
     end
+    # gets string to search and calls data models find prev
     def ask_search_backward
       regex =  get_string("Enter regex to search (backward)")
+      @last_regex = regex
       ix = @list.find_prev regex, @current_index
       if ix.nil?
         alert("No matching data for: #{regex}")
@@ -615,6 +618,7 @@ module RubyCurses
         set_focus_on(ix)
       end
     end
+    ## listbox find_prev
     def find_prev
         ix = @list.find_prev
         regex = @last_regex 
