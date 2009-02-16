@@ -418,9 +418,11 @@ module RubyCurses
       editor.prepare_editor self, row, col, value
       # added on 2009-02-16 23:49 
       # if data is longer than can be displayed then update editors disp len too
-      if (col+editor.component.display_length)> @col+@width
+      if (col+editor.component.display_length)>= @col+@width
         editor.component.display_length = @width-1-col
-        $log.debug "DDDXXX #{editor.component.display_length} = @width-3-col"
+        $log.debug "DDDXXX #{editor.component.display_length} = @width-1-col"
+      else
+      $log.debug "EEE if (#{col+editor.component.display_length})> #{@col+@width}"
       end
       @cell_editor = editor
       @repaint_required = true
@@ -522,8 +524,10 @@ module RubyCurses
         editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_bottom
       when @KEY_SCROLL_RIGHT
+        editing_stopped if @is_editing # dts 2009-02-17 00:35 
         scroll_right
       when @KEY_SCROLL_LEFT
+        editing_stopped if @is_editing # dts 2009-02-17 00:35 
         scroll_left
       else
         # there could be a case of editing here too!
@@ -620,6 +624,7 @@ module RubyCurses
       if v < @_first_column_print and @current_index >  0
         @current_column = @table_column_model.column_count-1
         @current_column = @_last_column_print # added 2009-02-17 00:01 
+        $log.debug " XXXXXX prev col #{@current_column}, las #{@_last_column_print}, fi: #{@_first_column_print}"
         set_form_col
         previous_row
       else
@@ -758,7 +763,7 @@ module RubyCurses
       @_first_column_print ||= 0
       cc = @table_model.column_count
       rc = @table_model.row_count
-      @_last_column_print = cc
+      @_last_column_print = cc-1
       tcm = @table_column_model
       tm = @table_model
       tr = @toprow
@@ -933,8 +938,10 @@ module RubyCurses
     end
     def scroll_right
       cc = @table_model.column_count
-      if @_first_column_print < cc
+      if @_first_column_print < cc-1
         @_first_column_print += 1
+        @current_column =  @_first_column_print
+          set_form_col # FIXME not looking too good till key press
         @repaint_required = true
         @table_changed = true    # so columns are modified
       end
@@ -942,6 +949,8 @@ module RubyCurses
     def scroll_left
       if @_first_column_print > 0
         @_first_column_print -= 1
+        @current_column =  @_first_column_print
+          set_form_col
         @repaint_required = true
         @table_changed = true
       end

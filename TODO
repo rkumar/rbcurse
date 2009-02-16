@@ -22,7 +22,10 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-Table doesn't know how many cols displayed, e,g editing, tabbing
+Table doesn't know how many cols displayed, e,g editing, tabbing - DONE
+WE need to clean up that space between cells also when panning, just in case.
+WHEN scrolling, cancel editing.
+
 Textview search: work on case, and wrap around.
 TextView's set_form_col does not scroll horiz. That has to be done prior, so set_form_col cannot be used as is expecting that to happen. And example is in C-e.
 Listbox search: since this search sets form col too, it messes with form col here.
