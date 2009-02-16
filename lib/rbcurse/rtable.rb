@@ -79,6 +79,8 @@ module RubyCurses
       @to_print_borders ||= 1
       @show_grid ||= 1
       @_first_column_print = 0 # intro for horiz scrolling 2009-02-14 16:20 
+      @_last_column_print = 0 # 2009-02-16 23:57 so we don't tab further etc. 
+      # table needs to know what columns are being printed.
       @curpos = 0
       # @selected_color ||= 'yellow'
       # @selected_bgcolor ||= 'black'
@@ -414,6 +416,12 @@ module RubyCurses
       row = r + (row - @toprow) +1  #  @form.row , 1 added for header row!
       col = c+get_column_offset()
       editor.prepare_editor self, row, col, value
+      # added on 2009-02-16 23:49 
+      # if data is longer than can be displayed then update editors disp len too
+      if (col+editor.component.display_length)> @col+@width
+        editor.component.display_length = @width-1-col
+        $log.debug "DDDXXX #{editor.component.display_length} = @width-3-col"
+      end
       @cell_editor = editor
       @repaint_required = true
       set_form_col 
@@ -588,14 +596,16 @@ module RubyCurses
     end
     def next_column
       v =  @current_column+1 
-      if v < @table_column_model.column_count
+      if v < @table_column_model.column_count and v <= @_last_column_print
         $log.debug " if v < #{@table_column_model.column_count} "
         current_column v
       else
-        if @current_index < row_count()-1
+        if @current_index < row_count()-1 
           $log.debug " GOING TO NEXT ROW FROM NEXT COL : #{@current_index} : #{row_count}"
           @current_column = 0
+          @current_column = @_first_column_print # added 2009-02-17 00:01 
           next_row
+          set_form_col
         else
           return :UNHANDLED
         end
@@ -604,11 +614,13 @@ module RubyCurses
     def previous_column
       v =  @current_column-1 
       # returning unhandled so focus can go to prev field auto
-      if v < 0 and @current_index <= 0
+      if v < @_first_column_print and @current_index <= 0
         return :UNHANDLED
       end
-      if v < 0 and @current_index > 0
+      if v < @_first_column_print and @current_index >  0
         @current_column = @table_column_model.column_count-1
+        @current_column = @_last_column_print # added 2009-02-17 00:01 
+        set_form_col
         previous_row
       else
         current_column @current_column-1 
@@ -746,6 +758,7 @@ module RubyCurses
       @_first_column_print ||= 0
       cc = @table_model.column_count
       rc = @table_model.row_count
+      @_last_column_print = cc
       tcm = @table_column_model
       tm = @table_model
       tr = @toprow
@@ -787,6 +800,7 @@ module RubyCurses
             #  $log.debug "  #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
             if c+offset+width > @col+@width
               _column_scrolling = true
+              @_last_column_print = colix
               #$log.debug " TABLE BREAKING SINCE "
               #$log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               #$log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
@@ -942,7 +956,7 @@ module RubyCurses
     # @param - datatypes is an array returned by following command to DB
     # @datatypes = @content[0].types 
     def estimate_column_widths columns, datatypes
-      tablewidth = @width
+      tablewidth = @width-3
       colwidths = {}
       min_column_width = (tablewidth/columns.length) -1
       $log.debug("min: #{min_column_width}, #{tablewidth}")

@@ -342,13 +342,13 @@ class Sqlc
         return
       end
       #cw = @db.estimate_column_widths @atable.width, @db.columns
+      @atable.set_data @content, @db.columns
+      cw = @atable.estimate_column_widths @db.columns, @db.datatypes
+      @atable.set_column_widths cw
       rescue => exc
         alert exc.to_s
         return
       end
-      @atable.set_data @content, @db.columns
-      cw = @atable.estimate_column_widths @db.columns, @db.datatypes
-      @atable.set_column_widths cw
       @status_row.text = "#{@content.size} rows retrieved"
       @atable.repaint
   end

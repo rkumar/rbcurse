@@ -999,6 +999,9 @@ module RubyCurses
   end
   def repaint
 #    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
+    #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
+    # becomes negative below, no because editing still happens
+    @display_length = 1 if display_length == 0
     printval = getvalue_for_paint().to_s # added 2009-01-06 23:27 
     printval = show()*printval.length unless @show.nil?
     if !printval.nil? 
