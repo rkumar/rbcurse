@@ -339,16 +339,14 @@ class Sqlc
         @status_row.text = "0 rows retrieved"
         return
       end
-      cw = @db.estimate_column_widths @atable.width, @db.columns
+      #cw = @db.estimate_column_widths @atable.width, @db.columns
       rescue => exc
         alert exc.to_s
         return
       end
       @atable.set_data @content, @db.columns
-      @atable.table_column_model.each_with_index do |col, ix|
-        col.width cw[ix]
-      end
-      @atable.table_structure_changed(nil)
+      cw = @atable.estimate_column_widths @db.columns, @db.datatypes
+      @atable.set_column_widths cw
       @status_row.text = "#{@content.size} rows retrieved"
       @atable.repaint
   end

@@ -22,7 +22,7 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
+Textview search: work on case, and wrap around.
 TextView's set_form_col does not scroll horiz. That has to be done prior, so set_form_col cannot be used as is expecting that to happen. And example is in C-e.
 Listbox search: since this search sets form col too, it messes with form col here.
 
@@ -163,6 +163,7 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 TextArea - that stupid newline i put. DONE but more testing
 DefaultListSelectionModel does not fire a ListSelectionEvent - done 2009-02-14 00:27 
 Table - if more columns than displayable, how about panning ?

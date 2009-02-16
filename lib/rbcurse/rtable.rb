@@ -744,6 +744,7 @@ module RubyCurses
       tcm = @table_column_model
       tm = @table_model
       tr = @toprow
+      _column_scrolling = false
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
@@ -780,6 +781,7 @@ module RubyCurses
             #  $log.debug "  c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
             #  $log.debug "  #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
             if c+offset+width > @col+@width
+              _column_scrolling = true
               #$log.debug " TABLE BREAKING SINCE "
               #$log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               #$log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
@@ -809,12 +811,27 @@ module RubyCurses
       if @is_editing
         @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
       end
+      _print_more_columns_marker _column_scrolling
       @table_changed = false
       @repaint_required = false
     end
     def print_border g
       return unless @table_changed
       g.print_border @row, @col, @height, @width, $datacolor
+      rc = @table_model.row_count
+      h = scrollatrow()
+      _print_more_data_marker (rc>h)
+    end
+    # private
+    def _print_more_data_marker tf
+      marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
+      @form.window.mvwaddch @row+@height-1, @col+@width-1, marker
+      #@form.window.mvprintw(@row+@height-1, @col+@width-1, "%s", marker);
+    end
+    def _print_more_columns_marker tf
+      marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
+      @form.window.mvwaddch @row+@height, @col+@width-2, marker
+      #@form.window.mvprintw(@row+@height, @col+@width-2, "%s", marker);
     end
     def print_header
       return unless @table_changed
@@ -909,6 +926,77 @@ module RubyCurses
         @repaint_required = true
         @table_changed = true
       end
+    end
+    ## 
+    # Makes an estimate of columns sizes, returning a hash, and storing it as @column_widths
+    # based on checking first 20 rows of data.
+    # This does not try to fit all columns into table, but gives best width, so you
+    # can scroll right to see other columns.
+    # @params - columns is columns returned by database
+    # using the command: @columns, *rows = @db.execute2(command)
+    # @param - datatypes is an array returned by following command to DB
+    # @datatypes = @content[0].types 
+    def estimate_column_widths columns, datatypes
+      tablewidth = @width
+      colwidths = {}
+      min_column_width = (tablewidth/columns.length) -1
+      $log.debug("min: #{min_column_width}, #{tablewidth}")
+      0.upto(20) do |rowix|
+        break if rowix >= row_count
+      #@content.each_with_index do |row, cix|
+      #  break if cix >= 20
+        @table_column_model.each_with_index do |acolumn, ix|
+          col = get_value_at(rowix, ix)
+          colwidths[ix] ||= 0
+          colwidths[ix] = [colwidths[ix], col.length].max
+        end
+      end
+      total = 0
+      colwidths.each_pair do |k,v|
+        name = columns[k.to_i]
+        colwidths[name] = v
+        total += v
+      end
+      colwidths["__TOTAL__"] = total
+      column_widths = colwidths
+      @max_data_widths = column_widths.dup
+
+      columns.each_with_index do | col, i|
+      if datatypes[i].match(/(real|int)/) != nil
+        wid = column_widths[i]
+        #   cw = [column_widths[i], [8,min_column_width].min].max
+        $log.debug("XXX #{wid}. #{columns[i].length}")
+        cw = [wid, columns[i].length].max
+        $log.debug("int #{col} #{column_widths[i]}, #{cw}")
+      elsif datatypes[i].match(/(date)/) != nil
+        cw = [column_widths[i], [12,min_column_width].min].max
+        #cw = [12,min_column_width].min
+        $log.debug("date #{col}  #{column_widths[i]}, #{cw}")
+      else
+        cw = [column_widths[i], min_column_width].max
+        if column_widths[i] <= col.length and col.length <= min_column_width
+          cw = col.length
+        end
+        $log.debug("else #{col} #{column_widths[i]}, #{col.length} #{cw}")
+      end
+      column_widths[i] = cw
+      total += cw
+      end
+      column_widths["__TOTAL__"] = total
+      $log.debug("Estimated col widths: #{column_widths.inspect}")
+      @column_widths = column_widths
+      return column_widths
+    end
+    ##
+    # convenience method
+    # sets column widths given an array of ints
+    # You may get such an array from estimate_column_widths
+    def set_column_widths cw
+      tcm = @table_column_model
+      tcm.each_with_index do |col, ix|
+        col.width cw[ix]
+      end
+      table_structure_changed(nil)
     end
     # ADD METHODS HERE
   end # class Table
