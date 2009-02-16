@@ -395,11 +395,16 @@ module RubyCurses
           end
         end
         editor = get_default_cell_editor_for_class cls
+        #$log.debug "EDIT_CELL_AT:1 #{cls}  #{editor.component.display_length} = #{@table_column_model.column(col).width}i maxlen #{editor.component.maxlen}"
         editor.component.display_length = @table_column_model.column(col).width
-        editor.component.maxlen = editor.component.display_length if editor.component.respond_to? :maxlen and editor.component.maxlen.nil? # 2009-01-18 00:59  XXX don't overwrite if user has set
+        # maxlen won't be nil ! This used to work earlier
+        #editor.component.maxlen = editor.component.display_length if editor.component.respond_to? :maxlen and editor.component.maxlen.nil? # 2009-01-18 00:59  XXX don't overwrite if user has set
+        if editor.component.respond_to? :maxlen 
+          editor.component.maxlen = @table_column_model.column(col).edit_length || editor.component.display_length 
+        end
         #$log.debug "EDIT_CELL_AT: #{cls}  #{editor.component.display_length} = #{@table_column_model.column(col).width}i maxlen #{editor.component.maxlen}"
       end
-      $log.debug " got an EDITOR #{editor} ::  #{editor.component} "
+      #$log.debug " got an EDITOR #{editor} ::  #{editor.component} "
       # by now we should have something to edit with. We just need to prepare the widgey.
       prepare_editor editor, row, col, value
     
@@ -793,7 +798,7 @@ module RubyCurses
                 renderer.display_length clen
               else
                 clen = -1
-                renderer.display_length content.length
+                renderer.display_length space_left # content.length
               end
               #$log.debug " TABLE BREAKING SINCE sl: #{space_left},#{crow},#{colix}: #{clen} "
               renderer.repaint @form.window, r+hh, c+(offset), crow, content[0..clen], focussed, selected
@@ -1025,6 +1030,7 @@ module RubyCurses
     ## added column_offset on 2009-01-12 19:01 
     attr_accessor :column_offset # where we've place this guy. in case we need to position cursor
     attr_accessor :cell_editor
+    dsl_accessor :edit_length # corresponds to maxlen, if not set, col width will be useda 2009-02-16 21:55 
 
 
     def initialize model_index, identifier, header_value, width, config={}, &block

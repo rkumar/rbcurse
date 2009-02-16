@@ -214,6 +214,8 @@ class Sqlc
       #title "A Table"
       #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
       set_data data, colnames
+      cell_editing_allowed true
+      editing_policy :EDITING_AUTO
       help_text "M-Tab for next field"
     end
     @atable = atable

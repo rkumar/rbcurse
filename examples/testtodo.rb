@@ -252,6 +252,7 @@ class TodoApp
     tcm.column(0).width 8
     tcm.column(1).width 5
     tcm.column(2).width 50
+    tcm.column(2).edit_length 80
     tcm.column(3).width 8
     app = self
     atable.configure() do
@@ -307,7 +308,7 @@ class TodoApp
     atable.get_table_column_model.column(0).cell_editor =  combo_editor1
     ce = atable.get_default_cell_editor_for_class "String"
     # increase the maxlen of task
-    ce.component.maxlen = 80
+    # ce.component.maxlen = 80 # this is obsolete, use edit_length
     # I want up and down to go up and down rows inside the combo box, i can use M-down for changing.
     combo_editor.component.unbind_key(KEY_UP)
     combo_editor.component.unbind_key(KEY_DOWN)

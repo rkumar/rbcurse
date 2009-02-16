@@ -1,3 +1,9 @@
+** 2009-02-16 22:10 **
+## added edit_length to TableColumn ##
+
+This is max editable length of editor component in tables.
+
+* * *
 ** 2009-02-13 13:48 **
 ## added button_type to tabbed pane ##
 

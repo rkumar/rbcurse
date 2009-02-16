@@ -83,10 +83,6 @@ if $0 == __FILE__
         #
         ## key bindings fo texta
         # column widths 
-        $log.debug " tcm #{tcm.inspect}"
-        $log.debug " tcms #{tcm.columns}"
-        $log.debug " tcm0 #{tcm.column(0).identifier}"
-        $log.debug " tcm0 #{tcm.column(0).width}"
           tcm.column(0).width 24
           tcm.column(1).width 5
           tcm.column(2).width 18
