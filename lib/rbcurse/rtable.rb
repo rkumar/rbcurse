@@ -116,6 +116,7 @@ module RubyCurses
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def row_count
+      return 0 if @table_model.nil?
       @table_model.row_count
     end
     # added 2009-01-07 13:05 so new scrollable can use
@@ -482,6 +483,7 @@ module RubyCurses
     # key handling
     # make separate methods so callable programmatically
     def handle_key(ch)
+      return :UNHANDLED if @table_model.nil?
       @current_index ||= 0
       @toprow ||= 0
       h = scrollatrow()
@@ -734,7 +736,7 @@ module RubyCurses
       super
       set_form_row
       set_form_col # 2009-01-17 01:35 
-      on_enter_cell focussed_row(), focussed_col()
+      on_enter_cell focussed_row(), focussed_col() unless focussed_row().nil? or focussed_col().nil?
     end
     def on_leave
       super
@@ -754,6 +756,7 @@ module RubyCurses
     end
     # protected
     def get_column_offset columnid=@current_column
+      return 0 if @table_column_model.nil?
       return @table_column_model.column(columnid).column_offset || 0
     end
 
@@ -761,6 +764,7 @@ module RubyCurses
     def repaint
       return unless @repaint_required
       print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
+      return if @table_model.nil? # added 2009-02-17 12:45 
       @_first_column_print ||= 0
       cc = @table_model.column_count
       rc = @table_model.row_count
@@ -847,6 +851,7 @@ module RubyCurses
     def print_border g
       return unless @table_changed
       g.print_border @row, @col, @height, @width, $datacolor
+      return if @table_model.nil?
       rc = @table_model.row_count
       h = scrollatrow()
       _print_more_data_marker (rc>h)

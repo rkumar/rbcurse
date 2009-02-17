@@ -35,7 +35,6 @@ Table: newlines scrood up display (select name, sql from sqlite_master)
 
 TextArea: get_content returns a list (UGH) - should be get_text
 TextArea: remove_all (should it not be clear() ) -- should be set_text with blank
-TextArea: that first blank line is a pain - do something quick
 
 
 handle_keys logic: some cases can return unhandled in which case we must still check furhter. So else

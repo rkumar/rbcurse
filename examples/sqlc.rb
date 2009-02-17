@@ -213,9 +213,9 @@ class Sqlc
       height table_ht
       #title "A Table"
       #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
-      set_data data, colnames
-      cell_editing_allowed true
-      editing_policy :EDITING_AUTO
+      #set_data data, colnames
+      #cell_editing_allowed true
+      #editing_policy :EDITING_AUTO
       help_text "M-Tab for next field"
     end
     @atable = atable
@@ -320,7 +320,7 @@ class Sqlc
     Ncurses::Panel.update_panels
     begin
     while((ch = @window.getchar()) != ?\C-q )
-      colcount = tcm.column_count-1
+      #colcount = tcm.column_count-1
       s = keycode_tos ch
       #status_row.text = "Pressed #{ch} , #{s}"
       @form.handle_key(ch)
