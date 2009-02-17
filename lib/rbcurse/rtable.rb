@@ -82,6 +82,7 @@ module RubyCurses
       @_last_column_print = 0 # 2009-02-16 23:57 so we don't tab further etc. 
       # table needs to know what columns are being printed.
       @curpos = 0
+      @inter_column_spacing = 1
       # @selected_color ||= 'yellow'
       # @selected_bgcolor ||= 'black'
       @table_changed = true
@@ -763,6 +764,7 @@ module RubyCurses
       @_first_column_print ||= 0
       cc = @table_model.column_count
       rc = @table_model.row_count
+      inter_column_padding = " " * @inter_column_spacing 
       @_last_column_print = cc-1
       tcm = @table_column_model
       tm = @table_model
@@ -797,7 +799,7 @@ module RubyCurses
               renderer = get_default_cell_renderer_for_class(content.class.to_s) if renderer.nil?
               renderer.display_length acolumn.width unless acolumn.nil?
             end
-            width = renderer.display_length + 1
+            width = renderer.display_length + @inter_column_spacing
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             acolumn.column_offset = offset
             # trying to ensure that no overprinting
@@ -819,8 +821,9 @@ module RubyCurses
                 clen = -1
                 renderer.display_length space_left # content.length
               end
-              #$log.debug " TABLE BREAKING SINCE sl: #{space_left},#{crow},#{colix}: #{clen} "
-              renderer.repaint @form.window, r+hh, c+(offset), crow, content[0..clen], focussed, selected
+              # print the inter cell padding just in case things mess up while scrolling
+              @form.window.mvprintw r+hh, c+offset-@inter_column_spacing, inter_column_padding
+              renderer.repaint @form.window, r+hh, c+offset, crow, content[0..clen], focussed, selected
               break
             end
             # added crow on 2009-02-11 22:46 
@@ -836,6 +839,8 @@ module RubyCurses
         @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
       end
       _print_more_columns_marker _column_scrolling
+      _print_more_data_marker(rc-1 > tr + h)
+      $log.debug " _print_more_data_marker(#{rc} >= #{tr} + #{h})"
       @table_changed = false
       @repaint_required = false
     end
@@ -850,12 +855,15 @@ module RubyCurses
     def _print_more_data_marker tf
       marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
       @form.window.mvwaddch @row+@height-1, @col+@width-1, marker
-      #@form.window.mvprintw(@row+@height-1, @col+@width-1, "%s", marker);
+      marker = @toprow > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
+      @form.window.mvwaddch @row+1, @col+@width-1, marker
     end
     def _print_more_columns_marker tf
       marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
       @form.window.mvwaddch @row+@height, @col+@width-2, marker
-      #@form.window.mvprintw(@row+@height, @col+@width-2, "%s", marker);
+      # show if columns to left or not
+      marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
+      @form.window.mvwaddch @row+@height, @col+@_first_column_print+1, marker
     end
     def print_header
       return unless @table_changed

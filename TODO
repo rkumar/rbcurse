@@ -22,9 +22,8 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-Table doesn't know how many cols displayed, e,g editing, tabbing - DONE
-WE need to clean up that space between cells also when panning, just in case.
-WHEN scrolling, cancel editing.
+Table: if cell_selection_allowed not true we should be able to select row as a whole (which should be
+default).
 
 Textview search: work on case, and wrap around.
 TextView's set_form_col does not scroll horiz. That has to be done prior, so set_form_col cannot be used as is expecting that to happen. And example is in C-e.
@@ -32,10 +31,7 @@ Listbox search: since this search sets form col too, it messes with form col her
 
 Gen: when binding, we should check if that event is fireable. So widgets shold register their events first.
 
-Table: if cell_selection_allowed not true we should be able to select row as a whole (which should be
-default).
 Table: newlines scrood up display (select name, sql from sqlite_master)
-Table: adhoc queries, need to fill up width
 
 TextArea: get_content returns a list (UGH) - should be get_text
 TextArea: remove_all (should it not be clear() ) -- should be set_text with blank
@@ -167,6 +163,10 @@ FileChooser, FileSaver
 
 RECENTLY DONE:
 --------------
+WE need to clean up that space between cells also when panning, just in case.
+Table doesn't know how many cols displayed, e,g editing, tabbing - DONE
+WHEN scrolling, cancel editing.
+Table: adhoc queries, need to fill up width
 TextView lacks backward and forward searching, search messagebox should have checkbox for backward.
 TextArea - that stupid newline i put. DONE but more testing
 DefaultListSelectionModel does not fire a ListSelectionEvent - done 2009-02-14 00:27 

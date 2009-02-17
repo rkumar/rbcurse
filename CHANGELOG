@@ -1,3 +1,10 @@
+** 2009-02-17 12:10 **
+## added table markers for data and columns before and after on border ##
+
+also added putting space in intercell area, but today i am not getting any 
+junk there anywaym while scrolling etc.
+
+* * *
 ** 2009-02-16 22:10 **
 ## added edit_length to TableColumn ##
 
