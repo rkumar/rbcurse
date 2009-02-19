@@ -16,6 +16,8 @@ require 'fileutils'
 # operations on selected files: move, delete, zip
 # This class represents the finder pane. There are 2 
 # on this sample app
+# NOTE: rfe_renderer uses entries so you may need to sync it with list_data_model
+# actually, renderer should refer back to list data model!
 class FileExplorer
   include FileUtils
   attr_reader :wdir
@@ -34,6 +36,7 @@ class FileExplorer
     @wdir = @dir.path
     @filter_pattern = '*'
     @prev_dirs=[]
+    @inside_block = false
   end
   def title str
     @list.title = str
@@ -234,16 +237,16 @@ class FileExplorer
   def current_index
     @list.current_index
   end
-  def filename
+  def filename ix=current_index()
     #@entries[@list.current_index]
-    list_data()[current_index()]
+    list_data()[ix]
   end
-  def filepath
-    f = filename()
+  def filepath ix=current_index()
+    f = filename(ix)
     if f[0,1]=='/'
       f
     else
-      cur_dir() + "/" + filename()
+      cur_dir() + "/" + f
     end
   end
 
@@ -280,20 +283,23 @@ class RFe
     File.open(@config_name, "w") { | f | YAML.dump( @config, f )} 
   end
   def move
-    fp = @current_list.filepath
+    fp = @current_list.filepath.gsub(' ',"\ ")
     fn = @current_list.filename
     $log.debug " FP #{fp}"
     other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
     other_dir = other_list.cur_dir
     $log.debug " OL #{other_list.cur_dir}"
-    str= "move #{fn} to #{other_list.cur_dir}"
-    $log.debug " MOVE #{fp}"
+    if @current_list.list.selected_row_count == 0
+      str= "#{fn}"
+    else
+      str= "#{@current_list.list.selected_row_count}"
+    end
     #confirm "#{str}"
       mb = RubyCurses::MessageBox.new do
         title "Move"
-        message "Move #{fn} to"
+        message "Move #{str} to"
        type :input
-       width 60
+       width 80
         default_value other_dir
        button_type :ok_cancel
        default_button 0
@@ -301,9 +307,31 @@ class RFe
       #confirm "selected :#{mb.input_value}, #{mb.selected_index}"
       if mb.selected_index == 0
         # need to redraw directories
-        FileUtils.move(fp, mb.input_value)
-        @current_list.list.list_data_model.delete_at @current_list.list.current_index  # ???
+        if @current_list.list.selected_row_count == 0
+          FileUtils.move(fp, mb.input_value)
+          ret = @current_list.list.list().delete_at @current_list.list.current_index  # ???
+            @current_list.entries.delete_at @current_list.current_index
+        else
+          rows = @current_list.list.selected_rows
+          rows = rows.dup
+          rows.each do |i|
+            fp = @current_list.filepath i
+            $log.debug " moving #{i}: #{fp}"
+            FileUtils.move(fp, mb.input_value)
+          end
+          rows.sort! {|x,y| y <=> x }
+          rows.each do |i|
+            $log.debug "2 moving #{i}:"
+            ret = @current_list.list.list_data_model.delete_at i
+            $log.debug "21 moving #{i}: #{ret}"
+            ret = @current_list.entries.delete_at i
+            $log.debug "22 moving #{i}: #{ret}"
+          end
+          @current_list.list.clear_selection
+        end
+  #      @current_list.rescan
         other_list.rescan
+          $log.debug " EXECUTED LIST RESCAN 3"
       end 
   end
   def copy
@@ -475,6 +503,14 @@ class RFe
       str= "edit #{fp}"
       #if confirm("#{str}")==:YES
       edit fp
+    when 'm'
+      f = get_string("Enter a directory to create", 20 )
+      if f != ""
+        FileUtils.mkdir f
+        @current_list.list.list_data_model.insert @current_list.list.current_index, f  # ???
+        @current_list.entries.insert @current_list.list.current_index, f  # ???
+      end
+  
     when 'x'
       str= "exec #{fp}"
       exec_popup fp
@@ -508,6 +544,9 @@ class RFe
     @lista.draw_screen lasta
     @listb.draw_screen lastb
 
+#    @form.bind_key(?\M-x){
+#      @current_list.mark_block
+#    }
     @form.bind_key(?@){
       @current_list.change_dir File.expand_path("~/")
     }
@@ -653,6 +692,7 @@ def get_key_labels categ=nil
     ['t', 'tree'], ['p', 'Previous'],
     ['b', 'Bookmark'], ['u', 'Unbookmark'],
     ['l', 'List'],  ['s', 'Save'],
+    ['m', 'mkdir'],  nil,
     ['C-c', 'Cancel']
   ]
   end

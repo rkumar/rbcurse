@@ -5,6 +5,7 @@ module RubyCurses
     # any changes to the vars after construction won't have an effect.
     def install_list_keys
       @KEY_ROW_SELECTOR ||= ?\C-x
+      @KEY_BLOCK_SELECTOR ||= ?\M-x
       @KEY_GOTO_TOP ||= ?\M-0
       @KEY_GOTO_BOTTOM ||= ?\M-9
       #@KEY_ASK_FIND_FORWARD ||= ?\M-f

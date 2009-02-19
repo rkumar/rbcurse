@@ -265,6 +265,7 @@ module RubyCurses
       @message_col ||= 2
       r = @message_row + @message_height + 1
       c = @message_col
+      disp_len = @layout[:width]-8
       defaultvalue = @default_value || ""
       input_config = @config["input_config"] || {}
       case @type.to_s 
@@ -273,7 +274,7 @@ module RubyCurses
           name   "input" 
           row  r 
           col  c 
-          display_length  30
+          display_length disp_len
           set_buffer defaultvalue
         end
       when "list"

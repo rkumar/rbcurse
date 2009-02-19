@@ -61,7 +61,7 @@ module ListScrollable
   def bounds_check
     h = scrollatrow()
     rc = row_count
-    $log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+    #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
     @current_index = 0 if @current_index < 0  # not lt 0
     @current_index = rc-1 if @current_index >= rc and rc>0 # not gt rowcount
     @toprow = rc-h-1 if rc > h and @toprow > rc - h - 1 # toprow shows full page if possible
@@ -72,9 +72,9 @@ module ListScrollable
       # curr has gone above table,  move toprow up
       @toprow = @current_index
     end
-    $log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+    #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
     if @oldrow != @current_index
-      $log.debug "going to call on leave and on enter"
+      #$log.debug "going to call on leave and on enter"
       on_leave_row @oldrow if respond_to? :on_leave_row     # to be defined by widget that has included this
       on_enter_row @current_index   if respond_to? :on_enter_row  # to be defined by widget that has included this
     end
@@ -130,13 +130,13 @@ module ListScrollable
       when KEY_UP
         #select_prev_row
         #up
-        $log.debug " GOT KEY UP NEW SCROLL"
+        #$log.debug " GOT KEY UP NEW SCROLL"
         previous_row
       when KEY_LEFT
       when KEY_RIGHT
       when KEY_DOWN
         #down
-        $log.debug " GOT KEY DOWN NEW SCROLL"
+        #$log.debug " GOT KEY DOWN NEW SCROLL"
         next_row
       when KEY_ENTER, 10, 13
         if respond_to? :fire
@@ -204,11 +204,11 @@ module ListScrollable
     sar = scrollatrow + 1
     @toprow = (@current_index / sar) * sar
 
-    $log.debug "1 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
+    #$log.debug "1 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
     if total - @toprow < sar
       @toprow = (total - sar) 
     end
-    $log.debug "2 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
+    #$log.debug "2 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
     set_form_row # 2009-01-17 12:44 
     @repaint_required = true
     #bounds_check
@@ -254,7 +254,7 @@ module ListScrollable
     # Using this to start a search or continue search
     def _find_next regex=@last_regex, start = @search_found_ix 
       raise "No previous search" if regex.nil?
-      $log.debug " _find_next #{@search_found_ix} : #{@current_index}"
+      #$log.debug " _find_next #{@search_found_ix} : #{@current_index}"
       fend = @list.size-1
       start += 1 unless start == fend
       @last_regex = regex
@@ -297,7 +297,7 @@ module ListScrollable
     # Using this to start a search or continue search
     def _find_prev regex=@last_regex, start = @search_found_ix 
       raise "No previous search" if regex.nil?
-      $log.debug " _find_prev #{@search_found_ix} : #{@current_index}"
+      #$log.debug " _find_prev #{@search_found_ix} : #{@current_index}"
       return nil if start == 0
       start -= 1 unless start == 0
       @last_regex = regex

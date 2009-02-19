@@ -11,10 +11,14 @@ This todo relates to rbcurse, our own ruby fields, forms, widgets and applicatio
 
 APPS TO DO:
 
-sql viewer: this will properly test tables with each query sending totally different data struct
+DONE: sql viewer: this will properly test tables with each query sending totally different data struct
 or just diff rows. Also, we can address empty tables.
 
-Something like Pilot file browser - wip, two paned.
+DONE: Something like Pilot file browser - wip, two paned.
+
+
+Add multiple select operations to Finder
+Add construct to sqlc.
 
 MUST DO:
 ========
@@ -22,6 +26,12 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
+messagebox width of input is 30, how to increase!W
+List selection methods not firing any changed event on table.
+
+Perhaps: M-; should be select with M-: as add to selection. Like mouse click and Cmd+click
+Should navigation select ??
+
 Table: if cell_selection_allowed not true we should be able to select row as a whole (which should be
 default).
 
@@ -33,7 +43,6 @@ Gen: when binding, we should check if that event is fireable. So widgets shold r
 
 Table: newlines scrood up display (select name, sql from sqlite_master)
 
-TextArea: get_content returns a list (UGH) - should be get_text
 TextArea: remove_all (should it not be clear() ) -- should be set_text with blank
 
 
@@ -50,7 +59,6 @@ EDITING TABLES:
 Page down keeps selection on 3rd row from last. This happens since bounds_check tries to keep
 table full.
 
-if table data nil to start with then tablemodel bindings will all fail! XXX
 If you delete a row, then selections get messed, since row selectoin uses indexes into table
 
 

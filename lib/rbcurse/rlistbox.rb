@@ -114,7 +114,7 @@ module RubyCurses
       @list.dup
     end
     def on_enter_row object
-      $log.debug " XXX on_enter_row of list_data"
+      #$log.debug " XXX on_enter_row of list_data"
       fire_handler :ENTER_ROW, object
     end
     # ##
@@ -534,7 +534,7 @@ module RubyCurses
       h = scrollatrow()
       rc = row_count
       $log.debug " listbxo got ch #{ch}"
-      $log.debug " when kps #{@KEY_PREV_SELECTION}  "
+      #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
       when KEY_UP  # show previous value
         previous_row
@@ -568,6 +568,7 @@ module RubyCurses
         @repaint_required = true
       when 27, ?\C-c:
         editing_canceled @current_index if @cell_editing_allowed
+        cancel_block # block
       when @KEY_ASK_FIND_FORWARD
       # ask_search_forward
       when @KEY_ASK_FIND_BACKWARD
@@ -580,6 +581,8 @@ module RubyCurses
         ask_search
       when @KEY_FIND_MORE
         find_more
+      when @KEY_BLOCK_SELECTOR
+        mark_block #selection
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
         ret = :UNHANDLED # changed on 2009-01-27 13:14 not going into unhandled, tab not released
@@ -649,12 +652,12 @@ module RubyCurses
     def on_enter
       on_enter_row @current_index
       set_form_row # added 2009-01-11 23:41 
-      $log.debug " ONE ENTER LIST #{@current_index}, #{@form.row}"
-      @repaint_required
+      #$log.debug " ONE ENTER LIST #{@current_index}, #{@form.row}"
+      @repaint_required = true
       fire_handler :ENTER, self
     end
     def on_enter_row arow
-      $log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
+      #$log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
       #fire_handler :ENTER_ROW, arow
       fire_handler :ENTER_ROW, self
       @list.on_enter_row self
@@ -687,7 +690,7 @@ module RubyCurses
     end
     def on_leave_row arow
       #$log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: list[row]:#{@list[arow]}"
-      $log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: "
+      #$log.debug " Listbox #{self} leave with (cr: #{@current_index}) #{arow}: "
       #fire_handler :LEAVE_ROW, arow
       fire_handler :LEAVE_ROW, self
       editing_completed arow
@@ -811,7 +814,44 @@ module RubyCurses
     def set_form_col col=0
       super col+@left_margin
     end
+    # experimental selection of multiple rows via block
+    # specify a block start and then a block end
+    # usage: bind mark_selection to a key. It works as a toggle.
+    # C-c will cancel any selection  that has begun.
+    # added on 2009-02-19 22:37 
+    def mark_block #selection
+      if @inside_block
+        @inside_block = false
+        end_block #selection
+      else
+        @inside_block = true
+        start_block #selection
+      end
+    end
+    # added on 2009-02-19 22:37 
+    def cancel_block
+      @first_index = @last_index = nil
+      @inside_block = false
+    end
+    # sets marker for start of block
+    # added on 2009-02-19 22:37 
+    def start_block #selection
+      @first_index = @current_index
+      @last_index = nil
+    end
+    # sets marker for end of block
+    # added on 2009-02-19 22:37 
+    def end_block #selection
+      @last_index = current_index
+      lower = [@first_index, @last_index].min
+      higher = [@first_index, @last_index].max
+      #lower.upto(higher) do |i| @list.toggle_row_selection i; end
+      add_row_selection_interval(lower, higher)
+      @repaint_required = true
+    end
+ 
 
+    # ADD HERE
   end # class listb
 
 

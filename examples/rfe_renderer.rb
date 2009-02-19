@@ -19,12 +19,14 @@ module RubyCurses
       @bgcolor = @orig_bgcolor
       @color = @orig_color
       @row_attr = @orig_attr
+      # XXX ouch, when we delete from list, must delete from here too.
       value = @parent.entries[row_index]
       if value[0,1]=="/"
         path = value.dup
       else
         path = @parent.cur_dir()+"/"+value 
       end
+      begin
       stat = File.stat(path)
       if File.directory? path
         @row_attr = Ncurses::A_BOLD
@@ -32,6 +34,10 @@ module RubyCurses
       end
       value = format_string(value, path,  stat)
       super
+
+      rescue => err
+        $log.debug " rfe_renderer: #{err}"
+      end
 
     end
   GIGA_SIZE = 1073741824.0
