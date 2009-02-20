@@ -13,7 +13,10 @@ require 'fileutils'
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 
 # TODO
-# operations on selected files: move, delete, zip
+# operations on selected files: move, delete, zip, copy
+#   - delete should move to Trash if exists - DONE
+#   global - don't ask confirm
+#   Select based on pattern.
 # This class represents the finder pane. There are 2 
 # on this sample app
 # NOTE: rfe_renderer uses entries so you may need to sync it with list_data_model
@@ -37,6 +40,7 @@ class FileExplorer
     @filter_pattern = '*'
     @prev_dirs=[]
     @inside_block = false
+
   end
   def title str
     @list.title = str
@@ -249,7 +253,29 @@ class FileExplorer
       cur_dir() + "/" + f
     end
   end
+  # delete the item at position i
+  def delete_at i=@list.current_index
+    ret = @list.list_data_model.delete_at i
+    ret = @entries.delete_at i
+  end
+  def delete obj
+    ret = @list.list_data_model.delete obj
+    ret = @entries.delete_at obj
+  end
+  def insert_at obj, ix = @list.current_index
+    @list.list_data_model.insert ix, f
+    @entries.insert ix, obj
+  end
+  def remove_selected_rows
+    rows = @list.selected_rows
+    rows=rows.sort! {|x,y| y <=> x }
+    rows.each do |i|
+      ret = @list.list_data_model.delete_at i
+      ret = @entries.delete_at i
+    end
+  end
 
+  # ADD
 end
 class RFe
   attr_reader :status_row
@@ -261,6 +287,9 @@ class RFe
     colb = Ncurses.COLS/2
     ht = Ncurses.LINES - 7
     wid = Ncurses.COLS/2 - 0
+    @trash_path = File.expand_path("~/.Trash")
+    @trash_exists = File.directory? @trash_path
+    $log.debug " trash_path #{@trash_path}, #{@trash_exists}"
     @lista = FileExplorer.new @form, self, row=2, col=1, ht, wid
     @listb = FileExplorer.new @form, self, row=2, col=colb, ht, wid
 
@@ -283,7 +312,7 @@ class RFe
     File.open(@config_name, "w") { | f | YAML.dump( @config, f )} 
   end
   def move
-    fp = @current_list.filepath.gsub(' ',"\ ")
+    fp = @current_list.filepath #.gsub(' ',"\ ")
     fn = @current_list.filename
     $log.debug " FP #{fp}"
     other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
@@ -292,49 +321,107 @@ class RFe
     if @current_list.list.selected_row_count == 0
       str= "#{fn}"
     else
-      str= "#{@current_list.list.selected_row_count}"
+      str= "#{@current_list.list.selected_row_count} files "
     end
-    #confirm "#{str}"
-      mb = RubyCurses::MessageBox.new do
-        title "Move"
-        message "Move #{str} to"
-       type :input
-       width 80
-        default_value other_dir
-       button_type :ok_cancel
-       default_button 0
-      end
+    mb = RubyCurses::MessageBox.new do
+      title "Move"
+      message "Move #{str} to"
+      type :input
+      width 80
+      default_value other_dir
+      button_type :ok_cancel
+      default_button 0
+    end
       #confirm "selected :#{mb.input_value}, #{mb.selected_index}"
       if mb.selected_index == 0
-        # need to redraw directories
         if @current_list.list.selected_row_count == 0
           FileUtils.move(fp, mb.input_value)
-          ret = @current_list.list.list().delete_at @current_list.list.current_index  # ???
-            @current_list.entries.delete_at @current_list.current_index
+          #ret = @current_list.list.list().delete_at @current_list.list.current_index  # ???
+          #  @current_list.entries.delete_at @current_list.current_index
+          @current_list.delete_at
         else
-          rows = @current_list.list.selected_rows
-          rows = rows.dup
-          rows.each do |i|
-            fp = @current_list.filepath i
-            $log.debug " moving #{i}: #{fp}"
-            FileUtils.move(fp, mb.input_value)
+          each_selected_row do |f|
+            FileUtils.move(f, mb.input_value)
           end
-          rows.sort! {|x,y| y <=> x }
-          rows.each do |i|
-            $log.debug "2 moving #{i}:"
-            ret = @current_list.list.list_data_model.delete_at i
-            $log.debug "21 moving #{i}: #{ret}"
-            ret = @current_list.entries.delete_at i
-            $log.debug "22 moving #{i}: #{ret}"
-          end
+          @current_list.remove_selected_rows
           @current_list.list.clear_selection
         end
-  #      @current_list.rescan
         other_list.rescan
-          $log.debug " EXECUTED LIST RESCAN 3"
       end 
   end
+  def each_selected_row #title, message, default_value
+    rows = @current_list.list.selected_rows
+    rows = rows.dup
+    rows.each do |i|
+      fp = @current_list.filepath i
+      #$log.debug " moving #{i}: #{fp}"
+      #FileUtils.move(fp, mb.input_value)
+      yield fp
+    end
+  end
   def copy
+    fp = @current_list.filepath #.gsub(' ',"\ ")
+    fn = @current_list.filename
+    $log.debug " FP #{fp}"
+    other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
+    other_dir = other_list.cur_dir
+    $log.debug " OL #{other_list.cur_dir}"
+    if @current_list.list.selected_row_count == 0
+      str= "#{fn}"
+    else
+      str= "#{@current_list.list.selected_row_count} files "
+    end
+    mb = RubyCurses::MessageBox.new do
+      title "Copy"
+      message "Copy #{str} to"
+      type :input
+      width 80
+      default_value other_dir
+      button_type :ok_cancel
+      default_button 0
+    end
+    if mb.selected_index == 0
+      if @current_list.list.selected_row_count == 0
+        FileUtils.copy(fp, mb.input_value)
+      else
+        each_selected_row do |f|
+          FileUtils.copy(f, mb.input_value)
+        end
+        @current_list.list.clear_selection
+      end
+      other_list.rescan
+    end 
+  end
+  def delete
+    fp = @current_list.filepath #.gsub(' ',"\ ")
+    fn = @current_list.filename
+    if @current_list.list.selected_row_count == 0
+      str= "#{fn}"
+    else
+      str= "#{@current_list.list.selected_row_count} files "
+    end
+    if confirm("delete #{str}")==:YES
+      if @current_list.list.selected_row_count == 0
+        if @trash_exists
+          FileUtils.mv fp, @trash_path
+        else
+          FileUtils.rm fp
+        end
+        ret=@current_list.delete_at 
+      else
+        each_selected_row do |f|
+          if @trash_exists
+            FileUtils.mv f, @trash_path
+          else
+            FileUtils.rm f
+          end
+        end
+        @current_list.remove_selected_rows
+        @current_list.list.clear_selection
+      end
+    end 
+  end
+  def copy1
     fp = @current_list.filepath
     fn = @current_list.filename
     $log.debug " FP #{fp}"
@@ -420,22 +507,11 @@ class RFe
     other_list = [@lista, @listb].index(@current_list)==0 ? @listb : @lista
     case c
     when 'c'
-    #  str= "copy #{fn} to #{other_list.cur_dir}"
       copy
     when 'm'
-      str= "move #{fn} to #{other_list.cur_dir}"
       move
-      #if confirm("#{str}")==:YES
-      #$log.debug " MOVE #{str}"
-      #end
     when 'd'
-      str= "delete #{fn} "
-      if confirm("#{str}")==:YES
-        $log.debug " delete #{fp}"
-        FileUtils.rm fp
-        ret=@current_list.list.list_data_model.delete_at @current_list.list.current_index  # ???
-        $log.debug " DEL RET #{ret},#{@current_list.list.current_index}"
-      end
+      delete
     when 'u'
       str= "move #{fn} to #{other_list.cur_dir}"
       if confirm("#{str}")==:YES
