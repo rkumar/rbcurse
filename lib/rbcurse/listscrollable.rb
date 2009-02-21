@@ -256,9 +256,11 @@ module ListScrollable
       raise "No previous search" if regex.nil?
       #$log.debug " _find_next #{@search_found_ix} : #{@current_index}"
       fend = @list.size-1
+      return nil if start == fend
       start += 1 unless start == fend
       @last_regex = regex
       @search_start_ix = start
+      regex = Regexp.new(regex, Regexp::IGNORECASE) if @search_case
       start.upto(fend) do |ix| 
         row = @list[ix]
         m=row.match(regex)
@@ -302,6 +304,7 @@ module ListScrollable
       start -= 1 unless start == 0
       @last_regex = regex
       @search_start_ix = start
+      regex = Regexp.new(regex, Regexp::IGNORECASE) if @search_case
       start.downto(0) do |ix| 
         row = @list[ix]
         m=row.match(regex)
