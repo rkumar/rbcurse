@@ -170,7 +170,7 @@ module RubyCurses
       return @selected_index
     end
     def press ch
-       $log.debug "MESSAGE box handle_keys :  #{ch}"  if ch != -1
+       #$log.debug "MESSAGE box handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
           return
