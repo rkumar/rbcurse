@@ -26,7 +26,9 @@ MUST DO:
     +----------+
     |  TO FIX  |
     +----------+
-messagebox width of input is 30, how to increase!W
+listscrollable: search mor than one match in line !
+
+messagebox width of input is 30, how to increase!
 List selection methods not firing any changed event on table.
 
 Perhaps: M-; should be select with M-: as add to selection. Like mouse click and Cmd+click

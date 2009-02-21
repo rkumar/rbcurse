@@ -270,6 +270,19 @@ module ListScrollable
           return ix 
         end
       end
+      fend = start-1
+      start = 0
+      if @search_wrap
+        start.upto(fend) do |ix| 
+          row = @list[ix]
+          m=row.match(regex)
+          if !m.nil?
+            @find_offset = m.offset(0)[0]
+            @search_found_ix = ix
+            return ix 
+          end
+        end
+      end
       return nil
     end
     def find_next
@@ -312,6 +325,19 @@ module ListScrollable
           @find_offset = m.offset(0)[0]
           @search_found_ix = ix
           return ix 
+        end
+      end
+      fend = start-1
+      start = @list.size-1
+      if @search_wrap
+        start.downto(fend) do |ix| 
+          row = @list[ix]
+          m=row.match(regex)
+          if !m.nil?
+            @find_offset = m.offset(0)[0]
+            @search_found_ix = ix
+            return ix 
+          end
         end
       end
       return nil
