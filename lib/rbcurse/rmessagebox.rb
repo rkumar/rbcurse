@@ -170,7 +170,7 @@ module RubyCurses
       return @selected_index
     end
     def press ch
-       #$log.debug "message box handle_keys :  #{ch}"  if ch != -1
+       $log.debug "MESSAGE box handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
           return
@@ -189,6 +189,8 @@ module RubyCurses
           return
         when 9
           @form.select_next_field
+        when 353
+          @form.select_prev_field
         else
           # fields must return unhandled else we will miss hotkeys. 
           # On messageboxes, often if no edit field, then O and C are hot.

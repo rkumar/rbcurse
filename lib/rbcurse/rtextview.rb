@@ -175,13 +175,13 @@ module RubyCurses
         @buffer = @list[@current_index]
       end
       return if @buffer.nil?
-      $log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
+      #$log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
       if @curpos > @buffer.length
         addcol((@buffer.length-@curpos)+1)
         @curpos = @buffer.length
         set_form_col 
       end
-      $log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
+      #$log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
       #pre_key
       case ch
       when ?\C-n
@@ -230,7 +230,7 @@ module RubyCurses
       when @KEY_FIND_MORE
         find_more
       else
-        $log.debug("TEXTVIEW XXX ch #{ch}")
+        #$log.debug("TEXTVIEW XXX ch #{ch}")
         return :UNHANDLED
       end
       #post_key
