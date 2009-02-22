@@ -328,9 +328,9 @@ module RubyCurses
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             #renderer.repaint @form.window, r+hh, c, content, focussed, selected
             @form.window.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
-            # FIXME can exceed bounds, what if scrolling
             if @search_found_ix == tr+hh
               if !@find_offset.nil?
+                # handle exceed bounds, and if scrolling
                 if @find_offset1 < maxlen+@pcol and @find_offset > @pcol
                 @form.window.mvchgat(y=r+hh, x=c+@find_offset-@pcol, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
                 end
