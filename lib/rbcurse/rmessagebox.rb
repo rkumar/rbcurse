@@ -111,8 +111,14 @@ module RubyCurses
         make_buttons ["&OK"]
       when "ok_cancel" #, "input", "list", "field_list"
         make_buttons %w[&OK &Cancel]
+        # experience 2009-02-22 12:52 trapping y and n - hopefully wont cause an edit problem
+        @form.bind_key(?o){ press(?\M-o) }
+        @form.bind_key(?c){ press(?\M-c) }
       when "yes_no"
         make_buttons %w[&Yes &No]
+        # experience 2009-02-22 12:52 trapping y and n - hopefully wont cause an edit problem
+        @form.bind_key(?y){ press(?\M-y) }
+        @form.bind_key(?n){ press(?\M-n) }
       when "yes_no_cancel"
         make_buttons ["&Yes", "&No", "&Cancel"]
       when "custom"
@@ -170,7 +176,6 @@ module RubyCurses
       return @selected_index
     end
     def press ch
-       #$log.debug "MESSAGE box handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
           return
@@ -183,8 +188,8 @@ module RubyCurses
           if field.respond_to? :fire
             field.fire
           end
-          $log.debug "popup ENTER : #{@selected_index} "
-          $log.debug "popup ENTER :  #{field.name}" if !field.nil?
+          #$log.debug "popup ENTER : #{@selected_index} "
+          #$log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
           return
         when 9
