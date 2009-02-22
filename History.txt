@@ -1,3 +1,15 @@
+=== 0.1.2 / 2009-02-22
+
+* Minor enhancements
+
+    * search in textview with wrap, case insensitive, highlighting searched text
+    * table can have nil data
+    * tabbed pane has ok_cancel button, ok by default
+    * table autosizing - required for adhoc queries
+    * table horizontal scrolling
+    * editing when more columns than viewable in table
+    * confirm dialog, normal mnemonics for buttons
+
 === 0.1.1 / 2009-02-12
 
 * Bugfix
