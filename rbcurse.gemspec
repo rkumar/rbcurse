@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rbcurse}
-  s.version = "0.1.1"
+  s.version = "0.1.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rahul Kumar"]
@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.description = %q{Ruby curses widgets for easy application development}
   s.email = %q{sentinel.2001@gmx.com}
   s.extra_rdoc_files = ["History.txt", "Manifest.txt", "README.txt"]
-  s.files = ["History.txt", "Manifest.txt", "README.txt", "CHANGELOG", "Rakefile", "lib/rbcurse.rb", "test/test_rbcurse.rb", "lib/rbcurse/action.rb", "lib/rbcurse/applicationheader.rb", "lib/rbcurse/celleditor.rb", "lib/rbcurse/checkboxcellrenderer.rb", "lib/rbcurse/colormap.rb", "lib/rbcurse/comboboxcellrenderer.rb", "lib/rbcurse/defaultlistselectionmodel.rb", "lib/rbcurse/keylabelprinter.rb", "lib/rbcurse/listcellrenderer.rb", "lib/rbcurse/listkeys.rb", "lib/rbcurse/listscrollable.rb", "lib/rbcurse/listselectable.rb", "lib/rbcurse/mapper.rb", "lib/rbcurse/orderedhash.rb", "lib/rbcurse/rcombo.rb", "lib/rbcurse/rdialogs.rb", "lib/rbcurse/rform.rb", "lib/rbcurse/rinputdataevent.rb", "lib/rbcurse/rlistbox.rb", "lib/rbcurse/rmenu.rb", "lib/rbcurse/rmessagebox.rb", "lib/rbcurse/rpopupmenu.rb", "lib/rbcurse/rtabbedpane.rb", "lib/rbcurse/rtable.rb", "lib/rbcurse/rtextarea.rb", "lib/rbcurse/rtextview.rb", "lib/rbcurse/rwidget.rb", "lib/rbcurse/scrollable.rb", "lib/rbcurse/selectable.rb", "lib/rbcurse/table/tablecellrenderer.rb", "lib/rbcurse/table/tabledatecellrenderer.rb", "lib/ver/keyboard.rb", "lib/ver/keyboard2.rb", "lib/ver/ncurses.rb", "lib/ver/window.rb", "examples/qdfilechooser.rb", "examples/rfe.rb", "examples/rfe_renderer.rb", "examples/test1.rb", "examples/test2.rb", "examples/testcombo.rb", "examples/testkeypress.rb", "examples/testmenu.rb", "examples/testtable.rb", "examples/testtabp.rb", "examples/testtodo.rb", "examples/viewtodo.rb"]
+  s.files = ["History.txt", "Manifest.txt", "README.txt", "CHANGELOG", "Rakefile", "lib/rbcurse.rb", "test/test_rbcurse.rb", "lib/rbcurse/action.rb", "lib/rbcurse/applicationheader.rb", "lib/rbcurse/celleditor.rb", "lib/rbcurse/checkboxcellrenderer.rb", "lib/rbcurse/colormap.rb", "lib/rbcurse/comboboxcellrenderer.rb", "lib/rbcurse/defaultlistselectionmodel.rb", "lib/rbcurse/keylabelprinter.rb", "lib/rbcurse/listcellrenderer.rb", "lib/rbcurse/listkeys.rb", "lib/rbcurse/listscrollable.rb", "lib/rbcurse/listselectable.rb", "lib/rbcurse/mapper.rb", "lib/rbcurse/orderedhash.rb", "lib/rbcurse/rcombo.rb", "lib/rbcurse/rdialogs.rb", "lib/rbcurse/rform.rb", "lib/rbcurse/rinputdataevent.rb", "lib/rbcurse/rlistbox.rb", "lib/rbcurse/rmenu.rb", "lib/rbcurse/rmessagebox.rb", "lib/rbcurse/rpopupmenu.rb", "lib/rbcurse/rtabbedpane.rb", "lib/rbcurse/rtable.rb", "lib/rbcurse/rtextarea.rb", "lib/rbcurse/rtextview.rb", "lib/rbcurse/rwidget.rb", "lib/rbcurse/scrollable.rb", "lib/rbcurse/selectable.rb", "lib/rbcurse/table/tablecellrenderer.rb", "lib/rbcurse/table/tabledatecellrenderer.rb", "lib/ver/keyboard.rb", "lib/ver/keyboard2.rb", "lib/ver/ncurses.rb", "lib/ver/window.rb", "examples/qdfilechooser.rb", "examples/rfe.rb", "examples/rfe_renderer.rb", "examples/test1.rb", "examples/test2.rb", "examples/testcombo.rb", "examples/testkeypress.rb", "examples/testmenu.rb", "examples/testtable.rb", "examples/testtabp.rb", "examples/testtodo.rb", "examples/viewtodo.rb", "examples/todocsv.csv", "examples/sqlc.rb"]
   s.has_rdoc = false
   s.homepage = %q{http://rbcurse.rubyforge.org/}
   s.rdoc_options = ["--main", "README.txt"]
