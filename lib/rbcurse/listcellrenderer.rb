@@ -93,6 +93,13 @@ module RubyCurses
           graphic.printstring r, c, str % [len, _value], @color_pair,@attr
           r += 1
         end
+=begin
+        if @parent.search_found_ix == row_index
+          if !@parent.find_offset.nil?
+            graphic.mvchgat(y=r, x=@parent.find_offset, @parent.find_offset1, Ncurses::A_NORMAL, $reversecolor, nil)
+          end
+        end
+=end
     end
   # ADD HERE 
   end

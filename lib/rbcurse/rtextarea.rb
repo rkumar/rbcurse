@@ -676,6 +676,11 @@ module RubyCurses
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             #renderer.repaint @form.window, r+hh, c, content, focussed, selected
             @form.window.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
+            if @search_found_ix == tr+hh
+              if !@find_offset.nil?
+                @form.window.mvchgat(y=r+hh, x=c+@find_offset, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
+              end
+            end
 
         else
           # clear rows

@@ -8,6 +8,7 @@
 #   @pcol (used for horiz scrolling, starts at 0)
 #
 module ListScrollable
+  attr_reader :search_found_ix, :find_offset, :find_offset1
   def previous_row
     @oldrow = @current_index
     @current_index -= 1 if @current_index > 0
@@ -266,6 +267,7 @@ module ListScrollable
         m=row.match(regex)
         if !m.nil?
           @find_offset = m.offset(0)[0]
+          @find_offset1 = m.offset(0)[1]
           @search_found_ix = ix
           return ix 
         end
@@ -278,6 +280,7 @@ module ListScrollable
           m=row.match(regex)
           if !m.nil?
             @find_offset = m.offset(0)[0]
+          @find_offset1 = m.offset(0)[1]
             @search_found_ix = ix
             return ix 
           end
@@ -323,6 +326,7 @@ module ListScrollable
         m=row.match(regex)
         if !m.nil?
           @find_offset = m.offset(0)[0]
+          @find_offset1 = m.offset(0)[1]
           @search_found_ix = ix
           return ix 
         end
@@ -335,6 +339,7 @@ module ListScrollable
           m=row.match(regex)
           if !m.nil?
             @find_offset = m.offset(0)[0]
+          @find_offset1 = m.offset(0)[1]
             @search_found_ix = ix
             return ix 
           end
