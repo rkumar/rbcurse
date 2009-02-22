@@ -240,7 +240,7 @@ module ListScrollable
         alert("No matching data for: #{regex}")
       else
         set_focus_on(ix)
-        set_form_col @find_offset
+        set_form_col @find_offset1
         @cell_editor.component.curpos = (@find_offset||0) if @cell_editing_allowed
       end
     end
@@ -257,7 +257,7 @@ module ListScrollable
       raise "No previous search" if regex.nil?
       #$log.debug " _find_next #{@search_found_ix} : #{@current_index}"
       fend = @list.size-1
-      return nil if start == fend
+      if start != fend
       start += 1 unless start == fend
       @last_regex = regex
       @search_start_ix = start
@@ -272,6 +272,7 @@ module ListScrollable
           return ix 
         end
       end
+      end
       fend = start-1
       start = 0
       if @search_wrap
@@ -280,7 +281,7 @@ module ListScrollable
           m=row.match(regex)
           if !m.nil?
             @find_offset = m.offset(0)[0]
-          @find_offset1 = m.offset(0)[1]
+            @find_offset1 = m.offset(0)[1]
             @search_found_ix = ix
             return ix 
           end
@@ -295,7 +296,7 @@ module ListScrollable
           alert("No more matching data for: #{regex}")
         else
           set_focus_on(ix) 
-          set_form_col @find_offset
+          set_form_col @find_offset1
         @cell_editor.component.curpos = (@find_offset||0) if @cell_editing_allowed
         end
     end
@@ -316,7 +317,7 @@ module ListScrollable
     def _find_prev regex=@last_regex, start = @search_found_ix 
       raise "No previous search" if regex.nil?
       #$log.debug " _find_prev #{@search_found_ix} : #{@current_index}"
-      return nil if start == 0
+      if start != 0
       start -= 1 unless start == 0
       @last_regex = regex
       @search_start_ix = start
@@ -330,6 +331,7 @@ module ListScrollable
           @search_found_ix = ix
           return ix 
         end
+      end
       end
       fend = start-1
       start = @list.size-1

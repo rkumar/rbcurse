@@ -217,6 +217,8 @@ module RubyCurses
       when ?\C-e
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
         blen = @buffer.rstrip.length
+          set_form_col blen
+=begin
         if blen < @maxlen
           set_form_col blen
         else
@@ -224,6 +226,7 @@ module RubyCurses
           #wrong curpos wiill be reported
           set_form_col @maxlen-1
         end
+=end
         # search related added on 2009-02-15 21:36 
       when @KEY_ASK_FIND
         ask_search
@@ -259,7 +262,13 @@ module RubyCurses
     # set cursor on correct column tview
     def set_form_col col=@curpos
       @curpos = col
-      @curpos = @maxlen if @curpos > @maxlen
+      #@curpos = @maxlen if @curpos > @maxlen
+      if @curpos > @maxlen
+        @pcol = @curpos - @maxlen
+        @curpos = @maxlen - 1
+      else
+        @pcol = 0
+      end
       @form.col = @orig_col + @col_offset + @curpos
       @repaint_required = true
     end
