@@ -13,23 +13,53 @@ require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
 
+# TODO move the csv to a database so you can update. this sucketh.
+#
 class TodoList
   def initialize file
     @file = file
   end
   def load 
-    @todomap = YAML::load(File.open(@file));
+    #@todomap = YAML::load(File.open(@file));
+    @data =[]
+    @statuses=[]
+    @categories=[]
+    @modules=[]
+    require 'csv'
+    CSV::Reader.parse(File.open(@file, 'r')) do |row|
+      @data << row
+      $log.debug " #{row.inspect} "
+      @categories << row[0] unless @categories.include? row[0]
+      @statuses << row[4] unless @statuses.include? row[4]
+      @modules << row[1] unless @modules.include? row[1]
+    end
+    $log.debug " MOD #{@modules}"
   end
   def get_statuses
-    @todomap['__STATUSES']
+    #    @todomap['__STATUSES']
+    @statuses
   end
   def get_modules
-    @todomap['__MODULES'].sort
+    #@todomap['__MODULES'].sort
+    @modules.sort
   end
   def get_categories
-    @todomap.keys.delete_if {|k| k.match(/^__/) }
+    #@todomap.keys.delete_if {|k| k.match(/^__/) }
+    @categories
   end
   def get_tasks_for_category categ
+    @data.select do |row|
+      row[0] == categ
+    end
+  end
+  def insert_task_for_category task, categ
+    task[0] = categ
+    @data << task
+  end
+  def delete_task task
+    @data.delete task
+  end
+  def oldget_tasks_for_category categ
     c = @todomap[categ]
     d = []
     c.each_pair {|k,v|
@@ -44,6 +74,14 @@ class TodoList
     return d
   end
   def set_tasks_for_category categ, data
+  $log.debug " def set_tasks_for_category #{categ}, #{data.size} old #{@data.size}"
+    @data.delete_if { |row| row[0] == categ }
+  $log.debug " 2 def set_tasks_for_category #{categ}, #{data.size} old #{@data.size}"
+  data.each { |row| row[0] = categ }
+    @data.insert -1, *data
+  $log.debug " 3 def set_tasks_for_category #{categ}, #{data.size} old #{@data.size}"
+  end
+  def old_set_tasks_for_category categ, data
     d = {}
     data.each do |row|
       #key = row.delete_at 0
@@ -55,6 +93,7 @@ class TodoList
     $log.debug " NEW DATA #{categ}: #{data}"
   end
   def convert_to_text
+=begin
     d = []
     cats = get_categories
     cats.each do |c|
@@ -65,8 +104,10 @@ class TodoList
         d << n
       end
     end
-    File.open("todo.csv", "w") { |f| YAML.dump( d, f )}
+    #File.open("todo.yml", "w") { |f| YAML.dump( d, f )}
     buf =''
+=end
+    d = @data
     require 'csv'
     CSV.open('todocsv.csv', 'w') do |writer|     
       #writer << [nil, nil]                  
@@ -105,7 +146,7 @@ class TodoApp
     @window = VER::Window.root_window
     @form = Form.new @window
 
-    @todo = TodoList.new "todo.yml"
+    @todo = TodoList.new "todocsv.csv"
     @todo.load
   end
   def make_popup table
@@ -218,14 +259,14 @@ class TodoApp
     data = todo.get_tasks_for_category 'TODO'
     @data = data
     $log.debug " data is #{data}"
-    colnames = %w[ Module Prior Task Status]
+    colnames = %w[ Categ Module Prior Task Status]
 
     table_ht = 15
     atable = Table.new @form do
       name   "tasktable" 
       row  r+2
       col  c
-      width 78
+      width 84
       height table_ht
       #title "A Table"
       #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
@@ -238,8 +279,8 @@ class TodoApp
     data = todo.get_tasks_for_category fld.getvalue; 
     @data = data
     $log.debug " DATA is #{data.inspect} : #{data.length}"
-    data = [[nil, 5, "NEW ", "TODO", Time.now]] if data.nil? or data.empty? or data.size == 0
-    $log.debug " DATA is #{data.inspect} : #{data.length}"
+    data = [['FIXME',nil, 5, "NEW ", "TODO", Time.now]] if data.nil? or data.empty? or data.size == 0
+    #$log.debug " DATA is #{data.inspect} : #{data.length}"
     atable.table_model.data = data
     end
 
@@ -247,13 +288,15 @@ class TodoApp
     #
     ## key bindings fo atable
     # column widths 
-    $log.debug " tcm #{tcm.inspect}"
-    $log.debug " tcms #{tcm.columns}"
-    tcm.column(0).width 8
-    tcm.column(1).width 5
-    tcm.column(2).width 50
-    tcm.column(2).edit_length 80
-    tcm.column(3).width 8
+    #$log.debug " tcm #{tcm.inspect}"
+    #$log.debug " tcms #{tcm.columns}"
+    tcm.column(0).width 5
+    tcm.column(0).editable false
+    tcm.column(1).width 8
+    tcm.column(2).width 5
+    tcm.column(3).width 50
+    tcm.column(3).edit_length 80
+    tcm.column(4).width 8
     app = self
     atable.configure() do
       #bind_key(330) { atable.remove_column(tcm.column(atable.focussed_col)) rescue ""  }
@@ -304,8 +347,8 @@ class TodoApp
     atable.set_default_cell_renderer_for_class "Float", num_renderer
     atable.set_default_cell_renderer_for_class "TrueClass", bool_renderer
     atable.set_default_cell_renderer_for_class "FalseClass", bool_renderer
-    atable.get_table_column_model.column(3).cell_editor =  combo_editor
-    atable.get_table_column_model.column(0).cell_editor =  combo_editor1
+    atable.get_table_column_model.column(4).cell_editor =  combo_editor
+    atable.get_table_column_model.column(1).cell_editor =  combo_editor1
     ce = atable.get_default_cell_editor_for_class "String"
     # increase the maxlen of task
     # ce.component.maxlen = 80 # this is obsolete, use edit_length
@@ -417,17 +460,21 @@ class TodoApp
       amod = mods[@mb.selected_index]
       row = atable.focussed_row
       d = todo.get_tasks_for_category amod
+      $log.debug " retrieved #{d.size} rows for #{amod}"
       r = []
-      tcm = atable.get_table_column_model
+      tcm = atable.table_column_model
       tcm.each_with_index do |acol, colix|
         r << atable.get_value_at(row, colix)
       end
       # here i ignore the 5th row tht coud have been added
       r << Time.now
       d << r
+      $log.debug " sending #{d.size} rows for #{amod}"
       todo.set_tasks_for_category amod, d
+      $log.debug " MOVE #{data.size} rows for #{categ.getvalue}"
       tm = atable.table_model
       ret = tm.delete_at row
+      $log.debug " MOVE after del #{data.size} rows for #{categ.getvalue}"
       todo.set_tasks_for_category categ.getvalue, data
       alert("Moved row #{row} to #{amod}.")
     }
@@ -470,15 +517,17 @@ class TodoApp
     #@new_act = Action.new("New Row", "mnemonic"=>"N") { 
     @new_act = Action.new("&New Row") { 
       mod = nil
+      cat = 'TODO'
       cc = atable.get_table_column_model.column_count
       if atable.row_count < 1
         frow = 0
       else
         frow = atable.focussed_row
         #frow += 1 # why ?
-        mod = atable.get_value_at(frow,0) unless frow.nil?
+        cat = atable.get_value_at(frow,0) unless frow.nil?
+        mod = atable.get_value_at(frow,1) unless frow.nil?
       end
-      tmp = [mod, 5, "", "TODO", Time.now]
+      tmp = [cat,mod, 5, "", "TODO", Time.now]
       tm = atable.table_model
       tm.insert frow, tmp
       atable.set_focus_on frow
@@ -489,7 +538,7 @@ class TodoApp
     @save_cmd = lambda {
         todo.set_tasks_for_category categ, data
         todo.dump
-        alert("Rewritten yaml file")
+        alert("Rewritten csv file")
     }
     @del_cmd = lambda { 
       row = atable.focussed_row
