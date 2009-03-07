@@ -1,3 +1,7 @@
+## rahul kumar, 2009
+# to demonstrate usage of rbcurse
+# Use C-q to quit
+#
 require 'rubygems'
 require 'ncurses'
 require 'logger'
@@ -143,7 +147,7 @@ class Sqlc
   def run
     title = "rbcurse"
     @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client"}
-    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>60}
+    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>70}
     @status_row = status_row
     # setting ENTER across all objects on a form
     @form.bind(:ENTER) {|f| status_row.text = f.help_text unless f.help_text.nil? }
@@ -190,23 +194,20 @@ class Sqlc
     }
 
     # using ampersand to set mnemonic
-=begin
-    b_delrow = Button.new @form do
-      text "&Delete"
+
+    b_construct = Button.new @form do
+      text "Constr&uct"
       row buttrow
       col c+25
       #bind(:ENTER) { status_row.text "Deletes focussed row" }
-      help_text "" 
+      help_text "Select a table, select columns and press this to construct an SQL"
     end
-    b_delrow.command { 
-      #@del_cmd.call
-    }
-=end
-    Button.button_layout [b_run, b_clear], buttrow, startcol=5, cols=Ncurses.COLS-1, gap=5
+
+    Button.button_layout [b_run, b_clear, b_construct], buttrow, startcol=5, cols=Ncurses.COLS-1, gap=5
 
     table_ht = 15
     atable = Table.new @form do
-      name   "tasktable" 
+      name   "sqltable" 
       row  buttrow+1
       col  c
       width t_width
@@ -283,6 +284,7 @@ class Sqlc
           #show_selector true
           title "Tables"
           title_attrib 'reverse'
+          help_text "Press ENTER to run * query, Space to select columns"
         end
         #tablelist.bind(:PRESS) { |alist| @status_row.text = "Selected #{alist.current_index}" }
         tablelist.list_selection_model().bind(:LIST_SELECTION_EVENT,tablelist) { |lsm, alist| @status_row.text = "Selected #{alist.current_index}" }
@@ -301,6 +303,7 @@ class Sqlc
     #show_selector true
     title "Columns"
     title_attrib 'reverse'
+    help_text "Press ENTER to append columns to sqlarea, Space to select"
   end
   tablelist.bind_key(32) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
@@ -313,6 +316,26 @@ class Sqlc
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
     run_query "select * from #{table}"
   }
+  columnlist.bind_key(13) {  
+    # append column name to sqlarea if ENTER pressed
+    column = "#{columnlist.get_content()[columnlist.current_index]}" 
+    sqlarea << "#{column},"
+  }
+  columnlist.bind_key(32) {  
+    # select row
+    columnlist.toggle_row_selection
+    column = "#{columnlist.get_content()[columnlist.current_index]}" 
+  }
+    b_construct.command { 
+    table = "#{tablelist.get_content()[tablelist.current_index]}" 
+    indexes = columnlist.selected_rows()
+    columns=[]
+    indexes.each do |i|
+      columns << columnlist.get_content()[i]
+    end
+    sql = "select #{columns.join(',')} from #{table}"
+    sqlarea << sql
+    }
 
 
     @form.repaint

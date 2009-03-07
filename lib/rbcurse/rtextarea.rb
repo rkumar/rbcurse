@@ -132,6 +132,7 @@ module RubyCurses
         data << "\r" if data[-1,1] != "\r" #XXXX
         @list << data
       end
+      set_modified  # added 2009-03-07 18:29 
       goto_end if @auto_scroll # to test out.
       self
     end

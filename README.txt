@@ -50,8 +50,9 @@ Above may be created using DSL like syntax, or hashes.
 
 == Sample programs:
 
+*  sqlc.rb is a ruby sql client demo 
 *  rfe : file explorer or Finder like app
-*  testtodo.rb  : a todo app based on a yaml file
+*  testtodo.rb  : a todo app based on a yaml file (now csv)
 *  test2.rb  most widgets (including menus)
 *  test1.rb  various kinds of messageboxes (input, list, custom)
 *  testtabp.rb  tabbed pane
