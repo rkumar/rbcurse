@@ -77,6 +77,9 @@ module RubyCurses
             padding = 0 if padding < 0
             _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
           end
+          # XXX  2009-10-05 23:01 since the len can vary when scrolling
+          # right justification for numbers suffers.
+          # perhaps one should use display_length and then truncate using len
           graphic.printstring r, c, str % [len, _value], acolor,_attr
           r += 1
         end

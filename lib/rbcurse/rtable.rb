@@ -818,24 +818,36 @@ module RubyCurses
               # experimental to print subset of last
               space_left = (@width-3)-(offset) # 3 due to boundaries
               space_left = 0 if space_left < 0
-              if content.length > space_left
+              # length bombed for trueclass 2009-10-05 19:34 
+              contentlen = content.length rescue content.to_s.length
+              #if content.length > space_left
+              if contentlen > space_left
                 clen = space_left
                 renderer.display_length clen
               else
                 clen = -1
                 renderer.display_length space_left # content.length
               end
+              # added 2009-10-05 20:29 since non strings were bombing
+              # in other cases should be just pass the content as-is. XXX
+              contenttrim = content[0..clen] rescue content # .to_s[0..clen]
               # print the inter cell padding just in case things mess up while scrolling
               @form.window.mvprintw r+hh, c+offset-@inter_column_spacing, inter_column_padding
-              renderer.repaint @form.window, r+hh, c+offset, crow, content[0..clen], focussed, selected
+              #renderer.repaint @form.window, r+hh, c+offset, crow, content[0..clen], focussed, selected
+              #renderer.repaint @form.window, r+hh, c+offset, crow, contenttrim, focussed, selected
+              # 2009-10-05 20:35 XXX passing self so we check it doesn't print outside
+              renderer.repaint self, r+hh, c+offset, crow, contenttrim, focussed, selected
               break
             end
             # added crow on 2009-02-11 22:46 
-            renderer.repaint @form.window, r+hh, c+(offset), crow, content, focussed, selected
+            #renderer.repaint @form.window, r+hh, c+(offset), crow, content, focussed, selected
+              # 2009-10-05 20:35 XXX
+            renderer.repaint self, r+hh, c+(offset), crow, content, focussed, selected
             offset += width
           end
         else
-          @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          #@form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          printstring r+hh, c, " " * (@width-2), acolor,@attr
           # clear rows
         end
       end
@@ -847,6 +859,24 @@ module RubyCurses
       $log.debug " _print_more_data_marker(#{rc} >= #{tr} + #{h})"
       @table_changed = false
       @repaint_required = false
+    end
+    # NEW to correct overflow
+    #  2009-10-05 21:34 
+    #  when resizing columns a renderer can go outside the table bounds
+    #  so printing should be done by parent not window
+    def printstring(r,c,string, color, att)
+      # 3 is table borders
+      # if renderer trying to print outside don't let it
+      if c > @col+@width-3
+        return
+      end
+      # if date exceeds boundary truncate
+      if c+string.length > (@col+@width)-3
+        len = string.length-((c+string.length)-(@col+@width-3))
+        @form.window.printstring(r,c,string[0..len], color,att)
+      else
+        @form.window.printstring(r,c,string, color,att)
+      end
     end
     def print_border g
       return unless @table_changed
@@ -897,10 +927,14 @@ module RubyCurses
                 renderer.display_length space_left
               end
               #$log.debug " TABLE BREAKING SINCE sl: #{space_left},#{crow},#{colix}: #{clen} "
-              renderer.repaint @form.window, r, c+(offset), 0, content[0..clen], false, false
+        # passing self so can prevent renderer from printing outside 2009-10-05 22:56 
+              #renderer.repaint @form.window, r, c+(offset), 0, content[0..clen], false, false
+              renderer.repaint self, r, c+(offset), 0, content[0..clen], false, false
           break
         end
-        renderer.repaint @form.window, r, c+(offset),0, content, false, false
+        # passing self so can prevent renderer from printing outside 2009-10-05 22:56 
+        #renderer.repaint @form.window, r, c+(offset),0, content, false, false
+        renderer.repaint self, r, c+(offset),0, content, false, false
         offset += width
       end
     end
