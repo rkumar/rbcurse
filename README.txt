@@ -1,6 +1,8 @@
-= rbcurse
+= rbcurse (for ruby 1.9.1)
 
-* http://totalrecall.wordpress.com   << CORRECTED !!!
+* Version to work with ruby 1.9 - WORK IN PROGRESS
+
+* http://totalrecall.wordpress.com   
 
 * rbcurse on rubyforge: http://rbcurse.rubyforge.org/
 
@@ -15,6 +17,7 @@
 
   * sqlc.rb is a ruby sql client demo (using testd.db at
      http://www.benegal.org/files/screen/testd.db)
+    (requires gem sqlite3-ruby)
 
   * testtodo.rb is a test TODO application
 
@@ -50,11 +53,14 @@ Above may be created using DSL like syntax, or hashes.
 
 == Sample programs:
 
-*  sqlc.rb is a ruby sql client demo 
+*  sqlc.rb is a ruby sql client demo (using sqlite3-ruby)
 *  rfe : file explorer or Finder like app
-*  testtodo.rb  : a todo app based on a yaml file (now csv)
 *  test2.rb  most widgets (including menus)
 *  test1.rb  various kinds of messageboxes (input, list, custom)
+
+   **   TO TEST THE FOLLOWING 
+
+*  testtodo.rb  : a todo app based on a yaml file (now csv)
 *  testtabp.rb  tabbed pane
 *  testcombo.rb  combos with various insert policies and vertical
    alignments
@@ -288,25 +294,44 @@ code below. See test programs for latest, working code.
 
 == REQUIREMENTS:
 
-* ruby 1.8.7    (not compatible with 1.9)
+* ruby 1.9.1 (will try to make it work on both 1.8.7 and 1.9)
 
-* ncurses-ruby
-
-(following is provided with source)
-
-* uses the window class created by "manveru" (michael) 
-  It is provided with this package, and has some alterations from the
-  original. I have added a method getchar() which traps and returns
-  ALT/META, META+CTRL, META+SHIFT+CONTROL, ALT+Fn etc. 
+* ncurses-ruby (1.2.4)
 
 
 == INSTALL:
 
+STEP 1.
+
 sudo gem install ncurses-ruby
+
+If the above fails, then do as follows:
+
+Somehow at the time of writing the above installs a version that does
+not work with 1.9. So you have to download ncurses-ruby (1.2.4) tgz from
+http://ncurses-ruby.berlios.de/ as follows:
+
+1. Download http://prdownload.berlios.de/ncurses-ruby/ncurses-ruby-1.2.4.tar.bz2 
+2. unzip the file, cd into dir
+2. run install commands as per README (ruby extconf.rb && make)
+3. Create a gemspec ... use this file http://gist.github.com/201877
+   Save it as ncurses.gemspec 
+4. sudo gem build ncurses.gemspec
+5. sudo gem install --local ncurses-1.2.4.gem
+6. uninstall any previous ncurses or ncurses-ruby version otherwise
+errors will persist at runtime.
+7. check with "gem list --local" and you should see ncurses (1.2.4). The
+ examples in the ncurses-ruby/examples folder should work. (Check the
+first line regarding interpreter first).
+
+STEP 2.
+
 sudo gem install rbcurse
+
+ Now to the the examples folder and execute some examples.
 
 == LICENSE:
 
-Copyright (c) 2008 rkumar
+Copyright (c) 2008, 2009 rkumar
 
 Same as ruby license.
