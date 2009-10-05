@@ -1,3 +1,10 @@
+** 2009-10-05 11:00 **
+## Horizontal scrolling in tables - some cleaning ##
+
+When increasing the size of a column, other cols could write
+outside the table. Fixed.
+
+* * *
 ** 2009-10-05 00:00 **
 ## Making changes for 1.9 and testing ##
 

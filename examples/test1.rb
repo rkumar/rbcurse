@@ -6,7 +6,7 @@
 #  TERM=xterm does not but other things are fine.
 #
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-#require 'rubygems'
+require 'rubygems'
 require 'ncurses'
 require 'logger'
 #require 'lib/rbcurse/mapper'

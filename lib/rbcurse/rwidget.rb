@@ -460,6 +460,7 @@ module RubyCurses
     # e.g. bind_key ?\C-x, object, block 
     # added 2009-01-06 19:13 since widgets need to handle keys properly
     def bind_key keycode, *args, &blk
+      keycode = keycode.getbyte(0) if keycode.class==String ##    1.9 2009-10-05 19:40 
       $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} #{args} "
       @key_handler ||= {}
       @key_args ||= {}
@@ -1477,7 +1478,7 @@ module RubyCurses
       _value = @text || getvalue # hack for Togglebutton FIXME
       #_value = getvalue
       $log.debug " bind hot #{_value} #{@underline}"
-      ch = _value[@underline,1].downcase()[0] ## XXX 1.9 
+      ch = _value[@underline,1].downcase()[0].ord ## XXX 1.9  2009-10-05 18:55  TOTEST
       @mnemonic = _value[@underline,1]
       # meta key 
       mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))
