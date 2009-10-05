@@ -18,8 +18,9 @@
   * sqlc.rb is a ruby sql client demo (using testd.db at
      http://www.benegal.org/files/screen/testd.db)
     (requires gem sqlite3-ruby)
+    Demos horizontal and vertical scrolling of data.
 
-  * testtodo.rb is a test TODO application
+  * testtodo.rb is a test TODO application (now using fastercsv)
 
 * Screenshots on 
   http://www.benegal.org/files/screen/?M=D   (new)
@@ -37,9 +38,9 @@ applications.
 
 == FEATURES
 
-* entry fields in ruby 
-* scrollable list box (new, editable with Field, checkbox and combos)
-* multi-line editable area
+* Field : text/entry fields in pure ruby (not ncurses)
+* scrollable list box (also editable lists with Field, checkbox and combos)
+* Textarea : multi-line editable area 
 * togglebutton, radio and check buttons (with mnemonics)
 * message box
 * menubar - with submenu and CheckBoxMenuItem
@@ -47,10 +48,12 @@ applications.
 * tabbedpane (multiple forms using tabbed metaphor)
 * combobox
 * labels with mnemonics (hotkeys)
-* multi-column table - with cell selection and editing, horizontal and
+* Table: multi-column table - with cell selection and editing, horizontal and
   vertical scrolling
+* Various others, too
 
-Above may be created using DSL like syntax, or hashes.
+Above may be created using DSL like syntax, or hashes, and modified at
+will/runtime. Very flexible unlike ncurses forms and fields.
 
 == Sample programs:
 
