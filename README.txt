@@ -53,20 +53,35 @@ Above may be created using DSL like syntax, or hashes.
 
 == Sample programs:
 
+*  test2.rb  most widgets (including menus)
 *  sqlc.rb is a ruby sql client demo (using sqlite3-ruby)
 *  rfe : file explorer or Finder like app
-*  test2.rb  most widgets (including menus)
-*  test1.rb  various kinds of messageboxes (input, list, custom)
-
-   **   TO TEST THE FOLLOWING 
-
-*  testtodo.rb  : a todo app based on a yaml file (now csv)
-*  testtabp.rb  tabbed pane
 *  testcombo.rb  combos with various insert policies and vertical
    alignments
+*  testtodo.rb  : a todo app based on a yaml file (now csv)
+*  testmenu.rb  : popup menu with multiple levels
+*  testtabp.rb  tabbed pane
+*  test1.rb  various kinds of messageboxes (input, list, custom)
+   pass 1,2,3,4, or 5 as argument on command line
+   ruby test1.rb 1
+   ruby test1.rb 2
+
+   **   TO RE-TEST THE FOLLOWING in ruby 1.9.1
+*  test2.rb  most widgets (including menus)
+   - partially tested, many widgets needs thorough testing.
+
 
 == PROBLEMS, ISSUES
 TextArea not bug free. Some situations wrapping errors could exist. 
+
+Seems test2.rb takes several seconds to load in 1.9, used to be almost
+instantaneous  in 1.8. 
+
+In test2.rb, when traversing menu items, several seconds delay before
+cursor moved down the first time, could this be because of all the
+conversion of ?key using getbyte ?. Every time a key is pressed this is
+being done for comparing.
+Press F2 and then traverse menu levels
 
 == Terminal related issues.
 

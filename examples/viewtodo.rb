@@ -10,6 +10,10 @@ require 'rbcurse/rtable'
 require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
+require 'yaml'   # 1.9 2009-10-05 13:11 
+###############################
+## THIS WONT WORK SINCE I've changed to format of yaml file to array from hash
+##############################
 
 class TodoList
   def initialize file

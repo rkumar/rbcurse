@@ -217,7 +217,7 @@ class Sqlc
       #set_data data, colnames
       #cell_editing_allowed true
       #editing_policy :EDITING_AUTO
-      help_text "M-Tab for next field"
+      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll"
     end
     @atable = atable
     @data = data
