@@ -221,18 +221,18 @@ module Scrollable
       begin
         pre_key
         case ch
-        when ?\C-n
+        when ?\C-n.getbyte(0)
           scroll_forward
         when 32
           scroll_forward
-        when ?\C-p
+        when ?\C-p.getbyte(0)
           scroll_backward
-        when ?0
+        when ?0.getbyte(0)
           goto_start
-        when ?9
+        when ?9.getbyte(0)
           goto_end
-        when ?[
-        when ?[
+        when ?[.getbyte(0)
+        when ?[.getbyte(0)
         when KEY_UP
           #select_prev_row
           up
@@ -245,7 +245,7 @@ module Scrollable
           if respond_to? :fire
             fire
           end
-        when ?A..?Z, ?a..?z
+        when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
           ret = set_selection_for_char ch.chr
         else
           return :UNHANDLED #if ret == -1

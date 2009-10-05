@@ -91,15 +91,15 @@ include ColorMap
 
       while((ch = @window.getchar()) != KEY_F1 )
         next if ch == -1
-        break if ch == ?q
+        break if ch == ?q.getbyte(0)
         case ch
-        when ?r
+        when ?r.getbyte(0)
           attr |= Ncurses::A_REVERSE
-        when ?b
+        when ?b.getbyte(0)
           attr |= Ncurses::A_BOLD
-        when ?n
+        when ?n.getbyte(0)
           attr = Ncurses::A_NORMAL
-        when ?u
+        when ?u.getbyte(0)
           attr |= Ncurses::A_UNDERLINE
         else
         i = ch.chr.to_i

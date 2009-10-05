@@ -204,10 +204,17 @@ module RubyCurses
     def handle_key ch
       @buffer = @list[@current_index]
       if @buffer.nil? and @list.length == 0
+        ## 2009-10-04 22:39 
+        # what this newline does is , if we use << to append, data is appended
+        # to second line
         @list << "\n" # changed space to newline so wrapping puts a line.
+        @current_index = 0 ; ## added 2009-10-04 21:47 
         @buffer = @list[@current_index]
       end
-      return if @buffer.nil?
+      ## 2009-10-04 20:48  i think the next line was resulting in a hang if buffer nil
+      # in sqlc on pressing Clear.
+      # if buffer is nil and user wants to enter something -- added UNHANDLED
+      return :UNHANDLED if @buffer.nil?
       $log.debug "TA: before: curpos #{@curpos} blen: #{@buffer.length}"
       # on any line if the cursor is ahead of buffer length, ensure its on last position
       # what if the buffer is somehow gt maxlen ??
@@ -218,13 +225,13 @@ module RubyCurses
       $log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}, w: #{@width} max #{@maxlen}"
       #pre_key
       case ch
-      when ?\C-n
+      when ?\C-n.getbyte(0)
         scroll_forward
-      when ?\C-p
+      when ?\C-p.getbyte(0)
         scroll_backward
-      when ?\C-[
+      when ?\C-[.getbyte(0)
         goto_start #cursor_start of buffer
-      when ?\C-]
+      when ?\C-].getbyte(0)
         goto_end # cursor_end of buffer
       when KEY_UP
         #select_prev_row
@@ -247,7 +254,7 @@ module RubyCurses
           delete_curr_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
-      when ?\C-k # delete till eol
+      when ?\C-k.getbyte(0) # delete till eol
         if @editable
           if @buffer == ""
             delete_line 
@@ -257,11 +264,11 @@ module RubyCurses
             #fire_handler :CHANGE, self  # 2008-12-22 15:23 
           end
         end
-      when ?\C-u
+      when ?\C-u.getbyte(0)
         undo_delete
-      when ?\C-a
+      when ?\C-a.getbyte(0)
         cursor_bol
-      when ?\C-e
+      when ?\C-e.getbyte(0)
         cursor_eol
         #set_form_col @buffer.length
       #when @KEY_ASK_FIND_FORWARD
@@ -339,9 +346,14 @@ module RubyCurses
       set_modified 
       return @delete_buffer
     end
+    ##
+    # FIXME : if cursor at end of last line then forward takes cursor to start
+    # of last line (same line), should stop there.
     def cursor_forward num=1
       $log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
+      $log.debug "next char cp ll and ci #{@list.length}, #{@current_index}"
       #if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
+      return if at_eol? and at_last_line?
       if @curpos < buffer_len()
         @curpos += 1
         addcol 1
@@ -351,19 +363,40 @@ module RubyCurses
       end
       cursor_bounds_check
     end
+    ## added 2009-10-04 22:13 
+    # returns whether cursor is at end of line
+    def at_eol?
+      if @curpos+1== @list[@current_index].length  
+        return  true
+      end
+      return false
+    end
+    ## added 2009-10-04 22:13 
+    # returns whether at last line (required so that forward does not go to start)
+    def at_last_line?
+      return true if @list.length == @current_index + 1
+      return false
+    end
     def addcol num
       @form.addcol num
     end
     def addrowcol row,col
     @form.addrowcol row, col
   end
+    ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
+    # it was going onto border
   def cursor_backward
+      #$log.debug "back char cp ll and ci #{@list.length}, #{@current_index}"
+      #$log.debug "back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
+      return if @curpos == 0 and @current_index == 0 # added 2009-10-04 23:02 
     if @curpos > 0
       @curpos -= 1
       addcol -1
+      #$log.debug "22 back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
     else # trying this out 2008-12-26 20:18 
       ret = up
       cursor_eol if ret != -1
+      #$log.debug "33 back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
     end
   end
   def delete_line line=@current_index

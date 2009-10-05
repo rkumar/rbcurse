@@ -271,6 +271,8 @@ class Sqlc
 
     tablist_ht = 6
     mylist = @db.get_data "select name from sqlite_master"
+    # mylist is an Array of SQLite3::ResultSet::ArrayWithTypesAndFields
+    mylist.collect!{|x| x[0] }  ## 1.9 hack, but will it run on 1.8 ??
     $listdata = Variable.new mylist
         tablelist = Listbox.new @form do
           name   "tablelist" 
@@ -308,12 +310,14 @@ class Sqlc
   tablelist.bind_key(32) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
+    ##table = table[0] if table.class==Array ## 1.9 ???
     columnlist.list_data_model.remove_all
     columnlist.list_data_model.insert 0, *@db.get_metadata(table)
   }
   tablelist.bind_key(13) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
+    ##table = table[0] if table.class==Array ## 1.9 ???
     run_query "select * from #{table}"
   }
   columnlist.bind_key(13) {  
@@ -328,6 +332,7 @@ class Sqlc
   }
     b_construct.command { 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
+    #table = table[0] if table.class==Array ## 1.9 ???
     indexes = columnlist.selected_rows()
     columns=[]
     indexes.each do |i|
@@ -342,10 +347,10 @@ class Sqlc
     @window.wrefresh
     Ncurses::Panel.update_panels
     begin
-    while((ch = @window.getchar()) != ?\C-q )
+    while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
       #colcount = tcm.column_count-1
       s = keycode_tos ch
-      #status_row.text = "Pressed #{ch} , #{s}"
+      status_row.text = "Pressed #{ch} , #{s}"
       @form.handle_key(ch)
 
       @form.repaint

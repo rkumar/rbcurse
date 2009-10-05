@@ -231,7 +231,7 @@ if $0 == __FILE__
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != ?\C-q )
+      while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
         colcount = tcm.column_count-1
         s = keycode_tos ch
         keylabel.text = "Pressed #{ch} , #{s}"

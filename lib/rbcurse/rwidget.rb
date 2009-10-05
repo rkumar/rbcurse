@@ -85,6 +85,18 @@ class Module
 
 end
 
+# 2009-10-04 14:13 added RK after suggestion on http://www.ruby-forum.com/topic/196618#856703
+# these are for 1.8 compatibility
+class Fixnum
+   def ord
+     self
+   end
+## mostly for control and meta characters
+   def getbyte(n)
+     self
+   end
+end unless "a"[0] == "a"
+
 include Ncurses
 module RubyCurses
   extend self
@@ -111,19 +123,19 @@ module RubyCurses
         case keycode
         when 33..126
           return keycode.chr
-        when ?\C-a .. ?\C-z
-          return "C-" + (keycode + ?a -1).chr 
-        when ?\M-A..?\M-z
+        when ?\C-a.getbyte(0) .. ?\C-z.getbyte(0)
+          return "C-" + (keycode + ?a.getbyte(0) -1).chr 
+        when ?\M-A.getbyte(0)..?\M-z.getbyte(0)
           return "M-"+ (keycode - 128).chr
-        when ?\M-\C-A..?\M-\C-Z
+        when ?\M-\C-A.getbyte(0)..?\M-\C-Z.getbyte(0)
           return "M-C-"+ (keycode - 32).chr
-        when ?\M-0..?\M-9
-          return "M-"+ (keycode-?\M-0).to_s
-        when 32:
+        when ?\M-0.getbyte(0)..?\M-9.getbyte(0)
+          return "M-"+ (keycode-?\M-0.getbyte(0)).to_s
+        when 32
           return "Space"
-        when 27:
+        when 27
           return "Esc"
-        when ?\C-]
+        when ?\C-].getbyte(0)
           return "C-]"
         when 258
           return "down"
@@ -147,6 +159,7 @@ module RubyCurses
           return "M-F"+ (keycode-392).to_s
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->,?\M-?,?\M-/]
+          others.collect! {|x| x.getbyte(0)  }  ## added 2009-10-04 14:25 for 1.9
           s_others=%w[M-- M-+ M-= M-' M-"   M-;   M-:   M-, M-. M-< M-> M-? M-/ ]
           if others.include? keycode
             index =  others.index keycode
@@ -776,7 +789,10 @@ module RubyCurses
   # bind an action to a key, required if you create a button which has a hotkey
   # or a field to be focussed on a key, or any other user defined action based on key
   # e.g. bind_key ?\C-x, object, block
+    # 1.9 if string passed then getbyte so user does not need to change much and
+    # less chance of error 2009-10-04 16:08 
   def bind_key keycode, *args, &blk
+    keycode = keycode.getbyte(0) if keycode.class==String ##    1.9 2009-10-04 16:10 
     $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} #{args} "
     @key_handler ||= {}
     @key_args ||= {}
@@ -805,13 +821,14 @@ module RubyCurses
         when -1
           return
         else
+       $log.debug " form HK #{ch}"
           field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
           # some widgets like textarea and list handle up and down
           if handled == :UNHANDLED or handled == -1 or field.nil?
             case ch
-            when 9, ?\M-\C-i  # tab and M-tab in case widget eats tab (such as Table)
+            when 9, ?\M-\C-i.getbyte(0)  # tab and M-tab in case widget eats tab (such as Table)
               ret = select_next_field
               return ret if ret == :NO_NEXT_FIELD
               # alt-shift-tab  or backtab (in case Table eats backtab)
@@ -1047,13 +1064,13 @@ module RubyCurses
       end
     when 330
       delete_curr_char if @editable
-    when ?\C-a
+    when ?\C-a.getbyte(0)
       cursor_home 
-    when ?\C-e
+    when ?\C-e.getbyte(0)
       cursor_end 
-    when ?\C-k
+    when ?\C-k.getbyte(0)
       delete_eol if @editable
-    when ?\C-u
+    when ?\C-u.getbyte(0)
       @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
     when 32..126
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
@@ -1327,9 +1344,9 @@ module RubyCurses
     # for other widgets, attempt to change focus to that field
     def bind_hotkey
       if !@mnemonic.nil?
-        ch = @mnemonic.downcase()[0]   ## FIXME 1.9
+        ch = @mnemonic.downcase()[0].ord   ## FIXME 1.9 DONE 
         # meta key 
-        mch = ?\M-a + (ch - ?a)
+        mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))  ## FIXME 1.9
         if @label_for.is_a? RubyCurses::Button and @label_for.respond_to? :fire
           @form.bind_key(mch, @label_for) { |_form, _butt| _butt.fire }
         else
@@ -1437,9 +1454,9 @@ module RubyCurses
       $log.error " #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
       return if @form.nil?
       @mnemonic = char
-      ch = char.downcase()[0] ## XXX 1.9 
+      ch = char.downcase()[0].ord ## XXX 1.9 
       # meta key 
-      mch = ?\M-a + (ch - ?a)
+      mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))
       $log.debug " #{self} setting MNEMO to #{char} #{mch}"
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
@@ -1463,7 +1480,7 @@ module RubyCurses
       ch = _value[@underline,1].downcase()[0] ## XXX 1.9 
       @mnemonic = _value[@underline,1]
       # meta key 
-      mch = ?\M-a + (ch - ?a)
+      mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
     #    2009-01-17 01:48 removed so widgets can be called

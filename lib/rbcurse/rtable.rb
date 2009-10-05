@@ -502,21 +502,21 @@ module RubyCurses
       when KEY_DOWN  # show previous value
         editing_stopped if @is_editing # 2009-01-16 16:06 
         next_row
-      when 27, ?\C-c:
+      when 27, ?\C-c
         editing_canceled
-      when KEY_ENTER, 10, 13:
+      when KEY_ENTER, 10, 13
         # actually it should fall through to the else
         return :UNHANDLED unless @cell_editing_allowed
         toggle_cell_editing
 
-      when @KEY_ROW_SELECTOR # ?\C-x #32:
+      when @KEY_ROW_SELECTOR # ?\C-x #32
         #add_row_selection_interval @current_index, @current_index
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
-      when ?\C-n:
+      when ?\C-n.getbyte(0)
         editing_stopped if @is_editing # 2009-01-16 16:06 
         scroll_forward
-      when ?\C-p:
+      when ?\C-p.getbyte(0)
         editing_stopped if @is_editing # 2009-01-16 16:06 
         scroll_backward
       when 48, @KEY_GOTO_TOP

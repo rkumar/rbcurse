@@ -47,10 +47,10 @@ module RubyCurses
   # Return the file size with a readable style.
   def readable_file_size(size, precision)
     case
-      #when size == 1 : "1 B"
-      when size < KILO_SIZE : "%d B" % size
-      when size < MEGA_SIZE : "%.#{precision}f K" % (size / KILO_SIZE)
-      when size < GIGA_SIZE : "%.#{precision}f M" % (size / MEGA_SIZE)
+      #when size == 1  then "1 B"
+      when size < KILO_SIZE  then "%d B" % size
+      when size < MEGA_SIZE  then "%.#{precision}f K" % (size / KILO_SIZE)
+      when size < GIGA_SIZE  then "%.#{precision}f M" % (size / MEGA_SIZE)
       else "%.#{precision}f G" % (size / GIGA_SIZE)
     end
   end

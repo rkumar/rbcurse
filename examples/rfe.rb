@@ -10,6 +10,7 @@ require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
 require 'fileutils'
+require 'yaml'  ## added for 1.9
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 
 # TODO
@@ -160,9 +161,9 @@ class FileExplorer
   def readable_file_size(size, precision)
     case
       #when size == 1 : "1 B"
-      when size < KILO_SIZE : "%d B" % size
-      when size < MEGA_SIZE : "%.#{precision}f K" % (size / KILO_SIZE)
-      when size < GIGA_SIZE : "%.#{precision}f M" % (size / MEGA_SIZE)
+      when size < KILO_SIZE then "%d B" % size
+      when size < MEGA_SIZE then "%.#{precision}f K" % (size / KILO_SIZE)
+      when size < GIGA_SIZE then "%.#{precision}f M" % (size / MEGA_SIZE)
       else "%.#{precision}f G" % (size / GIGA_SIZE)
     end
   end
@@ -480,7 +481,7 @@ class RFe
     @v_window.wrefresh
     Ncurses::Panel.update_panels
     begin
-    while((ch = @v_window.getchar()) != ?\C-q )
+    while((ch = @v_window.getchar()) != ?\C-q.getbyte(0) )
       break if ch == KEY_F3
       @v_form.handle_key ch
       @v_form.repaint
@@ -633,7 +634,7 @@ class RFe
       @klp.mode :file
       @klp.repaint
       ## FIXME chr could fail !!
-      while((ch = @window.getchar()) != ?\C-c )
+      while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
         if "cmdsuvrex".index(ch.chr) == nil
           Ncurses.beep
         else
@@ -648,7 +649,7 @@ class RFe
       @klp.repaint
       keys = @klp.get_current_keys
       ## FIXME chr could fail !!
-      while((ch = @window.getchar()) != ?\C-c )
+      while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
         if !keys.include?(ch.chr) 
           Ncurses.beep
         else
@@ -704,7 +705,7 @@ class RFe
     @window.wrefresh
     Ncurses::Panel.update_panels
     begin
-    while((ch = @window.getchar()) != ?\C-q )
+    while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
       s = keycode_tos ch
       status_row.text = "Pressed #{ch} , #{s}"
       @form.handle_key(ch)

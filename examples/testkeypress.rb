@@ -41,7 +41,7 @@ if $0 == __FILE__
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != ?q )
+      while((ch = @window.getchar()) != ?q.getbyte(0) )
         str = keycode_tos ch
         texta << "#{ch} got (#{str})"
         texta.repaint

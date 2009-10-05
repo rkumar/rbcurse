@@ -116,16 +116,16 @@ module ListScrollable
     begin
       ###pre_key # 2009-01-07 13:23 
       case ch
-      when ?\C-n
+      when ?\C-n.getbyte(0)
         scroll_forward
       when 32
         scroll_forward
-      when ?\C-p
+      when ?\C-p.getbyte(0)
         scroll_backward
-      when ?0
+      when ?0.getbyte(0)
         #goto_start
         goto_top
-      when ?9
+      when ?9.getbyte(0)
         #goto_end
         goto_bottom
       when KEY_UP
@@ -143,7 +143,7 @@ module ListScrollable
         if respond_to? :fire
           fire
         end
-      when ?A..?Z, ?a..?z
+      when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
         ret = set_selection_for_char ch.chr
       else
         return :UNHANDLED #if ret == -1
@@ -216,13 +216,13 @@ module ListScrollable
   end
     def install_keys
 =begin
-      @KEY_ASK_FIND_FORWARD ||= ?\M-f
-      @KEY_ASK_FIND_BACKWARD ||= ?\M-F
-      @KEY_FIND_NEXT ||= ?\M-g
-      @KEY_FIND_PREV ||= ?\M-G
+      @KEY_ASK_FIND_FORWARD ||= ?\M-f.getbyte(0)
+      @KEY_ASK_FIND_BACKWARD ||= ?\M-F.getbyte(0)
+      @KEY_FIND_NEXT ||= ?\M-g.getbyte(0)
+      @KEY_FIND_PREV ||= ?\M-G.getbyte(0)
 =end
-      @KEY_ASK_FIND ||= ?\M-f
-      @KEY_FIND_MORE ||= ?\M-g
+      @KEY_ASK_FIND ||= ?\M-f.getbyte(0)
+      @KEY_FIND_MORE ||= ?\M-g.getbyte(0)
     end
     def ask_search
       options = ["Search backwards", "case insensitive", "Wrap around"]

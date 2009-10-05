@@ -6,7 +6,7 @@
 #  TERM=xterm does not but other things are fine.
 #
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
+#require 'rubygems'
 require 'ncurses'
 require 'logger'
 #require 'lib/rbcurse/mapper'
@@ -30,7 +30,7 @@ if $0 == __FILE__
       $log.debug "START  MESSAGE BOX TEST #{ARGV[0]}. choice==#{choice} ---------"
       # need to pass a form, not window.
       case choice
-      when 1:
+      when 1
       @mb = RubyCurses::MessageBox.new do
         title "Enter your name"
         message "Enter your name"
@@ -42,7 +42,7 @@ if $0 == __FILE__
   
         default_button 0
       end
-      when 2:
+      when 2
       @mb = RubyCurses::MessageBox.new do
         title "Color selector"
         message "Select a color"
@@ -65,7 +65,7 @@ if $0 == __FILE__
         button_type :ok_cancel
         default_value "Rahul"
       end
-      when 4:
+      when 4
       @form = RubyCurses::Form.new nil
       field_list = []
         titlelabel = RubyCurses::Label.new @form, {'text' => 'User', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'U'}
@@ -167,7 +167,7 @@ if $0 == __FILE__
         button_type :ok
        default_button 0
       end
-      when 5:
+      when 5
         @form = RubyCurses::Form.new nil
         label = RubyCurses::Label.new @form, {'text' => 'File', 'row'=>3, 'col'=>4, 'color'=>'black', 'bgcolor'=>'white', 'mnemonic'=>'F'}
         field = RubyCurses::Field.new @form do

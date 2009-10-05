@@ -500,7 +500,7 @@ class TodoApp
     @window.wrefresh
     Ncurses::Panel.update_panels
     begin
-    while((ch = @window.getchar()) != ?\C-q )
+    while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
       colcount = tcm.column_count-1
       s = keycode_tos ch
       #status_row.text = "Pressed #{ch} , #{s}"

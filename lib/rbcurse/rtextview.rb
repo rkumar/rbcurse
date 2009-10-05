@@ -184,13 +184,13 @@ module RubyCurses
       #$log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
       #pre_key
       case ch
-      when ?\C-n
+      when ?\C-n.getbyte(0)
         scroll_forward
-      when ?\C-p
+      when ?\C-p.getbyte(0)
         scroll_backward
-      when ?0, ?\C-[
+      when ?0.getbyte(0), ?\C-[.getbyte(0)
         goto_start #start of buffer # cursor_start
-      when ?\C-]
+      when ?\C-].getbyte(0)
         goto_end # end / bottom cursor_end
       when KEY_UP
         #select_prev_row
@@ -210,11 +210,11 @@ module RubyCurses
         cursor_backward
       when 330
         cursor_backward
-      when ?\C-a
+      when ?\C-a.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
         @pcol = 0
-      when ?\C-e
+      when ?\C-e.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
         blen = @buffer.rstrip.length
           set_form_col blen

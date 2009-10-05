@@ -540,18 +540,18 @@ module RubyCurses
         previous_row
       when KEY_DOWN  # show previous value
         next_row
-      when @KEY_ROW_SELECTOR # 32:
+      when @KEY_ROW_SELECTOR # 32
         return if is_popup and @selection_mode == 'single' # not allowing select this way since there will be a difference 
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
-      when @KEY_SCROLL_FORWARD # ?\C-n:
+      when @KEY_SCROLL_FORWARD # ?\C-n
         scroll_forward
-      when @KEY_SCROLL_BACKWARD #  ?\C-p:
+      when @KEY_SCROLL_BACKWARD #  ?\C-p
         scroll_backward
-      when @KEY_GOTO_TOP # 48, ?\C-[:
+      when @KEY_GOTO_TOP # 48, ?\C-[
         # please note that C-[ gives 27, same as esc so will respond after ages
         goto_top
-      when @KEY_GOTO_BOTTOM # ?\C-]:
+      when @KEY_GOTO_BOTTOM # ?\C-]
         goto_bottom
       when @KEY_NEXT_SELECTION # ?'
         $log.debug "insdie next selection"
@@ -566,7 +566,7 @@ module RubyCurses
       when @KEY_CLEAR_SELECTION
         clear_selection #if @select_mode == 'multiple'
         @repaint_required = true
-      when 27, ?\C-c:
+      when 27, ?\C-c
         editing_canceled @current_index if @cell_editing_allowed
         cancel_block # block
       when @KEY_ASK_FIND_FORWARD
@@ -598,7 +598,7 @@ module RubyCurses
         end
         if ret == :UNHANDLED
           case ch
-          when ?A..?Z, ?a..?z
+          when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
             ret = set_selection_for_char ch.chr
           else
             ret = process_key ch, self

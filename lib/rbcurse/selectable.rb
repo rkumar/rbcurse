@@ -71,17 +71,17 @@ module Selectable
   def selectable_handle_key ch
     begin
       case ch
-      when ?;, 32  # x no more selecting since we now jump to row matching char 2008-12-18 13:13 
+      when ?;.getbyte(0), 32  # x no more selecting since we now jump to row matching char 2008-12-18 13:13 
         return if is_popup and @select_mode == 'single' # not allowing select this way since there will be a difference 
         # between pressing ENTER and space. Enter is trapped by Listbox!
         do_select
-      when ?'
+      when ?'.getbyte(0)
         $log.debug "insdie next selection"
         do_next_selection if @select_mode == 'multiple'
-      when ?"
+      when ?".getbyte(0)
         $log.debug "insdie prev selection"
         do_prev_selection if @select_mode == 'multiple'
-      when ?\C-e
+      when ?\C-e.getbyte(0)
         do_clear_selection if @select_mode == 'multiple'
       else
         return :UNHANDLED

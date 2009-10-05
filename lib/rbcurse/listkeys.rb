@@ -4,22 +4,22 @@ module RubyCurses
     # That was possible earlier, but now that i am binding the key at construction time
     # any changes to the vars after construction won't have an effect.
     def install_list_keys
-      @KEY_ROW_SELECTOR ||= ?\C-x
-      @KEY_BLOCK_SELECTOR ||= ?\M-x
-      @KEY_GOTO_TOP ||= ?\M-0
-      @KEY_GOTO_BOTTOM ||= ?\M-9
-      #@KEY_ASK_FIND_FORWARD ||= ?\M-f
-      #@KEY_ASK_FIND_BACKWARD ||= ?\M-F
-      #@KEY_FIND_NEXT ||= ?\M-g
-      #@KEY_FIND_PREV ||= ?\M-G
-      @KEY_SCROLL_FORWARD ||= ?\C-n
-      @KEY_SCROLL_BACKWARD ||= ?\C-p
-      @KEY_SCROLL_RIGHT ||= ?\M-8
-      @KEY_SCROLL_LEFT ||= ?\M-7
+      @KEY_ROW_SELECTOR ||= ?\C-x.getbyte(0)
+      @KEY_BLOCK_SELECTOR ||= ?\M-x.getbyte(0)
+      @KEY_GOTO_TOP ||= ?\M-0.getbyte(0)
+      @KEY_GOTO_BOTTOM ||= ?\M-9.getbyte(0)
+      #@KEY_ASK_FIND_FORWARD ||= ?\M-f.getbyte(0)
+      #@KEY_ASK_FIND_BACKWARD ||= ?\M-F.getbyte(0)
+      #@KEY_FIND_NEXT ||= ?\M-g.getbyte(0)
+      #@KEY_FIND_PREV ||= ?\M-G.getbyte(0)
+      @KEY_SCROLL_FORWARD ||= ?\C-n.getbyte(0)
+      @KEY_SCROLL_BACKWARD ||= ?\C-p.getbyte(0)
+      @KEY_SCROLL_RIGHT ||= ?\M-8.getbyte(0)
+      @KEY_SCROLL_LEFT ||= ?\M-7.getbyte(0)
 
-      @KEY_CLEAR_SELECTION ||= ?\M-e
-      @KEY_PREV_SELECTION ||= ?\M-"
-      @KEY_NEXT_SELECTION ||= ?\M-'
+      @KEY_CLEAR_SELECTION ||= ?\M-e.getbyte(0)
+      @KEY_PREV_SELECTION ||= ?\M-".getbyte(0)
+      @KEY_NEXT_SELECTION ||= ?\M-'.getbyte(0)
 
 =begin
       bind_key(@KEY_ROW_SELECTOR)  { toggle_row_selection }

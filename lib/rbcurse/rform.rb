@@ -213,13 +213,13 @@ module RubyCurses
       $log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}, w: #{@width} max #{@maxlen}"
       pre_key
       case ch
-      when ?\C-n
+      when ?\C-n.getbyte(0)
         scroll_forward
-      when ?\C-p
+      when ?\C-p.getbyte(0)
         scroll_backward
-      when ?\C-[
+      when ?\C-[.getbyte(0)
         goto_start #cursor_start of buffer
-      when ?\C-]
+      when ?\C-].getbyte(0)
         goto_end # cursor_end of buffer
       when KEY_UP
         #select_prev_row
@@ -237,12 +237,12 @@ module RubyCurses
           delete_prev_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
-      when 330, ?\C-d # delete char
+      when 330, ?\C-d.getbyte(0) # delete char
         if @editable
           delete_curr_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
-      when ?\C-k # delete till eol
+      when ?\C-k.getbyte(0) # delete till eol
         if @editable
           if @buffer == ""
             delete_line 
@@ -252,11 +252,11 @@ module RubyCurses
             #fire_handler :CHANGE, self  # 2008-12-22 15:23 
           end
         end
-      when ?\C-u
+      when ?\C-u.getbyte(0)
         undo_delete
-      when ?\C-a
+      when ?\C-a.getbyte(0)
         cursor_bol
-      when ?\C-e
+      when ?\C-e.getbyte(0)
         cursor_eol
         #set_form_col @buffer.length
       else
@@ -758,13 +758,13 @@ module RubyCurses
       $log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
       pre_key
       case ch
-      when ?\C-n
+      when ?\C-n.getbyte(0)
         scroll_forward
-      when ?\C-p
+      when ?\C-p.getbyte(0)
         scroll_backward
-      when ?0, ?\C-[
+      when ?0.getbyte(0), ?\C-[.getbyte(0)
         goto_start #start of buffer # cursor_start
-      when ?\C-]
+      when ?\C-].getbyte(0)
         goto_end # end / bottom cursor_end
       when KEY_UP
         #select_prev_row
@@ -782,11 +782,11 @@ module RubyCurses
         cursor_backward
       when 330
         cursor_backward
-      when ?\C-a
+      when ?\C-a.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
         @pcol = 0
-      when ?\C-e
+      when ?\C-e.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
         blen = @buffer.rstrip.length
         if blen < @maxlen
