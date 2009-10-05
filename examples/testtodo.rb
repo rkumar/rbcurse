@@ -26,7 +26,8 @@ class TodoList
     @categories=[]
     @modules=[]
     require 'csv'
-    CSV::Reader.parse(File.open(@file, 'r')) do |row|
+    #CSV::Reader.parse(File.open(@file, 'r')) do |row|
+    CSV.foreach(@file) do |row|    # 1.9 2009-10-05 11:12 
       @data << row
       $log.debug " #{row.inspect} "
       @categories << row[0] unless @categories.include? row[0]
@@ -109,7 +110,8 @@ class TodoList
 =end
     d = @data
     require 'csv'
-    CSV.open('todocsv.csv', 'w') do |writer|     
+    #CSV.open('todocsv.csv', 'w') do |writer|     
+    CSV.open("todocsv.csv", "w") do |writer|
       #writer << [nil, nil]                  
       d.each do |row|
         #parced_cells = CSV.generate_rows(row, row.size, buf)
