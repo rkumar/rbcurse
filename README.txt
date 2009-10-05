@@ -47,7 +47,8 @@ applications.
 * tabbedpane (multiple forms using tabbed metaphor)
 * combobox
 * labels with mnemonics (hotkeys)
-* multi-column table - with cell selection and editing
+* multi-column table - with cell selection and editing, horizontal and
+  vertical scrolling
 
 Above may be created using DSL like syntax, or hashes.
 
