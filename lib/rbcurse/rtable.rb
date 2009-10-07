@@ -6,6 +6,16 @@
 
   TODO: NOTE: 
      A few higher level methods check for no data but lower level ones do not.
+   XXX FIXME if M-tab to exit table then editing_stopped should be called.
+             currenty valus is lost if exiting table using Mtab or M-S-tab 2009-10-06 15:10 
+   FIXME if a field is not printed since it is going out, tab still goes there, and celleditor
+   still prints there.
+   
+   FIXME Increasing a column shoud decrease others till min size but not push off.
+   Should we have a method for changing column width online that recomputes others?
+   See testtable.rb
+   FIXME - tabbing in a row, should auto scroll to columns not displayed ?
+   currently it moves to next row. (examples/sqlc.rb)
   
   --------
   * Date:   2008-12-27 21:33 
@@ -601,37 +611,63 @@ module RubyCurses
         bounds_check
       end
     end
+    # move focus to next column
+    #  2009-10-07 12:47 behavior change. earlier this would move to next row
+    #  if focus was on last visible field. Now it scrolls so that first invisible
+    #  field becomes the first column. 
     def next_column
       v =  @current_column+1 
-      if v < @table_column_model.column_count and v <= @_last_column_print
-        $log.debug " if v < #{@table_column_model.column_count} "
-        current_column v
+      # normal situation, there is a next column go to
+      if v < @table_column_model.column_count 
+        if v <= @_last_column_print
+          $log.debug " if v < #{@table_column_model.column_count} nd lastcolprint "
+          current_column v
+        else
+          # there is a col but its not visible
+          # XXX inefficient but i scroll completely to next column (putting it at start)
+          # otherwise sometimes it was still not visible if last column
+          (v-@_first_column_print).times(){scroll_right}
+          current_column v
+          set_form_col 
+        end
+
       else
         if @current_index < row_count()-1 
           $log.debug " GOING TO NEXT ROW FROM NEXT COL : #{@current_index} : #{row_count}"
           @current_column = 0
-          @current_column = @_first_column_print # added 2009-02-17 00:01 
+          #@current_column = @_first_column_print # added 2009-02-17 00:01 
+          @_first_column_print = 0 # added 2009-10-07 11:25 
           next_row
           set_form_col
+          @repaint_required = true
+          @table_changed = true    # so columns are modified by print_header
         else
           return :UNHANDLED
         end
       end
     end
+    # move focus to previous column
+    # if you are on first column, check if scrolling required, else move up to
+    # last *visible* column of prev row
     def previous_column
       v =  @current_column-1 
       # returning unhandled so focus can go to prev field auto
       if v < @_first_column_print and @current_index <= 0
         return :UNHANDLED
       end
-      if v < @_first_column_print and @current_index >  0
-        @current_column = @table_column_model.column_count-1
-        @current_column = @_last_column_print # added 2009-02-17 00:01 
-        $log.debug " XXXXXX prev col #{@current_column}, las #{@_last_column_print}, fi: #{@_first_column_print}"
-        set_form_col
-        previous_row
+      if v < @_first_column_print
+        if v > 0
+          scroll_left
+          current_column v
+        elsif @current_index >  0
+          @current_column = @table_column_model.column_count-1
+          @current_column = @_last_column_print # added 2009-02-17 00:01 
+          $log.debug " XXXXXX prev col #{@current_column}, las #{@_last_column_print}, fi: #{@_first_column_print}"
+          set_form_col
+          previous_row
+        end
       else
-        current_column @current_column-1 
+        current_column v
       end
     end
     def goto_bottom
@@ -902,6 +938,8 @@ module RubyCurses
     end
     def print_header
       return unless @table_changed
+          $log.debug " TABLE: inside printheader 2009-10-07 11:51  DDD "
+
       r,c = rowcol
       header_model = @table_header.table_column_model
       tcm = @table_column_model ## could have been overridden, should we use this at all
@@ -987,6 +1025,7 @@ module RubyCurses
       cc = @table_model.column_count
       if @_first_column_print < cc-1
         @_first_column_print += 1
+        @_last_column_print += 1 if @_last_column_print < cc-1
         @current_column =  @_first_column_print
           set_form_col # FIXME not looking too good till key press
         @repaint_required = true

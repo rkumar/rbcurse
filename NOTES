@@ -1,3 +1,5 @@
+# to update the file named index.html on rubyforge use this. password is in rubyforge config file.
+scp index.html rkumar@rubyforge.org:/var/www/gforge-projects/rbcurse
 
 set_field_buffer: this is a very cranky method. If I try stuffing it with the output of system it often prints nothing. My findings are: you need to chomp! the string before printing.
 xx = %x[echo $LOGNAME]

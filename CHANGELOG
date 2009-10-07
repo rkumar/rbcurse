@@ -1,3 +1,13 @@
+**2009-10-07 10:14**
+## Prior to change in next_column ##
+
+Currently, after last visible column tab goes to next row.
+We want to scroll if more columns.
+At present, table will not print if a col goes out of bounds. but this does not impact
+first or last column to print variables.
+
+frmincr200910071012.tgz
+* * *
 ** 2009-10-05 11:00 **
 ## Horizontal scrolling in tables - some cleaning ##
 
