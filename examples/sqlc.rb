@@ -217,7 +217,7 @@ class Sqlc
       #set_data data, colnames
       #cell_editing_allowed true
       #editing_policy :EDITING_AUTO
-      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll"
+      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize"
     end
     @atable = atable
     @data = data
@@ -248,7 +248,12 @@ class Sqlc
           #atable.table_structure_changed
         end
       }
+      # added new method on 2009-10-08 00:47 
+      bind_key(?=) {
+        atable.size_columns_to_fit
+      }
       bind_key(?>) {
+        tcm = atable.get_table_column_model
         colcount = tcm.column_count-1
         #atable.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
         col = atable.focussed_col
@@ -259,6 +264,7 @@ class Sqlc
         atable.move_column col, col-1 unless col == 0
         #atable.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
       }
+      # TODO popup and key labels
       bind_key(?\M-h, app) {|tab,td| $log.debug " BIND... #{tab.class}, #{td.class}"; app.make_popup atable}
     end
     #keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+table_ht+3, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}

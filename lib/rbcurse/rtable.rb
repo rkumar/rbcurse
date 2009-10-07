@@ -1112,6 +1112,35 @@ module RubyCurses
       end
       table_structure_changed(nil)
     end
+    def size_columns_to_fit
+      delta = @width - table_column_model().get_total_column_width()
+      tcw = table_column_model().get_total_column_width()
+
+      $log.debug "size_columns_to_fit D #{delta}, W #{@width}, TCW #{tcw}"
+      accomodate_delta(delta) if delta != 0
+      #set_width_from_preferred_widths
+    end
+    private
+    def accomodate_delta delta
+      tcm = @table_column_model
+      cc = tcm.column_count 
+      average = (delta/cc).ceil
+      total = 0
+      tcm.each do |col|
+        oldcw = col.width + average
+        next if oldcw < col.min_width or oldcw > col.max_width
+        if delta >0 
+          break if total > delta
+        else
+          break if total < delta
+        end
+        col.width oldcw
+        total += average
+      end
+      $log.debug "accomodate_delta: #{average}. #{total}"
+      table_structure_changed(nil)
+    end
+
     # ADD METHODS HERE
   end # class Table
 
@@ -1120,6 +1149,9 @@ module RubyCurses
   # TODO - can't change width beyond min and max if set
   # resizable - user  can't resize but programatically can
   # model_index
+# XXX Seems we are not using min_width and max_width.
+# min should be used for when resizing,, max should not be used. we are using width which is
+# updated as changed
   class TableColumn
     include RubyCurses::EventHandler # 2009-01-15 22:49 
     attr_reader :identifier
@@ -1129,7 +1161,8 @@ module RubyCurses
     # user may override or set for this column, else headers default will be used
     attr_accessor :header_renderer  
     dsl_property :header_value
-    dsl_property :width
+    dsl_property :width  # XXX don;t let user set width later, should be readonly
+    dsl_property :preferred_width # user should use this when requesting a change
     # some columns may not be editable. e.g in a Finder, file size or time not editable
     # whereas name is.
 
@@ -1142,8 +1175,13 @@ module RubyCurses
     dsl_accessor :edit_length # corresponds to maxlen, if not set, col width will be useda 2009-02-16 21:55 
 
 
+    # width is used as initial and preferred width. It has actual value at any time
+    # width must never be directly set, use preferred width later
     def initialize model_index, identifier, header_value, width, config={}, &block
       @width = width
+      @preferred_width = width
+      @min_width = 4
+      @max_width = 1000
       @model_index = model_index
       @identifier = identifier
       @header_value = header_value
@@ -1179,7 +1217,7 @@ module RubyCurses
       nil
     end
     def total_column_width
-      0
+      -1
     end
     def get_selection_model
       nil
@@ -1207,6 +1245,7 @@ module RubyCurses
     #  takes a column names array
     def initialize cols=[]
       @columns = []
+      @total_column_width= -1
       ##cols.each_with_index {|c, index| @columns << TableColumn.new(index, c, c, 10) }
       cols.each_with_index {|c, index| add_column(TableColumn.new(index, c, c, 10)) }
       @selected_columns = []
@@ -1235,8 +1274,16 @@ module RubyCurses
     def clear_selection
       @selected_columns = []
     end
-    def total_column_width
-      0
+    ## 
+    # added 2009-10-07 23:04 
+    def get_total_column_width
+      @total_column_width = -1 # XXX
+      if @total_column_width == -1
+        total = 0
+        each { |c| total += c.width ; $log.debug "get_total_column_width: #{c.width}"}
+        @total_column_width = total
+      end
+      return @total_column_width 
     end
     def set_selection_model lsm
       @column_selection_model = lsm
@@ -1290,6 +1337,8 @@ module RubyCurses
       def set_value_at row, col, val
       end
       def get_value_at row, col
+      end
+      def get_total_column_width
       end
 =begin
       def << obj
@@ -1485,7 +1534,8 @@ module RubyCurses
       end
     end # class DefaultListSelectionModel
     ##
-    # 
+    # Class that manages Table's Header
+    # are we not taking events such as column added, removed ?
     class TableHeader
       attr_accessor :default_renderer
       attr_accessor :table_column_model
@@ -1498,7 +1548,14 @@ module RubyCurses
         @default_renderer = TableCellRenderer.new "", {"display_length" => 10, "justify" => :center, "color"=>"white", "bgcolor"=>"blue"}
       end
 
-    end
+      # added 2009-10-07 14:03 
+      # returns the column being resized
+      # @returns TableColumn
+      # @protected
+      def get_resizing_column
+      end
+
+    end # class TableHeader
   ##
   # When an event is fired by TableModel, contents are changed, then this object will be passed 
   # to trigger
