@@ -102,7 +102,9 @@ module RubyCurses
     def delete obj
       off0 = @list.index obj
       return nil if off0.nil?
-      ret=@list.delete off0
+      # 2009-11-04 11:33 next line corrected to delete_at
+      #ret=@list.delete off0
+      ret=@list.delete_at off0
       lde = ListDataEvent.new(off0, off0, self, :INTERVAL_REMOVED)
       fire_handler :LIST_DATA_EVENT, lde
       return ret
