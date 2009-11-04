@@ -5,7 +5,8 @@ require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rtabbedpane'
+#require 'rbcurse/rtabbedpane'
+require 'rbcurse/rtabbedwindow'
 
 class TestTabbedPane
   def initialize
@@ -15,7 +16,7 @@ class TestTabbedPane
   def run
     $config_hash ||= Variable.new Hash.new
     #configvar.update_command(){ |v| $config_hash[v.source()] = v.value }
-      @tp = RubyCurses::TabbedPane.new nil  do
+      @tp = RubyCurses::TabbedWindow.new nil  do
         height 12
         width  50
         row 5

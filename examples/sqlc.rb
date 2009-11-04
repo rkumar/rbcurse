@@ -15,6 +15,7 @@ require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
+require 'rbcurse/rtabbedpane'
 
 # pls get testd.db from
 # http://www.benegal.org/files/screen/testd.db
@@ -138,6 +139,7 @@ class Sqlc
   def initialize
     @window = VER::Window.root_window
     @form = Form.new @window
+    @tab_ctr = 0
 
     #@todo = Sql.new "todo.yml"
     #@todo.load
@@ -205,20 +207,10 @@ class Sqlc
 
     Button.button_layout [b_run, b_clear, b_construct], buttrow, startcol=5, cols=Ncurses.COLS-1, gap=5
 
-    table_ht = 15
-    atable = Table.new @form do
-      name   "sqltable" 
-      row  buttrow+1
-      col  c
-      width t_width
-      height table_ht
-      #title "A Table"
-      #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
-      #set_data data, colnames
-      #cell_editing_allowed true
-      #editing_policy :EDITING_AUTO
-      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize"
-    end
+    @tp = create_tabbed_pane @form, buttrow, t_width, c
+    @tp.show
+    @tab_ctr += 1
+    atable = create_table @tp, @tab_ctr,  buttrow, t_width, c
     @atable = atable
     @data = data
     #atable.table_model.data = data
@@ -423,6 +415,38 @@ class Sqlc
       end
     }
 
+  end
+  def create_table tp, counter, buttrow, t_width, c
+    tab1 = tp.add_tab "Tab&#{counter}" 
+    f1 = tab1.form
+    table_ht = 15
+    atable = Table.new tp do
+      name   "sqltable" 
+      row  4
+      col  2
+      width t_width
+      height table_ht
+      #title "A Table"
+      #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
+      #set_data data, colnames
+      #cell_editing_allowed true
+      #editing_policy :EDITING_AUTO
+      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize"
+    end
+    return atable
+  end
+  def create_tabbed_pane form,  buttrow, t_width, c
+      tp = RubyCurses::TabbedPane.new form  do
+        height 16
+        width  t_width
+        row buttrow +1
+        col c
+        button_type :ok
+      end
+      #@tab1 = @tp.add_tab "Tab&1" 
+      #f1 = @tab1.form
+      form.add_widget(tp)
+      return tp
   end
 end
 if $0 == __FILE__

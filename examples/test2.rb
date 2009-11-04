@@ -147,7 +147,7 @@ if $0 == __FILE__
         end
         content = File.open("../README.txt","r").readlines
         @textview.set_content content #, :WRAP_WORD
-        @textview.top_row 21
+        #@textview.top_row 21
 
         # just for demo, lets scroll the text view as we scroll this.
         listb.bind(:ENTER_ROW, @textview) { |alist, tview| tview.top_row alist.current_index }

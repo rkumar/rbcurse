@@ -1,7 +1,7 @@
 =begin
   * Name: table widget
   * Description: 
-  * Author: rkumar (arunachalesha)
+  * Author: rkumar 
 
 
   TODO: NOTE: 
@@ -9,13 +9,13 @@
    XXX FIXME if M-tab to exit table then editing_stopped should be called.
              currenty valus is lost if exiting table using Mtab or M-S-tab 2009-10-06 15:10 
    FIXME if a field is not printed since it is going out, tab still goes there, and celleditor
-   still prints there.
+   still prints there. - DONE
    
    FIXME Increasing a column shoud decrease others till min size but not push off.
    Should we have a method for changing column width online that recomputes others?
-   See testtable.rb
+   See testtable.rb - TODO a bit later
    FIXME - tabbing in a row, should auto scroll to columns not displayed ?
-   currently it moves to next row. (examples/sqlc.rb)
+   currently it moves to next row. (examples/sqlc.rb) - DONE
   
   --------
   * Date:   2008-12-27 21:33 

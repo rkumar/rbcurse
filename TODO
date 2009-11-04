@@ -1,3 +1,63 @@
+**2009-10-13 00:16**
+
+##  subwins to pad copying  ##
+
+1. `overwrite()` from subwin to pad (both are same dimensions) was returning -1.
+2. I increased dimensions of pad by 2, return 0, but no effect.
+3. `copywin` works from subwin to pad (last 2 dimensions given are one less than height and width)
+
+So in tabbedpanes, i can use subwindows. When user switches I can write onto a pad.
+Whenevr he enters a tab, i refresh from pad.
+
+Else, the best alternative is that I actually write to pad directly and refresh the subwin
+on each update or open-pad. However, we need to make an underlying pad class
+that the user is unaware of.
+
+
+* * *
+**2009-10-11 22:42**
+
+##  copywin, subwins etc  ##
+
+Okay, so i've got `copywin` working with pads and subwins
+but `copywin` is very sensitive to dimensions and returns a
+-1 (ERR) generously.
+`overwrite` with a pad and root window was fine, but the source goes completely
+onto the window. Can't scroll etc.
+I found even `prefresh` returning a -1 at times.
+
+`prefresh` does *not* require any `update_panel` or `wrefresh` it seems,
+and `touchln` was clearing it off.
+`copywin` _does_ require `wrefresh` and `update_panel`.
+
+See <http://gist.github.com/207760>
+
+
+* * *
+**2009-10-11 09:48**
+
+##  Create pad class  ##
+
+We need a pad class like window.
+perhaps Pad < Window.
+
+Only then can it be slipped in where Window was used.
+
+* * *
+**2009-10-11 09:43**
+
+##  Table to use subwin and or pad  ##
+
+table with its scrolling should have used a pad, right ?
+Currently I repaint each time. However note that tables
+are editable.
+
+subwin will prevent overwriting windows.
+
+NOTE: subwin have an issue with panels. You cannot
+bring a panel up etc. Have to repaint the whole thing.
+
+* * *
  2009-10-03 11:05 
  1. make compliant with 1.9.1
 

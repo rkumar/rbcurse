@@ -1,11 +1,15 @@
 =begin
   * Name: tabbed pane: can have multiple forms overlapping.
-  * Description: 
-  * starting a new version using pads 2009-10-25 12:05 
+  * Description:  This is the old program that uses multiple windows.
+  * This cannot be embedded inside a form, but can be used as a popup.
+  * Avoid using this, move to the widget TabbedPane which can be embedded inside a form.
   * Author: rkumar
+
+
+  *** rtabbedpane renamed to rtabbedwindow 2009-11-02 13:04 
   
   --------
-  * Date:  2009-10-25 12:05 
+  * Date:  2008-12-13 13:06 
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
@@ -32,7 +36,7 @@ module RubyCurses
     # highlight abd selected colors and attribs should perhaps be in a
     # structure, so user can override easily
     def repaint  # tabbedbutton
-       $log.debug("TabbedBUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+#       $log.debug("BUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = rowcol
         attribs = @attrs
         @highlight_foreground ||= $reversecolor
@@ -41,19 +45,16 @@ module RubyCurses
         _state = :SELECTED if @variable.value == @value 
         case _state
         when :HIGHLIGHTED
-       $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}")
           bgcolor = @highlight_background
           color = @highlight_foreground
           bgcolor =  @bgcolor
           color =  @color
           attribs = Ncurses::A_BOLD
         when :SELECTED
-       $log.debug("TabbedBUTTon repaint : SELECTED #{bgcolor}, #{color}")
           bgcolor =  @bgcolor
           color =  @color
           attribs = Ncurses::A_REVERSE
         else
-       $log.debug("TabbedBUTTon repaint : ELSE #{bgcolor}, #{color}")
           bgcolor =  @bgcolor
           color =  @color
         end
@@ -65,51 +66,36 @@ module RubyCurses
         value = getvalue_for_paint
 #       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
         len = @display_length || value.length
-        # paint the tabs name in approp place with attribs
-        #@form.window.printstring r, c, "%-*s" % [len, value], color, attribs
-        @graphic.printstring r+@graphic.top, c+@graphic.left, "%-*s" % [len, value], color, attribs
+        @form.window.printstring r, c, "%-*s" % [len, value], color, attribs
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
-         # underline for the top tab buttons.
         if @underline != nil
           # changed +1 to +0 on 2008-12-15 21:23 pls check.
-          @graphic.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+          @form.window.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
   end
-  ## 
-  # extending Widget from 2009-10-08 18:45 
-  # It should extend Widget so we can pop it in a form. In fact it should be in a form,
-  #  we should not have tried to make it standalone like messagebox.
-  #  This is the main TabbedPane widget that will be slung into a form
-  class TabbedPane < Widget
-  #  include DSL - widget does
-  #  include EventHandler - widget does
-    #attr_reader :visible
-    #dsl_accessor :row, :col
+  class TabbedWindow
+    include DSL
+    include EventHandler
+    dsl_accessor :row, :col
     dsl_accessor :height, :width
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
     attr_reader :selected_index
-    def initialize form, aconfig={}, &block
-      super
-      @parent = form
-      @parentwin = form.window
-      @visible = true
-      @focusable= true
+    def initialize win, aconfig={}, &block
+      @parent = win
       @tabs ||= []
       @forms ||= []
-      #@bgcolor ||=  "black" # 0
-      #@color ||= "white" # $datacolor
+      @bgcolor ||=  "black" # 0
+      @color ||= "white" # $datacolor
       @attr = nil
       @current_form = nil
       @current_tab = nil
       @config = aconfig
-      #@config.each_pair { |k,v| variable_set(k,v) }
-      #instance_eval &block if block_given?
+      @config.each_pair { |k,v| variable_set(k,v) }
+      instance_eval &block if block_given?
     end
     ##
-    # This is a public, user called method for creating a new tab
-    # This will be called several times for one TP.
     # when adding tabs, you may use ampersand in text to create hotkey
     def add_tab text, aconfig={}, &block
       #create a button here and block is taken care of in button's instance
@@ -139,30 +125,20 @@ module RubyCurses
     def repaint
       @window || create_window
       @window.show
-      set_buffer_modified()
     end
     def show
       repaint
     end
     def create_window
-      set_buffer_modified()
       # first create the main top window with the tab buttons on it.
-      $log.debug "create_window R #{@row}, C #{@col} #{@height} #{@width} "
       @layout = { :height => @height, :width => @width, :top => @row, :left => @col } 
-      #@layout = { :height => 2, :width => @width, :top => @row, :left => @col } 
-      #@window = VER::Window.new(@layout)
-      #@window = @parentwin.derwin(@height, @width, @row, @col)
-      #@window = @parentwin.derwin(@layout)
-      @window = safe_create_buffer # trying this out.
-      $log.debug("WINDOW PAD #{@window}")
-      ## seems this form is for the tabbed buttons on top XXX
+      @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
       @form.navigation_policy = :NON_CYCLICAL
       @current_form = @form
       @window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       @window.box( 0, 0);
-      #@parentwin.get_window().touchwin()
-      ##### XXX @window.wrefresh
+      @window.wrefresh
       Ncurses::Panel.update_panels
       col = 1
       @buttons = []
@@ -182,114 +158,43 @@ module RubyCurses
 #       @forms << create_tab_form(tab)
 #       form = @forms.last
         form = tab.form
-        form.set_parent_buffer(@window)
-#        form.window = @window if form.window.nil? ## XXX
-#        panel = form.window.panel rescue Ncurses::Panel.new_panel(form.window)
-
-        @buttons.last.command { 
-=begin
-          Ncurses::Panel.top_panel(panel) 
+        form.window = @window if form.window.nil? ## XXX
+        panel = form.window.panel
+        @buttons.last.command { Ncurses::Panel.top_panel(panel) 
           Ncurses::Panel.update_panels();
           Ncurses.doupdate();
           form.repaint
-=end
-          $log.debug " calling display form from button press"
-          display_form(form)
           @current_form = form
           @current_tab = form
         }
  
       end
-      @form.repaint #  This paints the outer form not inner
-      @window.wrefresh ## ADDED  2009-11-02 23:29 
-      @buttons.first().fire # make the first form active to start with.
+      create_buttons
+      @form.repaint
     end
     def display_form form
-      pad = form.window
-      $log.debug " before pad copy "
-      #ret = pad.wrefresh # overridden to prefresh.
-      pad.set_backing_window(@graphic)
-      ret = pad.copy_pad_to_win
-      $log.debug " after pad copy #{ret} "
-      form.repaint #   added 2009-11-03 23:27  paint widgets in inside form
-      @window.wrefresh
+      panel = form.window.panel
+      Ncurses::Panel.top_panel(panel) 
+      Ncurses::Panel.update_panels();
+      Ncurses.doupdate();
+      form.repaint
     end
     def create_tab_form tab
-      layout = { :height => @height-2, :width => @width, :top => 2, :left => 0 } 
-      #layout = { :height => @height-2, :width => @width, :top => @row+0, :left => @col+0 } 
-      #window = VER::Window.new(layout)
-      #window = @parentwin.derwin(@height-2, @width, @row+2, @col)
-      #window = @parentwin.derwin(layout)
-      # create a pad but it must behave like a window at all times 2009-10-25 12:25  XXX
-      window = VER::Pad.create_with_layout(layout)
-      #window = safe_create_buffer() # DARN, this overwrites higher one, if at all created.
-      # needed to be at tab level, but that's not a widget
-      form = RubyCurses::Form.new window # we now pass a pad and hope for best
+      layout = { :height => @height-2, :width => @width, :top => @row+2, :left => @col } 
+      window = VER::Window.new(layout)
+      form = RubyCurses::Form.new window
       form.navigation_policy = :NON_CYCLICAL
       window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       window.box( 0, 0);
-      ## this prints the tab name on top left
       window.mvprintw(1,1, tab.text.tr('&', ''))
       ##window.wrefresh
       ##Ncurses::Panel.update_panels
       return form
     end
-    ##
-    # added 2009-10-08 19:39 so it can be placed in a form
-    def handle_key(ch)
-        @current_form ||= @form
-          $log.debug " handle_key in tabbed pane got : #{ch}"
-        ret = @current_form.handle_key(ch)
-          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret}"
-        case ret
-        when :NO_NEXT_FIELD
-          if @current_form != @form
-            @current_form = @form
-            #@current_form.select_field -1
-            @current_form.req_first_field
-            #ret = @current_form.handle_key(ch)
-          else
-            if !@current_tab.nil?
-            @current_form = @current_tab
-            $log.debug " calling display form from handle_key NO_NEXT_FIELD"
-            display_form @current_form
-            @current_form.req_first_field
-            #@current_form.select_field -1
-            #ret = @current_form.handle_key(ch)
-            end
-          end
-        when :NO_PREV_FIELD
-          if @current_form != @form
-            $log.debug " 1 no prev field - going to button "
-            @current_form = @form
-            @current_form.req_last_field
-          else
-            if !@current_tab.nil?
-            @current_form = @current_tab
-            $log.debug " calling display form from handle_key NO_PREV_FIELD"
-            display_form @current_form
-            @current_form.req_last_field
-            end
-          end
-        when :UNHANDLED
-          $log.debug " unhandled in tabbed pane #{ch}"
-          ret = @form.process_key ch, self # field
-          #### XXX @form.repaint
-          return ret if ret == :UNHANDLED
-        end
-        #@current_form.window.wrefresh # calling pad refresh XXX
-            $log.debug " calling display form from handle_key OUTSIDE LOOP commented off"
-        ##### XXX display_form(@current_form)
-        ###### XXX@window.refresh
-    end
-    # this was used when we had sort of made this into a standalone popup
-    # now since we want to embed inside a form, we have to use handle_key
     def handle_keys
-
-            $log.debug " rtabbedpane: handle_keys to be deprecated "
       begin
       while (( ch=@window.getchar()) != 999)
-        if ch == ?\C-q
+        if ch == ?\C-q.getbyte(0)
           @selected_index = -1  # this signifies cancel by ?C-q
           @stop = true
           return
@@ -332,15 +237,13 @@ module RubyCurses
           #return :UNHANDLED if ret == :UNHANDLED
         end
         return if @stop
-        ##### XXX @current_form.window.wrefresh
+        @current_form.window.wrefresh
         @window.refresh
       end
       ensure
         destroy
       end
     end
-    ##
-    # ensure that the pads are being destroyed, although we've not found a way.
     def destroy
       @window.destroy
       @forms.each { |f| w = f.window; w.destroy unless w.nil? }
@@ -396,7 +299,6 @@ module RubyCurses
 
     ##
     # nested class tab
-    # A user created tab, with its own form
     class Tab
       attr_reader :text
       attr_reader :config
@@ -418,7 +320,7 @@ module RubyCurses
       end
     end
 
-  end # class Tabbedpane
+  end # class TabbedWindow
 
 
 end # module

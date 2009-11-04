@@ -1,3 +1,88 @@
+**2009-11-03 23:30**
+## tabbedpanes ##
+
+Now on first click of tabbed button, form is painted.
+A form.repaint for the lower form was required.
+
+frmincr200911032330.tgz
+* * *
+**2009-11-03 00:19**
+## some progress on tabbedpanes ##
+
+Ugly hacking and I really haven't a clue what's happening
+since there's internal forms working.
+Anyhow, its now showing up, can see form cursor moving.
+Does not show up immediately, have to press key several times for form to display.
+
+frmincr200911030018.tgz
+* * *
+**2009-11-02 13:15**
+## before rtabbedpane ##
+
+After all the changes, the new tabbedpane is not printing the form fields.
+Working on that now.
+
+frmincr200911021314.tgz
+* * *
+**2009-11-02 12:13**
+## splitpane and scrollpane working ##
+
+Both are working. Changes to copywin had caused issues. And printborder.
+Decreasing comp width does not reduce pad size, but pad keeps printing larger size.
+So in Splitpane it was overwriting. Now in Pad we maintain sheight as comp's height.
+Major change in pad, but hope it works and doesn't bomb out somewhere.
+
+frmincr200911021212.tgz
+* * *
+**2009-11-02 01:03**
+## SplitPane retouching ##
+
+began majorly misprinting after changes to printborder and copywin().
+ALmost corrected. Still some issues in copywin which are making separator and border
+to get eaten up.
+
+frmincr200911020102.tgz
+* * *
+**2009-11-01 22:28**
+## scrollbars in scrollpane ##
+
+Added scrollbars in scrollpane. Sized and positioned nicely.
+
+frmincr200911012228.tgz
+* * *
+**2009-11-01 01:05**
+## scrollpane WIP ##
+
+scrollpane with viewport and child object
+i can see the child within. have to test scrolling now.
+Issue is largely with copywin which gives errors.
+
+frmincr200911010104.tgz
+* * *
+**2009-10-31 22:07**
+## scrollpane WIP ##
+
+,,,
+
+frmincr200910312206.tgz
+* * *
+**2009-10-30 23:32**
+## more testing with SplitPane and 2 splitpanes in it ##
+
+vertical and horizontal
+check against min sizes
+
+frmincr200910302331.tgz
+* * *
+**2009-10-30 17:47**
+## buffering ##
+
+major change is buffering added (using pad)
+height and width added to Widget
+Splitpane added (midway)
+
+frmincr200910301746.tgz
+* * *
 **2009-10-07 10:14**
 ## Prior to change in next_column ##
 

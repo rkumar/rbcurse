@@ -205,14 +205,14 @@ module RubyCurses
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
       def fire_handler event, object
-        #$log.debug " def fire_handler evt:#{event}, o: #{object}, #{self}, hdnler:#{@handler}"
+        $log.debug " def fire_handler evt:#{event}, o: #{object}, #{self}, hdnler:#{@handler}"
         if !@handler.nil?
         #blk = @handler[event]
           ablk = @handler[event]
           if !ablk.nil?
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
-              #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
               blk.call object,  *aeve[ix]
             end
           end # if
@@ -268,7 +268,8 @@ module RubyCurses
     dsl_property :text
     #dsl_accessor :text_variable
     #dsl_accessor :underline                        # offset of text to underline DEPRECATED
-    dsl_property :width                # desired width of text
+    #   width and height needed in a method for double buffer check
+  #  dsl_property :width                # desired width of text
     #dsl_accessor :wrap_length                      # wrap length of text, if applic UNUSED
 
     # next 3 to be checked if used or not. Copied from TK.
@@ -291,6 +292,11 @@ module RubyCurses
     dsl_property :visible # boolean     # 2008-12-09 11:29 
     #attr_accessor :modified          # boolean, value modified or not (moved from field 2009-01-18 00:14 )
     dsl_accessor :help_text          # added 2009-01-22 17:41 can be used for status/tooltips
+
+    dsl_property :preferred_width  # added 2009-10-28 13:40 for splitpanes and better resizing
+    dsl_property :preferred_height  # added 2009-10-28 13:40 for splitpanes and better resizing
+    dsl_property :min_width  # added 2009-10-28 13:40 for splitpanes and better resizing
+    dsl_property :min_height  # added 2009-10-28 13:40 for splitpanes and better resizing
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -305,10 +311,14 @@ module RubyCurses
       instance_eval &block if block_given?
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
+      # 2009-10-29 15:04 use form.window, unless buffer created
+      # should not use form.window so explicitly everywhere.
+      @graphic = form.window unless form.nil? # use screen for writing, not buffer
     end
     def init_vars
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
+      @buffer_modified = false 
     end
 
     # modified
@@ -369,9 +379,10 @@ module RubyCurses
         else
           acolor = $datacolor
         end
-        @form.window.printstring r, c, "%-*s" % [len, value], acolor, @attr
+        @graphic.printstring r, c, "%-*s" % [len, value], acolor, @attr
         # next line should be in same color but only have @att so we can change att is nec
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
+        @buffer_modified = true # required for form to call buffer_to_screen
     end
 
     def destroy
@@ -380,7 +391,7 @@ module RubyCurses
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
-    # @ deprecated pls call windows method
+    # @deprecated pls call windows method
     def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
 
       att = Ncurses::A_NORMAL if att.nil?
@@ -461,7 +472,7 @@ module RubyCurses
     # added 2009-01-06 19:13 since widgets need to handle keys properly
     def bind_key keycode, *args, &blk
       keycode = keycode.getbyte(0) if keycode.class==String ##    1.9 2009-10-05 19:40 
-      $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} #{args} "
+      $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
       @key_handler ||= {}
       @key_args ||= {}
       @key_handler[keycode] = blk
@@ -486,7 +497,7 @@ module RubyCurses
       return :UNHANDLED if @key_handler.nil?
       blk = @key_handler[keycode]
       return :UNHANDLED if blk.nil?
-      #$log.debug "called process_key #{object}, #{@key_args[keycode]}"
+      $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
       return blk.call object,  *@key_args[keycode]
       #0
     end
@@ -496,6 +507,177 @@ module RubyCurses
       ret = process_key ch, self
       return :UNHANDLED if ret == :UNHANDLED
     end
+    # @since 0.1.3
+    def get_preferred_size
+      return @preferred_height, @preferred_width
+    end
+    ## 
+    #  creates a buffer for the widget to write to.
+    #  This is typically called in the constructor. Sometimes, the constructor
+    #  does not have a height or width, since the object will be resized based on parents
+    #  size, as in splitpane
+    #  Sets @graphic which can be used in place of @form.window
+    #  
+    # @return [buffer] returns pad created
+    # @since 0.1.3
+
+    def create_buffer()
+      mheight = @height ||  1 # some widgets don't have height XXX
+      mwidth = @width ||  30 # some widgets don't have width as yet
+      mrow = @row || 0
+      mcol = @col || 0
+      layout = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
+      $log.debug "  .. #{@name} create_buffer #{mrow} #{mcol} #{mheight} #{mwidth}"
+      @screen_buffer = VER::Pad.create_with_layout(layout)
+      @is_double_buffered = true # will be checked prior to blitting
+      @buffer_modified = true # set this in repaint 
+      @graphic = @screen_buffer # use buffer for writing, not screen window
+      return @screen_buffer
+    end # create_buffer
+
+    ##
+    # checks if buffer not created already, and figures
+    # out dimensions.
+    # Preferable to use this instead of directly using create_buffer.
+    #
+    def safe_create_buffer
+      if @screen_buffer == nil
+        if @height == nil
+          @height = @preferred_height || @min_height
+        end
+        if @width == nil
+          @width = @preferred_width || @min_width
+        end
+        create_buffer
+      end
+      return @screen_buffer
+    end
+    ##
+    # Inform the system that the buffer has been modified
+    # and should be blitted over the screen or copied to parent.
+    def set_buffer_modified(tf=true)
+      @buffer_modified = tf
+    end
+
+
+    ## 
+    #  copy the buffer to the screen, or given window/pad.
+    #  Relevant only in double_buffered case since pad has to be written
+    #  to screen. Should be called only by outer form, not by widgets as a widget
+    #  could be inside another widget.
+    #  Somewhere we need to clear screen if scrolling.???
+    #  
+    # @param [Window, #get_window, nil] screen to write to, if nil then write to phys screen
+    # @return [true, false] comment
+
+    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
+      return unless @is_double_buffered and @buffer_modified
+      # screen is nil when form calls this to write to physical screen
+      $log.debug " screen inside b2s #{screen} "
+      if screen == nil
+        ret = @graphic.wrefresh
+      else
+      # screen is passed when a parent object calls this to copy child buffer to itself
+        @graphic.set_backing_window(screen)
+        $log.debug "   #{@name} calling copy pad COPY"
+        ret = @graphic.copy_pad_to_win
+      end
+      @buffer_modified = false
+      return ret
+    end # buffer_to_screen
+    ## 
+    #  returns screen_buffer or nil
+    #  
+    # @return [screen_buffer, nil] screen_buffer earlier created
+    # @since 0.1.3
+
+    def get_buffer()
+      @screen_buffer
+    end # get_buffer
+
+    ## 
+    #  destroys screen_buffer if present
+    #  
+    # @return 
+    # @since 0.1.3
+
+    def destroy_buffer()
+        if @screen_buffer != nil
+            @screen_buffer.destroy # ??? 
+        end
+    end # destroy_buffer
+
+     ## 
+     #  Does the widget buffer its output in a pad
+     #  
+     # @return [true, false] comment
+    
+     def is_double_buffered?()
+       @is_double_buffered
+     end # is_double_buffered
+
+     ##
+     # getter and setter for width - 2009-10-29 22:45 
+     # Using dsl_property style
+     #
+     # @param [val, nil] value to set
+     # @return [val] earlier value if nil param
+     # @since 0.1.3
+     #
+     def width(*val)
+       #$log.debug " inside XXX width() #{val[0]}"
+       if val.empty?
+         return @width
+       else
+         #$log.debug " inside XXX width()"
+         oldvalue = @width || 0 # is this default okay, else later nil cries
+         @width = val.size == 1 ? val[0] : val
+         newvalue = @width
+         @config["width"]=@width
+         if oldvalue != newvalue
+           fire_property_change("width", oldvalue, newvalue)
+         end
+         if is_double_buffered? and newvalue != oldvalue
+           $log.debug " calling resize of screen buffer with #{newvalue}"
+           @screen_buffer.resize(0, newvalue)
+         end
+       end
+     end
+     def width=val
+       width(val)
+     end
+     ##
+     # getter and setter for height - 2009-10-30 12:25 
+     # Using dsl_property style
+     # SO WE've finally succumbed and added height to widget
+     # @param [val, nil] height to set
+     # @return [val] earlier height if nil param
+     # @since 0.1.3
+     #
+     def height(*val)
+       #$log.debug " inside XXX height() #{val[0]}"
+       if val.empty?
+         return @height
+       else
+         #$log.debug " inside XXX height()"
+         oldvalue = @height || 0 # is this default okay, else later nil cries
+         @height = val.size == 1 ? val[0] : val
+         newvalue = @height
+         @config["height"]=@height
+         if oldvalue != newvalue
+           fire_property_change("height", oldvalue, newvalue)
+         end
+         if is_double_buffered? and newvalue != oldvalue
+           $log.debug " calling resize of screen buffer with #{newvalue}"
+           @screen_buffer.resize(newvalue, 0)
+         end
+       end
+     end
+     def height=val
+       height(val)
+     end
+
+     ##
     ## ADD HERE WIDGET
   end
 
@@ -563,6 +745,8 @@ module RubyCurses
         @by_name[widget.name] = widget
       end
 
+
+      $log.debug " #{self} adding a widget #{@widgets.length} .. #{widget} "
       @widgets << widget
       return @widgets.length-1
    end
@@ -581,6 +765,10 @@ module RubyCurses
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
+        # added 2009-10-29 20:11 for double buffered widgets
+        # this should only happen if painting actually happened
+        $log.debug " form repaint parent_buffer #{@parent_buffer} if #{f.is_double_buffered?}"
+        f.buffer_to_screen(@parent_buffer) if f.is_double_buffered?
       end
       @window.clear_error
       @window.print_status_message $status_message unless $status_message.nil?
@@ -595,7 +783,19 @@ module RubyCurses
         #@firsttime = false
       end
        setpos 
-       @window.wrefresh
+       $log.debug " XXX calling window.wrefresh COOMENTED OFF FOR TABBEDPANE 2009-11-02 23:08 "
+       # XXX this creates a problem if window is a pad
+       # although this does show cursor movement etc.
+       ### XXX@window.wrefresh
+       if @window.window_type == :WINDOW
+         @window.wrefresh
+       else
+         # UGLY HACK TO MAKE TABBEDPANES WORK !!
+         if @parent_buffer!=nil
+           @window.set_backing_window(@parent_buffer)
+           @window.copy_pad_to_win
+         end
+       end
     end
     ## 
     # move cursor to where the fields row and col are
@@ -683,7 +883,7 @@ module RubyCurses
     # in which case returns :NO_NEXT_FIELD.
     def select_next_field
       return if @widgets.nil? or @widgets.empty?
-      #$log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
+      $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?
         @active_index = -1 
       else
@@ -701,6 +901,7 @@ module RubyCurses
       index = @active_index + 1
       index.upto(@widgets.length-1) do |i|
         f = @widgets[i]
+        $log.debug "insdie sele nxt field :  i #{i}  #{index} WL:#{@widgets.length}, field #{f}" 
         if f.focusable
           select_field i
           return
@@ -721,6 +922,7 @@ module RubyCurses
           end
         end
       end
+      $log.debug "insdie sele nxt field : NO NEXT  #{@active_index} WL:#{@widgets.length}" 
       return :NO_NEXT_FIELD
     end
     ##
@@ -794,7 +996,7 @@ module RubyCurses
     # less chance of error 2009-10-04 16:08 
   def bind_key keycode, *args, &blk
     keycode = keycode.getbyte(0) if keycode.class==String ##    1.9 2009-10-04 16:10 
-    $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} #{args} "
+    $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} "
     @key_handler ||= {}
     @key_args ||= {}
     @key_handler[keycode] = blk
@@ -809,7 +1011,7 @@ module RubyCurses
     return :UNHANDLED if @key_handler.nil?
     blk = @key_handler[keycode]
     return :UNHANDLED if blk.nil?
-    $log.debug "called process_key #{object}, #{@key_args[keycode]}"
+    #$log.debug "called process_key #{object.class}:: key_args: #{@key_args[keycode]}"
     blk.call object,  *@key_args[keycode]
     0
   end
@@ -871,6 +1073,11 @@ module RubyCurses
       end
     end
     $log.debug " END DUMPING DATA "
+  end
+  ##
+  # trying out for splitpane and others who have a sub-form
+  def set_parent_buffer b
+    @parent_buffer = b
   end
 
     ## ADD HERE FORM
@@ -1035,7 +1242,8 @@ module RubyCurses
     else
       acolor = $datacolor
     end
-    @form.window.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
+    @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
+    @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
   end
   def set_focusable(tf)
     @focusable = tf
@@ -1384,7 +1592,7 @@ module RubyCurses
         # loop added for labels that are wrapped.
         # TODO clear separately since value can change in status like labels
         0.upto(_height-1) { |i| 
-          @form.window.printstring r+i, c, " " * len , acolor,@attr
+          @graphic.printstring r+i, c, " " * len , acolor,@attr
         }
         lablist.each_with_index do |_value, ix|
           break if ix >= _height
@@ -1392,12 +1600,12 @@ module RubyCurses
             padding = (@display_length - _value.length)/2
             _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
           end
-          @form.window.printstring r, c, str % [len, _value], acolor,@attr
+          @graphic.printstring r, c, str % [len, _value], acolor,@attr
           r += 1
         end
         if !@mnemonic.nil?
           ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          @form.window.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
+          @graphic.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
         end
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
         @repaint_required = false
@@ -1514,12 +1722,15 @@ module RubyCurses
         value = getvalue_for_paint
         #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
         len = @display_length || value.length
-        @form.window.printstring r, c, "%-*s" % [len, value], color, @attr
+        @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
+        @graphic.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
         if !@underline.nil? or !@mnemonic.nil?
           uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          @form.window.mvchgat(y=r, x=c+uline, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+          $log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline} "
+          $log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
+          @graphic.mvchgat(y=r-@graphic.top, x=c+uline-@graphic.left, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
     ## command of button (invoked on press, hotkey, space)
