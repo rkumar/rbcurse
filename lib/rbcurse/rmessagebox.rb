@@ -239,6 +239,7 @@ module RubyCurses
     def print_message message=@message, row=nil
       @message_row = @message_col = 2
       display_length = @layout[:width]-8
+        $log.debug " print_message: dl:#{display_length} "
       # XXX this needs to go up and decide height of window
       if @message_height.nil?
         @message_height = (message.length/display_length)+1
@@ -259,10 +260,13 @@ module RubyCurses
         @message_col = (width-message.length)/2
       end
       @message_row = row
+      # added 2009-11-05 14:53 to fix erasure of border
+      display_length -= @message_col
       # FIXME : wont print if newline at end of message !!!
       #@window.printstring( row, @message_col , message, color=$reversecolor)
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
       #@window.printstring( row, @message_col , message, color=$reversecolor)
+        $log.debug " print_message: row #{row}, col #{@message_col} "
       message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
 
     end

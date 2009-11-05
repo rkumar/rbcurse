@@ -311,9 +311,6 @@ module RubyCurses
       instance_eval &block if block_given?
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
-      # 2009-10-29 15:04 use form.window, unless buffer created
-      # should not use form.window so explicitly everywhere.
-      @graphic = form.window unless form.nil? # use screen for writing, not buffer
     end
     def init_vars
       # just in case anyone does a super. Not putting anything here
@@ -423,6 +420,10 @@ module RubyCurses
       raise "Form is nil in set_form" if form.nil?
       @form = form
       @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
+      $log.debug " setting graphic to form window for #{self.class}, #{form.class} "
+      # 2009-10-29 15:04 use form.window, unless buffer created
+      # should not use form.window so explicitly everywhere.
+      @graphic = form.window unless form.nil? # use screen for writing, not buffer
     end
     # puts cursor on correct row.
     def set_form_row
@@ -1591,6 +1592,8 @@ module RubyCurses
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         # loop added for labels that are wrapped.
         # TODO clear separately since value can change in status like labels
+        $log.debug " RWID 1595 #{self.class} value: #{value} form:  #{form} "
+        @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
         0.upto(_height-1) { |i| 
           @graphic.printstring r+i, c, " " * len , acolor,@attr
         }
