@@ -258,6 +258,8 @@ module RubyCurses
         @message_col = (width-message.length)/2
       end
       @message_row = row
+      # added 2009-11-05 14:53 to fix erasure of border
+      display_length -= @message_col
       # FIXME : wont print if newline at end of message !!!
       #@window.printstring( row, @message_col , message, color=$reversecolor)
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
