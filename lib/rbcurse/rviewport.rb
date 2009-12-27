@@ -3,7 +3,7 @@
   * $Id$
   * Description: a viewport thru which you see an underlying form or widget. Scrolling
     the viewport reveals new sections of the underlying object.
-  * Author: rkumar (arunachalesha)
+  * Author: rkumar arunachala
 TODO 
   * file created  2009-10-27 18:05 
   --------
@@ -112,6 +112,7 @@ module RubyCurses
       # if this gets key it should just hand it to child
       if @child != nil
         ret = @child.handle_key ch
+        @repaint_required=true # added 2009-12-27 22:25 BUFFERED
         return :UNHANDLED if ret == :UNHANDLED
       else
         return :UNHANDLED

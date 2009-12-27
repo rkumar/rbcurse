@@ -423,7 +423,11 @@ module RubyCurses
       $log.debug " setting graphic to form window for #{self.class}, #{form.class} "
       # 2009-10-29 15:04 use form.window, unless buffer created
       # should not use form.window so explicitly everywhere.
-      @graphic = form.window unless form.nil? # use screen for writing, not buffer
+      # added 2009-12-27 20:05 BUFFERED in case child object needs a form.
+      # We don;t wish to overwrite the graphic object
+      if @graphic.nil?
+        @graphic = form.window unless form.nil? # use screen for writing, not buffer
+      end
     end
     # puts cursor on correct row.
     def set_form_row

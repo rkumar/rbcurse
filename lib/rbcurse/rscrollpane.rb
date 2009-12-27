@@ -1,13 +1,13 @@
 =begin
   * Name: Scrollpane
-  * $Id$
   * Description: a scrollable widget allowing user to scroll and view
     parts of underlying object that typically are larger than screen area.
     Mainly, contains a viewport, scrollbars and manages viewport through usage
     of scrollbars.
     Also contains viewport for row and columns.
-  * Author: rkumar (arunachalesha)
-TODO 
+  * Author: rkumar 
+TODO section:
+  - scrollbars to be classes
   * file created 2009-10-27 19:20 
   --------
   * License:
@@ -54,10 +54,14 @@ module RubyCurses
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
       init_vars
+      # create_b moved from repain since we need to pass form to child component
+      @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+      @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
     end
     # set child component being used in viewport
     # @see set_viewport_view
     def child ch
+      ch.set_form(@subform) # nothing is shown, something is missing added 2009-12-27 13:35 BUFFERED 
       if ch != nil
         set_viewport_view(ch)
       end
@@ -134,8 +138,10 @@ module RubyCurses
       # viewport then clips
       # this calls viewports refresh from its refresh
       if @screen_buffer == nil
-        $log.debug " SCRP calling create buffer"
-        create_buffer
+        #$log.debug " SCRP calling create buffer"
+        #@subpad=create_buffer
+        #@subform = RubyCurses::Form.new @subpad
+        #@viewport.child.set_form(@subform)
       end
       return unless @repaint_required
         # TODO this only if major change
@@ -170,15 +176,26 @@ module RubyCurses
     ## most likely should just return an unhandled and not try being intelligent
     def handle_key ch
       # TODO
+      # if this gets key it should just hand it to child
+      if @viewport != nil
+        $log.debug "    calling child handle_key KEY"
+        ret = @viewport.handle_key ch
+        @repaint_required = true if ret  # added 2009-12-27 22:21 BUFFERED
+        $log.debug "  ... child ret #{ret}"
+        return ret if ret == 0
+      end
+      $log.debug " scrollpane gets KEY #{ch}"
       case ch
-        when ?\C-n.getbyte(0)
-        scroll_forward
-      when ?\C-p.getbyte(0)
-        scroll_backward
+        when ?\M-n.getbyte(0)
+        ret = down
+        #scroll_forward # TODO
+      when ?\M-p.getbyte(0)
+        ret = up
+        #scroll_backward # TODO
       when ?0.getbyte(0), ?\C-[.getbyte(0)
         goto_start #start of buffer # cursor_start
       when ?\C-].getbyte(0)
-        goto_end # end / bottom cursor_end
+        goto_end # end / bottom cursor_end # TODO
       when KEY_UP
         #select_prev_row
         ret = up
@@ -195,18 +212,17 @@ module RubyCurses
       end
 
        $log.debug " scrollpane gets KEY #{ch}"
-=begin
       # if this gets key it should just hand it to child
       if @viewport != nil
         $log.debug "    calling child handle_key KEY"
         ret = @viewport.handle_key ch
+        @repaint_required = true if ret  # added 2009-12-27 22:21 BUFFERED
         $log.debug "  ... child ret #{ret}"
         return :UNHANDLED if ret == :UNHANDLED
       else
         $log.debug "  ... handle_key child nil KEY"
         return :UNHANDLED
       end
-=end
       return 0
       #$log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
     end
@@ -223,11 +239,11 @@ module RubyCurses
       increment_view_col(-1)
     end
 =begin
-    def on_enter
+    def on_enter   # TODO ???
       super
       set_form_row
     end
-    def set_form_row
+    def set_form_row   # TODO ???
       @form.row = @row + 1 unless @form.nil?
     end
 =end
