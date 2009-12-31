@@ -49,20 +49,32 @@ module RubyCurses
       @row = 0
       @col = 0
       super
-      #@row_offset = @col_offset = 1
-      #@orig_col = @col
+      @row_offset = @col_offset = 1
+      @orig_col = @col
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
       init_vars
       # create_b moved from repain since we need to pass form to child component
       @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
       @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+
+      # next line does not seem to have an effect.
+      # @subform.set_parent_buffer(@graphic) # added 2009-12-28 19:38 BUFFERT (trying out for cursor)
     end
     # set child component being used in viewport
     # @see set_viewport_view
     def child ch
-      ch.set_form(@subform) # nothing is shown, something is missing added 2009-12-27 13:35 BUFFERED 
       if ch != nil
+        ## setting a form is a formality to prevent bombing
+        ##+ however, avoid setting main form, which will then try to
+        ##+ traverse this object and print using its own coordinates
+        ch.set_form(@subform) # added 2009-12-27 13:35 BUFFERED 
+        @subform.parent_form=@form # added 2009-12-28 23:02 for cursor stuff BUFFERED
+
+        ## the next line causes the cursor to atleast move on the screen when we do up and down
+        ##+ although it is not within the scrollpane, but starting with 0 offset
+        #ch.form=@form  # added 2009-12-28 15:37 BUFFERED SHOCKINGLY, i overwrite formso cursor can be updated
+
         set_viewport_view(ch)
       end
     end
@@ -72,6 +84,8 @@ module RubyCurses
       @vsb_policy = :AS_NEEDED
       @repaint_required = true
       @repaint_border = true
+      @row_outofbounds=0
+      @col_outofbounds=0
     end
     # set the component to be viewed
     def set_viewport_view ch
@@ -150,9 +164,7 @@ module RubyCurses
         $log.debug " repaint scroll r #{@row} c #{@col}  h  #{@height} w #{@width} "
         bordercolor = @border_color || $datacolor
         borderatt = @border_attrib || Ncurses::A_NORMAL
-        #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
         @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
-#        @graphic.printstring(@row+1,@col+1, "SCROLLA", $datacolor)
         h_scroll_bar
         v_scroll_bar
         @repaint_border = false
@@ -160,12 +172,13 @@ module RubyCurses
       return if @viewport == nil
       $log.debug "SCRP calling viewport repaint"
       @viewport.repaint # child's repaint should do it on its pad
-      # @viewport.get_buffer().set_screen_row_col(@viewport.row, @viewport.col)
       $log.debug "SCRP calling viewport b2s "
       ret = @viewport.buffer_to_screen(@graphic)
       $log.debug " rscollpane vp b2s ret = #{ret} "
-#      @graphic.printstring(@row+2,@col+2, "SCREOLL", $datacolor)
 
+      ## next line rsults in ERROR in log file, does increment rowcol
+      ##+ but still not shown on screen.
+      #@subform.repaint # should i really TRYthis out 2009-12-28 20:41  BUFFERED
       @buffer_modified = true
       paint # has to paint border if needed, and scrollbars
       # TODO
@@ -173,24 +186,71 @@ module RubyCurses
     def getvalue
       # TODO
     end
-    ## most likely should just return an unhandled and not try being intelligent
+    ## handle keys for scrollpane.
+    # First hands key to child object
+    # If unused, checks to see if it has anything mapped.
+    # If not consumed, returns :UNHANDLED, else 0.
     def handle_key ch
-      # TODO
       # if this gets key it should just hand it to child
       if @viewport != nil
         $log.debug "    calling child handle_key KEY"
         ret = @viewport.handle_key ch
-        @repaint_required = true if ret  # added 2009-12-27 22:21 BUFFERED
+        # XXX ret returns 0under normal circumstance, so will next line work ?
+        # what i mean is if ret == 0
+        @repaint_required = true if ret == 0  # added 2009-12-27 22:21 BUFFERED
         $log.debug "  ... child ret #{ret}"
+
+
+        ## Here's the only option scrollpane has of checking whether the child has
+        ##+ exceeded boundary BUFFERED 2009-12-29 23:12 
+        #  TEMPORARILY COMMENTED WHILE TESTING SCROLL UP AND DOWN XXX
+        #fr = @form.row
+        #fc = @form.col
+        #if fr >= @row + @height -2
+          #@form.setrowcol @row + @height -2, fc
+        #elsif fr < @row
+          #@form.setrowcol @row, fc
+        #end
+        #if fc >= @col + @width -1
+          #@form.setrowcol fr, @col + @width -1
+        #end
+        ##
+
         return ret if ret == 0
       end
       $log.debug " scrollpane gets KEY #{ch}"
       case ch
         when ?\M-n.getbyte(0)
-        ret = down
+          ret = down
+          ## we've scrolled down, but we need  to keep the cursor where
+          ##+ editing actually is. Isn't this too specific to textarea ?
+          $log.debug " SCRP setting row to #{@form.row-1} upon scrolling down  "
+          ## only move up the cursor if its within bounds
+   #       if @form.row > @row
+            @subform.rows_panned = @subform.rows_panned-1  if ret 
+            @subform.row =@form.row-1+@row_outofbounds if ret 
+            @form.setrowcol @form.row-1+@row_outofbounds, @form.col if ret 
+          $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
+   #       @row_outofbounds = @row_outofbounds-1 if ret and @row_outofbounds > 0
+   #       else
+   #         @row_outofbounds = @row_outofbounds-1 if ret
+   #         $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling down #{@row_outofbounds}  "
+   #       end
         #scroll_forward # TODO
       when ?\M-p.getbyte(0)
         ret = up
+        $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up #{@row} #{@height}  "
+   #     if @form.row < @row + @height
+          @subform.rows_panned = @subform.rows_panned+1  if ret 
+          @subform.row =@form.row+1+@row_outofbounds if ret 
+          @form.setrowcol @form.row+1+@row_outofbounds, @form.col if ret 
+          $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
+   #       @row_outofbounds = @row_outofbounds+1 if ret and @row_outofbounds < 0
+   #     else
+   #       $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling up  "
+   #       @row_outofbounds = @row_outofbounds+1 if ret
+   #     end
+        #@form.setrowcol @form.row+1, @form.col if ret  # only if up succeeded
         #scroll_backward # TODO
       when ?0.getbyte(0), ?\C-[.getbyte(0)
         goto_start #start of buffer # cursor_start
@@ -203,28 +263,16 @@ module RubyCurses
       when KEY_DOWN
         ret = down
         #check_curpos
-      when KEY_LEFT
+      when  ?\M-h.getbyte(0)
         cursor_backward
-      when KEY_RIGHT
+      when  ?\M-l.getbyte(0)
         cursor_forward
       when KEY_BACKSPACE, 127
         cursor_backward
-      end
-
-       $log.debug " scrollpane gets KEY #{ch}"
-      # if this gets key it should just hand it to child
-      if @viewport != nil
-        $log.debug "    calling child handle_key KEY"
-        ret = @viewport.handle_key ch
-        @repaint_required = true if ret  # added 2009-12-27 22:21 BUFFERED
-        $log.debug "  ... child ret #{ret}"
-        return :UNHANDLED if ret == :UNHANDLED
       else
-        $log.debug "  ... handle_key child nil KEY"
         return :UNHANDLED
       end
       return 0
-      #$log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
     end
     def down
       increment_view_row(1)
@@ -238,15 +286,32 @@ module RubyCurses
     def cursor_backward
       increment_view_col(-1)
     end
-=begin
     def on_enter   # TODO ???
       super
       set_form_row
     end
-    def set_form_row   # TODO ???
-      @form.row = @row + 1 unless @form.nil?
+    # this is called once externally, on on_enter
+    #+ after that its called internally only, which in this case is never
+    def set_form_row
+      #@form.row = @row + 1 unless @form.nil?
+      if @viewport != nil
+        $log.debug "    calling scrollpane set_form_row"
+        ret = @viewport.child.set_form_row # added 2009-12-27 23:23 BUFFERED
+      end
+      $log.debug " FORM SCRP #{@form} "
+      $log.debug "SCRP set_form_row #{@form.row}  #{@form.col} "
     end
-=end
+
+    ## this is called once only, on select_field by form.
+    ##+ after that not at all.
+    def rowcol
+      r1 = @row #+@row_offset
+      c1 = @col #+@col_offset
+
+      r,c = @viewport.child.rowcol # added 2009-12-28 15:23 BUFFERED
+      $log.debug "SCRP rowcol:  #{r1} + #{r} , #{c1} + #{c} "
+      return r1+r, c1+c
+    end
 
     def paint
       @repaint_required = false

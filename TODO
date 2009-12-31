@@ -1,3 +1,12 @@
+**Date: 2009-12-14 12:35**
+
+Subject: scroll and splitpane - handle_keys ( +widgets)
+-------------------------------------------------------
+
+new container widgets need to trap handle_keys, not just motion but
+passing to contained object, e.g. if contained is **editable**.
+
+* * *
 **2009-10-13 00:16**
 
 ##  subwins to pad copying  ##

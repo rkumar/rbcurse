@@ -1,11 +1,9 @@
 =begin
   * Name: TextArea
-  * $Id$
   * Description   Editable text area
   * Author: rkumar (arunachalesha)
-TODO 
-  
-  moved from rform to this file on 2009-01-08 21:57 
+TODO: 
+   2009-12-26 14:43 buffered version of rtextarea.rb. See BUFFERED
   --------
   * Date: 2008-11-14 23:43 
   * License:
@@ -35,6 +33,7 @@ module RubyCurses
     dsl_accessor :height
     dsl_accessor :title
     dsl_accessor :title_attrib   # bold, reverse, normal
+    dsl_accessor :footer_attrib   # bold, reverse, normal added 2009-12-26 18:25 was this missing or delib
     dsl_accessor :list    # the array of data to be sent by user
     dsl_accessor :maxlen    # the array of data to be sent by user
     attr_reader :toprow
@@ -64,7 +63,9 @@ module RubyCurses
       end
      # @scrollatrow = @height-2
       @content_rows = @list.length
-      @win = @form.window
+      #@win = @form.window
+      @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
+      safe_create_buffer # 2009-12-26 14:54 BUFFERED
     #  init_scrollable
       print_borders
       @maxlen ||= @width-2
@@ -74,6 +75,7 @@ module RubyCurses
     def init_vars
       @repaint_required = true
       @toprow = @current_index = @pcol = 0
+      @oldci = -1 # 2009-12-30 15:52 just to do less of set_form_row due to scrolling in scrollpane
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -157,7 +159,8 @@ module RubyCurses
     ##
     # private
     def print_borders
-      window = @form.window
+      #window = @form.window
+      window = @graphic # 2009-12-26 14:54 BUFFERED
       color = $datacolor
       window.print_border @row, @col, @height, @width, color
       print_title
@@ -175,20 +178,20 @@ module RubyCurses
     end
     # private
     def print_title
-      @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     # text_area print footer
     def print_foot
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos}, #{@list.length} lines  "
-      @form.window.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
     end
     ### FOR scrollable ###
     def get_content
       @list
     end
     def get_window
-      @form.window
+      @graphic
     end
     ### FOR scrollable ###
     def repaint # textarea
@@ -202,6 +205,7 @@ module RubyCurses
     # textarea
     
     def handle_key ch
+      @oldci=@current_index
       @buffer = @list[@current_index]
       if @buffer.nil? and @list.length == 0
         ## 2009-10-04 22:39 
@@ -289,7 +293,7 @@ module RubyCurses
         return ret if ret == :UNHANDLED
       end
       #post_key
-      set_form_row
+      set_form_row if @oldci != @current_index
       set_form_col  # testing 2008-12-26 19:37 
     end
     def undo_delete
@@ -318,8 +322,12 @@ module RubyCurses
     def set_form_col col1=@curpos
       @curpos = col1
       cursor_bounds_check
-      @form.col = @orig_col + @col_offset + @curpos
+      
+      ## added win_col on 2009-12-28 20:21 for embedded forms BUFFERED TRYING OUT
+      win_col=@form.window.left
+      col = win_col + @orig_col + @col_offset + @curpos
       $log.debug "sfc: #{@orig_col}, #{@col_offset}. #{@curpos}. "
+      @form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
     end
     def cursor_bounds_check
       max = buffer_len()
@@ -381,8 +389,8 @@ module RubyCurses
       @form.addcol num
     end
     def addrowcol row,col
-    @form.addrowcol row, col
-  end
+      @form.addrowcol row, col
+    end
     ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
     # it was going onto border
   def cursor_backward
@@ -534,8 +542,8 @@ module RubyCurses
     end
     ## 
     # add one char. careful, i shoved a string in yesterday.
-      def putch char
-        @buffer ||= @list[@current_index]
+    def putch char
+      @buffer ||= @list[@current_index]
         return -1 if !@editable #or @buffer.length >= @maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
@@ -557,11 +565,10 @@ module RubyCurses
           @curpos = oldcurpos - lastspace  #lastchars.length # 0
         end
       end
-      set_form_row
+      set_form_row if @oldci != @current_index
       @buffer = @list[@current_index]
       set_form_col
       @modified = true
-      #fire_handler :CHANGE, self  # 2008-12-09 14:56 
       fire_handler :CHANGE, InputDataEvent.new(oldcurpos,@curpos, self, :INSERT, @current_index, char)     #  2008-12-24 18:34 
       @repaint_required = true
       0
@@ -709,20 +716,21 @@ module RubyCurses
             #renderer = cell_renderer()
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             #renderer.repaint @form.window, r+hh, c, content, focussed, selected
-            @form.window.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
+            @graphic.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
             if @search_found_ix == tr+hh
               if !@find_offset.nil?
-                @form.window.mvchgat(y=r+hh, x=c+@find_offset, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
+                @graphic.mvchgat(y=r+hh, x=c+@find_offset, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
               end
             end
 
         else
           # clear rows
-          @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
       @table_changed = false
       @repaint_required = false
+      @buffer_modified = true # required by form to call buffer_to_screen
     end
     def ask_search_forward
         regex =  get_string("Enter regex to search", 20, @last_regex||"")

@@ -26,9 +26,10 @@ if $0 == __FILE__
       (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
-      @help = "q to quit. Use any key of key combination to see what's caught. Check logger too"
+      @help = "q to quit. v h - + =                                          . Check logger too"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
-        splitp = SplitPane.new @form do
+
+      splitp = SplitPane.new @form do
           name   "mypane" 
           row  r 
           col  c

@@ -1,12 +1,13 @@
-= rbcurse (for ruby 1.9.1)
+# rbcurse (for ruby 1.9.1)
 
 * Version to work with ruby 1.9 - WORK IN PROGRESS
 
-* http://totalrecall.wordpress.com   
+* <http://totalrecall.wordpress.com>   
 
-* rbcurse on rubyforge: http://rbcurse.rubyforge.org/
+* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/>
 
-* See latest changes on http://github.com/rkumar/rbcurse/tree/master/CHANGELOG
+* See latest changes on
+ <http://github.com/rkumar/rbcurse/tree/master/CHANGELOG>
 
 * Many working demos in examples folder, such as:
 
@@ -16,27 +17,29 @@
   * rfe.rb is a ruby file explorer
 
   * sqlc.rb is a ruby sql client demo (using testd.db at
-     http://www.benegal.org/files/screen/testd.db)
+     <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
     Demos horizontal and vertical scrolling of data.
 
   * testtodo.rb is a test TODO application (now using fastercsv)
 
 * Screenshots on 
-  http://www.benegal.org/files/screen/?M=D   (new)
-  and on blog, http://totalrecall.wordpress.com   
+  <http://www.benegal.org/files/screen/?M=D>   (new)
+  and on blog, <http://totalrecall.wordpress.com>   
   and http://github.com/rkumar/rbcurse/wikis/screenshots (old)
 
-* Todo (for 0.1.2): http://rubyforge.org/pm/task.php?group_id=7775&group_project_id=13812&func=browse
+* Todo (for 0.1.2):
+ <http://rubyforge.org/pm/task.php?group_id=7775&group_project_id=13812&func=browse>
 
-* Next Major Release: http://rubyforge.org/pm/task.php?group_project_id=13813&group_id=7775&func=browse
+* Next Major Release:
+ <http://rubyforge.org/pm/task.php?group_project_id=13813&group_id=7775&func=browse>
 
-== DESCRIPTION:
+## DESCRIPTION:
 
 A small but comprehensive widget library written in ruby for creating ncurses
 applications.
 
-== FEATURES
+## FEATURES
 
 * Field : text/entry fields in pure ruby (not ncurses)
 * scrollable list box (also editable lists with Field, checkbox and combos)
@@ -55,7 +58,7 @@ applications.
 Above may be created using DSL like syntax, or hashes, and modified at
 will/runtime. Very flexible unlike ncurses forms and fields.
 
-== Sample programs:
+## Sample programs:
 
 *  test2.rb  most widgets (including menus)
 *  sqlc.rb is a ruby sql client demo (using sqlite3-ruby)
@@ -69,13 +72,11 @@ will/runtime. Very flexible unlike ncurses forms and fields.
    pass 1,2,3,4, or 5 as argument on command line
    ruby test1.rb 1
    ruby test1.rb 2
-
-   **   TO RE-TEST THE FOLLOWING in ruby 1.9.1
 *  test2.rb  most widgets (including menus)
    - partially tested, many widgets needs thorough testing.
 
 
-== PROBLEMS, ISSUES
+## PROBLEMS, ISSUES
 TextArea not bug free. Some situations wrapping errors could exist. 
 
 Seems test2.rb takes several seconds to load in 1.9, used to be almost
@@ -87,7 +88,7 @@ conversion of ?key using getbyte ?. Every time a key is pressed this is
 being done for comparing.
 Press F2 and then traverse menu levels
 
-== Terminal related issues.
+## Terminal related issues.
 
 * Some terminals may not show underlines (e.g screen).
 
@@ -105,7 +106,7 @@ Press F2 and then traverse menu levels
 
 I am developing and testing under "screen" under OS X Leopard.
 
-== SYNOPSIS:
+## SYNOPSIS:
 
 See lib/rbcurse/rwidgets.rb.
 For test programs, see test1, test2, testcombo etc in examples folder.
@@ -114,7 +115,7 @@ This depends only on "window" provided by ncurses. Does not use forms
 and fields. Minor changes and improvements may have happened to sample
 code below. See test programs for latest, working code.
 
-=== create a window and a form based on window
+### create a window and a form based on window
 
       @layout = { :height => 0, :width => 0, :top => 0, :left => 0 } 
       @win = VER::Window.new(@layout)
@@ -122,7 +123,7 @@ code below. See test programs for latest, working code.
       @form = Form.new @win
 
 
-=== create a bunch of fields with dependent labels
+### create a bunch of fields with dependent labels
 
       r = 1; c = 22;
       %w[ name age company].each do |w|
@@ -137,14 +138,14 @@ code below. See test programs for latest, working code.
         r += 1
       end
 
-=== create a variable (like TkVariable) and tie a label to it.
+### create a variable (like TkVariable) and tie a label to it.
 
       $results = Variable.new
       $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => 22}
         r += 1
 
-=== create a list and a list box based on the list.
+### create a list and a list box based on the list.
 
         mylist = []
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
@@ -159,7 +160,7 @@ code below. See test programs for latest, working code.
         end
         field.insert 5, "hello ruby", "so long python", "farewell java", "RIP .Net"
 
-=== create a textarea for entry 
+### create a textarea for entry 
 
         texta = TextArea.new @form do
           name   "mytext" 
@@ -171,7 +172,7 @@ code below. See test programs for latest, working code.
         texta << "hello there" << "we are testing deletes in this application"
         texta << "HELLO there" << "WE ARE testing deletes in this application"
 
-=== create a check box, updates a Variable
+### create a check box, updates a Variable
 
       checkbutton = CheckBox.new @form do
         text_variable $results
@@ -183,7 +184,7 @@ code below. See test programs for latest, working code.
         col 22
       end
 
-=== change field properties at any time by referring to them by name
+### change field properties at any time by referring to them by name
 
       @form.by_name["age"].display_length = 3
       @form.by_name["age"].maxlen = 3
@@ -203,12 +204,12 @@ code below. See test programs for latest, working code.
 
       field.valid_regex(/^[A-Z]\d+/)
 
-=== bind events to forms, and fields
+### bind events to forms, and fields
 
       @form.bind(:ENTER) { |f|   f.label.bgcolor = $promptcolor if f.instance_of? RubyCurses::Field}
       @form.bind(:LEAVE) { |f|  f.label.bgcolor = $datacolor  if f.instance_of? RubyCurses::Field}
 
-=== create buttons
+### create buttons
 
       ok_button = Button.new @form do
         text "OK"
@@ -225,7 +226,7 @@ code below. See test programs for latest, working code.
       end
       cancel_button.command { |form| form.printstr(@window, 23,45, "Cancel CALLED"); throw(:close); }
 
-=== create radio buttons
+### create radio buttons
 
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => 20,
           "col" => 22, "color"=> "cyan"}
@@ -247,7 +248,7 @@ code below. See test programs for latest, working code.
         col 22
       end
 
-=== create a messagebox 
+### create a messagebox 
 
       @mb = RubyCurses::MessageBox.new do
         title "Enter your name"
@@ -264,7 +265,7 @@ code below. See test programs for latest, working code.
      $log.debug "MBOX : #{@mb.selected_index} "
      $log.debug "MBOX : #{@mb.input_value} "
 
-=== create a read-only scrollable view of data
+### create a read-only scrollable view of data
  
         @textview = TextView.new @form do
           name   "myView" 
@@ -311,18 +312,18 @@ code below. See test programs for latest, working code.
       item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' :
           nil; label.attrs(att); label.repaint}
 
-== REQUIREMENTS:
+## REQUIREMENTS:
 
 * ruby 1.9.1 (will try to make it work on both 1.8.7 and 1.9)
 
 * ncurses-ruby (1.2.4)
 
 
-== INSTALL:
+## INSTALL:
 
 STEP 1.
 
-sudo gem install ncurses-ruby
+   `sudo gem install ncurses-ruby`
 
 If the above fails, then do as follows:
 
@@ -345,11 +346,11 @@ first line regarding interpreter first).
 
 STEP 2.
 
-sudo gem install rbcurse
+   `sudo gem install rbcurse`
 
  Now to the the examples folder and execute some examples.
 
-== LICENSE:
+## LICENSE:
 
 Copyright (c) 2008, 2009 rkumar
 

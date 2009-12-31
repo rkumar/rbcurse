@@ -1,5 +1,8 @@
 NOTES
 =====
+# vim:ts=4:sw=4:tw=80:ai:formatoptions=tcqnl:
+
+###### this was posted with appenddiary.sh ######
 
 Subject: Update rubyforge
 -------------------------
@@ -25,16 +28,89 @@ Subject: Upgrading widgets
 --------------------------
 Date: 2009-11-02 14:45
 
-1. We need to use `create_buffer` either in constructor or repaint  
-or whenever you are likely to have a width and height.  
-Recommended in beginning of repaint().
+1. We need to use `create_buffer` either in constructor or repaint  or whenever
+   you are likely to have a width and height.  Recommended in beginning of
+   repaint().
 Use `safe_create_buffer`
 
-2. Use `@modified_buffer = true` in repaint
+2. Use `@buffer_modified = true` in repaint
 
-3. Ensure print_border and printstring are getting correct coordinates.  
-Most errors happen here.
+3. Ensure print_border and printstring are getting correct coordinates.  Most
+   errors happen here.
 
 4. Replace @form.window with @graphic
 
+rtestwidget is a converted form of rtextview that runs in scrollpane.
+See testscrollp.rb
+
 * * *
+
+
+Subject: Scrollpane's form
+--------------------------
+Date: 2009-12-27 20:08
+
+Since scrollpane's child object has no form, scrollpane needs to have its own form 
+and hand it to child object. However, set_form was overwriting the existing @graphic
+so nothing was printed.
+Had to put a check so graphic (buffer) not overwritten. Now the child object does
+print correctly with a form object. No crashing regarding nil form.
+
+1. Container objects such as scrollpane and splitpane which have widgets
+   with nil forms require to create a form using existing graphic object
+   as window and hand that to the child objects.
+
+* * * * * * * *
+
+Subject: Moving cursor in ScrollPane's child
+--------------------------------------------
+Date: 2009-12-28 23:19
+
+Since child has its own form, had to hack an if clause in child object
+(ListScrollable in the case of Textarea) to modify parent forms row and col.
+Also added a parent_form in form.
+
+However, this needs to be done in scrollpane or other higher up place, so i
+don't have to keep doing it.
+
+ALso what if there are multiple objects in a heirarchy. Splitpane contains
+another Splitpane which contains some object. The setting must bubble up all the
+way.
+
+* * * * * * * *
+
+Subject: class Form - set_form_rowcol
+-------------------------------------
+Date: 2009-12-29 15:28
+
+Form should have a method rather than allow direct setting.
+This method can percolate up to a parent form if not the same as current.
+
+* * * * * * * *
+
+Subject: More on scrollpane and other widgets
+---------------------------------------------
+Date: 2009-12-30 18:03
+
+I have added a Form.rows_panned and cols_panned, so that a form know 
+how much its objects have been panned by. Otherwise there was no way
+of Textarea knowing it had been panned. It would keep resetting the
+cursor to the wrong value. rows_panned allows it to account for panning
+so the cursor can flash at where insertion is happening.
+See Scrollpane, handle_keys, around line 224.
+
+* * * * * * * *
+
+Subject: Scrollpane's cursor out of bounds - known bug
+------------------------------------------------------
+Date: 2009-12-31 09:42
+
+I've tried various ways to handle this - currently a variable named
+outofbounds. However, some little logic error causes the cursor
+to lose synch with the caret (insertion point).
+
+So until I can sort that out, we live with the cursor going cruising
+across the screen, although it does remain very true to the insertion
+point so no data can get mucked up.
+
+* * * * * * * *

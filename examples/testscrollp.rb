@@ -1,8 +1,8 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+# Creates a scrollpane with a Testwidget (which is a modified TextView class)
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-#require 'lib/ver/keyboard'
 require 'rbcurse'
 require 'rbcurse/rtestwidget'
 require 'rbcurse/rscrollpane'
@@ -26,9 +26,6 @@ if $0 == __FILE__
       # print filler stars
       filler = "*" * (w+2)
       #(ht+3).times(){|i| @form.window.printstring(i,c-1, filler, $datacolor) }
-
-      # strangely, first displays textview, then puts the fillers over it.
-      # then after a keypress, again refreshes textview.
 
 
         @scroll = ScrollPane.new @form do

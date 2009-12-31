@@ -86,7 +86,21 @@ module ListScrollable
   # the cursor should be appropriately positioned
   def set_form_row
     r,c = rowcol
-    @form.row = r + (@current_index-@toprow) 
+    orig_row=@form.row
+    
+    ## the next is in case the form is not starting at 0,0.
+    ## However, this typically happens if its a form within another container such as scrollpane
+    ##+ in which case setting the form row has no effect. We need to set the main forms
+    ##+ row, which sucks. 
+    win_row=@form.window.top
+    #win_col=@form.window.left
+    row = win_row + r + (@current_index-@toprow)  + @form.rows_panned
+    $log.debug "LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow} (orig #{orig_row} )"
+    $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} "
+
+    ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
+    ## this needs to percolate up a heirarchy.
+    @form.setrowcol row, c
   end
   def right
     @hscrollcols ||= @cols/2

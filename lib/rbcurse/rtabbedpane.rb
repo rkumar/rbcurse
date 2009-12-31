@@ -22,7 +22,9 @@ module RubyCurses
 
   # TODO :  insert_tab, remove_tab, disable/hide tab
   # Hotkeys should be defined with ampersand, too.
-  #
+  # NOTE:I don't think this uses set_form_row or bothers with the cursor
+  #+ since it manages highlighting etc on its own. 2009-12-29 13:30 
+
   # Multiple independent overlapping forms using the tabbed metaphor.
   class TabbedButton < RubyCurses::RadioButton
     def getvalue_for_paint

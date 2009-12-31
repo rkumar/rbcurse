@@ -707,6 +707,11 @@ module RubyCurses
     attr_reader :by_name   # hash containing widgets by name for retrieval
     attr_reader :menu_bar
     attr_accessor :navigation_policy  # :CYCLICAL will cycle around. Needed to move to other tabs
+    ## i need some way to move the cursor by telling the main form what the coords are
+    ##+ perhaps this will work
+    attr_accessor :parent_form  # HACK added 2009-12-28 23:01 BUFFERED 
+    attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED 
+    attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED 
     def initialize win, &block
       @window = win
       @widgets = []
@@ -720,6 +725,9 @@ module RubyCurses
       @navigation_policy ||= :CYCLICAL
       instance_eval &block if block_given?
       @firsttime = true # internal, don't touch
+      ## I need some counter so a widget knows it has been panned and can send a correct
+      ##+ cursor coordinate to system.
+      @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
     end
     ##
     # set this menubar as the form's menu bar.
@@ -806,7 +814,9 @@ module RubyCurses
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-     # $log.debug "setpos : #{r} #{c}"
+      $log.debug "setpos : #{r} #{c}"
+      ## adding just in case things are going out of bounds of a parent and no cursor to be shown
+      return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
      @window.wmove r,c
     end
     def get_current_field
@@ -987,11 +997,27 @@ module RubyCurses
     ##
     # move cursor by given rows and columns, can be negative.
     def addrowcol row,col
-      return if @col.nil? or @col == -1
+      return if @col.nil? or @col == -1   # contradicts comment on top
       return if @row.nil? or @row == -1
       @col += col
       @row += row
       @window.wmove @row, @col
+    end
+
+    ## added 2009-12-29 15:46  BUFFERED
+    # Set forms row and col, so that the cursor can be displayed at that point.
+    # Widgets should call this rather than touch row and col
+    # directly. This should percolate the row and col
+    # upwards to parent forms, after comparing to prevent 
+    # infinite recursion.
+    # This is being done for embedded objects so that the cursor
+    # can be maintained correctly.
+    def setrowcol row, col
+      @row = row unless row.nil?
+      @col = col unless col.nil?
+      if !@parent_form.nil? and @parent_form != @form
+        @parent_form.setrowcol row, col
+      end
     end
   ##
   # bind an action to a key, required if you create a button which has a hotkey
