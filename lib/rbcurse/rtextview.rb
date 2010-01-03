@@ -1,5 +1,5 @@
 =begin
-  * Name: TextView 
+  * Name: TestWidget 
   * $Id$
   * Description   View text in this widget.
   * Author: rkumar (arunachalesha)
@@ -55,8 +55,10 @@ module RubyCurses
       # present if we wish to only insert
       @scrollatrow = @height-2
       @content_rows = @list.length
-      @win = @form.window
+      @win = @graphic
       #init_scrollable
+      $log.debug " testwidget calling create_buffer"
+      create_buffer
       print_borders
       @maxlen ||= @width-2
       install_keys
@@ -102,6 +104,7 @@ module RubyCurses
     ## ---- for listscrollable ---- ##
     def scrollatrow
       @height - 2
+      @height - 3 # trying out 2009-10-31 15:22 XXX since we seem to be printing one more line
     end
     def row_count
       @list.length
@@ -126,9 +129,10 @@ module RubyCurses
                "\\1\\3\n") 
     end
     def print_borders
-      window = @form.window
+      window = @graphic
       color = $datacolor
-      window.print_border @row, @col, @height, @width, color
+      window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
+      #window.print_border 0, 0, @height, @width, color #, Ncurses::A_REVERSE
       print_title
 =begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
@@ -143,19 +147,21 @@ module RubyCurses
   
     end
     def print_title
-      @form.window.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     def print_foot
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      @form.window.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
+      $log.debug " print_foot calling printstring with #{@row} + #{@height}, #{@col}+2"
+      @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
+      #@graphic.printstring( @height, 2, footer, $datacolor, @footer_attrib) 
     end
     ### FOR scrollable ###
     def get_content
       @list
     end
     def get_window
-      @form.window
+      @graphic
     end
     ### FOR scrollable ###
     def repaint # textview
@@ -233,11 +239,11 @@ module RubyCurses
       when @KEY_FIND_MORE
         find_more
       else
-        #$log.debug("TEXTVIEW XXX ch #{ch}")
+        #$log.debug("TEXTVIEW ch #{ch}")
         return :UNHANDLED
       end
       #post_key
-      # XXX 2008-11-27 13:57 trying out
+      # 2008-11-27 13:57 trying out
       set_form_row
     end
     # newly added to check curpos when moving up or down
@@ -277,7 +283,6 @@ module RubyCurses
         @curpos += 1
         addcol 1
       else
-        # XXX 2008-11-26 23:03 trying out
         @pcol += 1 if @pcol <= @buffer.length
       end
       set_form_col 
@@ -296,7 +301,7 @@ module RubyCurses
         @curpos -= 1
         set_form_col 
         #addcol -1
-      elsif @pcol > 0 # XXX added 2008-11-26 23:05 
+      elsif @pcol > 0 # added 2008-11-26 23:05 
         @pcol -= 1   
       end
       @repaint_required = true
@@ -315,7 +320,7 @@ module RubyCurses
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
-      h = scrollatrow()
+      h = scrollatrow() # trying out -1 XXX
       r,c = rowcol
       0.upto(h) do |hh|
         crow = tr+hh
@@ -336,23 +341,24 @@ module RubyCurses
             #renderer = cell_renderer()
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             #renderer.repaint @form.window, r+hh, c, content, focussed, selected
-            @form.window.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
+            @graphic.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
             if @search_found_ix == tr+hh
               if !@find_offset.nil?
                 # handle exceed bounds, and if scrolling
                 if @find_offset1 < maxlen+@pcol and @find_offset > @pcol
-                @form.window.mvchgat(y=r+hh, x=c+@find_offset-@pcol, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
+                @graphic.mvchgat(y=r+hh, x=c+@find_offset-@pcol, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
                 end
               end
             end
 
         else
           # clear rows
-          @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
       @table_changed = false
       @repaint_required = false
+      @buffer_modified = true # required by form to call buffer_to_screen
     end
-  end # class textview
+  end # class testwidget
 end # modul
