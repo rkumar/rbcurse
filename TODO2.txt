@@ -20,3 +20,5 @@
  12	[x] (A) review rwidget code regarding printing  * which window does textarea print on, is it transferred to main window  * now buffered object write to main window, so window does not overwrite (2010-01-03) (x2010-01-03)
  13	[x] (A) review just print_title and border since they overwrite textarea (2010-01-03) (x2010-01-03)
  14	[x] copy testwidget to textview and tv to old (2010-01-03) (x2010-01-03)
+ 15	[ ] buffered version of Table (2010-01-03)
+ 16	[ ] putting buffered objects in splitpane and testing (2010-01-03)

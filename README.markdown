@@ -1,6 +1,6 @@
 # rbcurse (for ruby 1.9.1)
 
-* Version to work with ruby 1.9 - WORK IN PROGRESS
+* Version to work with ruby 1.9 
 
 * <http://totalrecall.wordpress.com>   
 
@@ -30,6 +30,8 @@
 
 * Todo (for 0.1.2):
  <http://rubyforge.org/pm/task.php?group_id=7775&group_project_id=13812&func=browse>
+
+  See [TODO2.txt](http://github.com/rkumar/rbcurse/blob/rbcurse19/TODO2.txt) (created and maintained by [todoapp.sh](http://github.com/rkumar/todoapp), also hosted here)
 
 * Next Major Release:
  <http://rubyforge.org/pm/task.php?group_project_id=13813&group_id=7775&func=browse>
