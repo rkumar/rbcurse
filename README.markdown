@@ -1,6 +1,6 @@
 # rbcurse (for ruby 1.9.1)
 
-* Version to work with ruby 1.9 
+* Version to work with ruby 1.9 (backward compatible with 1.8.7)
 
 * <http://totalrecall.wordpress.com>   
 
@@ -60,6 +60,14 @@ applications.
 Above may be created using DSL like syntax, or hashes, and modified at
 will/runtime. Very flexible unlike ncurses forms and fields.
 
+## Current work
+
+Currently working on **scrollpanes** and **splitpanes**. Made a lot of progress. Things
+are shaping up.  Have changed textarea and textview to work in scrollpanes. Now
+to make the same changes in listboxes, tabbedpanes and tables.
+
+That should call for a major release.
+
 ## Sample programs:
 
 *  test2.rb  most widgets (including menus)
@@ -79,10 +87,10 @@ will/runtime. Very flexible unlike ncurses forms and fields.
 
 
 ## PROBLEMS, ISSUES
-TextArea not bug free. Some situations wrapping errors could exist. 
+TextArea not bug free. In some situations wrapping errors _could_ exist. 
 
 Seems test2.rb takes several seconds to load in 1.9, used to be almost
-instantaneous  in 1.8. 
+instantaneous in 1.8. Maybe things have improved in 1.9.1.
 
 In test2.rb, when traversing menu items, several seconds delay before
 cursor moved down the first time, could this be because of all the
@@ -90,7 +98,9 @@ conversion of ?key using getbyte ?. Every time a key is pressed this is
 being done for comparing.
 Press F2 and then traverse menu levels
 
-## Terminal related issues.
+## General terminal related issues.
+
+The following are issues with terminals (or with ncurses-ruby in some cases) not with rbcurse.
 
 * Some terminals may not show underlines (e.g screen).
 
@@ -106,7 +116,7 @@ Press F2 and then traverse menu levels
   This is okay under "screen" and "xterm-color" but not under "xterm". You will notice
   this in the message box samples.
 
-I am developing and testing under "screen" under OS X Leopard.
+I am developing and testing under "screen" under OS X Leopard 10.5.8 PPC.
 
 ## SYNOPSIS:
 
@@ -316,7 +326,7 @@ code below. See test programs for latest, working code.
 
 ## REQUIREMENTS:
 
-* ruby 1.9.1 (will try to make it work on both 1.8.7 and 1.9)
+* ruby 1.9.1 (I believe it is working on 1.8.7 as well).
 
 * ncurses-ruby (1.2.4)
 
@@ -331,12 +341,12 @@ If the above fails, then do as follows:
 
 Somehow at the time of writing the above installs a version that does
 not work with 1.9. So you have to download ncurses-ruby (1.2.4) tgz from
-http://ncurses-ruby.berlios.de/ as follows:
+<http://ncurses-ruby.berlios.de/> as follows:
 
-1. Download http://prdownload.berlios.de/ncurses-ruby/ncurses-ruby-1.2.4.tar.bz2 
+1. Download <http://prdownload.berlios.de/ncurses-ruby/ncurses-ruby-1.2.4.tar.bz2>
 2. unzip the file, cd into dir
 2. run install commands as per README (ruby extconf.rb && make)
-3. Create a gemspec ... use this file http://gist.github.com/201877
+3. Create a gemspec ... use this file <http://gist.github.com/201877>
    Save it as ncurses.gemspec 
 4. sudo gem build ncurses.gemspec
 5. sudo gem install --local ncurses-1.2.4.gem
