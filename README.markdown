@@ -87,16 +87,7 @@ That should call for a major release.
 
 
 ## PROBLEMS, ISSUES
-TextArea not bug free. In some situations wrapping errors _could_ exist. 
 
-Seems test2.rb takes several seconds to load in 1.9, used to be almost
-instantaneous in 1.8. Maybe things have improved in 1.9.1.
-
-In test2.rb, when traversing menu items, several seconds delay before
-cursor moved down the first time, could this be because of all the
-conversion of ?key using getbyte ?. Every time a key is pressed this is
-being done for comparing.
-Press F2 and then traverse menu levels
 
 ## General terminal related issues.
 
