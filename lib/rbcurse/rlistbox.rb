@@ -237,8 +237,8 @@ module RubyCurses
       @panel = @window.panel  # useless line ?
       Ncurses::Panel.update_panels
 #     @message_row = @message_col = 2
-#     print_borders
-#     print_title
+      print_borders
+      print_title
       print_input # creates the listbox
       @form.repaint
       @window.wrefresh
@@ -508,6 +508,7 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       @color_pair = get_color($datacolor)
+      #$log.debug "rlistb:  window.print_border #{startrow}, #{startcol} , #{height} , #{width} , @color_pair, @attr "
       window.print_border startrow, startcol, height, width, @color_pair, @attr
       print_title
     end
@@ -742,6 +743,7 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint
+    #  return
       return unless @repaint_required
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       rc = row_count

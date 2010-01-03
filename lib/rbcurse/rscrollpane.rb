@@ -7,6 +7,7 @@
     Also contains viewport for row and columns.
   * Author: rkumar 
 TODO section:
+  - add events, property changed etc
   - scrollbars to be classes
   * file created 2009-10-27 19:20 
   --------
@@ -221,52 +222,36 @@ module RubyCurses
       $log.debug " scrollpane gets KEY #{ch}"
       case ch
         when ?\M-n.getbyte(0)
-          ret = down
-          ## we've scrolled down, but we need  to keep the cursor where
-          ##+ editing actually is. Isn't this too specific to textarea ?
-          $log.debug " SCRP setting row to #{@form.row-1} upon scrolling down  "
-          ## only move up the cursor if its within bounds
-   #       if @form.row > @row
-            @subform.rows_panned = @subform.rows_panned-1  if ret 
-            @subform.row =@form.row-1+@row_outofbounds if ret 
-            @form.setrowcol @form.row-1+@row_outofbounds, @form.col if ret 
-          $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
-   #       @row_outofbounds = @row_outofbounds-1 if ret and @row_outofbounds > 0
-   #       else
-   #         @row_outofbounds = @row_outofbounds-1 if ret
-   #         $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling down #{@row_outofbounds}  "
-   #       end
-        #scroll_forward # TODO
+          ## scroll down one row (currently one only)
+          ret = _down
       when ?\M-p.getbyte(0)
-        ret = up
-        $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up #{@row} #{@height}  "
-   #     if @form.row < @row + @height
-          @subform.rows_panned = @subform.rows_panned+1  if ret 
-          @subform.row =@form.row+1+@row_outofbounds if ret 
-          @form.setrowcol @form.row+1+@row_outofbounds, @form.col if ret 
-          $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
-   #       @row_outofbounds = @row_outofbounds+1 if ret and @row_outofbounds < 0
-   #     else
-   #       $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling up  "
-   #       @row_outofbounds = @row_outofbounds+1 if ret
-   #     end
-        #@form.setrowcol @form.row+1, @form.col if ret  # only if up succeeded
-        #scroll_backward # TODO
+          ## scroll up one row (currently one only)
+        ret = _up
       when ?0.getbyte(0), ?\C-[.getbyte(0)
         goto_start #start of buffer # cursor_start
       when ?\C-].getbyte(0)
         goto_end # end / bottom cursor_end # TODO
-      when KEY_UP
-        #select_prev_row
-        ret = up
-        #check_curpos
+      when ?\M-\<.getbyte(0)
+        @height.times { _up ; }
+      when ?\M-\>.getbyte(0)
+        @height.times { _down ; }
       when KEY_DOWN
         ret = down
         #check_curpos
       when  ?\M-h.getbyte(0)
-        cursor_backward
+        ## scroll left one position
+        ret = cursor_backward
+        @subform.cols_panned = @subform.cols_panned+1  if ret
+        @subform.col         = @form.col+1+@col_outofbounds if ret
+        @form.setrowcol @form.row, @form.col+1+@col_outofbounds if ret 
+        $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
       when  ?\M-l.getbyte(0)
-        cursor_forward
+        ## scroll right one position
+        ret = cursor_forward
+        @subform.cols_panned = @subform.cols_panned-1  if ret
+        @subform.col         = @form.col-1+@col_outofbounds if ret
+        @form.setrowcol @form.row, @form.col-1+@col_outofbounds if ret 
+        $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
       when KEY_BACKSPACE, 127
         cursor_backward
       else
@@ -286,8 +271,43 @@ module RubyCurses
     def cursor_backward
       increment_view_col(-1)
     end
-    def on_enter   # TODO ???
-      super
+    def _down
+      ## scroll down one row (currently one only)
+      ret = down
+      ## we've scrolled down, but we need  to keep the cursor where
+      ##+ editing actually is. Isn't this too specific to textarea ?
+      $log.debug " SCRP setting row to #{@form.row-1} upon scrolling down  "
+      ## only move up the cursor if its within bounds
+      #       if @form.row > @row
+      @subform.rows_panned = @subform.rows_panned-1  if ret 
+      @subform.row =@form.row-1+@row_outofbounds if ret 
+      @form.setrowcol @form.row-1+@row_outofbounds, @form.col if ret 
+      $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
+      #       @row_outofbounds = @row_outofbounds-1 if ret and @row_outofbounds > 0
+      #       else
+      #         @row_outofbounds = @row_outofbounds-1 if ret
+      #         $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling down #{@row_outofbounds}  "
+      #       end
+    end
+    def _up
+          ## scroll up one row (currently one only)
+        ret = up
+        $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up #{@row} #{@height}  "
+   #     if @form.row < @row + @height
+          @subform.rows_panned = @subform.rows_panned+1  if ret 
+          @subform.row =@form.row+1+@row_outofbounds if ret 
+          @form.setrowcol @form.row+1+@row_outofbounds, @form.col if ret 
+          $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
+   #       @row_outofbounds = @row_outofbounds+1 if ret and @row_outofbounds < 0
+   #     else
+   #       $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling up  "
+   #       @row_outofbounds = @row_outofbounds+1 if ret
+   #     end
+        #@form.setrowcol @form.row+1, @form.col if ret  # only if up succeeded
+        #scroll_backward 
+    end
+    def on_enter
+      #super 2010-01-02 18:53 leading to a stack overflow XXX ???
       set_form_row
     end
     # this is called once externally, on on_enter
@@ -295,7 +315,7 @@ module RubyCurses
     def set_form_row
       #@form.row = @row + 1 unless @form.nil?
       if @viewport != nil
-        $log.debug "    calling scrollpane set_form_row"
+        #$log.debug "    calling scrollpane set_form_row"
         ret = @viewport.child.set_form_row # added 2009-12-27 23:23 BUFFERED
       end
       $log.debug " FORM SCRP #{@form} "

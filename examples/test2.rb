@@ -5,9 +5,10 @@ require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rwidget'
-#require 'rbcurse/rform'
+#require 'rbcurse/oldrtextarea'
 require 'rbcurse/rtextarea'
-require 'rbcurse/rtextview'
+#require 'rbcurse/rtextview'
+require 'rbcurse/rtestwidget'
 require 'rbcurse/rmenu'
 require 'rbcurse/rcombo'
 require 'rbcurse/listcellrenderer'
@@ -134,7 +135,7 @@ if $0 == __FILE__
         end
         #listcb.cell_editor.component.form = @form
 
-        @textview = TextView.new @form do
+        @textview = TestWidget.new @form do
           name   "myView" 
           row  16 
           col  52 

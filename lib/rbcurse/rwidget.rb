@@ -420,12 +420,12 @@ module RubyCurses
       raise "Form is nil in set_form" if form.nil?
       @form = form
       @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
-      $log.debug " setting graphic to form window for #{self.class}, #{form.class} "
       # 2009-10-29 15:04 use form.window, unless buffer created
       # should not use form.window so explicitly everywhere.
       # added 2009-12-27 20:05 BUFFERED in case child object needs a form.
       # We don;t wish to overwrite the graphic object
       if @graphic.nil?
+        $log.debug " setting graphic to form window for #{self.class}, #{form.class} "
         @graphic = form.window unless form.nil? # use screen for writing, not buffer
       end
     end
@@ -575,16 +575,25 @@ module RubyCurses
     # @param [Window, #get_window, nil] screen to write to, if nil then write to phys screen
     # @return [true, false] comment
 
-    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
+   def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
       return unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
-      $log.debug " screen inside b2s #{screen} "
+      $log.debug " screen inside buffer_to_screen :#{screen} "
+      ## 2010-01-03 19:38 i think its wrong to put the pad onto the screen
+      ##+ since wrefreshing the window will cause this to be overwriting
+      ##+ so i put current window here.
       if screen == nil
-        ret = @graphic.wrefresh
+        #$log.debug " XXX calling graphic.wrefresh 2010-01-03 12:27 (parent_buffer was nil) "
+        $log.debug " XXX 2010-01-03 20:47 now copying pad onto form.window"
+        #ret = @graphic.wrefresh
+       ## 2010-01-03 20:45 rather than writing to phys screen, i write to forms window
+       ##+ so later updates to that window do not overwrite this widget.
+       ## We need to check this out with scrollpane and splitpane.
+        ret = @graphic.copywin(@form.window.get_window, 0, 0, @row, @col, @row+@height-1, @col+@width-1,0)
       else
       # screen is passed when a parent object calls this to copy child buffer to itself
         @graphic.set_backing_window(screen)
-        $log.debug "   #{@name} calling copy pad COPY"
+        $log.debug "   #{@name} calling copy pad to win COPY"
         ret = @graphic.copy_pad_to_win
       end
       @buffer_modified = false
@@ -728,6 +737,7 @@ module RubyCurses
       ## I need some counter so a widget knows it has been panned and can send a correct
       ##+ cursor coordinate to system.
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
+      @firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
     end
     ##
     # set this menubar as the form's menu bar.
@@ -780,31 +790,34 @@ module RubyCurses
         f.repaint
         # added 2009-10-29 20:11 for double buffered widgets
         # this should only happen if painting actually happened
-        $log.debug " form repaint parent_buffer #{@parent_buffer} if #{f.is_double_buffered?}"
-        f.buffer_to_screen(@parent_buffer) if f.is_double_buffered?
+        $log.debug " form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
+        pb = @parent_buffer #|| @window
+        f.buffer_to_screen(pb) if f.is_double_buffered?
       end
       @window.clear_error
       @window.print_status_message $status_message unless $status_message.nil?
       @window.print_error_message $error_message unless $error_message.nil?
       $error_message = $status_message = nil
       #  this can bomb if someone sets row. We need a better way!
-      if @row == -1 #or @firsttime == true
+      if @row == -1 and @firsttime == true
         #set_field_cursor 0
-       $log.debug "form repaint calling select field 0"
+        #  this part caused an endless loop on 2010-01-02 19:20 when scrollpane scrolled up
+       $log.debug "form repaint calling select field 0 SHOULD HAPPEN FIRST TIME ONLY"
         #select_field 0
         req_first_field
-        #@firsttime = false
+        @firsttime = false
       end
        setpos 
-       $log.debug " XXX calling window.wrefresh COOMENTED OFF FOR TABBEDPANE 2009-11-02 23:08 "
        # XXX this creates a problem if window is a pad
        # although this does show cursor movement etc.
        ### XXX@window.wrefresh
        if @window.window_type == :WINDOW
+         $log.debug " XXX calling window.wrefresh COOMENTED OFF FOR TABBEDPANE 2009-11-02 23:08 "
          @window.wrefresh
        else
          # UGLY HACK TO MAKE TABBEDPANES WORK !!
          if @parent_buffer!=nil
+           $log.debug " coming to set backing window part "
            @window.set_backing_window(@parent_buffer)
            @window.copy_pad_to_win
          end
@@ -817,6 +830,7 @@ module RubyCurses
       $log.debug "setpos : #{r} #{c}"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
+      return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
      @window.wmove r,c
     end
     def get_current_field
@@ -1016,6 +1030,7 @@ module RubyCurses
       @row = row unless row.nil?
       @col = col unless col.nil?
       if !@parent_form.nil? and @parent_form != @form
+        $log.debug " calling parents setrowcol "
         @parent_form.setrowcol row, col
       end
     end
@@ -1253,8 +1268,13 @@ module RubyCurses
     label.col  @col-(label.name.length+1) if label.col == -1
     label.label_for(self)
   end
+
+  ## Note that some older widgets like Field repaint every time the form.repaint
+  ##+ is called, whether updated or not. I can't remember why this is, but
+  ##+ currently I've not implemented events with these widgets. 2010-01-03 15:00 
+
   def repaint
-#    $log.debug("FIELD: #{id}, #{zorder}, #{focusable}")
+    $log.debug("repaint FIELD: #{id}, #{focusable}")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
     @display_length = 1 if display_length == 0
@@ -1274,6 +1294,7 @@ module RubyCurses
       acolor = $datacolor
     end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
+    $log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
     @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
   end
   def set_focusable(tf)
@@ -1470,7 +1491,7 @@ module RubyCurses
     ##
     # install trigger to call whenever a value is updated
     def update_command *args, &block
-      $log.debug "Variable: update command set #{args}"
+      $log.debug "Variable: update command set " # #{args}"
       @update_command << block
       @args << args
     end
@@ -1761,8 +1782,8 @@ module RubyCurses
         # in toggle buttons the underline can change as the text toggles
         if !@underline.nil? or !@mnemonic.nil?
           uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          $log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline} "
-          $log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
+          #$log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline} "
+          #$log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
           @graphic.mvchgat(y=r-@graphic.top, x=c+uline-@graphic.left, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end

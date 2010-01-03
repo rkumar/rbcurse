@@ -162,7 +162,8 @@ module RubyCurses
       #window = @form.window
       window = @graphic # 2009-12-26 14:54 BUFFERED
       color = $datacolor
-      window.print_border @row, @col, @height, @width, color
+      #window.print_border @row, @col, @height, @width, color
+      window.print_border @row, @col, @height-1, @width, color
       print_title
 =begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
@@ -184,7 +185,9 @@ module RubyCurses
     def print_foot
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos}, #{@list.length} lines  "
-      @graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
+      # changed 2010-01-02 19:31 BUFFERED we were exceeding 1
+      #@graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height-1, @col+2, footer, $datacolor, @footer_attrib) 
     end
     ### FOR scrollable ###
     def get_content
@@ -293,8 +296,9 @@ module RubyCurses
         return ret if ret == :UNHANDLED
       end
       #post_key
-      set_form_row if @oldci != @current_index
+      set_form_row #if @oldci != @current_index
       set_form_col  # testing 2008-12-26 19:37 
+      return 0
     end
     def undo_delete
         # added 2008-11-27 12:43  paste delete buffer into insertion point
@@ -325,8 +329,9 @@ module RubyCurses
       
       ## added win_col on 2009-12-28 20:21 for embedded forms BUFFERED TRYING OUT
       win_col=@form.window.left
-      col = win_col + @orig_col + @col_offset + @curpos
-      $log.debug "sfc: #{@orig_col}, #{@col_offset}. #{@curpos}. "
+      #col = win_col + @orig_col + @col_offset + @curpos
+      col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      $log.debug "sfc: wc:#{win_col}  oc:#{@orig_col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@form.cols_panned} . "
       @form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
     end
     def cursor_bounds_check
@@ -565,7 +570,7 @@ module RubyCurses
           @curpos = oldcurpos - lastspace  #lastchars.length # 0
         end
       end
-      set_form_row if @oldci != @current_index
+      set_form_row #if @oldci != @current_index
       @buffer = @list[@current_index]
       set_form_col
       @modified = true
@@ -683,6 +688,7 @@ module RubyCurses
     ## ---- for listscrollable ---- ##
     def scrollatrow
       @height-2
+      @height-3 # 2010-01-02 19:28 BUFFERED we were doing on more earlier
     end
     def row_count
       @list.size

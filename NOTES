@@ -1,8 +1,7 @@
 NOTES
 =====
-# vim:ts=4:sw=4:tw=80:ai:formatoptions=tcqnl:
-
-###### this was posted with appenddiary.sh ######
+/// vim:ts=4:sw=4:tw=80:ai:formatoptions=tcqnl:
+/// this was posted with appenddiary.sh
 
 Subject: Update rubyforge
 -------------------------
@@ -112,5 +111,51 @@ to lose synch with the caret (insertion point).
 So until I can sort that out, we live with the cursor going cruising
 across the screen, although it does remain very true to the insertion
 point so no data can get mucked up.
+
+* * * * * * * *
+
+Subject: more thoughts on cursor display
+----------------------------------------
+Date: 2009-12-31 17:14
+
+I deleted the todo item regarding widgets maintain cursor display
+themselves, but now i think the insertion point is specfic to some
+widgets not all, and that the widget should perhaps maintain it
+themselves.
+
+Most widgets highlight a line or item within. There is no editing
+happening. On a GUI there really is no cursor. However, textfields and
+textareas do have an insertion point (caret?). If they maitain their own
+insertion points, then when they are hidden or panned, the cursor would
+get hidden automatically since i assume its painted onto the buffer or
+pad.
+
+For example, tabbedpanes work just fine in these widgets since they take
+care fo their ownfocssing and selection.
+
+* * * * * * * *
+
+Subject: Textarea overwrite problem
+-----------------------------------
+Date: 2010-01-03 17:54
+
+I think it's like this.. (reference test2.rb sample program)
+
+Textarea uses a pad, which does a `prefresh` onto screen.
+All the other widgets (unbuffered) write to a window which does a
+`wrefresh`. This refresh overwrites the write that `prefresh` did.
+
+Acco to the manpage, certain optimizations are done with what is
+already there on the screen. My guess is that a window wrefresh does not
+disturb what is on the right, but it does overwrite what's on the left.
+
+Now, scrollpane and splitpane use a `buffer_to_screen` passing their own
+graphic object, so the main window is written onto. I need to confirm
+this by placing something on the right. Here, since textarea was not a
+child or embedded object, a `pad.refresh` was done.
+
+I think i need to ensure that a `copy_pad_to_win` is done in these cases,
+by passing a graphic object. At least the source of this bug is now
+clear to me now.
 
 * * * * * * * *

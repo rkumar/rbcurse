@@ -1,14 +1,6 @@
 require 'ver/ncurses'
 module VER
-  # Responsibilities:
-  # * Interface to Ncurses::WINDOW and Ncurses::Panel
-  # * behave IO like: (print puts write read readline)
-  # * hide and show itself
-
-  # There's a very strange bug when i tried subclassing this, as Ncurses seems
-  # to overwrite WINDOW::new, which will not return the Window instance we
-  # want. So we have to wrap instead of subclass.
-  class Window # < Ncurses::WINDOW
+  class Window 
     attr_reader :width, :height, :top, :left
     attr_accessor :layout
     attr_reader   :panel   # reader requires so he can del it in end
@@ -327,7 +319,7 @@ module VER
       width = Ncurses.COLS
       # the next line won't ensure we don't write outside some bounds like table
       #string = string[0..(width-c)] if c + string.length > width
-      #$log.debug "PRINT #{string.length}, #{Ncurses.COLS}, #{c} "
+      #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
       mvprintw(r, c, "%s", string);
       attroff(Ncurses.COLOR_PAIR(color) | att)
     end
@@ -369,7 +361,7 @@ module VER
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
 
-      $log.debug " inside print_border #{row} #{col} #{height} #{width} "
+      $log.debug " inside print_border r #{row} c #{col} h #{height} w #{width} "
 
       # 2009-11-02 00:45 made att nil for blanking out
       (row+1).upto(row+height-1) do |r|
@@ -549,7 +541,7 @@ module VER
     def smaxrow
       #$log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 "
       #@sheight + @top -1 
-      $log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
+#      $log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
       @sheight + @top -1 -@pminrow
     end
     ##
@@ -557,7 +549,7 @@ module VER
     def smaxcol
       #$log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 "
       #@swidth + @left -1
-      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
+#      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
       @swidth + @left -1 - @pmincol
     end
     ##
@@ -570,7 +562,7 @@ module VER
     # trying to make things as easy as possible
     # returns -1 if error in prefresh
     def wrefresh
-      $log.debug " inside pad's wrefresh #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} "
+      $log.debug " inside pad's wrefresh #{@window}.  #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} "
 
       # caution, prefresh uses maxrow and maxcol not height and width
       # so we have to add top and less one since we are zero based
@@ -613,13 +605,13 @@ module VER
           $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{@otherwin.height} "
         end
         if @left >= @otherwin.width
-          $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   H: #{@otherwin.width} "
+          $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{@otherwin.width} "
         end
         if smr >= @otherwin.height
           $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{@otherwin.height} "
         end
         if smc >= @otherwin.width
-          $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   H: #{@otherwin.width} "
+          $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{@otherwin.width} "
         end
       #end
       return ret
@@ -650,7 +642,7 @@ module VER
     # @param [Fixnum, nil] attrib defaults to NORMAL
 
     def printstring(row,col,value,color,attrib=Ncurses::A_NORMAL)
-      $log.debug " pad printstring #{row} - #{@top} , #{col} - #{@left} "
+      #$log.debug " pad printstring #{row} - #{@top} , #{col} - #{@left} "
       super(row - @top, col - @left, value, color, attrib)
     end # printstring
     #  convenience method so that pad can use print_border but remove screen's row and col
