@@ -336,25 +336,29 @@ not work with 1.9. So you have to download ncurses-ruby (1.2.4) tgz from
 
 1. Download <http://prdownload.berlios.de/ncurses-ruby/ncurses-ruby-1.2.4.tar.bz2>
 2. unzip the file, cd into dir
-2. run install commands as per README (ruby extconf.rb && make)
+2. run install commands as per README (`ruby extconf.rb && make`)
 3. Create a gemspec ... use this file <http://gist.github.com/201877>
    Save it as ncurses.gemspec 
-4. sudo gem build ncurses.gemspec
-5. sudo gem install --local ncurses-1.2.4.gem
-6. uninstall any previous ncurses or ncurses-ruby version otherwise
+4. `sudo gem build ncurses.gemspec`
+5. `sudo gem install --local ncurses-1.2.4.gem`
+6. **uninstall** any previous ncurses or ncurses-ruby version otherwise
 errors will persist at runtime.
-7. check with "gem list --local" and you should see ncurses (1.2.4). The
+7. check with `gem list --local` and you should see ncurses (1.2.4). The
  examples in the ncurses-ruby/examples folder should work. (Check the
 first line regarding interpreter first).
+8. As a last resort, I've put up a copy of the gem [here](http://www.benegal.org/files/ncurses-1.2.4.gem).
 
 STEP 2.
 
    `sudo gem install rbcurse`
 
- Now to the the examples folder and execute some examples.
+ Now go to the the examples folder and execute some examples.
+
+    cd examples 
+    ruby test2.rb
 
 ## LICENSE:
 
-Copyright (c) 2008, 2009 rkumar
+Copyright (c) 2008 -2010 rkumar
 
 Same as ruby license.
