@@ -212,7 +212,8 @@ module RubyCurses
           if !ablk.nil?
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
-              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+              #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
+              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
               blk.call object,  *aeve[ix]
             end
           end # if
@@ -297,6 +298,7 @@ module RubyCurses
     dsl_property :preferred_height  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_width  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_height  # added 2009-10-28 13:40 for splitpanes and better resizing
+    attr_accessor  :graphic              # added 2010-01-05 00:39 tryin out BUFFERED so listbox can set editors graphic
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -436,9 +438,10 @@ module RubyCurses
       @form.row = @row + 1 
     end
     # set cursor on correct column, widget
-    def set_form_col col=@curpos
-      @curpos = col
+    def set_form_col col1=@curpos
+      @curpos = col1
       @form.col = @col + @col_offset + @curpos
+      $log.debug " widget set_form_col #{@form.col} "
     end
     def hide
       @visible = false
@@ -1030,7 +1033,7 @@ module RubyCurses
       @row = row unless row.nil?
       @col = col unless col.nil?
       if !@parent_form.nil? and @parent_form != @form
-        $log.debug " calling parents setrowcol "
+        $log.debug " calling parents setrowcol #{row}, #{col}  "
         @parent_form.setrowcol row, col
       end
     end

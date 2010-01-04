@@ -39,8 +39,14 @@ Use `safe_create_buffer`
 
 4. Replace @form.window with @graphic
 
-rtestwidget is a converted form of rtextview that runs in scrollpane.
-See testscrollp.rb
+5. `set_form_col` needs to call `@form.setrowcol` as in rtextarea.
+   Also, you need to add cols_panned and rows_panned so the widget knows
+   how much it as been panned, and keeps the cursor in correct place.
+
+6. `set_form_row` needs to call @form.setrowcol as in rtextarea. See above entry
+   for details.
+
+See testscrollp.rb or testscrollta.rb for working sample.
 
 * * *
 

@@ -423,7 +423,8 @@ module RubyCurses
       @row_offset = @col_offset = 1
       @content_rows = @list.length
       @selection_mode ||= 'multiple'
-      @win = @form.window
+      @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
+      safe_create_buffer # 2010-01-04 12:36 BUFFERED
       print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   
@@ -468,7 +469,8 @@ module RubyCurses
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def scrollatrow
-      @height - 2
+      #@height - 2
+      @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
     end
     def list alist=nil
       return @list if alist.nil?
@@ -503,8 +505,8 @@ module RubyCurses
     end
     def print_borders
       width = @width
-      height = @height
-      window = @form.window
+      height = @height-1 # 2010-01-04 15:30 BUFFERED HEIGHT
+      window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
       @color_pair = get_color($datacolor)
@@ -513,7 +515,12 @@ module RubyCurses
       print_title
     end
     def print_title
-      printstring(@form.window, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+      #printstring(@graphic, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+      # 2010-01-04 15:53 BUFFERED
+      # I notice that the old version would print a title that was longer than width,
+      #+ but the new version won't print anything if it exceeds width.
+      # TODO check title.length and truncate if exceeds width
+      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
     def get_content
@@ -521,7 +528,7 @@ module RubyCurses
       @list_variable && @list_variable.value || @list 
     end
     def get_window
-      @form.window
+      @graphic # 2010-01-04 12:37 BUFFERED
     end
     ### END FOR scrollable ###
     # override widgets text
@@ -683,6 +690,7 @@ module RubyCurses
       # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
       editor.prepare_editor self, row, col, value
       editor.component.curpos = 0 # reset it after search, if user scrols down
+      editor.component.graphic = @graphic #  2010-01-05 00:36 TRYING OUT BUFFERED
       set_form_col 0 #@left_margin
 
       # set original value so we can cancel
@@ -700,6 +708,7 @@ module RubyCurses
       if @cell_editing_allowed
         if !@cell_editor.nil?
       #    $log.debug " cell editor (leave) setting value row: #{arow} val: #{@cell_editor.getvalue}"
+          $log.debug " cell editor #{@cell_editor.component.form.window} (leave) setting value row: #{arow} val: #{@cell_editor.getvalue}"
           @list[arow] = @cell_editor.getvalue #.dup 2009-01-10 21:42 boolean can't duplicate
         else
           $log.debug "CELL EDITOR WAS NIL, #{arow} "
@@ -743,8 +752,8 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint
-    #  return
       return unless @repaint_required
+      $log.debug " rlistbox repaint graphic #{@graphic} "
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
@@ -783,20 +792,20 @@ module RubyCurses
               else
                 selection_symbol =  @row_unselected_symbol
               end
-              @form.window.printstring r+hh, c, selection_symbol, acolor,@attr
+              @graphic.printstring r+hh, c, selection_symbol, acolor,@attr
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = cell_renderer()
             #renderer.show_selector @show_selector
             #renderer.row_selected_symbol @row_selected_symbol
             #renderer.left_margin @left_margin
-            #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+(colix*11), content, focussed, selected
             ## added crow on 2009-02-06 23:03 
             # since data is being truncated and renderer may need index
-            renderer.repaint @form.window, r+hh, c+@left_margin, crow, content, focussed, selected
+            renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focussed, selected
         else
           # clear rows
-          @form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
       if @cell_editing_allowed
@@ -804,6 +813,7 @@ module RubyCurses
       end
       @table_changed = false
       @repaint_required = false
+      @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
     end
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
@@ -813,8 +823,17 @@ module RubyCurses
       end
       @repaint_required = true
     end
-    def set_form_col col=0
-      super col+@left_margin
+    def set_form_col col1=0
+      # TODO BUFFERED use setrowcol @form.row, col
+      # TODO BUFFERED use cols_panned
+      # editable listboxes will involve changing cursor and the form issue
+      ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
+      win_col=@form.window.left
+      #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      col = win_col + @col + @col_offset + col1 + @form.cols_panned + @left_margin
+      $log.debug " set_form_col in rlistbox #{@col}, #{@left_margin} "
+      #super col+@left_margin
+      @form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
     end
     # experimental selection of multiple rows via block
     # specify a block start and then a block end

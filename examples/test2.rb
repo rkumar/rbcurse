@@ -7,8 +7,8 @@ require 'rbcurse'
 require 'rbcurse/rwidget'
 #require 'rbcurse/oldrtextarea'
 require 'rbcurse/rtextarea'
-#require 'rbcurse/rtextview'
-require 'rbcurse/rtestwidget'
+require 'rbcurse/rtextview'
+#require 'rbcurse/rtestwidget'
 require 'rbcurse/rmenu'
 require 'rbcurse/rcombo'
 require 'rbcurse/listcellrenderer'
@@ -16,6 +16,7 @@ require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
 require 'qdfilechooser'
+#require 'rbcurse/oldrlistbox'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rmessagebox'
 if $0 == __FILE__
@@ -34,7 +35,7 @@ if $0 == __FILE__
 
     catch(:close) do
       colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors  ---------"
+      $log.debug "START #{colors} colors  --------- #{@window} "
       @form = Form.new @window
       @form.window.printstring 0, 25, "Demo of Ruby Curses Widgets", $normalcolor, 'reverse'
       r = 1; fc = 12;
@@ -67,7 +68,7 @@ if $0 == __FILE__
           row  r 
           col  1 
           width 40
-          height 10
+          height 11
 #         list mylist
           list_variable $listdata
           #selection_mode :SINGLE
@@ -80,7 +81,7 @@ if $0 == __FILE__
         end
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi perl6"
+        listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi clojure"
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 
@@ -109,7 +110,7 @@ if $0 == __FILE__
 #         list mylist
           list_variable cblist
           #selection_mode :SINGLE
-          title "Checklist"
+          title "CList"
           title_attrib 'reverse'
           cell_renderer RubyCurses::CheckBoxCellRenderer.new nil, {"parent" => self, "display_length"=> @width-2}
           cell_editing_allowed true
@@ -135,18 +136,18 @@ if $0 == __FILE__
         end
         #listcb.cell_editor.component.form = @form
 
-        @textview = TestWidget.new @form do
+        @textview = TextView.new @form do
           name   "myView" 
           row  16 
           col  52 
           width 40
           height 10
-          title "README.txt"
+          title "README.mark"
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
         end
-        content = File.open("../README.txt","r").readlines
+        content = File.open("../README.markdown","r").readlines
         @textview.set_content content #, :WRAP_WORD
         #@textview.top_row 21
 
