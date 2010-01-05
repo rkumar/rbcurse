@@ -298,7 +298,10 @@ module RubyCurses
     dsl_property :preferred_height  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_width  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_height  # added 2009-10-28 13:40 for splitpanes and better resizing
-    attr_accessor  :graphic              # added 2010-01-05 00:39 tryin out BUFFERED so listbox can set editors graphic
+
+    ## 2010-01-05 13:27 create buffer conditionally, if enclosing component asks. Needs to be passed down
+    ##+ to further children or editor components. Default false.
+    attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -530,15 +533,20 @@ module RubyCurses
     # @since 0.1.3
 
     def create_buffer()
-      mheight = @height ||  1 # some widgets don't have height XXX
-      mwidth = @width ||  30 # some widgets don't have width as yet
-      mrow = @row || 0
-      mcol = @col || 0
-      layout = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
-      $log.debug "  .. #{@name} create_buffer #{mrow} #{mcol} #{mheight} #{mwidth}"
-      @screen_buffer = VER::Pad.create_with_layout(layout)
-      @is_double_buffered = true # will be checked prior to blitting
-      @buffer_modified = true # set this in repaint 
+      if @should_create_buffer
+        mheight = @height ||  1 # some widgets don't have height XXX
+        mwidth = @width ||  30 # some widgets don't have width as yet
+        mrow = @row || 0
+        mcol = @col || 0
+        layout = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
+        $log.debug "  cb .. #{@name} create_buffer #{mrow} #{mcol} #{mheight} #{mwidth}"
+        @screen_buffer = VER::Pad.create_with_layout(layout)
+        @is_double_buffered = true # will be checked prior to blitting
+        @buffer_modified = true # set this in repaint 
+      else
+        @screen_buffer = @form.window if @form
+      end
+
       @graphic = @screen_buffer # use buffer for writing, not screen window
       return @screen_buffer
     end # create_buffer
@@ -574,14 +582,14 @@ module RubyCurses
     #  to screen. Should be called only by outer form, not by widgets as a widget
     #  could be inside another widget.
     #  Somewhere we need to clear screen if scrolling.???
-    #  
+    #  aka b2s
     # @param [Window, #get_window, nil] screen to write to, if nil then write to phys screen
     # @return [true, false] comment
 
    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
       return unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
-      $log.debug " screen inside buffer_to_screen :#{screen} "
+      $log.debug " screen inside buffer_to_screen b2s :#{screen} "
       ## 2010-01-03 19:38 i think its wrong to put the pad onto the screen
       ##+ since wrefreshing the window will cause this to be overwriting
       ##+ so i put current window here.
@@ -692,6 +700,18 @@ module RubyCurses
      end
      def height=val
        height(val)
+     end
+
+     ## 
+     # When an enclosing component creates a pad (buffer) and the child component
+     #+ should write onto the same pad, then the enclosing component should override
+     #+ the default graphic of child. This applies mainly to editor components in
+     #+ listboxes and tables. 
+     # @param graphic graphic object to use for writing contents
+     # @see prepare_editor in rlistbox.
+     # added 2010-01-05 15:25 
+     def override_graphic gr
+       @graphic = gr
      end
 
      ##

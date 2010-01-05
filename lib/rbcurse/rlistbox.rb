@@ -237,8 +237,8 @@ module RubyCurses
       @panel = @window.panel  # useless line ?
       Ncurses::Panel.update_panels
 #     @message_row = @message_col = 2
-      print_borders
-      print_title
+#      print_borders
+#      print_title
       print_input # creates the listbox
       @form.repaint
       @window.wrefresh
@@ -690,7 +690,11 @@ module RubyCurses
       # unfortunately 2009-01-11 19:47 combo boxes editable allows changing value
       editor.prepare_editor self, row, col, value
       editor.component.curpos = 0 # reset it after search, if user scrols down
-      editor.component.graphic = @graphic #  2010-01-05 00:36 TRYING OUT BUFFERED
+      #editor.component.graphic = @graphic #  2010-01-05 00:36 TRYING OUT BUFFERED
+      ## override is required if the listbox uses a buffer
+      if @should_create_buffer
+        editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
+      end
       set_form_col 0 #@left_margin
 
       # set original value so we can cancel

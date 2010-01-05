@@ -173,7 +173,7 @@ module ListScrollable
     data = get_content
     row = focussed_index + 1
     row.upto(data.length-1) do |ix|
-      val = data[ix].chomp
+      val = data[ix].chomp rescue return  # 2010-01-05 15:28 crashed on trueclass
       #if val[0,1] == char #and val != currval
       if val[0,1].casecmp(char) == 0 #AND VAL != CURRval
         return ix
@@ -194,7 +194,7 @@ module ListScrollable
   def set_selection_for_char char
     @oldrow = @current_index
     ix = next_match char
-    @current_index = ix if ix != -1
+    @current_index = ix if ix && ix != -1
     bounds_check
     return ix
   end

@@ -26,3 +26,4 @@
  15	[ ] buffered version of Table (2010-01-03)
  16	[ ] (2) putting buffered objects in splitpane and testing (2010-01-03)
  17	[ ] test2.rb check menu traversal issue - is it slow (2010-01-03)
+ 18	[ ] popups now showing one blak line below. need to adjust  (2010-01-05)

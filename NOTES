@@ -165,3 +165,63 @@ by passing a graphic object. At least the source of this bug is now
 clear to me now.
 
 * * * * * * * *
+
+Subject: Thoughts on the buffered (pad) approach
+------------------------------------------------
+Date: 2010-01-05 12:03
+
+Buffering all widgets means that there will be a huge number of pads
+beign created for a screen that has a lot of fields. Lots of copying and
+possibilities of errors.
+
+In ordinary cases, there should be only one window, as in the old
+version. The buffered approach is only required if a scrollpane or
+splitpane is being used, even there only what is embedded will create its
+own buffer. That simplifies the whole thing. The usual execution path
+will be the old simple one.
+
+It may make more sense for the container to pass a buffer to the child
+and so on, rather than each level creating a buffer and copying to the
+higher level. That may totally eliminate having to create buffered
+objects, just have scrollpane and splitpane create a buffer and hand it
+down. I need to think this over, why did i not think of this before.
+
+The reason for this is that each level does not know what will be
+displayed and what will be truncated. So it writes things out full, 
+or as much is the widget coordinates. The next level does the relevant
+truncation. So the current approach is correct, however, when it can be
+avoided and one window used, only one should be. This will be in 99%
+cases. In anycase, listbox, textarea and textview and table implement
+their own scrolling, so one really does not need scrollpane for them.
+Scrollpane may be needed when we create a scrollable form. 
+
+So we can have a `should_buffer(boolean)`, which goes the buffer route (if
+set true by parent), else things continue with a form.window as before.
+
+added later 2010-01-05 13:24 :
+Regarding conditional buffering, what if some component containing components,
+such as a listbox or table containing editor components is place in a form which
+is placed in a scrollpane. The scrollpane can set `should_buffer` for the child,
+but what of all the lower components ? Should this be passed down ?
+
+* * * * * * * *
+
+Subject: Implementing a scrollable form
+---------------------------------------
+Date: 2010-01-05 12:34
+
+Two approaches come to mind:
+
+1.  Create a form using a pad (i/o of a window). Form will have to
+    handle scroll keys if child does not handle them.
+    Ensure that pad writes onto physical screen, not a window (like it
+    used to).
+
+2.  Create the usual window and scrollpane.
+    Make the child a form-widget -- a widget that contains a form, sends
+    messages to form. However, the form should be based on a pad.
+
+    In both cases, a form is based on a pad, so objects can be placed in
+    a larger area than the physical screen.
+
+* * * * * * * *
