@@ -3,3 +3,12 @@
 *.db
 bak
 tmp
+*.log.*
+view.*
+*.bk
+test*
+old*
+*.bak
+tags
+*.out
+*.csv

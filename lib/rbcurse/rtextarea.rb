@@ -163,6 +163,9 @@ module RubyCurses
       window = @graphic # 2009-12-26 14:54 BUFFERED
       color = $datacolor
       #window.print_border @row, @col, @height, @width, color
+      ## NOTE: If it bombs in next line, either no form passed
+      ##+ or you using this embedded and need to set should_create_buffer true when
+      ##+ creating. See examples/testscrollta.rb.
       window.print_border @row, @col, @height-1, @width, color
       print_title
 =begin

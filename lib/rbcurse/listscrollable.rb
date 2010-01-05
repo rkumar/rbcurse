@@ -96,11 +96,12 @@ module ListScrollable
     #win_col=@form.window.left
     row = win_row + r + (@current_index-@toprow)  + @form.rows_panned
     $log.debug "LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow} (orig #{orig_row} )"
-    $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} "
+    $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} , c= #{c} "
 
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
     ## this needs to percolate up a heirarchy.
-    @form.setrowcol row, c
+    ## 2010-01-05 21:09 changed c to nil, since c is not cursor col pos but where printing starts, i think
+    @form.setrowcol row, nil
   end
   def right
     @hscrollcols ||= @cols/2

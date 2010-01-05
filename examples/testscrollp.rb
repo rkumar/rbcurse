@@ -45,8 +45,9 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
+          should_create_buffer true
         end
-        content = File.open("../README.txt","r").readlines
+        content = File.open("../README.markdown","r").readlines
         @textview.set_content content #, :WRAP_WORD
         @scroll.child(@textview)
 

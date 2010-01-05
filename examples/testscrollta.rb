@@ -46,6 +46,7 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
+          should_create_buffer true
         end
         @scroll.child(@textview)
         @textview << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."

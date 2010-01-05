@@ -301,7 +301,7 @@ module RubyCurses
 
     ## 2010-01-05 13:27 create buffer conditionally, if enclosing component asks. Needs to be passed down
     ##+ to further children or editor components. Default false.
-    attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
+    dsl_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
     
     def initialize form, aconfig={}, &block
       @form = form
@@ -527,12 +527,15 @@ module RubyCurses
     #  This is typically called in the constructor. Sometimes, the constructor
     #  does not have a height or width, since the object will be resized based on parents
     #  size, as in splitpane
+    #  Please use this only if embedding this object in another object/s that would wish
+    #  to crop this. Otherwise, you could have many pads in your app.
     #  Sets @graphic which can be used in place of @form.window
     #  
     # @return [buffer] returns pad created
     # @since 0.1.3
 
     def create_buffer()
+      $log.debug " #{self.class}  CB called with #{@should_create_buffer} "
       if @should_create_buffer
         mheight = @height ||  1 # some widgets don't have height XXX
         mwidth = @width ||  30 # some widgets don't have width as yet
@@ -544,6 +547,9 @@ module RubyCurses
         @is_double_buffered = true # will be checked prior to blitting
         @buffer_modified = true # set this in repaint 
       else
+        ## NOTE: if form has not been set, you could run into problems
+        ## Typically a form MUST be set by now, unless you are buffering, in which
+        ##+ case it should go in above block.
         @screen_buffer = @form.window if @form
       end
 
@@ -596,11 +602,11 @@ module RubyCurses
       if screen == nil
         #$log.debug " XXX calling graphic.wrefresh 2010-01-03 12:27 (parent_buffer was nil) "
         $log.debug " XXX 2010-01-03 20:47 now copying pad onto form.window"
-        #ret = @graphic.wrefresh
+        ret = @graphic.wrefresh
        ## 2010-01-03 20:45 rather than writing to phys screen, i write to forms window
        ##+ so later updates to that window do not overwrite this widget.
        ## We need to check this out with scrollpane and splitpane.
-        ret = @graphic.copywin(@form.window.get_window, 0, 0, @row, @col, @row+@height-1, @col+@width-1,0)
+        #ret = @graphic.copywin(@form.window.get_window, 0, 0, @row, @col, @row+@height-1, @col+@width-1,0)
       else
       # screen is passed when a parent object calls this to copy child buffer to itself
         @graphic.set_backing_window(screen)
@@ -1030,6 +1036,11 @@ module RubyCurses
       return if @col.nil? or @col == -1
       @col += num
       @window.wmove @row, @col
+      # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
+      if !@parent_form.nil? and @parent_form != @form
+        $log.debug " addcol calling parents setrowcol #{row}, #{col}  "
+        @parent_form.setrowcol row, col
+      end
     end
     ##
     # move cursor by given rows and columns, can be negative.
@@ -1038,7 +1049,12 @@ module RubyCurses
       return if @row.nil? or @row == -1
       @col += col
       @row += row
-      @window.wmove @row, @col
+      #@window.wmove @row, @col
+      # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
+      if !@parent_form.nil? and @parent_form != @form
+        $log.debug " addrowcol calling parents setrowcol #{row}, #{col}  "
+        @parent_form.setrowcol row, col
+      end
     end
 
     ## added 2009-12-29 15:46  BUFFERED

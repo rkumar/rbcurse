@@ -225,3 +225,17 @@ Two approaches come to mind:
     a larger area than the physical screen.
 
 * * * * * * * *
+
+Subject: form.setrowcol and rowcol
+----------------------------------
+Date: 2010-01-05 21:11
+
+i began setting both row and col from `set_form_row`, but it does not know
+the current col. `rowcol` seems to return the position where printing
+should start, or the cursor should be positioned on entry first time.
+
+So i am now passing nil for c, so col is not disturbed.
+test2.rb's listbox is now editing fine, cursor is moving when editing.
+However, in scrollpane with pads etc, the cursor is not moving.
+
+* * * * * * * *

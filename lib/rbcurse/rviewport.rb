@@ -48,6 +48,7 @@ module RubyCurses
     end
     def init_vars
       #@curpos = @pcol = @toprow = @current_index = 0
+      should_create_buffer true
     end
     # set the component to be viewed
     def set_view ch

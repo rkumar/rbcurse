@@ -56,16 +56,19 @@ module RubyCurses
       # present if we wish to only insert
       init_vars
       # create_b moved from repain since we need to pass form to child component
+      should_create_buffer true
       @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
       @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
 
       # next line does not seem to have an effect.
       # @subform.set_parent_buffer(@graphic) # added 2009-12-28 19:38 BUFFERT (trying out for cursor)
     end
+    ##
     # set child component being used in viewport
     # @see set_viewport_view
     def child ch
       if ch != nil
+
         ## setting a form is a formality to prevent bombing
         ##+ however, avoid setting main form, which will then try to
         ##+ traverse this object and print using its own coordinates
@@ -159,6 +162,7 @@ module RubyCurses
         #@viewport.child.set_form(@subform)
       end
       return unless @repaint_required
+      $log.debug " SCRP scrollpane repaint"
         # TODO this only if major change
        if @repaint_border
         @graphic.wclear

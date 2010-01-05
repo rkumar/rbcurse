@@ -424,7 +424,8 @@ module RubyCurses
       @content_rows = @list.length
       @selection_mode ||= 'multiple'
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED
+      # moving down to repaint so that scrollpane can set should_buffered
+      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   
@@ -693,6 +694,7 @@ module RubyCurses
       #editor.component.graphic = @graphic #  2010-01-05 00:36 TRYING OUT BUFFERED
       ## override is required if the listbox uses a buffer
       if @should_create_buffer
+        $log.debug " overriding editors comp with GRAPHIC #{@graphic} "
         editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
       end
       set_form_col 0 #@left_margin
@@ -834,11 +836,17 @@ module RubyCurses
       ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
       win_col=@form.window.left
       #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
-      col = win_col + @col + @col_offset + col1 + @form.cols_panned + @left_margin
-      $log.debug " set_form_col in rlistbox #{@col}, #{@left_margin} "
+      col2 = win_col + @col + @col_offset + col1 + @form.cols_panned + @left_margin
+      $log.debug " set_form_col in rlistbox #{@col}+ left_margin #{@left_margin} ( #{col2} ) "
       #super col+@left_margin
-      @form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
+      @form.setrowcol @form.row, col2   # added 2009-12-29 18:50 BUFFERED
     end
+    #def rowcol
+    ##  $log.debug "rlistbox rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
+      #win_col=@form.window.left
+      #col2 = win_col + @col + @col_offset + @form.cols_panned + @left_margin
+      #return @row+@row_offset, col2
+    #end
     # experimental selection of multiple rows via block
     # specify a block start and then a block end
     # usage: bind mark_selection to a key. It works as a toggle.
