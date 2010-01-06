@@ -205,7 +205,7 @@ module RubyCurses
       instance_eval &block if block_given?
       @list_config.each_pair { |k,v|  instance_variable_set("@#{k}",v) }
       @height ||= [@max_visible_items || 10, @list.length].min 
-      #$log.debug " POPUP XXX #{@max_visible_items} ll:#{@list.length} h:#{@height}"
+      $log.debug " POPUP XXX #{@max_visible_items} ll:#{@list.length} h:#{@height}"
       # get widgets absolute coords
       if !@relative_to.nil?
         layout = @relative_to.form.window.layout
@@ -230,15 +230,9 @@ module RubyCurses
       @window = VER::Window.new(@layout)
       @form = RubyCurses::Form.new @window
       @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
-      #@window.attron(Ncurses.COLOR_PAIR($reversecolor));
-      #@window.wclear
-      #@window.attroff(Ncurses.COLOR_PAIR($reversecolor));
       @window.wrefresh
       @panel = @window.panel  # useless line ?
       Ncurses::Panel.update_panels
-#     @message_row = @message_col = 2
-#      print_borders
-#      print_title
       print_input # creates the listbox
       @form.repaint
       @window.wrefresh
@@ -320,8 +314,10 @@ module RubyCurses
     def print_input
       r = c = 0
       width = @layout[:width]
+      #$log.debug " print_input POPUP ht:#{@height} lh:#{@layout[:height]} "
       height = @layout[:height]
-      height = @height
+      #height = @height # 2010-01-06 12:52 why was this overriding previous line. its one less than layout
+      # i am now using layout height since it gives a closer size to whats asked for.
       parent = @relative_to
       defaultvalue = @default_value || ""
       list = @list
@@ -343,7 +339,6 @@ module RubyCurses
           default_values default_values
           is_popup true
           #add_observer parent
-          
         end
     end
     # may need to be upgraded to new one XXX FIXME
