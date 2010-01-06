@@ -46,6 +46,12 @@ Use `safe_create_buffer`
 6. `set_form_row` needs to call @form.setrowcol as in rtextarea. See above entry
    for details.
 
+7. Need to add the following in initialization of container such as rscrollpane
+   or rsplitpane:
+   should_create_buffer true
+
+   Also when creating a widget to put inside a container, use this line (see
+   samples below), as this needs to happen at construction time.
 See testscrollp.rb or testscrollta.rb for working sample.
 
 * * *

@@ -55,6 +55,7 @@ module RubyCurses
           init_vars
       end
       def init_vars
+        should_create_buffer true
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
@@ -67,7 +68,11 @@ module RubyCurses
       # @return [true, false] comment
 
       def first_component(comp)
-          @first_component = comp;
+          @first_component      = comp;
+          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
+          @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
+          comp.set_form(@subform1) # added 2010 BUFFERED
+          @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
           ## jeez, we;ve postponed create of buffer XX
           #@first_component.get_buffer().top=1; @row
           #@first_component.get_buffer().left=1; @col
@@ -82,6 +87,10 @@ module RubyCurses
 
       def second_component(comp)
           @second_component = comp;
+          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
+          @subform2             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
+          comp.set_form(@subform2) # added 2010 BUFFERED
+          @subform2.parent_form = @form # added 2010 for cursor stuff BUFFERED
           ## jeez, we;ve postponed create of buffer XX
           #@second_component.row(1)
           #@second_component.col(1)
@@ -154,6 +163,8 @@ module RubyCurses
             if @first_component != nil
             if @orientation == :VERTICAL_SPLIT
               # check first comps width
+                $log.debug " fc min width #{rc}, #{@first_component.min_width} "
+
               if rc-1 < @first_component.min_width
                 $log.debug " SORRY fc min width prevents further resizing"
                 return :ERROR
@@ -226,16 +237,7 @@ module RubyCurses
           set_divider_location rc
       end
       def repaint # splitpane
-          if @screen_buffer == nil
-              if @height == nil
-                  @height = @preferred_height || @min_height
-              end
-              if @width == nil
-                  @width = @preferred_width || @min_width
-              end
-              #@top
-              create_buffer
-          end
+        safe_create_buffer
           # this is in case, not called by form
           # we need to clip components
           # note that splitpanes can be nested
@@ -263,19 +265,21 @@ module RubyCurses
           #@first_component.row=@row+1
           #@first_component.col=@col+1
           if @first_component != nil
-              @first_component.repaint if @first_component != nil
+              $log.debug " SPLP repaint 1c ..."
+              @first_component.repaint
               ret = @first_component.buffer_to_screen(@graphic)
-              $log.debug " fc ret = #{ret} "
+              $log.debug " SPLP repaint fc ret = #{ret} "
           end
           if @second_component != nil
-              @second_component.repaint if @second_component != nil
+              $log.debug " SPLP repaint 2c ..."
+              @second_component.repaint
 
               # we need to keep top and left of buffer synced with components row and col.
               # Since buffer has no link to comp therefore it can't check back.
               @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
 
               ret = @second_component.buffer_to_screen(@graphic)
-              $log.debug " 2c ret = #{ret} "
+              $log.debug " SPLP repaint 2c ret = #{ret} "
           end
           @buffer_modified = true
           paint # has to paint border if needed, 
@@ -288,7 +292,24 @@ module RubyCurses
       def handle_key ch
           # TODO
           # if this gets key it should just hand it to child
+        @current_component ||= @first_component
+        if @current_component != nil 
+          ret = @current_component.handle_key ch
+          return ret if ret == 0
+        end
+        $log.debug " splitpane gets KEY #{ch}"
+        case ch
+        when ?\M-w.getbyte(0)
+          if @current_component == @first_component
+            @current_component = @second_component
+          else
+            @current_component = @first_component
+          end
+          @form.setrowcol(*@current_component.rowcol)
+        else
           return :UNHANDLED
+        end
+        return 0
       end
       def paint
           @repaint_required = false

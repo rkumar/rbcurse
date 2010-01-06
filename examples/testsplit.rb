@@ -5,6 +5,10 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
 #require 'rbcurse/rtestwidget'
+#
+## this sample creates a single scrollpane, and allows you to change orientation
+##+ and move divider around using - + and =.
+#
 if $0 == __FILE__
   include RubyCurses
   include RubyCurses::Utils
@@ -35,7 +39,6 @@ if $0 == __FILE__
           col  c
           width 70
           height ht
-          #editable false
           focusable false
           #orientation :VERTICAL_SPLIT
         end
@@ -48,8 +51,10 @@ if $0 == __FILE__
         case ch
         when ?v.getbyte(0)
           splitp.orientation(:VERTICAL_SPLIT)
+          splitp.reset_to_preferred_sizes
         when ?h.getbyte(0)
           splitp.orientation(:HORIZONTAL_SPLIT)
+          splitp.reset_to_preferred_sizes
         when ?-.getbyte(0)
           splitp.set_divider_location(splitp.divider_location-1)
         when ?+.getbyte(0)

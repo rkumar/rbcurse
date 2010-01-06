@@ -16,7 +16,7 @@
         -  4.1	[x] rtabbedpane does its own highlighting (2009-12-29) (x2009-12-29)
   6	[x] make form.set_form_row which bubbles up row and colrather than directly setting row and col (2009-12-29) (x2009-12-31)
   7	[x] (A) change addrowcol to percolate up too (2009-12-29) (x2010-01-05)
-  8	[ ] (A) change direct references to form.row and col to call methods (2009-12-29)
+  8	[@] (A) change direct references to form.row and col to call methods (2009-12-29)
  10	[x] @scrollpane needs to stop scrolling if no more data - actually it does, i had made the textarea large (2009-12-29) (x2009-12-29)
  11	[x] (A) new textarea breaks test2.rb. see what on, no display  * display happens on focus/keypress in test2.rb  * display happens on up down arrow, not left right. check if repaint is called comparing old and new files  * Ack listbox is erasing or overwriting new textarea - very strange  * now buffered object write to main window, so window does not overwrite (2009-12-31) (x2010-01-03)
         -  11.1	[x] textarea: footer not showing (2010-01-01) (x2010-01-02)

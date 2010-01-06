@@ -57,7 +57,7 @@ module RubyCurses
       @content_rows = @list.length
       @win = @graphic
       #init_scrollable
-      $log.debug " testwidget calling create_buffer"
+      $log.debug " textview calling create_buffer"
       create_buffer
       print_borders
       @maxlen ||= @width-2
@@ -360,5 +360,5 @@ module RubyCurses
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen
     end
-  end # class testwidget
+  end # class textview
 end # modul
