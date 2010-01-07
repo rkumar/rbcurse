@@ -245,3 +245,39 @@ test2.rb's listbox is now editing fine, cursor is moving when editing.
 However, in scrollpane with pads etc, the cursor is not moving.
 
 * * * * * * * *
+
+Subject: embedded splitpanes
+----------------------------
+Date: 2010-01-07 19:19
+
+*Case*: splitpane within another splitpane. 
+
+*Examples*: ruby doc or java doc. Now think text mode, no mouse, no
+dragging. Open ruby docs or java docs in `links`.
+
+Lets take a realistic scenario of a splitpane which contains a splitpane
+as one (or both) components. We've defined some key/s to resize a
+splitpane, but now which splitpane gets the key. How does the user
+specify which level the key pertains to. 
+
+In textual browsers such as links, "frames" have been used. So you are
+inside a frame. Your key pertains to that frame and you tab between
+frames. Using splitpanes, when you are in a component you are inside a
+splitpane too. So in the case of a splitpane within another, you are in
+2 splitpanes. 
+
+When you tab into a splitpane, I'd like to make it easy and put the
+focus inside the first component. You can switch between components. But
+you are never really focussed on the splitpane. Any keys not processed
+by the child components are passed up to the splitpane. Thats how it
+does resizing, or changing orientation.
+
+The other option is that you first focus on the splitpane, and then tab
+once more to the first component. Ugh ! But it allows you use simple
+keys like plus and minus to resize. Thus in a multilevel scrollpane,
+you'd need many tabs to get to the actual component.
+
+There's a third option, i do as before, but give a special key to go to
+outer splitpane, so conditionally focus can go onto splitpane.
+
+* * * * * * * *

@@ -529,6 +529,11 @@ module VER
       @top = top
       @left = left unless left < 0
     end
+    ## added user setting screens max row and col (e.g splitpanes first component)
+    def set_screen_max_row_col mr, mc
+      @screen_maxrow = mr unless mr.nil?
+      @screen_maxcol = mc unless mc.nil?
+    end
     # start row and col correspond to pad's top and left which will change if scrolling
     # However, if we use this as a backing store for subwindows it could remain the same
     def set_pad_top_left top, left=-1
@@ -542,7 +547,7 @@ module VER
       #$log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 "
       #@sheight + @top -1 
 #      $log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
-      @sheight + @top -1 -@pminrow
+      @screen_maxrow || @sheight + @top -1 -@pminrow
     end
     ##
     # return screen max col which will be used for writing to window
@@ -550,7 +555,7 @@ module VER
       #$log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 "
       #@swidth + @left -1
 #      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
-      @swidth + @left -1 - @pmincol
+      @screen_maxcol || @swidth + @left -1 - @pmincol
     end
     ##
     # specify the window or subwin that the pad is writing to

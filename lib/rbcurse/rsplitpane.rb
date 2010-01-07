@@ -245,28 +245,19 @@ module RubyCurses
           if @repaint_required
             # TODO this only if major change
               @graphic.wclear
-              $log.debug " #{@name} repaint split H #{@height} W #{@width} "
-              bordercolor = @border_color || $datacolor
-              borderatt = @border_attrib || Ncurses::A_NORMAL
-              #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
-              @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
-              rc = @divider_location
-
-              @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-              if @orientation == :VERTICAL_SPLIT
-                $log.debug "#{@name} prtingign split vline 1, rc: #{rc} "
-                  @graphic.mvvline(1, rc, 0, @height-2)
-              else
-                $log.debug "#{@name} prtingign split hline  rc: #{rc} , 1 "
-                  @graphic.mvhline(rc, 1, 0, @width-2)
-              end
-              @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+              @first_component.fire_property_change("dummy", 1, 2) if !@first_component.nil?
+              @second_component.fire_property_change("dummy", 1, 2) if !@second_component.nil?
           end
           #@first_component.row=@row+1
           #@first_component.col=@col+1
           if @first_component != nil
               $log.debug " SPLP repaint 1c ..."
               @first_component.repaint
+              if @orientation == :VERTICAL_SPLIT
+                @first_component.get_buffer().set_screen_max_row_col(nil, @divider_location-1)
+              else
+                @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, nil)
+              end
               ret = @first_component.buffer_to_screen(@graphic)
               $log.debug " SPLP repaint fc ret = #{ret} "
           end
@@ -281,6 +272,24 @@ module RubyCurses
               ret = @second_component.buffer_to_screen(@graphic)
               $log.debug " SPLP repaint 2c ret = #{ret} "
           end
+          #if @repaint_required
+              $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
+              bordercolor = @border_color || $datacolor
+              borderatt = @border_attrib || Ncurses::A_NORMAL
+              #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
+              @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
+              rc = @divider_location
+
+              @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+              if @orientation == :VERTICAL_SPLIT
+                $log.debug "SPLP #{@name} prtingign split vline 1, rc: #{rc} "
+                  @graphic.mvvline(1, rc, 0, @height-2)
+              else
+                $log.debug "SPLP #{@name} prtingign split hline  rc: #{rc} , 1 "
+                  @graphic.mvhline(rc, 1, 0, @width-2)
+              end
+              @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+          #end
           @buffer_modified = true
           paint # has to paint border if needed, 
           # TODO
@@ -288,24 +297,47 @@ module RubyCurses
       def getvalue
           # TODO
       end
-      ## most likely should just return an unhandled and not try being intelligent
+      ## Handles key for splitpanes
+      ## By default, first component gets focus, not the SPL itself.
+      ##+ Mostly passing to child, and handling child's left-overs.
+      ## NOTE: How do we switch to the other outer SPL?
       def handle_key ch
-          # TODO
-          # if this gets key it should just hand it to child
         @current_component ||= @first_component
         if @current_component != nil 
           ret = @current_component.handle_key ch
           return ret if ret == 0
+        else
+          ## added 2010-01-07 18:59 in case nothing in there.
+          $log.debug " SPLP #{@name} - no component installed in splitpane"
+          #return :UNHANDLED
         end
-        $log.debug " splitpane gets KEY #{ch}"
+        $log.debug " splitpane #{@name} gets KEY #{ch}"
         case ch
         when ?\M-w.getbyte(0)
-          if @current_component == @first_component
-            @current_component = @second_component
+          if @current_component != nil 
+            if @current_component == @first_component
+              @current_component = @second_component
+            else
+              @current_component = @first_component
+            end
+            @form.setrowcol(*@current_component.rowcol)
           else
-            @current_component = @first_component
+
+            # this was added for a non-realistic test program with embedded splitpanes
+            #+ but no component inside them. At least one can go from one outer to another.
+            #+ In real life, this should not come.
+            return :UNHANDLED
           end
-          @form.setrowcol(*@current_component.rowcol)
+        when ?\M-V.getbyte(0)
+          self.orientation(:VERTICAL_SPLIT)
+        when ?\M-H.getbyte(0)
+          self.orientation(:HORIZONTAL_SPLIT)
+        when ?\M--.getbyte(0)
+          self.set_divider_location(self.divider_location-1)
+        when ?\M-\+.getbyte(0)
+          self.set_divider_location(self.divider_location+1)
+        when ?\M-\=.getbyte(0)
+          self.set_resize_weight(0.50)
         else
           return :UNHANDLED
         end

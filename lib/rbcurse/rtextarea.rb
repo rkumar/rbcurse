@@ -75,7 +75,6 @@ module RubyCurses
     def init_vars
       @repaint_required = true
       @toprow = @current_index = @pcol = 0
-      @oldci = -1 # 2009-12-30 15:52 just to do less of set_form_row due to scrolling in scrollpane
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -211,7 +210,6 @@ module RubyCurses
     # textarea
     
     def handle_key ch
-      @oldci=@current_index
       @buffer = @list[@current_index]
       if @buffer.nil? and @list.length == 0
         ## 2009-10-04 22:39 
@@ -299,7 +297,7 @@ module RubyCurses
         return ret if ret == :UNHANDLED
       end
       #post_key
-      set_form_row #if @oldci != @current_index
+      set_form_row
       set_form_col  # testing 2008-12-26 19:37 
       return 0
     end
@@ -573,7 +571,7 @@ module RubyCurses
           @curpos = oldcurpos - lastspace  #lastchars.length # 0
         end
       end
-      set_form_row #if @oldci != @current_index
+      set_form_row
       @buffer = @list[@current_index]
       set_form_col
       @modified = true

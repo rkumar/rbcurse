@@ -34,7 +34,7 @@ if $0 == __FILE__
           col  c
           width w
           height ht
-          focusable false
+          #focusable false
           #orientation :VERTICAL_SPLIT
           orientation :HORIZONTAL_SPLIT
           #set_resize_weight 0.60
@@ -46,7 +46,7 @@ if $0 == __FILE__
           #col  c
           #width 30
           #height ht-2
-          focusable false
+          #focusable false
           #orientation :HORIZONTAL_SPLIT
           orientation :VERTICAL_SPLIT
           border_color $promptcolor

@@ -57,8 +57,8 @@ if $0 == __FILE__
         end
         t1 = TextView.new nil do
           name   "myView" 
-          row 0
-          col  0 
+          #row 0
+          #col  0 
           width w+10
           height ht+20
           title "README.txt"
@@ -72,8 +72,8 @@ if $0 == __FILE__
 
         t2 = TextView.new nil do
           name   "myView2" 
-          row 0
-          col  0 
+          #row 0
+          #col  0 
           width w+10
           height ht+20
           title "NOTES"
