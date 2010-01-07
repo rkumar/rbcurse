@@ -243,36 +243,12 @@ module RubyCurses
           # note that splitpanes can be nested
 
           if @repaint_required
-            # TODO this only if major change
+            # Note: this only if major change
               @graphic.wclear
               @first_component.fire_property_change("dummy", 1, 2) if !@first_component.nil?
               @second_component.fire_property_change("dummy", 1, 2) if !@second_component.nil?
           end
-          #@first_component.row=@row+1
-          #@first_component.col=@col+1
-          if @first_component != nil
-              $log.debug " SPLP repaint 1c ..."
-              @first_component.repaint
-              if @orientation == :VERTICAL_SPLIT
-                @first_component.get_buffer().set_screen_max_row_col(nil, @divider_location-1)
-              else
-                @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, nil)
-              end
-              ret = @first_component.buffer_to_screen(@graphic)
-              $log.debug " SPLP repaint fc ret = #{ret} "
-          end
-          if @second_component != nil
-              $log.debug " SPLP repaint 2c ..."
-              @second_component.repaint
-
-              # we need to keep top and left of buffer synced with components row and col.
-              # Since buffer has no link to comp therefore it can't check back.
-              @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
-
-              ret = @second_component.buffer_to_screen(@graphic)
-              $log.debug " SPLP repaint 2c ret = #{ret} "
-          end
-          #if @repaint_required
+          if @repaint_required
               $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
               bordercolor = @border_color || $datacolor
               borderatt = @border_attrib || Ncurses::A_NORMAL
@@ -289,7 +265,37 @@ module RubyCurses
                   @graphic.mvhline(rc, 1, 0, @width-2)
               end
               @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-          #end
+          end
+          #@first_component.row=@row+1
+          #@first_component.col=@col+1
+          if @first_component != nil
+              $log.debug " SPLP repaint 1c ..."
+              @first_component.repaint
+              @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
+              if @orientation == :VERTICAL_SPLIT
+                @first_component.get_buffer().set_screen_max_row_col(nil, @divider_location-1)
+              else
+                @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, nil)
+              end
+              ret = @first_component.buffer_to_screen(@graphic)
+              $log.debug " SPLP repaint fc ret = #{ret} "
+          end
+          if @second_component != nil
+              $log.debug " SPLP repaint 2c ..."
+              @second_component.repaint
+
+              # we need to keep top and left of buffer synced with components row and col.
+              # Since buffer has no link to comp therefore it can't check back.
+              @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
+              if @orientation == :VERTICAL_SPLIT
+                @second_component.get_buffer().set_screen_max_row_col(nil, @width-2)
+              else
+                @second_component.get_buffer().set_screen_max_row_col(@height-2, nil)
+              end
+
+              ret = @second_component.buffer_to_screen(@graphic)
+              $log.debug " SPLP repaint 2c ret = #{ret} "
+          end
           @buffer_modified = true
           paint # has to paint border if needed, 
           # TODO
