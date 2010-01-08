@@ -57,9 +57,9 @@ module RubyCurses
       @content_rows = @list.length
       @win = @graphic
       #init_scrollable
-      $log.debug " textview calling create_buffer"
+      @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       create_buffer
-      print_borders
+      print_borders #if @to_print_borders == 1 && @repaint_all # do this once only, unless everything changes
       @maxlen ||= @width-2
       install_keys
       init_vars
@@ -118,8 +118,6 @@ module RubyCurses
       return nil
     end
     def rowcol
-      #$log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
-      #return @row+@row_offset+@winrow, @col+@col_offset
       #return @row+@row_offset+@winrow, @col+@col_offset
       return @row+@row_offset, @col+@col_offset
     end
@@ -128,31 +126,24 @@ module RubyCurses
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
     end
+    ## print a border
+    ## Note that print_border clears the area too, so should be used sparingly.
     def print_borders
+      $log.debug " #{@name} print_borders "
       window = @graphic
       color = $datacolor
       window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       #window.print_border 0, 0, @height, @width, color #, Ncurses::A_REVERSE
       print_title
-=begin
-      hline = "+%s+" % [ "-"*(width-((1)*2)) ]
-      hline2 = "|%s|" % [ " "*(width-((1)*2)) ]
-      window.printstring(row=startrow, col=startcol, hline, color)
-      print_title
-      (startrow+1).upto(startrow+height-1) do |row|
-        window.printstring( row, col=startcol, hline2, color)
-      end
-      window.printstring( startrow+height, col=startcol, hline, color)
-=end
-  
     end
     def print_title
+      $log.debug " print_title #{@row}, #{@col}, #{@width}  "
       @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     def print_foot
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      $log.debug " print_foot calling printstring with #{@row} + #{@height}, #{@col}+2"
+      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
       #@graphic.printstring( @height, 2, footer, $datacolor, @footer_attrib) 
     end
@@ -313,14 +304,19 @@ module RubyCurses
     def do_relative_row num
       yield @list[@current_index+num] 
     end
+
+    ## NOTE: earlier print_border was called only once in constructor, but when
+    ##+ a window is resized, and destroyed, then this was never called again, so the 
+    ##+ border would not be seen in splitpane unless the width coincided exactly with
+    ##+ what is calculated in divider_location.
     def paint
-      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      print_borders #if @to_print_borders == 1 && @repaint_all # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
-      h = scrollatrow() # trying out -1 XXX
+      h = scrollatrow() 
       r,c = rowcol
       0.upto(h) do |hh|
         crow = tr+hh
@@ -359,6 +355,7 @@ module RubyCurses
       @table_changed = false
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen
+      @repaint_all = false # added 2010-01-08 18:56 for redrawing everything
     end
   end # class textview
 end # modul

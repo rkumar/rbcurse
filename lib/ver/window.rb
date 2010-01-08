@@ -356,7 +356,7 @@ module VER
       mvwvline( row+1, col+width-5, ACS_VLINE, height-4)
     end
     ##
-    # prints a border around a widget
+    # prints a border around a widget, CLEARING the area.
     #  If calling with a pad, you would typically use 0,0, h-1, w-1.
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
@@ -653,7 +653,7 @@ module VER
     #  convenience method so that pad can use print_border but remove screen's row and col
     #  Please note that this requires that buffer have latest top and left.
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
-      $log.debug " pad printborder #{row} - #{@top} , #{col} - #{@left} "
+      $log.debug " pad printborder #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
       super(row - @top, col - @left, height, width,  color, att)
     end
   end # class Pad

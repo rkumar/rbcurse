@@ -48,14 +48,11 @@ module RubyCurses
           @col = 0
           super
           @row_offset = @col_offset = 1
-          #@orig_col = @col
-          # this does result in a blank line if we insert after creating. That's required at 
-          # present if we wish to only insert
-          #create_buffer = postponed since we may not have width and height
+          @orig_col = @col
           init_vars
       end
       def init_vars
-        should_create_buffer true
+          should_create_buffer true
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
@@ -78,6 +75,8 @@ module RubyCurses
           #@first_component.get_buffer().left=1; @col
           @first_component.row(1)
           @first_component.col(1)
+          #@first_component.get_buffer().top=2;  # 2010-01-08 13:24 trying out
+          #@first_component.get_buffer().left=2;  # 2010-01-08 13:24 trying out
       end # first_component
       ## 
       #  Sets the second component (bottom or right)
@@ -108,6 +107,7 @@ module RubyCurses
           # must adjust to components own offsets too
           if @first_component != nil 
               @first_component.height = @height - @col_offset + @divider_offset
+              $log.debug " set fc hieth to #{@first_component.height} "
           end
           if @second_component != nil 
               @second_component.height = @height - @col_offset + @divider_offset
@@ -127,9 +127,11 @@ module RubyCurses
           # must adjust to components own offsets too
           if @first_component != nil 
               @first_component.width = @width - @col_offset + @divider_offset
+              $log.debug " set fc width to #{@first_component.width} "
           end
           if @second_component != nil 
               @second_component.width = @width - @col_offset + @divider_offset
+              $log.debug " set 2c width to #{@second_component.width} "
           end
       end
       # set location of divider (row or col depending on orientation)
@@ -245,6 +247,7 @@ module RubyCurses
           if @repaint_required
             # Note: this only if major change
               @graphic.wclear
+              ## hack: i am setting repaint_required to true by this roundabout way.
               @first_component.fire_property_change("dummy", 1, 2) if !@first_component.nil?
               @second_component.fire_property_change("dummy", 1, 2) if !@second_component.nil?
           end

@@ -37,7 +37,7 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
-      r = 1; c = 3; ht = 24; w = 40
+      r = 1; c = 3; ht = 24; w = 70
       # filler just to see that we are covering correct space and not wasting lines or cols
       filler = "*" * 88
       (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
@@ -50,7 +50,7 @@ if $0 == __FILE__
           name   "mypane" 
           row  r 
           col  c
-          width 70
+          width w
           height ht
           #focusable false
           #orientation :VERTICAL_SPLIT
@@ -59,8 +59,8 @@ if $0 == __FILE__
           name   "myView" 
           #row 0
           #col  0 
-          width w+10
-          height ht+20
+          width w-2
+          height ht
           title "README.txt"
           title_attrib 'bold'
           print_footer true
@@ -70,12 +70,14 @@ if $0 == __FILE__
         content = File.open("../README.markdown","r").readlines
         t1.set_content content #, :WRAP_WORD
 
+        # to see lower border i need to set height to ht/2 -2 in both cases, but that
+        # crashes ruby when i reduce height by 1.
         t2 = TextView.new nil do
           name   "myView2" 
           #row 0
           #col  0 
-          width w+10
-          height ht+20
+          width w-2
+          height ht
           title "NOTES"
           title_attrib 'bold'
           print_footer true
@@ -87,8 +89,8 @@ if $0 == __FILE__
 
         splitp.first_component(t1)
         splitp.second_component(t2)
-        t1.preferred_width w/2
-        t1.preferred_height ht/2
+        t1.preferred_width w-4 #/2  ## should pertain more to horizontal orientation
+        t1.preferred_height (ht/2) ## this messes things up when we change orientation
         #t1.set_resize_weight 0.50
         t2.min_width 15
         t2.min_height 5

@@ -1,10 +1,11 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-# Creates a scrollpane with a Testwidget (which is a modified TextView class)
+# Creates a scrollpane with a TextView (which is a modified TextView class)
 require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rtestwidget'
+#require 'rbcurse/rtestwidget'
+require 'rbcurse/rtextview'
 require 'rbcurse/rscrollpane'
 if $0 == __FILE__
   include RubyCurses
@@ -35,7 +36,7 @@ if $0 == __FILE__
           width w
           height ht
         end
-        @textview = TestWidget.new nil do
+        @textview = TextView.new nil do
           name   "myView" 
           row 0
           col  0 

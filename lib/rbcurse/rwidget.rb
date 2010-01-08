@@ -535,7 +535,7 @@ module RubyCurses
     # @since 0.1.3
 
     def create_buffer()
-      $log.debug " #{self.class}  CB called with #{@should_create_buffer} "
+      $log.debug " #{self.class}  CB called with #{@should_create_buffer} H: #{@height} W #{@width}  "
       if @should_create_buffer
         mheight = @height ||  1 # some widgets don't have height XXX
         mwidth = @width ||  30 # some widgets don't have width as yet
@@ -546,6 +546,7 @@ module RubyCurses
         @screen_buffer = VER::Pad.create_with_layout(layout)
         @is_double_buffered = true # will be checked prior to blitting
         @buffer_modified = true # set this in repaint 
+        @repaint_all = true # added 2010-01-08 19:02 
       else
         ## NOTE: if form has not been set, you could run into problems
         ## Typically a form MUST be set by now, unless you are buffering, in which
@@ -667,9 +668,10 @@ module RubyCurses
          @config["width"]=@width
          if oldvalue != newvalue
            fire_property_change("width", oldvalue, newvalue)
+           @repaint_all = true  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
          if is_double_buffered? and newvalue != oldvalue
-           $log.debug " calling resize of screen buffer with #{newvalue}"
+           $log.debug "w calling resize of screen buffer with #{newvalue}"
            @screen_buffer.resize(0, newvalue)
          end
        end
@@ -697,9 +699,10 @@ module RubyCurses
          @config["height"]=@height
          if oldvalue != newvalue
            fire_property_change("height", oldvalue, newvalue)
+           @repaint_all=true
          end
          if is_double_buffered? and newvalue != oldvalue
-           $log.debug " calling resize of screen buffer with #{newvalue}"
+           $log.debug " #{@name} h calling resize of screen buffer with #{newvalue}"
            @screen_buffer.resize(newvalue, 0)
          end
        end

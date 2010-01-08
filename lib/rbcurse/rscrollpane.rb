@@ -52,11 +52,10 @@ module RubyCurses
       super
       @row_offset = @col_offset = 1
       @orig_col = @col
-      # this does result in a blank line if we insert after creating. That's required at 
-      # present if we wish to only insert
       init_vars
-      # create_b moved from repain since we need to pass form to child component
       should_create_buffer true
+
+      # create_b moved from repaint since we need to pass form to child component
       @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
       @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
 
