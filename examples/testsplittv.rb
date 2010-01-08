@@ -105,9 +105,13 @@ if $0 == __FILE__
         str = keycode_tos ch
         case ch
         when ?v.getbyte(0)
+          t1.preferred_height(ht) 
           splitp.orientation(:VERTICAL_SPLIT)
+          splitp.set_resize_weight(0.50)
         when ?h.getbyte(0)
+          t1.preferred_height (ht/2) ## this messes things up when we change orientation
           splitp.orientation(:HORIZONTAL_SPLIT)
+          splitp.set_resize_weight(0.50)
         when ?-.getbyte(0)
           splitp.set_divider_location(splitp.divider_location-1)
         when ?+.getbyte(0)

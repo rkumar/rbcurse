@@ -275,10 +275,12 @@ module RubyCurses
               $log.debug " SPLP repaint 1c ..."
               @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
               @first_component.repaint
+              ## the next block is critical for when we switch from one orientation to the other
+              ##+ We want first component to expand as much as possible
               if @orientation == :VERTICAL_SPLIT
-                @first_component.get_buffer().set_screen_max_row_col(nil, @divider_location-1)
+                @first_component.get_buffer().set_screen_max_row_col(@height-2, @divider_location-1)
               else
-                @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, nil)
+                @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, @width-2)
               end
               ret = @first_component.buffer_to_screen(@graphic)
               $log.debug " SPLP repaint fc ret = #{ret} "

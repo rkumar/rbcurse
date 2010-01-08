@@ -27,6 +27,7 @@
  15	[_] buffered version of Table (2010-01-03)
  16	[ ] (2) putting buffered objects in splitpane and testing (2010-01-03)
         -  16.1	[@] testing textviews inside splitpane (2010-01-06)
+                    -  16.1.1	[ ] test various keys in splitpane with textview (2010-01-08)
  17	[ ] test2.rb check menu traversal issue - is it slow (2010-01-03)
  18	[x] (A) popups now showing one blak line below. need to adjust  (2010-01-05) (x2010-01-06)
  19	[ ] make a scrollable form using Pad. Hint: scrollpane does that. (2010-01-06)
