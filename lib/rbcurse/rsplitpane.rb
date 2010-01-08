@@ -70,13 +70,12 @@ module RubyCurses
           @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
           comp.set_form(@subform1) # added 2010 BUFFERED
           @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
-          ## jeez, we;ve postponed create of buffer XX
-          #@first_component.get_buffer().top=1; @row
-          #@first_component.get_buffer().left=1; @col
+          ## These setting are quite critical, otherwise on startup
+          ##+ it can create 2 tiled buffers.
           @first_component.row(1)
           @first_component.col(1)
-          #@first_component.get_buffer().top=2;  # 2010-01-08 13:24 trying out
-          #@first_component.get_buffer().left=2;  # 2010-01-08 13:24 trying out
+          @first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
+          @first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
       end # first_component
       ## 
       #  Sets the second component (bottom or right)
@@ -107,10 +106,12 @@ module RubyCurses
           # must adjust to components own offsets too
           if @first_component != nil 
               @first_component.height = @height - @col_offset + @divider_offset
-              $log.debug " set fc hieth to #{@first_component.height} "
+              @first_component.repaint_all = true
+              $log.debug " set fc height to #{@first_component.height} "
           end
           if @second_component != nil 
               @second_component.height = @height - @col_offset + @divider_offset
+              @second_component.repaint_all = true
           end
           @repaint_required = true
       end
@@ -247,9 +248,8 @@ module RubyCurses
           if @repaint_required
             # Note: this only if major change
               @graphic.wclear
-              ## hack: i am setting repaint_required to true by this roundabout way.
-              @first_component.fire_property_change("dummy", 1, 2) if !@first_component.nil?
-              @second_component.fire_property_change("dummy", 1, 2) if !@second_component.nil?
+              @first_component.repaint_all(true) if !@first_component.nil?
+              @second_component.repaint_all(true) if !@second_component.nil?
           end
           if @repaint_required
               $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
@@ -273,8 +273,8 @@ module RubyCurses
           #@first_component.col=@col+1
           if @first_component != nil
               $log.debug " SPLP repaint 1c ..."
-              @first_component.repaint
               @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
+              @first_component.repaint
               if @orientation == :VERTICAL_SPLIT
                 @first_component.get_buffer().set_screen_max_row_col(nil, @divider_location-1)
               else

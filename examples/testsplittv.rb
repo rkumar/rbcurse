@@ -40,7 +40,7 @@ if $0 == __FILE__
       r = 1; c = 3; ht = 24; w = 70
       # filler just to see that we are covering correct space and not wasting lines or cols
       filler = "*" * 88
-      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
+#      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
       @help = "q to quit. v h - + =                                          . Check log too"

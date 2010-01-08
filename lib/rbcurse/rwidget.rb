@@ -303,6 +303,7 @@ module RubyCurses
     ##+ to further children or editor components. Default false.
     dsl_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
     
+
     def initialize form, aconfig={}, &block
       @form = form
       @bgcolor ||=  "black" # 0
@@ -671,7 +672,7 @@ module RubyCurses
            @repaint_all = true  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
          if is_double_buffered? and newvalue != oldvalue
-           $log.debug "w calling resize of screen buffer with #{newvalue}"
+           $log.debug " #{@name} w calling resize of screen buffer with #{newvalue}"
            @screen_buffer.resize(0, newvalue)
          end
        end
@@ -699,6 +700,7 @@ module RubyCurses
          @config["height"]=@height
          if oldvalue != newvalue
            fire_property_change("height", oldvalue, newvalue)
+           $log.debug " widget #{@name} setting repaint_all to true"
            @repaint_all=true
          end
          if is_double_buffered? and newvalue != oldvalue
@@ -710,6 +712,15 @@ module RubyCurses
      def height=val
        height(val)
      end
+    # to give simple access to other components, (eg, parent) to tell a comp to either
+    # paint its data, or to paint all - borders, headers, footers due to a big change (ht/width)
+    def repaint_required(tf=true)
+      @repaint_required = tf
+    end
+    def repaint_all(tf=true)
+      @repaint_all = tf
+      @repaint_required = tf
+    end
 
      ## 
      # When an enclosing component creates a pad (buffer) and the child component

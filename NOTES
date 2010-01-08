@@ -281,3 +281,18 @@ There's a third option, i do as before, but give a special key to go to
 outer splitpane, so conditionally focus can go onto splitpane.
 
 * * * * * * * *
+
+Subject: repaint_all
+--------------------
+Date: 2010-01-08 20:29
+
+I have added repaint_all and repaint_required in class Widget.
+Sometime a parent wants to tell its child to repaint, and there's no
+way. The only way was to fire a handler.
+
+Also added a repaint_all, so if some widgets want to print a border or
+clear area only on a major change (like dimension change), they can use
+this flag. Calling repaint_all, sets repaint_required also. The latter
+is for usual data changes.
+
+* * * * * * * *

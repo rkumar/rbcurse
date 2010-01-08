@@ -59,13 +59,14 @@ module RubyCurses
       #init_scrollable
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       create_buffer
-      print_borders #if @to_print_borders == 1 && @repaint_all # do this once only, unless everything changes
+      #XXX print_borders if (@to_print_borders == 1 ) # do this once only, unless everything changes
       @maxlen ||= @width-2
       install_keys
       init_vars
     end
     def init_vars
       @curpos = @pcol = @toprow = @current_index = 0
+      @repaint_all=true 
     end
     ## 
     # send in a list
@@ -310,7 +311,7 @@ module RubyCurses
     ##+ border would not be seen in splitpane unless the width coincided exactly with
     ##+ what is calculated in divider_location.
     def paint
-      print_borders #if @to_print_borders == 1 && @repaint_all # do this once only, unless everything changes
+      print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
       tm = get_content
