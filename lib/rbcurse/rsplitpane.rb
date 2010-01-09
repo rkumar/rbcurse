@@ -56,6 +56,7 @@ module RubyCurses
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
+          #@cascade_changes=true
       end
 
       ## 
@@ -102,16 +103,30 @@ module RubyCurses
           super
           return @height if val.empty?
           @height = val[0]
-          # must tell children if height changed which will happen in nested splitpanes
-          # must adjust to components own offsets too
-          if @first_component != nil 
-              @first_component.height = @height - @col_offset + @divider_offset
+          if !@cascade_changes.nil?
+            # must tell children if height changed which will happen in nested splitpanes
+            # must adjust to components own offsets too
+            if @first_component != nil 
+              @first_component.height = @height - @row_offset + @divider_offset
               @first_component.repaint_all = true
               $log.debug " set fc height to #{@first_component.height} "
-          end
-          if @second_component != nil 
-              @second_component.height = @height - @col_offset + @divider_offset
+            end
+            if @second_component != nil 
+              @second_component.height = @height - @row_offset + @divider_offset
               @second_component.repaint_all = true
+            end
+            # junk added ib 2010-01-09 19:04 delete the next block
+          #else
+             ## if exceeding pane height, make fc get taller
+            #if @first_component != nil 
+              #$log.debug " fc height  #{@first_component.height}, pane: #{pane_ht}  "
+              #pane_ht = @height - @row_offset + @divider_offset
+              #if @first_component.height < pane_ht
+                #@first_component.height = pane_ht
+                #@first_component.repaint_all = true
+                #$log.debug " set fc height to #{@first_component.height}, #{pane_ht}  "
+              #end
+            #end
           end
           @repaint_required = true
       end
@@ -125,14 +140,16 @@ module RubyCurses
           # must tell children if height changed which will happen in nested splitpanes
           @width = val[0]
           @repaint_required = true
-          # must adjust to components own offsets too
-          if @first_component != nil 
+          if !@cascade_changes.nil?
+            # must adjust to components own offsets too
+            if @first_component != nil 
               @first_component.width = @width - @col_offset + @divider_offset
               $log.debug " set fc width to #{@first_component.width} "
-          end
-          if @second_component != nil 
+            end
+            if @second_component != nil 
               @second_component.width = @width - @col_offset + @divider_offset
               $log.debug " set 2c width to #{@second_component.width} "
+            end
           end
       end
       # set location of divider (row or col depending on orientation)
@@ -183,25 +200,39 @@ module RubyCurses
           @divider_location = rc
           if @first_component != nil
               $log.debug " set div location, setting first comp width #{rc}"
-              if @orientation == :VERTICAL_SPLIT
+              if !@cascade_changes.nil?
+                if @orientation == :VERTICAL_SPLIT
                   @first_component.width(rc-1) #+ @col_offset + @divider_offset
                   @first_component.height(@height-2) #+ @col_offset + @divider_offset
-              else
+                else
                   @first_component.height(rc-1) #+ @col_offset + @divider_offset
                   @first_component.width(@width-2) #+ @col_offset + @divider_offset
+                end
+              else
+                # added 2010-01-09 19:00 increase fc 
+                if @first_component.height < rc -1 then
+                  $log.debug " INCRease fc ht #{@first_component.height} to match #{rc}-1 "
+                  @first_component.height(rc-1) #+ @col_offset + @divider_offset
+                  @first_component.repaint_all(true) if !@first_component.nil?
+                  @repaint_required = true
+                end
               end
           end
           return if @second_component == nil
           if @orientation == :VERTICAL_SPLIT
               @second_component.col = rc + @col_offset + @divider_offset
               @second_component.row = 1
+              if !@cascade_changes.nil?
               @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
               @second_component.height = @height-2  #+ @row_offset + @divider_offset
+              end
           else
               @second_component.row = rc + 1 #@row_offset + @divider_offset
               @second_component.col = 1
+              if !@cascade_changes.nil?
               @second_component.width = @width - 2 #+ @col_offset + @divider_offset
               @second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
+              end
           end
           # i need to keep top and left sync for print_border which uses it UGH !!!
           if !@second_component.get_buffer().nil?
@@ -269,8 +300,6 @@ module RubyCurses
               end
               @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
           end
-          #@first_component.row=@row+1
-          #@first_component.col=@col+1
           if @first_component != nil
               $log.debug " SPLP repaint 1c ..."
               @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX

@@ -29,7 +29,7 @@ module RubyCurses
   #      - searching, goto line - DONE
   class TextView < Widget
     include ListScrollable
-    dsl_accessor :height  # height of viewport
+    #dsl_accessor :height  # height of viewport cmmented on 2010-01-09 19:29 since widget has method
     dsl_accessor :title   # set this on top
     dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :footer_attrib   # bold, reverse, normal

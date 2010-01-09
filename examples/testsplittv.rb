@@ -39,11 +39,11 @@ if $0 == __FILE__
       @form = Form.new @window
       r = 1; c = 3; ht = 24; w = 70
       # filler just to see that we are covering correct space and not wasting lines or cols
-      filler = "*" * 88
+#      filler = "*" * 88
 #      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
-      @help = "q to quit. v h - + =                                          . Check log too"
+      @help = "q to quit. - + = v h   C-n   C-p   M-w (alt-w)                   . Check view.log too"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
 
       splitp = SplitPane.new @form do
@@ -60,8 +60,8 @@ if $0 == __FILE__
           #row 0
           #col  0 
           width w-2
-          height ht
-          title "README.txt"
+          height (ht/2)-1
+          title "README.md"
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
@@ -90,7 +90,7 @@ if $0 == __FILE__
         splitp.first_component(t1)
         splitp.second_component(t2)
         t1.preferred_width w-4 #/2  ## should pertain more to horizontal orientation
-        t1.preferred_height (ht/2) ## this messes things up when we change orientation
+        t1.preferred_height (ht/2)-1 ## this messes things up when we change orientation
         #t1.set_resize_weight 0.50
         t2.min_width 15
         t2.min_height 5
@@ -105,11 +105,9 @@ if $0 == __FILE__
         str = keycode_tos ch
         case ch
         when ?v.getbyte(0)
-          t1.preferred_height(ht) 
           splitp.orientation(:VERTICAL_SPLIT)
           splitp.set_resize_weight(0.50)
         when ?h.getbyte(0)
-          t1.preferred_height (ht/2) ## this messes things up when we change orientation
           splitp.orientation(:HORIZONTAL_SPLIT)
           splitp.set_resize_weight(0.50)
         when ?-.getbyte(0)

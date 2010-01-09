@@ -531,7 +531,14 @@ module VER
     end
     ## added user setting screens max row and col (e.g splitpanes first component)
     def set_screen_max_row_col mr, mc
-      @screen_maxrow = mr unless mr.nil?
+      # added || check on 2010-01-09 18:39 since crashing if mr > sh + top ..
+      # I removed the check, since it results in a blank area on screen since the 
+      # widget has not expanded itself. Without the check it will  crash on copywin so you
+      # should increase widget size or disallow  calling this in this situation.
+      if mr > (@sheight + @top -1 -@pminrow)
+        $log.warn " ->>> ** set_screen_max_row_col #{mr} > #{@sheight} + #{@top} -1 - #{@pminrow} ** "
+      end
+      @screen_maxrow = mr unless mr.nil? # || mr > (@sheight + @top -1 -@pminrow)
       @screen_maxcol = mc unless mc.nil?
     end
     # start row and col correspond to pad's top and left which will change if scrolling
@@ -546,7 +553,7 @@ module VER
     def smaxrow
       #$log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 "
       #@sheight + @top -1 
-#      $log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
+      $log.debug " #{@screen_maxrow}   ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
       @screen_maxrow || @sheight + @top -1 -@pminrow
     end
     ##
@@ -602,6 +609,7 @@ module VER
       @pmincol = 0 if @pmincol < 0
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} "
       $log.debug "  calling copy pad H: #{@height} W: #{@width}"
+      $log.debug "  -otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
       ret = @window.copywin(@otherwin.get_window,@pminrow,@pmincol, @top, @left, smr, smc, 0)
       #if ret == -1
         $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "

@@ -296,3 +296,30 @@ this flag. Calling repaint_all, sets repaint_required also. The latter
 is for usual data changes.
 
 * * * * * * * *
+
+Subject: Splitpane and cascading dimension changes to child
+-----------------------------------------------------------
+Date: 2010-01-09 20:37
+
+**Splitpane**, moving divider.
+
+Now by default, changes to width and height are *not* cascaded to child
+components.
+However, as and when the divider is increased beyond size of first
+component, the first component will enlarge and automatically its buffer
+is resized.
+
+I've also worked on preventing the crash. Essentially, the screen_buffer
+should not become less than the components pane. This can happen in 2
+ways, one is the buffer is resized whenever component increases. I was
+(by oversight) overriding widget's height having defined a dsl_accessor
+in textview.
+
+However, if you don't want to resize the buffer, then one should not
+call `set_screen_max_row_col` if it exceeds the warning condition. This
+warning is if one is creating a new widget, if it crashes on `copywin`
+and Height is more than `smaxrow()` then you'll have a crash. So resize
+at that time by simply increasing the widgets height, or else put a
+check in widget so that the method is not called for this condition.
+
+* * * * * * * *

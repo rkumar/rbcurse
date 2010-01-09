@@ -693,7 +693,7 @@ module RubyCurses
        if val.empty?
          return @height
        else
-         #$log.debug " inside XXX height()"
+         #$log.debug " inside #{@name} height()"
          oldvalue = @height || 0 # is this default okay, else later nil cries
          @height = val.size == 1 ? val[0] : val
          newvalue = @height
