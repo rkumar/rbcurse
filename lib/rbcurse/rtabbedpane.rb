@@ -108,6 +108,7 @@ module RubyCurses
       @config = aconfig
       #@config.each_pair { |k,v| variable_set(k,v) }
       #instance_eval &block if block_given?
+      should_create_buffer true # added 2010-01-10 22:54 
     end
     ##
     # This is a public, user called method for creating a new tab
