@@ -499,6 +499,7 @@ module VER
       @padheight = ht if ht > @padheight
       @padwidth = w if w > @padwidth
       destroy
+      $log.debug " L502 resize, creating newpad with #{@padheight} and #{@padwidth} "
       @window = Ncurses.newpad(@padheight, @padwidth)
       return @window
     end

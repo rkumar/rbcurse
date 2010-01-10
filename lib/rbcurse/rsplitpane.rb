@@ -57,6 +57,7 @@ module RubyCurses
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
           #@cascade_changes=true
+          @cascade_boundary_changes = true
       end
 
       ## 
@@ -103,17 +104,17 @@ module RubyCurses
           super
           return @height if val.empty?
           @height = val[0]
-          if !@cascade_changes.nil?
+          if !@cascade_boundary_changes.nil?
             # must tell children if height changed which will happen in nested splitpanes
             # must adjust to components own offsets too
             if @first_component != nil 
               @first_component.height = @height - @row_offset + @divider_offset
-              @first_component.repaint_all = true
+              @first_component.repaint_all true
               $log.debug " set fc height to #{@first_component.height} "
             end
             if @second_component != nil 
               @second_component.height = @height - @row_offset + @divider_offset
-              @second_component.repaint_all = true
+              @second_component.repaint_all true
             end
             # junk added ib 2010-01-09 19:04 delete the next block
           #else
@@ -134,21 +135,34 @@ module RubyCurses
       # change width of splitpane
       # @param val [int, nil] new width of splitpane
       # @return [int] old width if nil passed
+      # NOTE: if VERTICAL, then expand or contract only second
+      # If HORIZ then expand / contract both
+      # Actually this is very complicated since reducing should take into account min_width
       def width(*val)
-          super
           return @width if val.empty?
           # must tell children if height changed which will happen in nested splitpanes
+          oldvalue = @width || 0
+          super
           @width = val[0]
+          delta = @width - oldvalue
+          $log.debug " SPLP width #{oldvalue}, #{@width}, #{delta} "
           @repaint_required = true
-          if !@cascade_changes.nil?
+          if !@cascade_boundary_changes.nil?
             # must adjust to components own offsets too
-            if @first_component != nil 
-              @first_component.width = @width - @col_offset + @divider_offset
-              $log.debug " set fc width to #{@first_component.width} "
+            # NOTE: 2010-01-10 20:11 if we increase width by one, each time will both components get increased by one.
+            if @orientation == :HORIZONTAL
+              if @first_component != nil 
+                old = @first_component.width 
+                #@first_component.width = @width - @col_offset + @divider_offset
+                @first_component.width += delta
+                $log.debug " set fc width to #{@first_component.width}, old was #{old}  "
+              end
             end
             if @second_component != nil 
-              @second_component.width = @width - @col_offset + @divider_offset
-              $log.debug " set 2c width to #{@second_component.width} "
+              old = @second_component.width 
+              #@second_component.width = @width - @col_offset + @divider_offset
+              @second_component.width += delta
+              $log.debug " set 2c width to #{@second_component.width} , old was #{old} "
             end
           end
       end

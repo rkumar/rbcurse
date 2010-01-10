@@ -13,3 +13,10 @@ tags
 *.out
 *.csv
 .*
+html/
+pkg/
+todo.txt
+done.txt
+deltodo.txt
+old/
+*.old
