@@ -669,7 +669,7 @@ module RubyCurses
          @config["width"]=@width
          if oldvalue != newvalue
            fire_property_change("width", oldvalue, newvalue)
-           @repaint_all = true  # added 2010-01-08 18:51 so widgets can redraw everything.
+           repaint_all(true)  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
          if is_double_buffered? and newvalue != oldvalue
            $log.debug " #{@name} w calling resize of screen buffer with #{newvalue}"
@@ -874,7 +874,7 @@ module RubyCurses
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
-     @window.wmove r,c
+      @window.wmove r,c
     end
     def get_current_field
       select_next_field if @active_index == -1
@@ -1141,6 +1141,19 @@ module RubyCurses
               select_prev_field
             when KEY_DOWN
               select_next_field
+            when ?\M-L.getbyte(0)
+              ## trying out these for fuun and testing splitpane 2010-01-10 20:32 
+              $log.debug " field #{field.name} was #{field.width} "
+              field.width += 1
+              $log.debug " field #{field.name} now #{field.width} "
+              field.repaint_all
+            when ?\M-H.getbyte(0)
+              field.width -= 1
+              field.repaint_all
+            when ?\M-K.getbyte(0)
+              field.height += 1
+            when ?\M-J.getbyte(0)
+              field.height -= 1
             else
               ret = process_key ch, self
               return :UNHANDLED if ret == :UNHANDLED
