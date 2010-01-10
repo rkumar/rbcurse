@@ -157,6 +157,11 @@ module RubyCurses
       # also to set widths or heights
       # Check minimum sizes are not disrespected
       # @param rc [int] row or column to place divider
+      #  2010-01-09 23:07 : added sections to prevent a process crash courtesy copywin
+      #+ when pane size exceeds buffer size, so in these cases we increase size of component
+      #+ and therefore buffer size. Needs to be tested for VERTICAL.
+      # If this returns :ERROR, caller may avoid repainting form needlessly.
+      # We may give more meaningful error retval in future. TODO
       def set_divider_location rc
           @repaint_required = true
           old_divider_location = @divider_location || 0
@@ -165,36 +170,36 @@ module RubyCurses
           # so if modifying, be sure to do in both places.
           if rc > old_divider_location
             if @second_component != nil
-            if @orientation == :VERTICAL_SPLIT
-              # check second comps width
-              if @width - (rc + @col_offset + @divider_offset+1) < @second_component.min_width
-                $log.debug " SORRY 2c min width prevents further resizing: #{@width} #{rc}"
-                return :ERROR
+              if @orientation == :VERTICAL_SPLIT
+                # check second comps width
+                if @width - (rc + @col_offset + @divider_offset+1) < @second_component.min_width
+                  $log.debug " SORRY 2c min width prevents further resizing: #{@width} #{rc}"
+                  return :ERROR
+                end
+              else
+                # check second comps ht
+                if @height - rc -2 < @second_component.min_height
+                  $log.debug " SORRY 2c min height prevents further resizing"
+                  return :ERROR
+                end
               end
-            else
-              # check second comps ht
-              if @height - rc -2 < @second_component.min_height
-                $log.debug " SORRY 2c min height prevents further resizing"
-                return :ERROR
-              end
-            end
             end
           elsif rc < old_divider_location
             if @first_component != nil
-            if @orientation == :VERTICAL_SPLIT
-              # check first comps width
+              if @orientation == :VERTICAL_SPLIT
+                # check first comps width
                 $log.debug " fc min width #{rc}, #{@first_component.min_width} "
 
-              if rc-1 < @first_component.min_width
-                $log.debug " SORRY fc min width prevents further resizing"
-                return :ERROR
+                if rc-1 < @first_component.min_width
+                  $log.debug " SORRY fc min width prevents further resizing"
+                  return :ERROR
+                end
+              else
+                if rc-1 < @first_component.min_height
+                  $log.debug " SORRY fc min height prevents further resizing"
+                  return :ERROR
+                end
               end
-            else
-              if rc-1 < @first_component.min_height
-                $log.debug " SORRY fc min height prevents further resizing"
-                return :ERROR
-              end
-            end
             end
           end
           @divider_location = rc
@@ -209,12 +214,23 @@ module RubyCurses
                   @first_component.width(@width-2) #+ @col_offset + @divider_offset
                 end
               else
-                # added 2010-01-09 19:00 increase fc 
-                if @first_component.height < rc -1 then
-                  $log.debug " INCRease fc ht #{@first_component.height} to match #{rc}-1 "
-                  @first_component.height(rc-1) #+ @col_offset + @divider_offset
-                  @first_component.repaint_all(true) if !@first_component.nil?
-                  @repaint_required = true
+                if @orientation == :VERTICAL_SPLIT
+                  $log.debug " DOES IT COME HERE compare fc wt #{@first_component.width} to match #{rc}-1 "
+                  # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
+                  if @first_component.width < rc -1 then
+                    $log.debug " INCRease fc wt #{@first_component.width} to match #{rc}-1 "
+                    @first_component.width(rc-1) #+ @col_offset + @divider_offset
+                    @first_component.repaint_all(true) if !@first_component.nil?
+                    @repaint_required = true
+                  end
+                else
+                  # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
+                  if @first_component.height < rc -1 then
+                    $log.debug " INCRease fc ht #{@first_component.height} to match #{rc}-1 "
+                    @first_component.height(rc-1) #+ @col_offset + @divider_offset
+                    @first_component.repaint_all(true) if !@first_component.nil?
+                    @repaint_required = true
+                  end
                 end
               end
           end
@@ -223,15 +239,40 @@ module RubyCurses
               @second_component.col = rc + @col_offset + @divider_offset
               @second_component.row = 1
               if !@cascade_changes.nil?
-              @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
-              @second_component.height = @height-2  #+ @row_offset + @divider_offset
+                @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
+                @second_component.height = @height-2  #+ @row_offset + @divider_offset
+              else
+                # added 2010-01-09 22:49 to be tested XXX
+                # In a vertical split, if widgets w and thus buffer w is less than
+                #+ pane, a copywin can crash process, so we must expand component, and thus buffer
+                $log.debug " 2c width does it come here? #{@second_component.width} < #{@width} -( #{rc}+#{@col_offset}+#{@divider_offset} +1 "
+                if @second_component.width < @width - (rc + @col_offset + @divider_offset + 1)
+                  $log.debug " YES 2c width "
+                  @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
+                  @second_component.repaint_all(true) 
+                  @repaint_required = true
+                end
               end
           else
               @second_component.row = rc + 1 #@row_offset + @divider_offset
               @second_component.col = 1
               if !@cascade_changes.nil?
-              @second_component.width = @width - 2 #+ @col_offset + @divider_offset
-              @second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
+                @second_component.width = @width - 2 #+ @col_offset + @divider_offset
+                @second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
+              else
+                if @second_component.height < @height-2  #+ @row_offset + @divider_offset
+                  $log.debug " INCRease 2c ht #{@second_component.height} to match #{@height}-2 "
+                  @second_component.height = @height-2  #+ @row_offset + @divider_offset
+                  @second_component.repaint_all(true) 
+                  @repaint_required = true
+                end
+                # # added 2010-01-10 15:36 still not expanding 
+                if @second_component.width < @width - 2 #+ @col_offset + @divider_offset
+                  $log.debug " INCRease 2c wi #{@second_component.width} to match #{@width}-2 "
+                  @second_component.width = @width - 2 #+ @col_offset + @divider_offset
+                  @second_component.repaint_all(true) 
+                  @repaint_required = true
+                end
               end
           end
           # i need to keep top and left sync for print_border which uses it UGH !!!
@@ -259,6 +300,8 @@ module RubyCurses
       end
       ##
       # resets divider location based on preferred size of first component
+      # @return :ERROR if min sizes failed
+      # You may want to check for ERROR and if so, resize_weight to 0.50
       def reset_to_preferred_sizes
         return if @first_component.nil?
           @repaint_required = true
@@ -272,67 +315,68 @@ module RubyCurses
       end
       def repaint # splitpane
         safe_create_buffer
-          # this is in case, not called by form
-          # we need to clip components
-          # note that splitpanes can be nested
+        # this is in case, not called by form
+        # we need to clip components
+        # note that splitpanes can be nested
 
-          if @repaint_required
-            # Note: this only if major change
-              @graphic.wclear
-              @first_component.repaint_all(true) if !@first_component.nil?
-              @second_component.repaint_all(true) if !@second_component.nil?
-          end
-          if @repaint_required
-              $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
-              bordercolor = @border_color || $datacolor
-              borderatt = @border_attrib || Ncurses::A_NORMAL
-              #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
-              @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
-              rc = @divider_location
+        if @repaint_required
+          # Note: this only if major change
+          @graphic.wclear
+          @first_component.repaint_all(true) if !@first_component.nil?
+          @second_component.repaint_all(true) if !@second_component.nil?
+        end
+        if @repaint_required
+          ## paint border and divider
+          $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
+          bordercolor = @border_color || $datacolor
+          borderatt = @border_attrib || Ncurses::A_NORMAL
+          #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
+          @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
+          rc = @divider_location
 
-              @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-              if @orientation == :VERTICAL_SPLIT
-                $log.debug "SPLP #{@name} prtingign split vline 1, rc: #{rc} "
-                  @graphic.mvvline(1, rc, 0, @height-2)
-              else
-                $log.debug "SPLP #{@name} prtingign split hline  rc: #{rc} , 1 "
-                  @graphic.mvhline(rc, 1, 0, @width-2)
-              end
-              @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+          @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+          if @orientation == :VERTICAL_SPLIT
+            $log.debug "SPLP #{@name} prtingign split vline 1, rc: #{rc} "
+            @graphic.mvvline(1, rc, 0, @height-2)
+          else
+            $log.debug "SPLP #{@name} prtingign split hline  rc: #{rc} , 1 "
+            @graphic.mvhline(rc, 1, 0, @width-2)
           end
-          if @first_component != nil
-              $log.debug " SPLP repaint 1c ..."
-              @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
-              @first_component.repaint
-              ## the next block is critical for when we switch from one orientation to the other
-              ##+ We want first component to expand as much as possible
-              if @orientation == :VERTICAL_SPLIT
-                @first_component.get_buffer().set_screen_max_row_col(@height-2, @divider_location-1)
-              else
-                @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, @width-2)
-              end
-              ret = @first_component.buffer_to_screen(@graphic)
-              $log.debug " SPLP repaint fc ret = #{ret} "
+          @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+        end
+        if @first_component != nil
+          $log.debug " SPLP repaint 1c ..."
+          @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
+          @first_component.repaint
+          ## the next block is critical for when we switch from one orientation to the other
+          ##+ We want first component to expand as much as possible
+          if @orientation == :VERTICAL_SPLIT
+            @first_component.get_buffer().set_screen_max_row_col(@height-2, @divider_location-1)
+          else
+            @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, @width-2)
           end
-          if @second_component != nil
-              $log.debug " SPLP repaint 2c ..."
-              @second_component.repaint
+          ret = @first_component.buffer_to_screen(@graphic)
+          $log.debug " SPLP repaint fc ret = #{ret} "
+        end
+        if @second_component != nil
+          $log.debug " SPLP repaint 2c ..."
+          @second_component.repaint
 
-              # we need to keep top and left of buffer synced with components row and col.
-              # Since buffer has no link to comp therefore it can't check back.
-              @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
-              if @orientation == :VERTICAL_SPLIT
-                @second_component.get_buffer().set_screen_max_row_col(nil, @width-2)
-              else
-                @second_component.get_buffer().set_screen_max_row_col(@height-2, nil)
-              end
-
-              ret = @second_component.buffer_to_screen(@graphic)
-              $log.debug " SPLP repaint 2c ret = #{ret} "
+          # we need to keep top and left of buffer synced with components row and col.
+          # Since buffer has no link to comp therefore it can't check back.
+          @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
+          if @orientation == :VERTICAL_SPLIT
+            @second_component.get_buffer().set_screen_max_row_col(@height-2, @width-2)
+          else
+            @second_component.get_buffer().set_screen_max_row_col(@height-2, @width-2)
           end
-          @buffer_modified = true
-          paint # has to paint border if needed, 
-          # TODO
+
+          ret = @second_component.buffer_to_screen(@graphic)
+          $log.debug " SPLP repaint 2c ret = #{ret} "
+        end
+        @buffer_modified = true
+        paint # has to paint border if needed, 
+        # TODO
       end
       def getvalue
           # TODO

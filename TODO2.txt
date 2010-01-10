@@ -33,3 +33,4 @@
  18	[x] (A) popups now showing one blak line below. need to adjust  (2010-01-05) (x2010-01-06)
  19	[ ] make a scrollable form using Pad. Hint: scrollpane does that. (2010-01-06)
  20	[ ] (A) investigate crash +splitpane, ht is ht/2-1 and you scroll C-n (2010-01-09)
+        -  20.1	[ ] fixed for HORIZ, but do for VERT (2010-01-09)

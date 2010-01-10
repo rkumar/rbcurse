@@ -323,3 +323,20 @@ at that time by simply increasing the widgets height, or else put a
 check in widget so that the method is not called for this condition.
 
 * * * * * * * *
+
+Subject: maxlen in rtextview
+----------------------------
+Date: 2010-01-10 19:28
+
+Made a change in rtextview.
+In the constructor, maxlen if nil was set to width-2.
+So, if width was changed later maxlen would remain the same. And maxlen
+is used as the length (width) of the content to print.
+
+I've never changed the width at runtime, till today, from splitpane, and
+this came out. So now unless you explicitly set maxlen, it must remain
+nil and be set locally in each method as width-2.
+
+I supposed the same has to be done in rtextarea.
+
+* * * * * * * *

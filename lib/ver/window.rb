@@ -537,7 +537,7 @@ module VER
       # should increase widget size or disallow  calling this in this situation.
       if mr > (@sheight + @top -1 -@pminrow)
         $log.warn " ->>> ** set_screen_max_row_col #{mr} > #{@sheight} + #{@top} -1 - #{@pminrow} ** "
-      end
+      end unless mr.nil?
       @screen_maxrow = mr unless mr.nil? # || mr > (@sheight + @top -1 -@pminrow)
       @screen_maxcol = mc unless mc.nil?
     end

@@ -53,7 +53,7 @@ if $0 == __FILE__
           width w
           height ht
           #focusable false
-          #orientation :VERTICAL_SPLIT
+          orientation :VERTICAL_SPLIT
         end
         t1 = TextView.new nil do
           name   "myView" 
@@ -77,7 +77,8 @@ if $0 == __FILE__
           #row 0
           #col  0 
           width w-2
-          height ht
+          #height ht
+          height (ht/2)-1
           title "NOTES"
           title_attrib 'bold'
           print_footer true
@@ -96,7 +97,8 @@ if $0 == __FILE__
         t2.min_height 5
         t1.min_width 12
         t1.min_height 8
-        splitp.reset_to_preferred_sizes
+        ret = splitp.reset_to_preferred_sizes
+        splitp.set_resize_weight(0.50) if ret == :ERROR
 
       @form.repaint
       @window.wrefresh
