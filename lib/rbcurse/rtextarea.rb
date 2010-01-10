@@ -27,7 +27,8 @@ module RubyCurses
   #  - respect newlines for incoming data
   #  we need a set_text method, passing nil or blank clears
   #  current way is not really good. remove_all sucks.
-  #   
+  #   TODO don't set maxlen if nil. compute it as a local in methods. Else splitpane will not
+  #   work correctly.
   class TextArea < Widget
     include ListScrollable
     dsl_accessor :height
@@ -68,7 +69,8 @@ module RubyCurses
       safe_create_buffer # 2009-12-26 14:54 BUFFERED
     #  init_scrollable
       print_borders
-      @maxlen ||= @width-2
+      # 2010-01-10 19:35 compute locally if not set
+      #@maxlen ||= @width-2
       install_keys
       init_vars
     end
@@ -88,6 +90,7 @@ module RubyCurses
     end
     # private
     def wrap_text(txt, col = @maxlen)
+       col ||= @width - 2
       $log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
@@ -99,7 +102,8 @@ module RubyCurses
     ## 
     # trying to wrap and insert
     def insert off0, data
-      if data.length > @maxlen
+       maxlen = @maxlen || @width - 2
+      if data.length > maxlen
         data = wrap_text data
       #  $log.debug "after wrap text done :#{data}"
         data = data.split("\n")
@@ -117,7 +121,8 @@ module RubyCurses
     # wraps line sent in if longer than maxlen
     # Typically a line is sent in. We wrap and put a hard return at end.
     def << data
-      if data.length > @maxlen
+       maxlen = @maxlen || @width - 2
+      if data.length > maxlen
         $log.debug "wrapped append for #{data}"
         data = wrap_text data
         $log.debug "after wrap text for :#{data}"
@@ -366,7 +371,7 @@ module RubyCurses
     def cursor_forward num=1
       $log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
       $log.debug "next char cp ll and ci #{@list.length}, #{@current_index}"
-      #if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
+      #if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
       return if at_eol? and at_last_line?
       if @curpos < buffer_len()
         @curpos += 1
@@ -462,7 +467,8 @@ module RubyCurses
         up
         return
       end
-      space_left = @maxlen - prev.length
+      maxlen = @maxlen || @width - 2
+      space_left = maxlen - prev.length
       # BUG. carry full words up, or if no space then bring down last word of prev lien and join with first
       carry_up = words_in_length @buffer, space_left #@buffer[0..space_left] # XXX
       if carry_up.nil?
@@ -508,10 +514,11 @@ module RubyCurses
     # This was needed for if i push 10 chars to next line, and the last word is less then the line will 
     # exceed. So i must push as many words as exceed length.
     def push_last_word lineno=@current_index
+       maxlen = @maxlen || @width - 2
       #lastspace = @buffer.rindex(" ")
       #lastspace = @list[lineno].rindex(/ \w/)
       line = @list[lineno]
-      line = @list[lineno][0..@maxlen+1] if line.length > @maxlen
+      line = @list[lineno][0..maxlen+1] if line.length > maxlen
       lastspace = line.rindex(/ \w/)
       $log.debug " PUSH:2 #{lastspace},#{line},"
       if !lastspace.nil?
@@ -540,17 +547,19 @@ module RubyCurses
     # this attempts to recursively insert into a row, seeing that any stuff exceeding is pushed down further.
     # Yes, it should check for a para end and insert. Currently it could add to next para.
     def insert_wrap lineno, pos, lastchars
+       maxlen = @maxlen || @width - 2
       @list[lineno].insert pos, lastchars 
       len = @list[lineno].length 
-      if len > @maxlen
+      if len > maxlen
           push_last_word lineno #- sometime i may push down 10 chars but the last word is less
         end
     end
     ## 
     # add one char. careful, i shoved a string in yesterday.
     def putch char
+       maxlen = @maxlen || @width - 2
       @buffer ||= @list[@current_index]
-        return -1 if !@editable #or @buffer.length >= @maxlen
+        return -1 if !@editable #or @buffer.length >= maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
       end
@@ -559,13 +568,13 @@ module RubyCurses
       $log.debug "putch : pr:#{@current_index}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
       @buffer.insert(@curpos, char)
       @curpos += 1 
-      $log.debug "putch INS: cp:#{@curpos}, max:#{@maxlen}, buf:(#{@buffer.length})"
-      if @curpos-1 > @maxlen or @buffer.length()-1 > @maxlen
+      $log.debug "putch INS: cp:#{@curpos}, max:#{maxlen}, buf:(#{@buffer.length})"
+      if @curpos-1 > maxlen or @buffer.length()-1 > maxlen
         lastchars, lastspace = push_last_word @current_index
         #$log.debug "last sapce #{lastspace}, lastchars:#{lastchars},lc:#{lastchars[-1]}, #{@list[@current_index]} "
         ## wrap on word XX If last char is 10 then insert line
         @buffer = @list[@current_index]
-        if @curpos-1 > @maxlen  or @curpos-1 > @buffer.length()-1
+        if @curpos-1 > maxlen  or @curpos-1 > @buffer.length()-1
           ret = down 
           # keep the cursor in the same position in the string that was pushed down.
           @curpos = oldcurpos - lastspace  #lastchars.length # 0
@@ -641,7 +650,8 @@ module RubyCurses
     def move_chars_up
       oldprow = @current_index
       oldcurpos = @curpos
-      space_left = @maxlen - @buffer.length
+       maxlen = @maxlen || @width - 2
+      space_left = maxlen - @buffer.length
       can_move = [space_left, next_line.length].min
       carry_up =  @list[@current_index+1].slice!(0, can_move)
       @list[@current_index] << carry_up
@@ -664,7 +674,8 @@ module RubyCurses
       @form.modified = true if tf
     end
     def cursor_eol
-      $log.error "ERROR !!! bufferlen gt maxlen #{@buffer.length}, #{@maxlen}" if @buffer.length > @maxlen
+       maxlen = @maxlen || @width - 2
+      $log.error "ERROR !!! bufferlen gt maxlen #{@buffer.length}, #{maxlen}" if @buffer.length > maxlen
       set_form_col current_line().chomp().length()-1
     end
     def cursor_bol

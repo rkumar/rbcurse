@@ -60,7 +60,10 @@ module RubyCurses
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       create_buffer
       #XXX print_borders if (@to_print_borders == 1 ) # do this once only, unless everything changes
-      @maxlen ||= @width-2
+      # 2010-01-10 19:19 commented off setting maxlen since width can change (e.g. splitpane
+      #+ but maxlen remains fixed, and repaint uses it for width. Maxlen is now always
+      #+ calculated if nil.
+      #@maxlen ||= @width-2
       install_keys
       init_vars
     end
@@ -123,6 +126,7 @@ module RubyCurses
       return @row+@row_offset, @col+@col_offset
     end
     def wrap_text(txt, col = @maxlen)
+      col ||= @width-2
       $log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
@@ -245,11 +249,12 @@ module RubyCurses
       if @pcol+@curpos > @buffer.length
         addcol((@pcol+@buffer.length-@curpos)+1)
         @curpos = @buffer.length 
+        maxlen = (@maxlen || @width-2)
 
         # even this row is gt maxlen, i.e., scrolled right
-        if @curpos > @maxlen
-          @pcol = @curpos - @maxlen
-          @curpos = @maxlen-1 
+        if @curpos > maxlen
+          @pcol = @curpos - maxlen
+          @curpos = maxlen-1 
         else
           # this row is within maxlen, make scroll 0
           @pcol=0
@@ -260,10 +265,11 @@ module RubyCurses
     # set cursor on correct column tview
     def set_form_col col=@curpos
       @curpos = col
-      #@curpos = @maxlen if @curpos > @maxlen
-      if @curpos > @maxlen
-        @pcol = @curpos - @maxlen
-        @curpos = @maxlen - 1
+      maxlen = @maxlen || @width-2
+      #@curpos = maxlen if @curpos > maxlen
+      if @curpos > maxlen
+        @pcol = @curpos - maxlen
+        @curpos = maxlen - 1
       else
         @pcol = 0
       end
@@ -271,7 +277,8 @@ module RubyCurses
       @repaint_required = true
     end
     def cursor_forward
-      if @curpos < @width and @curpos < @maxlen-1 # else it will do out of box
+      maxlen = @maxlen || @width-2
+      if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
         @curpos += 1
         addcol 1
       else
@@ -313,7 +320,8 @@ module RubyCurses
     def paint
       print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
-      maxlen = @maxlen ||= @width-2
+      maxlen = @maxlen || @width-2
+      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
