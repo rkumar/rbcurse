@@ -44,8 +44,11 @@ if $0 == __FILE__
           name   "FC" 
           #row  r 
           #col  c
-          #width 30
-          #height ht-2
+
+          ## earlier commented now bombing
+          #width w-4 # 30
+          #height ht/2-1
+
           #focusable false
           #orientation :HORIZONTAL_SPLIT
           orientation :VERTICAL_SPLIT
@@ -54,6 +57,11 @@ if $0 == __FILE__
         end
         splitc2 = SplitPane.new nil do
           name   "2C" 
+          #
+          ## not present earlier now bombing
+          #width w-4
+          #height ht/2-1
+
           orientation :VERTICAL_SPLIT
           border_color $promptcolor
           border_attrib Ncurses::A_REVERSE
@@ -61,13 +69,14 @@ if $0 == __FILE__
         splitp.first_component(splitc)
         splitp.second_component(splitc2)
         splitc.preferred_width w/2
-        splitc.preferred_height ht/2
+        splitc.preferred_height ht/2-2
         splitc.set_resize_weight 0.50
         splitc2.min_width 15
         splitc2.min_height 5
         splitc.min_width 12
-        splitc.min_height 8
-        splitp.reset_to_preferred_sizes
+        splitc.min_height 6
+        ret = splitp.reset_to_preferred_sizes
+        splitp.set_resize_weight(0.50) if ret == :ERROR
 
       @form.repaint
       @window.wrefresh

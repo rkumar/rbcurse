@@ -53,7 +53,7 @@ if $0 == __FILE__
           width w
           height ht
           #focusable false
-          orientation :VERTICAL_SPLIT
+          #orientation :VERTICAL_SPLIT
         end
         t1 = TextView.new nil do
           name   "myView" 
@@ -98,6 +98,9 @@ if $0 == __FILE__
         t1.min_width 12
         t1.min_height 8
         ret = splitp.reset_to_preferred_sizes
+        ## if an error is returned you should check what's wrong since you
+        ## could still get a blank screen, if your comps area is smaller than 
+        ## pane, or other conditions. the log will point out various possible errors.
         splitp.set_resize_weight(0.50) if ret == :ERROR
 
       @form.repaint

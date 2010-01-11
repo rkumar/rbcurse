@@ -9,6 +9,9 @@
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
+NOTE: Line 610 in rwidget.rb copy_pad_to_win was written for tabbedpanes
+but did not let a splitpane print its comp fully if SPLP's width was increased
+I've commented out that line, if you face an error in printing, check that line.
 =end
 require 'rubygems'
 require 'ncurses'

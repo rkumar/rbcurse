@@ -599,17 +599,20 @@ module VER
         smr = osmr-1 # XXX causing issues in viewport, wont print footer with this
       end
       smc = smaxcol()
+      $log.debug " SMC original = #{smc} "
       if smc >= osmc
         smc = osmc-1
         smc = @width # XXX ??? THIS WAS WORKING< but throwing error in viewport case
         smc = [osmc-1, @width].min # yet another hack
         $log.debug " SMC o-1 #{osmc-1} wdth #{@width}, smc #{smc}  "
       end
-      smc = osw -1 if smc >= osw; # added 2009-11-02 17:01 for tabbedpanes
+      ### XXX commented out since it doesn't let a comp print fully if widget expanded (splitpane)
+      #smc = osw -1 if smc >= osw; # added 2009-11-02 17:01 for tabbedpanes
+
       @pminrow = 0 if @pminrow < 0
       @pmincol = 0 if @pmincol < 0
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} "
-      $log.debug "  calling copy pad H: #{@height} W: #{@width}"
+      $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} "
       $log.debug "  -otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
       ret = @window.copywin(@otherwin.get_window,@pminrow,@pmincol, @top, @left, smr, smc, 0)
       #if ret == -1
@@ -627,6 +630,16 @@ module VER
         if smc >= @otherwin.width
           $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{@otherwin.width} "
         end
+        if smc - @left > @padwidth
+          $log.debug "  #{ret} ERROR smcol - left  exceeds padwidth   #{smc}- #{@left}   PW: #{@padwidth} "
+        end
+        if smr - @top > @padheight
+          $log.debug "  #{ret} ERROR smr  - top  exceeds padheight   #{smr}- #{@top}   PH: #{@padheight} "
+        end
+        # 2010-01-11 19:42 one more cause of -1 coming is that padheight (actual height which never
+        # changes unless pad increases) or padwidth is smaller than area being printed. Solution: increase 
+        # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
+        # exceed padheight
       #end
       return ret
     end

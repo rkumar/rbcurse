@@ -52,7 +52,7 @@ module RubyCurses
           init_vars
       end
       def init_vars
-          should_create_buffer true
+          should_create_buffer(true) #if should_create_buffer().nil?
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
@@ -65,6 +65,10 @@ module RubyCurses
       #  
       # @param [String] comp comment
       # @return [true, false] comment
+      #
+      # XXX This originally working fine if the child was also a splitpane
+      # Now with other comps, it works fine with them if they create a buffer in const
+      # but now SPLP bombs since it creates a buffer in repaint.
 
       def first_component(comp)
           @first_component      = comp;
@@ -74,10 +78,14 @@ module RubyCurses
           @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
           ## These setting are quite critical, otherwise on startup
           ##+ it can create 2 tiled buffers.
-          @first_component.row(1)
+          @first_component.row(1)  # this suddenly causes an initial extra blank which goes away
           @first_component.col(1)
-          @first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
-          @first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
+          # if i set the above 2 to 0, it starts fine but then on any action loses the first row.
+          # Just begun happeing suddenly! 2010-01-11 23:38 
+
+          # 2010-01-11 22:32 dang, if component is like splitpane which sets in repaint
+          #@first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
+          #@first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
       end # first_component
       ## 
       #  Sets the second component (bottom or right)
@@ -150,19 +158,33 @@ module RubyCurses
           if !@cascade_boundary_changes.nil?
             # must adjust to components own offsets too
             # NOTE: 2010-01-10 20:11 if we increase width by one, each time will both components get increased by one.
-            if @orientation == :HORIZONTAL
+            if @orientation == :HORIZONTAL_SPLIT
               if @first_component != nil 
                 old = @first_component.width 
                 #@first_component.width = @width - @col_offset + @divider_offset
                 @first_component.width += delta
                 $log.debug " set fc width to #{@first_component.width}, old was #{old}  "
               end
-            end
-            if @second_component != nil 
-              old = @second_component.width 
-              #@second_component.width = @width - @col_offset + @divider_offset
-              @second_component.width += delta
-              $log.debug " set 2c width to #{@second_component.width} , old was #{old} "
+              # added 2010-01-11 23:02  horiz 2c not displaying since width issue
+              if @second_component != nil 
+                old = @second_component.width 
+                #@first_component.width = @width - @col_offset + @divider_offset
+                @second_component.width += delta
+                $log.debug " set 2c width to #{@second_component.width}, old was #{old}  "
+              end
+            else
+              rc = @divider_location
+              # ## next change should only happen if sc w < ...
+              #  2010-01-11 22:11 
+              # if @second_component.width < @width - (rc + @col_offset + @divider_offset + 1)
+              if @second_component != nil 
+                if @second_component.width < @width - (rc + @col_offset + @divider_offset + 1)
+                  old = @second_component.width 
+                  #@second_component.width = @width - @col_offset + @divider_offset
+                  @second_component.width += delta
+                  $log.debug " set 2c width to #{@second_component.width} , old was #{old} "
+                end
+              end
             end
           end
       end
@@ -218,6 +240,11 @@ module RubyCurses
           end
           @divider_location = rc
           if @first_component != nil
+
+            ## added in case not set. it will be set to a sensible default
+            @first_component.height ||= 0
+            @first_component.width ||= 0
+            
               $log.debug " set div location, setting first comp width #{rc}"
               if !@cascade_changes.nil?
                 if @orientation == :VERTICAL_SPLIT
@@ -237,6 +264,11 @@ module RubyCurses
                     @first_component.repaint_all(true) if !@first_component.nil?
                     @repaint_required = true
                   end
+                  ## added this condition 2010-01-11 21:44  again switching needs this
+                  if @first_component.height < @height - 2 then
+                    $log.debug " INCRease fc ht #{@first_component.height} to match #{@height}-2 "
+                    @first_component.height(@height-2) #+ @col_offset + @divider_offset
+                  end
                 else
                   # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
                   if @first_component.height < rc -1 then
@@ -245,10 +277,23 @@ module RubyCurses
                     @first_component.repaint_all(true) if !@first_component.nil?
                     @repaint_required = true
                   end
+                  # added 2010-01-11 19:24 to match c2. Sometimes switching from V to H means
+                  # fc's width needs to be expanded.
+                  if @first_component.width < @width - 2 #+ @col_offset + @divider_offset
+                    $log.debug " INCRease fc wi #{@first_component.width} to match #{@width}-2 "
+                    @first_component.width = @width - 2 #+ @col_offset + @divider_offset
+                    @first_component.repaint_all(true) 
+                    @repaint_required = true
+                  end
                 end
               end
           end
           return if @second_component == nil
+
+          ## added  2010-01-11 23:09  since some cases don't set, like splits within split.
+            @second_component.height ||= 0
+            @second_component.width ||= 0
+
           if @orientation == :VERTICAL_SPLIT
               @second_component.col = rc + @col_offset + @divider_offset
               @second_component.row = 1
@@ -321,9 +366,11 @@ module RubyCurses
           @repaint_required = true
           ph, pw = @first_component.get_preferred_size
           if @orientation == :VERTICAL_SPLIT
-              rc = pw
+              rc = pw+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
+              @first_component.width ||= pw ## added 2010-01-11 23:19 
           else
-              rc = ph
+              rc = ph+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
+              @first_component.height ||= ph ## added 2010-01-11 23:19 
           end
           set_divider_location rc
       end
@@ -360,8 +407,9 @@ module RubyCurses
         end
         if @first_component != nil
           $log.debug " SPLP repaint 1c ..."
-          @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
           @first_component.repaint
+          # earlier before repaint but bombs since some chaps create buffer in repaint
+          @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
           ## the next block is critical for when we switch from one orientation to the other
           ##+ We want first component to expand as much as possible
           if @orientation == :VERTICAL_SPLIT

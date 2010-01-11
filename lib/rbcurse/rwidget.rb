@@ -1147,12 +1147,13 @@ module RubyCurses
               field.width += 1
               $log.debug " field #{field.name} now #{field.width} "
               field.repaint_all
-            when ?\M-H.getbyte(0)
+            when ?\M-H.getbyte(0), ?\M-<.getbyte(0)
               field.width -= 1
+              $log.debug " field #{field.name} now #{field.width} "
               field.repaint_all
-            when ?\M-K.getbyte(0)
-              field.height += 1
             when ?\M-J.getbyte(0)
+              field.height += 1
+            when ?\M-K.getbyte(0)
               field.height -= 1
             else
               ret = process_key ch, self
