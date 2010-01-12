@@ -321,6 +321,8 @@ code below. See test programs for latest, working code.
 
 * ncurses-ruby (1.2.4)
 
+(Note: 1.8.6 users: pls report any issues and suggest a fix or alternative if you encounter a method_missing)
+
 
 ## INSTALL:
 
