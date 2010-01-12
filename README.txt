@@ -1,6 +1,7 @@
 = rbcurse
 
-* http://totalrecall.wordpress.com   << CORRECTED !!!
+(Currently development is happening on rbcurse19 branch with new widgets
+like scrollpane, splitpane, and reworked tabbedpane.)
 
 * rbcurse on rubyforge: http://rbcurse.rubyforge.org/
 
@@ -27,6 +28,7 @@
 
 * Next Major Release: http://rubyforge.org/pm/task.php?group_project_id=13813&group_id=7775&func=browse
 
+* http://totalrecall.wordpress.com
 == DESCRIPTION:
 
 A small but comprehensive widget library written in ruby for creating ncurses
@@ -61,6 +63,10 @@ Above may be created using DSL like syntax, or hashes.
 
 == PROBLEMS, ISSUES
 TextArea not bug free. Some situations wrapping errors could exist. 
+
+TabbedPane in this version cannot be embedded in a form - it is a
+separate popup window. In rbcurse19, it can be embedded. The existing
+widget has been renamed TabbedWindow in rbcurse19).
 
 == Terminal related issues.
 
@@ -288,7 +294,10 @@ code below. See test programs for latest, working code.
 
 == REQUIREMENTS:
 
-* ruby 1.8.7    (not compatible with 1.9)
+* ruby 1.8.7    (may work with 1.9.1)
+
+(1.8.6 users: please report any issues with suggested fix so code can
+run in 1.8.6 through 1.9.1 - thanks).
 
 * ncurses-ruby
 
@@ -307,6 +316,6 @@ sudo gem install rbcurse
 
 == LICENSE:
 
-Copyright (c) 2008 rkumar
+Copyright (c) 2008, 2009, 2010 rkumar
 
 Same as ruby license.
