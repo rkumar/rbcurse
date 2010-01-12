@@ -1054,7 +1054,7 @@ module RubyCurses
       @window.wmove @row, @col
       # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
       if !@parent_form.nil? and @parent_form != @form
-        $log.debug " addcol calling parents setrowcol #{row}, #{col}  "
+        $log.debug " #{@name} addcol calling parents setrowcol #{row}, #{col}  "
         @parent_form.setrowcol row, col
       end
     end
@@ -1068,7 +1068,7 @@ module RubyCurses
       #@window.wmove @row, @col
       # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
       if !@parent_form.nil? and @parent_form != @form
-        $log.debug " addrowcol calling parents setrowcol #{row}, #{col}  "
+        $log.debug " #{@name} addrowcol calling parents setrowcol #{row}, #{col}  "
         @parent_form.setrowcol row, col
       end
     end
@@ -1085,7 +1085,7 @@ module RubyCurses
       @row = row unless row.nil?
       @col = col unless col.nil?
       if !@parent_form.nil? and @parent_form != @form
-        $log.debug " calling parents setrowcol #{row}, #{col}  "
+        $log.debug " #{@name} calling parents setrowcol #{row}, #{col}  "
         @parent_form.setrowcol row, col
       end
     end

@@ -273,7 +273,12 @@ module RubyCurses
       else
         @pcol = 0
       end
-      @form.col = @orig_col + @col_offset + @curpos
+      ## changed on 2010-01-12 18:46 so carried upto topmost form
+      #@form.col = @orig_col + @col_offset + @curpos
+      col = @orig_col + @col_offset + @curpos
+      $log.debug " SFC #{@name} 279 setting r c to #{@form.row} , #{@col} "
+      @form.setrowcol @form.row, col
+      # XXX 
       @repaint_required = true
     end
     def cursor_forward
