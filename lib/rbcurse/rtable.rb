@@ -1241,7 +1241,9 @@ module RubyCurses
         @column_identifiers = colnames_array
       end
       def column_count
-        @column_identifiers.count
+        # 2010-01-12 19:44 changed count to size so it can run on 1.8.6 - thanks to Marc Rene Arns.
+        # @column_identifiers.count
+        @column_identifiers.size
       end
       def row_count
         @data.length
