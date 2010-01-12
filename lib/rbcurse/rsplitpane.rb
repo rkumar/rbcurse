@@ -84,8 +84,14 @@ module RubyCurses
           # Just begun happeing suddenly! 2010-01-11 23:38 
 
           # 2010-01-11 22:32 dang, if component is like splitpane which sets in repaint
-          #@first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
-          #@first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
+          # 2010-01-12 11:15 : for those who've created in constructor, i need to do this
+          # so they don't print off. i need to find a way to have create_buffer pick an
+          # explicit top and left.
+          if !@first_component.get_buffer().nil?
+            @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
+            #@first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
+            #@first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
+          end
       end # first_component
       ## 
       #  Sets the second component (bottom or right)
@@ -407,6 +413,8 @@ module RubyCurses
         end
         if @first_component != nil
           $log.debug " SPLP repaint 1c ..."
+          # this means that some components will create a buffer with default top and left of 0 the
+          # first time. Is there no way we can tell FC what top and left to use.
           @first_component.repaint
           # earlier before repaint but bombs since some chaps create buffer in repaint
           @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX

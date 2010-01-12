@@ -534,6 +534,8 @@ module RubyCurses
     #  
     # @return [buffer] returns pad created
     # @since 0.1.3
+    # NOTE: 2010-01-12 11:14  there are some parent widgets that may want this w to have a larger top and left.
+    # Setting it later, means that the first repaint can be off.
 
     def create_buffer()
       $log.debug " #{self.class}  CB called with #{@should_create_buffer} H: #{@height} W #{@width}  "

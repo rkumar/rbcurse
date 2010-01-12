@@ -340,3 +340,31 @@ nil and be set locally in each method as width-2.
 I supposed the same has to be done in rtextarea.
 
 * * * * * * * *
+
+Subject: copy_pad_to_win
+------------------------
+Date: 2010-01-11 23:47
+
+More and more scenarios are coming up when copy_pad_to_win can either
+return a -1 and do nothing, or print less that it should be.
+
+I can't correct more of these in the method, since that would break some
+other situation. I have added warnings, though. One will have to check
+the log file and see what warnings have been printed. If none, then we
+have a new scenario, and the data has to be inspected to figure out.
+
+* * * * * * * *
+
+Subject: regarding create_buffer in repaint
+-------------------------------------------
+Date: 2010-01-12 12:54
+
+If a widget calls `create_buffer` in repaint, it uses some default values
+such as for top and left (0,0). To change these values, from a parent
+component such as splitpane, means i change after `repaint()` so the first
+paint is off by one row and col. The subsequent paint is okay.
+
+I need to be able to pass values to a widget prior to `repaint()`, so its
+`create_buffer` can be influenced.
+
+* * * * * * * *
