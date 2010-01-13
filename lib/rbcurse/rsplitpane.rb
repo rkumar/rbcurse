@@ -96,6 +96,7 @@ module RubyCurses
             #@first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
             #@first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
           end
+          @current_component ||= @first_component # added 2010-01-13 15:39 
       end # first_component
       ## 
       #  Sets the second component (bottom or right)
@@ -359,7 +360,9 @@ module RubyCurses
           $log.debug " 2 set div location, setting c #{@second_component.col} "
           $log.debug " 2 set div location, setting w #{@second_component.width} "
           $log.debug " 2 set div location, setting h #{@second_component.height} "
+
       end
+
       # calculate divider location based on weight
       # Weight implies weight of first component, e.g. .70 for 70% of splitpane
       # @param wt [float, :read] weight of first component
@@ -478,13 +481,14 @@ module RubyCurses
         $log.debug " splitpane #{@name} gets KEY #{ch}"
         case ch
         when ?\M-w.getbyte(0)
+           # switch panes
           if @current_component != nil 
             if @current_component == @first_component
               @current_component = @second_component
             else
               @current_component = @first_component
             end
-            @form.setrowcol(*@current_component.rowcol)
+            set_form_row
           else
 
             # this was added for a non-realistic test program with embedded splitpanes
@@ -509,6 +513,15 @@ module RubyCurses
       end
       def paint
           @repaint_required = false
+      end
+      def on_enter
+         set_form_row
+      end
+      def set_form_row
+         if !@current_component.nil?
+            @current_component.set_form_row 
+            @current_component.set_form_col 
+         end
       end
   end # class SplitPane
 end # module
