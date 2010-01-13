@@ -285,7 +285,7 @@ module RubyCurses
     dsl_property :attr                 # attribute bold, normal, reverse
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id #, :zorder
-    attr_accessor :curpos              # cursor position inside object
+    attr_accessor :curpos              # cursor position inside object - column, not row.
     attr_reader  :config             # COULD GET AXED SOON NOTE
     attr_accessor  :form              # made accessor 2008-11-27 22:32 so menu can set
     attr_accessor :state              # normal, selected, highlighted
@@ -763,8 +763,13 @@ module RubyCurses
     attr_accessor :navigation_policy  # :CYCLICAL will cycle around. Needed to move to other tabs
     ## i need some way to move the cursor by telling the main form what the coords are
     ##+ perhaps this will work
-    attr_accessor :parent_form  # HACK added 2009-12-28 23:01 BUFFERED 
+    attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes
+    ## I think parent_form was not a good idea since i can't add parent widget offsets
+    ##+ thus we should use parent_comp and push up.
+    attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
+    # how many rows the component is panning embedded widget by
     attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED 
+    # how many cols the component is panning embedded widget by
     attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED 
     def initialize win, &block
       @window = win
@@ -830,6 +835,7 @@ module RubyCurses
    # form repaint
    # to be called at some interval, such as after each keypress.
     def repaint
+       $log.debug " form repaint:#{self}, r #{@row} c #{@col} "
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
@@ -872,7 +878,7 @@ module RubyCurses
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-      $log.debug "setpos : #{r} #{c}"
+      $log.debug "setpos : (#{self}) #{r} #{c}"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
@@ -1084,8 +1090,9 @@ module RubyCurses
     def setrowcol row, col
       @row = row unless row.nil?
       @col = col unless col.nil?
+      # XXX dang !! next line should be self not @form
       if !@parent_form.nil? and @parent_form != @form
-        $log.debug " #{@name} calling parents setrowcol #{row}, #{col}  "
+        $log.debug " (#{@name}) calling parents setrowcol #{row}, #{col} : #{@parent_form}; #{self}, #{self.class}  "
         @parent_form.setrowcol row, col
       end
     end
