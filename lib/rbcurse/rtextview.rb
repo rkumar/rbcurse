@@ -241,6 +241,7 @@ module RubyCurses
       #post_key
       # 2008-11-27 13:57 trying out
       set_form_row
+      return 0 # added 2010-01-12 22:17 else down arrow was going into next field
     end
     # newly added to check curpos when moving up or down
     def check_curpos
@@ -263,8 +264,8 @@ module RubyCurses
       end
     end
     # set cursor on correct column tview
-    def set_form_col col=@curpos
-      @curpos = col
+    def set_form_col col1=@curpos
+      @curpos = col1
       maxlen = @maxlen || @width-2
       #@curpos = maxlen if @curpos > maxlen
       if @curpos > maxlen
@@ -275,7 +276,8 @@ module RubyCurses
       end
       ## changed on 2010-01-12 18:46 so carried upto topmost form
       #@form.col = @orig_col + @col_offset + @curpos
-      col = @orig_col + @col_offset + @curpos
+      win_col=@form.window.left
+      col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
       $log.debug " SFC #{@name} 279 setting r c to #{@form.row} , #{@col} "
       @form.setrowcol @form.row, col
       # XXX 
