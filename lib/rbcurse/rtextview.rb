@@ -277,10 +277,13 @@ module RubyCurses
       ## changed on 2010-01-12 18:46 so carried upto topmost form
       #@form.col = @orig_col + @col_offset + @curpos
       win_col=@form.window.left
-      col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      ## 2010-01-13 18:19 trying col instead of orig, so that can work in splitpanes
+      ##+ impact has to be seen elsewhere too !!! XXX
+      col = win_col + @col + @col_offset + @curpos + @form.cols_panned
       $log.debug " SFC #{@name} 279 setting r c to #{@form.row} , #{@col} "
-      #@form.setrowcol @form.row, col
-      setformrowcol @form.row, col
+      @form.setrowcol @form.row, col
+      #setformrowcol @form.row, col
       # XXX 
       @repaint_required = true
     end
