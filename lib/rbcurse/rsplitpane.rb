@@ -54,8 +54,13 @@ module RubyCurses
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
+          # cascade_changes keeps the child exactly sized as per the pane which looks nice
+          #+ but may not really be what you want.
           #@cascade_changes=true
+          ## if this splp is increased (ht or wid) then expand the child
           @cascade_boundary_changes = true
+          @orientation ||= :HORIZONTAL_SPLIT # added 2010-01-13 15:05 since not set
+
       end
 
       ## 

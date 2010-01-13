@@ -37,6 +37,7 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
+      $log.debug " FORM #{@form} "
       r = 1; c = 3; ht = 24; w = 70
       # filler just to see that we are covering correct space and not wasting lines or cols
 #      filler = "*" * 88

@@ -37,3 +37,5 @@
  21	[ ] test out tabbedpane, and compare code with scroll (newtesttabp.rb) (2010-01-10)
  22	[x] (A) sudden blank line in FC in splitpane see testsplittv.rb and tvv.rb  * that's due to top and left 0 by default in create_buffer (2010-01-11) (x2010-01-12)
  23	[ ] how to pass top left etc to widget so when it does a create_buffer those values are reached (2010-01-12)
+ 24	[ ] add parent attrib, pass parent in child() and first_component, add a method to pushup row and col adding roffset and coloffset at each level (2010-01-12)
+ 25	[ ] (A) try bubbling up addrowcol etc also up parent widget not form (2010-01-13)

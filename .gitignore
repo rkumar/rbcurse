@@ -3,7 +3,9 @@
 *.db
 bak
 tmp
+out
 *.log.*
+*.log
 view.*
 *.bk
 test*

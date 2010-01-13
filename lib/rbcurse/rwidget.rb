@@ -303,6 +303,9 @@ module RubyCurses
     ##+ to further children or editor components. Default false.
     dsl_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
     
+    ## I think parent_form was not a good idea since i can't add parent widget offsets
+    ##+ thus we should use parent_comp and push up.
+    attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
 
     def initialize form, aconfig={}, &block
       @form = form
@@ -736,6 +739,24 @@ module RubyCurses
        @graphic = gr
      end
 
+     ## passing a cursor up and adding col and row offsets
+     ## Added 2010-01-13 13:27 I am checking this out.
+     ## I would rather pass the value down and store it than do this recursive call
+     ##+ for each cursor display
+     # @see Form#setrowcol
+     def setformrowcol r, c
+        # XXX dang !! next line should be self not @form
+        if !@parent_component.nil? and @parent_component != self
+           r +=  @parent_component.row_offset unless r.nil?
+           c +=  @parent_component.col_offset unless c.nil?
+           $log.debug " (#{@name}) calling parents setformrowcol #{r}, #{c} : #{@parent_component}; #{self}, #{self.class}  "
+           @parent_component.setformrowcol r, c
+        else
+           # no more parents, now set form
+           @form.setrowcol r, c
+        end
+     end
+
      ##
     ## ADD HERE WIDGET
   end
@@ -764,9 +785,6 @@ module RubyCurses
     ## i need some way to move the cursor by telling the main form what the coords are
     ##+ perhaps this will work
     attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes
-    ## I think parent_form was not a good idea since i can't add parent widget offsets
-    ##+ thus we should use parent_comp and push up.
-    attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
     # how many rows the component is panning embedded widget by
     attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED 
     # how many cols the component is panning embedded widget by
@@ -1059,7 +1077,7 @@ module RubyCurses
       @col += num
       @window.wmove @row, @col
       # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
-      if !@parent_form.nil? and @parent_form != @form
+      if !@parent_form.nil? and @parent_form != self #@form
         $log.debug " #{@name} addcol calling parents setrowcol #{row}, #{col}  "
         @parent_form.setrowcol row, col
       end

@@ -279,7 +279,8 @@ module RubyCurses
       win_col=@form.window.left
       col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
       $log.debug " SFC #{@name} 279 setting r c to #{@form.row} , #{@col} "
-      @form.setrowcol @form.row, col
+      #@form.setrowcol @form.row, col
+      setformrowcol @form.row, col
       # XXX 
       @repaint_required = true
     end

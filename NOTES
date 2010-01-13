@@ -368,3 +368,41 @@ I need to be able to pass values to a widget prior to `repaint()`, so its
 `create_buffer` can be influenced.
 
 * * * * * * * *
+
+Subject: cursor positioning form#setrowcol
+------------------------------------------
+Date: 2010-01-12 22:53
+
+Since i currently go up a heirarchy of forms, passing up the row and col
+to be set, i cannot add the col and row offsets of the parent
+(enclosing) widgets.
+Had i gone up a heirarchy of widgets, I could have added their offsets.
+
+In any case, i think I need to add them as parents, in methods like 
+`child()` or `first_component`. Then a method will be needed to pass values
+up, and when no parent then set in its form. Each level adds its offset.
+
+OTOH, another option would be when setting a child component, to once and for
+all pass down cumulative offsets. Thus, one will not have to keep adding.
+However, it is inefficient, is it not to propogate each cursor move up. Won't
+that be slow ?
+For that matter, won't this copying buffer be slow. Is there no faster way out?
+
+
+In the case of multiple embedded components, can we not pass down the offsets
+and boundaries when setting or moving so that each component writes directly,
+and the cursor can be set easily without passing up ? There is a one time
+passing down on creation, and moving or resizing. Each component knows its own
+absolute position on the form, and there's basically only one form (except maybe
+for tabbed panes).
+
+Buffers means that scrollpanes for example only scroll a buffer, the widget does
+not have to redraw repeatedly. Repainting is higher level code with many type
+conversions, slicing, formatting etc, scrolling is merely a low-level copywin()
+call. however, copywin() seems a lot more prone to error (new situations).
+
+Direct painting without a buffer means constant repainting on scrolling, like
+happens when we use TextViews and listboxes inbuilt scrolling.
+Otoh, it means each component has to implement scrolling. With a scrollpane, we
+can have scrollpane do the job, although the child has to write onto a pad.
+* * * * * * * *
