@@ -37,8 +37,6 @@ module RubyCurses
       attr_reader :divider_location  # 
       dsl_accessor :border_color
       dsl_accessor :border_attrib
-      # TODO when splitpanes width or height changed, it must inform its children
-      #  to take care of nested splitpanes
 
       def initialize form, config={}, &block
           @focusable = true
@@ -72,6 +70,7 @@ module RubyCurses
 
       def first_component(comp)
           @first_component      = comp;
+          @first_component.parent_component = self ## added 2010-01-13 12:54 
           subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
           @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
           comp.set_form(@subform1) # added 2010 BUFFERED
@@ -101,6 +100,7 @@ module RubyCurses
 
       def second_component(comp)
           @second_component = comp;
+          @second_component.parent_component = self ## added 2010-01-13 12:54 
           subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
           @subform2             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
           comp.set_form(@subform2) # added 2010 BUFFERED
@@ -109,6 +109,11 @@ module RubyCurses
           #@second_component.row(1)
           #@second_component.col(1)
       end # second_component
+
+      ## faster access to the 2 components
+      def c1; @first_component; end
+      def c2; @second_component; end
+
       ##
       #
       # change height of splitpane
@@ -459,7 +464,7 @@ module RubyCurses
         @current_component ||= @first_component
         if @current_component != nil 
           ret = @current_component.handle_key ch
-          return ret if ret == 0
+          return ret if ret != :UNHANDLED
         else
           ## added 2010-01-07 18:59 in case nothing in there.
           $log.debug " SPLP #{@name} - no component installed in splitpane"
