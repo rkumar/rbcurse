@@ -744,18 +744,18 @@ module RubyCurses
      ## I would rather pass the value down and store it than do this recursive call
      ##+ for each cursor display
      # @see Form#setrowcol
-     def setformrowcol r, c
-        # XXX dang !! next line should be self not @form
-        if !@parent_component.nil? and @parent_component != self
-           r +=  @parent_component.row_offset unless r.nil?
-           c +=  @parent_component.col_offset unless c.nil?
-           $log.debug " (#{@name}) calling parents setformrowcol #{r}, #{c} : #{@parent_component}; #{self}, #{self.class}  "
-           @parent_component.setformrowcol r, c
-        else
-           # no more parents, now set form
-           @form.setrowcol r, c
-        end
-     end
+     #def setformrowcol r, c
+        ## XXX dang !! next line should be self not @form
+        #if !@parent_component.nil? and @parent_component != self
+           #r +=  @parent_component.row_offset unless r.nil?
+           #c +=  @parent_component.col_offset unless c.nil?
+           #$log.debug " (#{@name}) calling parents setformrowcol #{r}, #{c} : #{@parent_component}; #{self}, #{self.class}  "
+           #@parent_component.setformrowcol r, c
+        #else
+           ## no more parents, now set form
+           #@form.setrowcol r, c
+        #end
+     #end
 
      ##
     ## ADD HERE WIDGET
