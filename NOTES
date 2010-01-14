@@ -34,7 +34,7 @@ Use `safe_create_buffer`
 
 2. Use `@buffer_modified = true` in repaint
 
-3. Ensure print_border and printstring are getting correct coordinates.  Most
+3. Ensure `print_border` and `printstring` are getting correct coordinates.  Most
    errors happen here.
 
 4. Replace @form.window with @graphic
@@ -48,10 +48,18 @@ Use `safe_create_buffer`
 
 7. Need to add the following in initialization of container such as rscrollpane
    or rsplitpane:
-   should_create_buffer true
+   `should_create_buffer true`
 
    Also when creating a widget to put inside a container, use this line (see
    samples below), as this needs to happen at construction time.
+
+8. Remove any `dsl_accessor` on height or width since this will override widget.
+   If you create a method, call `super()`.
+
+9. You may have to `print_borders()` in `repaint()`, checking for `@Wrepaint_all` (see
+   rtextview.rb). i.e, don't print just once in constructor, since when the
+   object is placed inside a splitpane, its size can change.
+
 See testscrollp.rb or testscrollta.rb for working sample.
 
 * * *
@@ -405,4 +413,41 @@ Direct painting without a buffer means constant repainting on scrolling, like
 happens when we use TextViews and listboxes inbuilt scrolling.
 Otoh, it means each component has to implement scrolling. With a scrollpane, we
 can have scrollpane do the job, although the child has to write onto a pad.
+* * * * * * * *
+
+Subject: update to cursor positioning
+-------------------------------------
+Date: 2010-01-13 18:26
+
+Just studied the code to see how each textview knows where to print
+inside splitpanes. Each component's `@col` is set to where printing has to
+start, that's all. I was mistakenly using `@orig_col` which is never
+updated. 
+Now its fine, which means I don't need `widget#setformrowcol`, the earlier
+`form#setrowcol` is fine. Don;t use orig_col in setting cursor,
+applies to rtextarea.rb, too.
+
+* * * * * * * *
+
+Subject: speed of splitpane, copying buffers
+--------------------------------------------
+Date: 2010-01-14 15:44
+
+One can type fast in a textarea as is and see updates immediately. But
+when the textarea is inside a splitpane, due to the buffer copying
+happening, fast typing updates take time to show up.
+
+Sequence would be as follows:
+1. textarea buffer copies onto splitpane buffer
+2. Splitpane buffer copies to main form window (earlier it would copy to
+   screen directly)
+3. form.window does a wrefresh.
+
+Each time you type a character, it goes through the above. We need to
+get the innermost widget buffer to write directly to the form.window
+somehow.
+
+Also a quick cursor movement, shows the cursor flashing on row below now
+and then, although when you move the cursor slowly, it move fine.
+
 * * * * * * * *
