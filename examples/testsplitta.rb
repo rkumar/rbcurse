@@ -15,7 +15,7 @@ require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
-require 'rbcurse/rtextview'
+require 'rbcurse/rtextarea'
 
 ## This sample creates a single scrollpane, 
 ##+ and embeds a textarea inside it
@@ -38,6 +38,7 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       @form = Form.new @window
       $log.debug " FORM #{@form} "
+      r = 1; c = 3; ht = 28; w = 100
       r = 1; c = 3; ht = 24; w = 70
       # filler just to see that we are covering correct space and not wasting lines or cols
 #      filler = "*" * 88
@@ -56,7 +57,7 @@ if $0 == __FILE__
           #focusable false
           #orientation :VERTICAL_SPLIT
         end
-        t1 = TextView.new nil do
+        t1 = TextArea.new nil do
           name   "myView" 
           #row 0
           #col  0 
@@ -68,12 +69,10 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
-        content = File.open("../README.markdown","r").readlines
-        t1.set_content content #, :WRAP_WORD
 
         # to see lower border i need to set height to ht/2 -2 in both cases, but that
         # crashes ruby when i reduce height by 1.
-        t2 = TextView.new nil do
+        t2 = TextArea.new nil do
           name   "myView2" 
           #row 0
           #col  0 
@@ -86,8 +85,6 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
-        content = File.open("../NOTES","r").readlines
-        t2.set_content content #, :WRAP_WORD
 
         splitp.first_component(t1)
         splitp.second_component(t2)
@@ -103,6 +100,16 @@ if $0 == __FILE__
         ## could still get a blank screen, if your comps area is smaller than 
         ## pane, or other conditions. the log will point out various possible errors.
         splitp.set_resize_weight(0.50) if ret == :ERROR
+        File.open("../README.markdown","r") do |file|
+           while (line = file.gets)
+              t1 << line.chomp
+           end
+        end
+        File.open("../NOTES","r") do |file|
+           while (line = file.gets)
+              t2 << line.chomp
+           end
+        end
 
       @form.repaint
       @window.wrefresh
