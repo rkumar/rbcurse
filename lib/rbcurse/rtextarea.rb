@@ -66,9 +66,10 @@ module RubyCurses
       @content_rows = @list.length
       #@win = @form.window
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
+      @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       safe_create_buffer # 2009-12-26 14:54 BUFFERED
     #  init_scrollable
-      print_borders
+      #print_borders
       # 2010-01-10 19:35 compute locally if not set
       #@maxlen ||= @width-2
       install_keys
@@ -92,7 +93,7 @@ module RubyCurses
     # private
     def wrap_text(txt, col = @maxlen)
        col ||= @width - 2
-      $log.debug "inside wrap text for :#{txt}"
+      #$log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
     end
@@ -124,9 +125,9 @@ module RubyCurses
     def << data
        maxlen = @maxlen || @width - 2
       if data.length > maxlen
-        $log.debug "wrapped append for #{data}"
+        #$log.debug "wrapped append for #{data}"
         data = wrap_text data
-        $log.debug "after wrap text for :#{data}"
+        #$log.debug "after wrap text for :#{data}"
         data = data.split("\n")
         # 2009-01-01 22:24 the \n was needed so we would put a space at time of writing.
         # we need a soft return so a space can be added when pushing down.
@@ -150,7 +151,7 @@ module RubyCurses
         if @list[line].nil? or @list[line]=="" or @list[line]==13 #"\r"
           break
         end
-        $log.debug "lastchar #{@list[line][-1]}, appending: #{@list[line]}]"
+        #$log.debug "lastchar #{@list[line][-1]}, appending: #{@list[line]}]"
         t =  @list[line]
         l << t.strip
         @list.delete_at line
@@ -158,7 +159,7 @@ module RubyCurses
     #    line += 1
       end
       str=l.join(" ")
-      $log.debug " sending insert : #{str}."
+      #$log.debug " sending insert : #{str}."
       insert line, str
     end
     ##
@@ -193,6 +194,7 @@ module RubyCurses
     def print_foot
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos}, #{@list.length} lines  "
+      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       # changed 2010-01-02 19:31 BUFFERED we were exceeding 1
       #@graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
       @graphic.printstring( @row + @height-1, @col+2, footer, $datacolor, @footer_attrib) 
@@ -323,9 +325,12 @@ module RubyCurses
       @list.insert @current_index+1, @delete_buffer 
       @curpos = 0
       down
-      @form.col = @orig_col + @col_offset
+      # 2010-01-14 19:08 making change to setrowcol
+      ### @form.col = @orig_col + @col_offset
+      col = @orig_col + @col_offset
       #addrowcol 1,0
-      @form.row = @row + 1 #+ @winrow
+      ### @form.row = @row + 1 #+ @winrow
+      @form.setrowcol @row+1, col
       #fire_handler :CHANGE, self  # 2008-12-09 14:56 
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     end
@@ -428,7 +433,9 @@ module RubyCurses
     @buffer = @list[@current_index]
     if @buffer.nil?
       up
-      @form.row = @row + 1 #+ @winrow
+      # 2010-01-14 19:10 
+      ### @form.row = @row + 1 #+ @winrow
+      @form.setrowcol @row + 1, @form.col
     end
     #fire_handler :CHANGE, self  # 2008-12-09 14:56 
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
@@ -477,10 +484,13 @@ module RubyCurses
       if carry_up.nil?
         # carry down last word
         prev_wd = remove_last_word @current_index-1
-        @buffer.insert 0, prev_wd
-        @curpos = prev_wd.length
-        $log.debug " carry up nil! prev_wd (#{prev_wd}) len:#{prev_wd.length}"
-        fire_handler :CHANGE, InputDataEvent.new(0,prev_wd.length, self, :INSERT, oldprow, prev_wd)     #  2008-12-26 23:07 
+        # 2010-01-14 18:26 check added else crashing if C-h pressed with no data in line
+        if !prev_wd.nil?
+           @buffer.insert 0, prev_wd
+           @curpos = prev_wd.length
+           $log.debug " carry up nil! prev_wd (#{prev_wd}) len:#{prev_wd.length}"
+           fire_handler :CHANGE, InputDataEvent.new(0,prev_wd.length, self, :INSERT, oldprow, prev_wd)     #  2008-12-26 23:07 
+        end
       else
         $log.debug " carrying up #{carry_up.length} #{carry_up}, space: #{space_left}"
         @list[@current_index-1]=prev + carry_up
@@ -713,6 +723,7 @@ module RubyCurses
       print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
+      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
