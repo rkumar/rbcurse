@@ -31,7 +31,7 @@ module RubyCurses
   #   work correctly.
   class TextArea < Widget
     include ListScrollable
-    dsl_accessor :height
+    #dsl_accessor :height # commented s2010-01-14 15:36 ince widget has method
     dsl_accessor :title
     dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :footer_attrib   # bold, reverse, normal added 2009-12-26 18:25 was this missing or delib
@@ -77,6 +77,7 @@ module RubyCurses
     def init_vars
       @repaint_required = true
       @toprow = @current_index = @pcol = 0
+      @repaint_all=true 
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -134,7 +135,7 @@ module RubyCurses
         data.each {|line| @list << line}
          @list[-1] << "\r" #XXXX
       else
-        $log.debug "normal append for #{data}"
+        #$log.debug "normal append for #{data}"
         data << "\r" if data[-1,1] != "\r" #XXXX
         @list << data
       end
@@ -336,7 +337,9 @@ module RubyCurses
       ## added win_col on 2009-12-28 20:21 for embedded forms BUFFERED TRYING OUT
       win_col=@form.window.left
       #col = win_col + @orig_col + @col_offset + @curpos
-      col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      # 2010-01-14 13:31 changed orig_col to col for embedded forms, splitpanes.
+      col = win_col + @col + @col_offset + @curpos + @form.cols_panned
       $log.debug "sfc: wc:#{win_col}  oc:#{@orig_col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@form.cols_panned} . "
       @form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
     end
@@ -706,7 +709,8 @@ module RubyCurses
       @list.size
     end
     def paint
-      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      #print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
       tm = get_content
@@ -749,6 +753,7 @@ module RubyCurses
       @table_changed = false
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen
+      @repaint_all = false # added 2010-01-14 for redrawing everything
     end
     def ask_search_forward
         regex =  get_string("Enter regex to search", 20, @last_regex||"")
