@@ -684,7 +684,8 @@ module RubyCurses
     def set_modified tf=true
       @modified = tf
       @repaint_required = tf
-      @form.modified = true if tf
+      # 2010-01-14 22:45 putting a check for form, so not necessary to have form set when appending data
+      @form.modified = true if tf and !@form.nil?
     end
     def cursor_eol
        maxlen = @maxlen || @width - 2

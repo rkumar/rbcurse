@@ -8,13 +8,13 @@ out
 *.log
 view.*
 *.bk
-test*
 old*
 *.bak
 tags
 *.out
 *.csv
 .*
+_*
 html/
 pkg/
 todo.txt
@@ -22,3 +22,8 @@ done.txt
 deltodo.txt
 old/
 *.old
+Manifest.txt
+Rakefile
+TODO2.txt.2*
+index.html
+serial_numbers

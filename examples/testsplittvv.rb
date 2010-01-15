@@ -1,10 +1,11 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-##*******************************************************#
+#*******************************************************#
 #                     testsplittv.rb                    #
 #                 written by Rahul Kumar                #
 #                    January 06, 2010                   #
 #                                                       #
-#             test textview inside scrollpane           #
+#             test textview inside splitpane            #
+#             Startup is vertical split                 # 
 #                                                       #
 #            Released under ruby license. See           #
 #         http://www.ruby-lang.org/en/LICENSE.txt       #

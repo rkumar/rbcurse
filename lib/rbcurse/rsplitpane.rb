@@ -3,8 +3,9 @@
   * $Id$
   * Description: allows user to split 2 components vertically or horizontally
   * Author: rkumar (arunachalesha)
-TODO 
   * file created 2009-10-27 19:20 
+TODO 
+  * Need to add events and property changed
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)

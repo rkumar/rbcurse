@@ -446,7 +446,7 @@ module RubyCurses
     end
     # set cursor on correct column, widget
     def set_form_col col1=@curpos
-      @curpos = col1
+      @curpos = col1 || 0 # 2010-01-14 21:02 
       @form.col = @col + @col_offset + @curpos
       $log.debug " widget set_form_col #{@form.col} "
     end
