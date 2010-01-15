@@ -330,7 +330,8 @@ module RubyCurses
       col = @orig_col + @col_offset
       #addrowcol 1,0
       ### @form.row = @row + 1 #+ @winrow
-      @form.setrowcol @row+1, col
+      #@form.setrowcol @row+1, col
+      setrowcol @row+1, col
       #fire_handler :CHANGE, self  # 2008-12-09 14:56 
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     end
@@ -346,7 +347,9 @@ module RubyCurses
       # 2010-01-14 13:31 changed orig_col to col for embedded forms, splitpanes.
       col = win_col + @col + @col_offset + @curpos + @form.cols_panned
       $log.debug "sfc: wc:#{win_col}  oc:#{@orig_col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@form.cols_panned} . "
-      @form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
+      #@form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
+      $log.debug " TA calling setformrow col nil, #{col} "
+      setrowcol nil, col   # added 2009-12-29 18:50 BUFFERED
     end
     def cursor_bounds_check
       max = buffer_len()
@@ -405,9 +408,11 @@ module RubyCurses
       return false
     end
     def addcol num
+      @repaint_required = true # added 2010-01-15 23:59 
       @form.addcol num
     end
     def addrowcol row,col
+      @repaint_required = true # added 2010-01-15 23:59 
       @form.addrowcol row, col
     end
     ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
@@ -435,7 +440,8 @@ module RubyCurses
       up
       # 2010-01-14 19:10 
       ### @form.row = @row + 1 #+ @winrow
-      @form.setrowcol @row + 1, @form.col
+      #@form.setrowcol @row + 1, @form.col
+      setrowcol @row + 1, nil # @form.col
     end
     #fire_handler :CHANGE, self  # 2008-12-09 14:56 
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 

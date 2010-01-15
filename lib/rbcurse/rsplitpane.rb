@@ -232,6 +232,7 @@ module RubyCurses
                 end
               else
                 # check second comps ht
+                  $log.debug " YYYY SORRY 2c  H:#{@height} rc: #{rc} 2cmh: #{@second_component.name} "
                 if @height - rc -2 < @second_component.min_height
                   $log.debug " SORRY 2c min height prevents further resizing"
                   return :ERROR
@@ -465,12 +466,32 @@ module RubyCurses
       def getvalue
           # TODO
       end
+      def _switch_component
+          if @current_component != nil 
+            if @current_component == @first_component
+              @current_component = @second_component
+            else
+              @current_component = @first_component
+            end
+            set_form_row
+          end
+      end
       ## Handles key for splitpanes
       ## By default, first component gets focus, not the SPL itself.
       ##+ Mostly passing to child, and handling child's left-overs.
       ## NOTE: How do we switch to the other outer SPL?
       def handle_key ch
         @current_component ||= @first_component
+        ## 2010-01-15 12:57 this helps me switch between highest level 
+        ## However, i should do as follows:
+        ## If tab on second component, return UNHA so form can take to next field
+        ## If B_tab on second comp, switch to first
+        ## If B_tab on first comp, return UNHA so form can take to prev field
+        if ch == 9
+           _switch_component
+           return 0
+        end
+
         if @current_component != nil 
           ret = @current_component.handle_key ch
           return ret if ret != :UNHANDLED
@@ -520,6 +541,7 @@ module RubyCurses
       end
       def set_form_row
          if !@current_component.nil?
+            $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
             @current_component.set_form_row 
             @current_component.set_form_col 
          end

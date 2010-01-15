@@ -451,3 +451,41 @@ Also a quick cursor movement, shows the cursor flashing on row below now
 and then, although when you move the cursor slowly, it move fine.
 
 * * * * * * * *
+
+Subject: slitpanes in a mouseless CUI environment
+-------------------------------------------------
+Date: 2010-01-15 13:02
+
+The issue here is navigating between panes, if you have splitpanes
+embedded between splitpanes. Typically, control goes to the first
+component, and switching happens between the 2 panes of the first
+component.
+I've defined TAB to do a switch on the outer component, but that only
+delays or reduces the problem.
+
+We need another component, more like vim's splits. You can split it as
+many times. Each split returns 2 handles. You can split the handle. You
+can place a component in the handle. Once it is all in one component,
+one can reorder and exchange positions too.
+
+Expanding contracting can de done with current split in focus. With
+embedded splitpanes, we don't know which level the user is intending the
+resize (or motion) key for.
+
+* * * * * * * *
+
+Subject: cursor positioning in mult splitpanes
+----------------------------------------------
+Date: 2010-01-15 23:26
+
+When placing textviews inside 2 splitpanes, a funny thing happened, i found that
+the cursor was always on 5,5, no matter where the outer split was placed. Appa,
+we need to add the outer windows left and top offsets.
+
+I have done that, and now the cursor is in the right place regardless of whether
+there are 2 or 1 splitpanes.
+
+Now both setformrowcol and setrowcol are correct. However, i think the form
+route of setrowcol is better since a form's offset won't get duplicated.
+
+* * * * * * * *

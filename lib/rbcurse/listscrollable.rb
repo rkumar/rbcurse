@@ -101,7 +101,9 @@ module ListScrollable
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
     ## this needs to percolate up a heirarchy.
     ## 2010-01-05 21:09 changed c to nil, since c is not cursor col pos but where printing starts, i think
-    @form.setrowcol row, nil
+    #@form.setrowcol row, nil
+    #setformrowcol row, nil
+    setrowcol row, nil
   end
   def right
     @hscrollcols ||= @cols/2

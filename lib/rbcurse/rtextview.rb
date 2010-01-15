@@ -107,7 +107,7 @@ module RubyCurses
     end
     ## ---- for listscrollable ---- ##
     def scrollatrow
-      @height - 2
+      #@height - 2
       @height - 3 # trying out 2009-10-31 15:22 XXX since we seem to be printing one more line
     end
     def row_count
@@ -229,7 +229,7 @@ module RubyCurses
           set_form_col @maxlen-1
         end
 =end
-        # search related added on 2009-02-15 21:36 
+        # search related 
       when @KEY_ASK_FIND
         ask_search
       when @KEY_FIND_MORE
@@ -238,8 +238,6 @@ module RubyCurses
         #$log.debug("TEXTVIEW ch #{ch}")
         return :UNHANDLED
       end
-      #post_key
-      # 2008-11-27 13:57 trying out
       set_form_row
       return 0 # added 2010-01-12 22:17 else down arrow was going into next field
     end
@@ -280,10 +278,10 @@ module RubyCurses
       #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
       ## 2010-01-13 18:19 trying col instead of orig, so that can work in splitpanes
       ##+ impact has to be seen elsewhere too !!! XXX
-      col = win_col + @col + @col_offset + @curpos + @form.cols_panned
-      $log.debug " SFC #{@name} 279 setting r c to #{@form.row} , #{@col} "
-      @form.setrowcol @form.row, col
-      #setformrowcol @form.row, col
+      col2 = win_col + @col + @col_offset + @curpos + @form.cols_panned
+      $log.debug "TV SFC #{@name} setting c to #{col2} FORM #{@form}, #{win_col} #{@col} #{@col_offset} #{@curpos} "
+      #@form.setrowcol @form.row, col
+      setrowcol nil, col2
       # XXX 
       @repaint_required = true
     end
@@ -311,7 +309,7 @@ module RubyCurses
         @curpos -= 1
         set_form_col 
         #addcol -1
-      elsif @pcol > 0 # added 2008-11-26 23:05 
+      elsif @pcol > 0 
         @pcol -= 1   
       end
       @repaint_required = true
