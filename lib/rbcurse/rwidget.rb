@@ -744,18 +744,31 @@ module RubyCurses
      ## I would rather pass the value down and store it than do this recursive call
      ##+ for each cursor display
      # @see Form#setrowcol
-     #def setformrowcol r, c
-        ## XXX dang !! next line should be self not @form
-        #if !@parent_component.nil? and @parent_component != self
+     def setformrowcol r, c
+           @form.row = r unless r.nil?
+           @form.col = c unless c.nil?
+           # this is stupid, going through this route i was losing windows top and left
+           # And this could get repeated if there are mult objects. 
+        if !@parent_component.nil? and @parent_component != self
            #r +=  @parent_component.row_offset unless r.nil?
            #c +=  @parent_component.col_offset unless c.nil?
-           #$log.debug " (#{@name}) calling parents setformrowcol #{r}, #{c} : #{@parent_component}; #{self}, #{self.class}  "
-           #@parent_component.setformrowcol r, c
-        #else
-           ## no more parents, now set form
-           #@form.setrowcol r, c
-        #end
-     #end
+           r+= @parent_component.form.window.top unless  r.nil?
+           c+= @parent_component.form.window.left unless c.nil?
+           $log.debug " (#{@name}) calling parents setformrowcol #{r}, #{c} pa: #{@parent_component.name} self: #{name}, #{self.class}, poff #{@parent_component.row_offset}, #{@parent_component.col_offset}, top:#{@form.window.left} left:#{@form.window.left} "
+           @parent_component.setformrowcol r, c
+        else
+           # no more parents, now set form
+           $log.debug " name NO MORE parents setting #{r}, #{c}    in #{@form} "
+           @form.setrowcol r, c
+        end
+     end
+     ## i am putting one extra level of indirection so i can switch here
+     # between form#setrowcol and setformrowcol, since i am not convinced either
+     # are giving the accurate result. i am not sure what the issue is.
+     def setrowcol r, c
+        @form.setrowcol r, c
+        #setformrowcol r,c 
+     end
 
      ##
     ## ADD HERE WIDGET
@@ -1079,7 +1092,7 @@ module RubyCurses
       # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
       if !@parent_form.nil? and @parent_form != self #@form
         $log.debug " #{@name} addcol calling parents setrowcol #{row}, #{col}  "
-        @parent_form.setrowcol row, col
+        @parent_form.setrowcol nil, col
       end
     end
     ##
@@ -1089,7 +1102,7 @@ module RubyCurses
       return if @row.nil? or @row == -1
       @col += col
       @row += row
-      #@window.wmove @row, @col
+      @window.wmove @row, @col
       # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
       if !@parent_form.nil? and @parent_form != @form
         $log.debug " #{@name} addrowcol calling parents setrowcol #{row}, #{col}  "
@@ -1105,13 +1118,14 @@ module RubyCurses
     # infinite recursion.
     # This is being done for embedded objects so that the cursor
     # can be maintained correctly.
-    def setrowcol row, col
-      @row = row unless row.nil?
-      @col = col unless col.nil?
-      # XXX dang !! next line should be self not @form
-      if !@parent_form.nil? and @parent_form != @form
-        $log.debug " (#{@name}) calling parents setrowcol #{row}, #{col} : #{@parent_form}; #{self}, #{self.class}  "
-        @parent_form.setrowcol row, col
+    def setrowcol r, c
+      @row = r unless r.nil?
+      @col = c unless c.nil?
+      if !@parent_form.nil? and @parent_form != self
+        $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : #{@parent_form}; #{self}, #{self.class}  "
+        r += @parent_form.window.top unless  r.nil?
+        c += @parent_form.window.left unless c.nil?
+        @parent_form.setrowcol r, c
       end
     end
   ##
