@@ -22,8 +22,8 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
-      r = 1; c = 10; w = 40
-      ht = 10
+      r = 1; c = 5; w = 80
+      ht = 20
       # print filler stars
       filler = "*" * (w+2)
       #(ht+3).times(){|i| @form.window.printstring(i,c-1, filler, $datacolor) }
@@ -31,7 +31,7 @@ if $0 == __FILE__
 
         @scroll = ScrollPane.new @form do
           name   "myScroller" 
-          row r+ht+1
+          row r
           col  c 
           width w
           height ht
@@ -52,13 +52,13 @@ if $0 == __FILE__
         @textview.set_content content #, :WRAP_WORD
         @scroll.child(@textview)
 
-      @help = "q to quit. This is a test of testWidget which uses a pad/buffer."
-      #RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
+      @help = "F1 to quit. This is a test of TextView inside a scrollpane. M-n M-p M-h M-l M-< M-> "
+      RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r+1, "col" => 2, "color" => "yellow"}
 
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != ?q.getbyte(0) )
+      while((ch = @window.getchar()) != KEY_F1 ) # ?q.getbyte(0) )
         str = keycode_tos ch
         @form.handle_key(ch)
         @form.repaint

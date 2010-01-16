@@ -74,7 +74,7 @@ module RubyCurses
         ch.set_form(@subform) # added 2009-12-27 13:35 BUFFERED 
         @subform.parent_form=@form # added 2009-12-28 23:02 for cursor stuff BUFFERED
 
-        ch.parent_component(self) # added 2010-01-13 12:55 so offsets can go down ?
+        ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
         ## the next line causes the cursor to atleast move on the screen when we do up and down
         ##+ although it is not within the scrollpane, but starting with 0 offset
         #ch.form=@form  # added 2009-12-28 15:37 BUFFERED SHOCKINGLY, i overwrite formso cursor can be updated
