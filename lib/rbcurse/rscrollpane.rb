@@ -372,6 +372,34 @@ module RubyCurses
       # draw scroll bar
       sz.times{ |i| @graphic.mvaddch(start+1+i, @width-1, ACS_CKBOARD) }
     end
+    # set height
+    # a container must pass down changes in size to it's children
+    # added 2010-01-16 23:55 
+      def height(*val)
+          return @height if val.empty?
+          oldvalue = @height || 0
+          super
+          @height = val[0]
+          return if @viewport == nil
+          delta = @height - oldvalue
+          return if delta == 0
+          @repaint_required = true
+          @viewport.height += delta
+      end
+    # set width
+    # a container must pass down changes in size to it's children
+    # added 2010-01-16 23:55 
+      def width(*val)
+          return @width if val.empty?
+          oldvalue = @width || 0
+          super
+          @width = val[0]
+          return if @viewport == nil
+          delta = @width - oldvalue
+          return if delta == 0
+          @repaint_required = true
+          @viewport.width += delta
+      end
 
   end # class ScrollPane
 end # module

@@ -151,35 +151,23 @@ module RubyCurses
       # @param val [int] new height of splitpane
       # @return [int] old ht if nil passed
       def height(*val)
-          super
           return @height if val.empty?
+          oldvalue = @height || 0
+          super
           @height = val[0]
+          return if @first_component.nil? or @second_component.nil?
+          delta = @height - oldvalue
+          @repaint_required = true
           if !@cascade_boundary_changes.nil?
             # must tell children if height changed which will happen in nested splitpanes
             # must adjust to components own offsets too
-            if @first_component != nil 
-              @first_component.height = @height - @row_offset + @divider_offset
-              @first_component.repaint_all true
-              $log.debug " set fc height to #{@first_component.height} "
+            if @orientation == :VERTICAL_SPLIT
+              @first_component.height += delta
+              @second_component.height += delta
+            else
+              @second_component.height += delta
             end
-            if @second_component != nil 
-              @second_component.height = @height - @row_offset + @divider_offset
-              @second_component.repaint_all true
-            end
-            # junk added ib 2010-01-09 19:04 delete the next block
-          #else
-             ## if exceeding pane height, make fc get taller
-            #if @first_component != nil 
-              #$log.debug " fc height  #{@first_component.height}, pane: #{pane_ht}  "
-              #pane_ht = @height - @row_offset + @divider_offset
-              #if @first_component.height < pane_ht
-                #@first_component.height = pane_ht
-                #@first_component.repaint_all = true
-                #$log.debug " set fc height to #{@first_component.height}, #{pane_ht}  "
-              #end
-            #end
           end
-          @repaint_required = true
       end
       ##
       # change width of splitpane

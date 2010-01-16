@@ -28,8 +28,6 @@ module RubyCurses
   # TODO - 
   
   class Viewport < Widget
-    #dsl_property :height  # height of viewport
-    #dsl_accessor :width  # already present in widget
     # row and col also present int widget
     dsl_accessor :child  # component that is being viewed
 
@@ -125,5 +123,33 @@ module RubyCurses
     def paint
       @repaint_required = false
     end
+    # set height
+    # a container must pass down changes in size to it's children
+    # added 2010-01-16 23:55 
+      def height(*val)
+          return @height if val.empty?
+          oldvalue = @height || 0
+          super
+          @height = val[0]
+          return if @child == nil
+          delta = @height - oldvalue
+          return if delta == 0
+          @repaint_required = true
+          @child.height += delta
+      end
+    # set width
+    # a container must pass down changes in size to it's children
+    # added 2010-01-16 23:55 
+      def width(*val)
+          return @width if val.empty?
+          oldvalue = @width || 0
+          super
+          @width = val[0]
+          return if @child == nil
+          delta = @width - oldvalue
+          return if delta == 0
+          @repaint_required = true
+          @child.width += delta
+      end
   end # class viewport
 end # module
