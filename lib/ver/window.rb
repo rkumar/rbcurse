@@ -538,6 +538,8 @@ module VER
       # should increase widget size or disallow  calling this in this situation.
       if mr > (@sheight + @top -1 -@pminrow)
         $log.warn " ->>> ** set_screen_max_row_col #{mr} > #{@sheight} + #{@top} -1 - #{@pminrow} ** "
+        $log.warn " ->>> can result in error in copy_win or in some rows not displaying"
+        #return # some situations actually require this ...
       end unless mr.nil?
       @screen_maxrow = mr unless mr.nil? # || mr > (@sheight + @top -1 -@pminrow)
       @screen_maxcol = mc unless mc.nil?
@@ -609,6 +611,12 @@ module VER
       ### XXX commented out since it doesn't let a comp print fully if widget expanded (splitpane)
       #smc = osw -1 if smc >= osw; # added 2009-11-02 17:01 for tabbedpanes
 
+      # dang, this is coming up a lot. 2010-01-16 20:34 
+      # the second scrollpane was one row too large in testsplit3a.rb
+      if smr - @top > @padheight
+         $log.debug " fixing smr to padheight  2010-01-16 20:35 HOPE THIS DOESNT BREAK ANYTHING"
+         smr = @padheight
+      end
       @pminrow = 0 if @pminrow < 0
       @pmincol = 0 if @pmincol < 0
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} "
