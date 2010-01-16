@@ -10,6 +10,7 @@ TODO section:
   - add events, property changed etc
   - scrollbars to be classes
   * file created 2009-10-27 19:20 
+  Added a call to child's set_form_col from set_form_row
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -55,9 +56,6 @@ module RubyCurses
       init_vars
       should_create_buffer true
 
-      # create_b moved from repaint since we need to pass form to child component
-      @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
-      @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
 
       # next line does not seem to have an effect.
       # @subform.set_parent_buffer(@graphic) # added 2009-12-28 19:38 BUFFERT (trying out for cursor)
@@ -68,6 +66,12 @@ module RubyCurses
     def child ch
       if ch != nil
 
+      # create_b moved from repaint since we need to pass form to child component
+         #  2010-01-16 20:03 moved again from init so height can be set by parent or whatever
+         if @subform.nil?
+            @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+            @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+         end
         ## setting a form is a formality to prevent bombing
         ##+ however, avoid setting main form, which will then try to
         ##+ traverse this object and print using its own coordinates
@@ -155,31 +159,26 @@ module RubyCurses
       # viewports child should repaint onto pad
       # viewport then clips
       # this calls viewports refresh from its refresh
-      if @screen_buffer == nil
-        #$log.debug " SCRP calling create buffer"
-        #@subpad=create_buffer
-        #@subform = RubyCurses::Form.new @subpad
-        #@viewport.child.set_form(@subform)
-      end
       return unless @repaint_required
-      $log.debug " SCRP scrollpane repaint"
+      $log.debug " #{@name}  SCRP scrollpane repaint"
         # TODO this only if major change
-       if @repaint_border
+       if @repaint_border && @repaint_all # added 2010-01-16 20:15 
         @graphic.wclear
-        $log.debug " repaint scroll r #{@row} c #{@col}  h  #{@height} w #{@width} "
+        $log.debug " #{@name} repaint scroll: r #{@row} c #{@col}  h  #{@height}-1 w #{@width} "
         bordercolor = @border_color || $datacolor
         borderatt = @border_attrib || Ncurses::A_NORMAL
         @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
         h_scroll_bar
         v_scroll_bar
-        @repaint_border = false
+        #@repaint_border = false # commented off on 2010-01-16 20:15 so repaint_all can have effect
        end
       return if @viewport == nil
-      $log.debug "SCRP calling viewport repaint"
+      $log.debug "SCRP  #{@name} calling viewport repaint"
+      @viewport.repaint_all true # 2010-01-16 23:09 
       @viewport.repaint # child's repaint should do it on its pad
-      $log.debug "SCRP calling viewport b2s "
+      $log.debug "SCRP   #{@name} calling viewport b2s "
       ret = @viewport.buffer_to_screen(@graphic)
-      $log.debug " rscollpane vp b2s ret = #{ret} "
+      $log.debug "  #{@name}  rscollpane vp b2s ret = #{ret} "
 
       ## next line rsults in ERROR in log file, does increment rowcol
       ##+ but still not shown on screen.
@@ -321,6 +320,7 @@ module RubyCurses
       if @viewport != nil
         #$log.debug "    calling scrollpane set_form_row"
         ret = @viewport.child.set_form_row # added 2009-12-27 23:23 BUFFERED
+        ret = @viewport.child.set_form_col # added 2010-01-16 21:09 
       end
       $log.debug " FORM SCRP #{@form} "
       $log.debug "SCRP set_form_row #{@form.row}  #{@form.col} "

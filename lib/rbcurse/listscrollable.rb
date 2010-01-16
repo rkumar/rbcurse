@@ -95,7 +95,7 @@ module ListScrollable
     win_row=@form.window.top
     #win_col=@form.window.left
     row = win_row + r + (@current_index-@toprow)  + @form.rows_panned
-    $log.debug "LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow} (orig #{orig_row} )"
+    $log.debug " #{@name} LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow} (orig #{orig_row} )"
     $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} , c= #{c} "
 
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
