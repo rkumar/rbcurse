@@ -90,7 +90,8 @@ module RubyCurses
       return unless @repaint_required
       # should call child's repaint onto pad
       # then this should return clipped pad
-       $log.debug "VP calling child repaint"
+       $log.debug "VP calling child #{@child.name}  repaint"
+      @child.repaint_all
       @child.repaint
       # copy as much of child's buffer to own as per dimensions
       # @child.get_buffer().set_screen_row_col(@child.row, @child.col)
