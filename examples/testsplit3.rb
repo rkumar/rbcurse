@@ -14,6 +14,15 @@
 #  | 2  |               |
 #  |    |               |
 #  \----+---------------/
+# 
+# Please note, this is *not* the ideal way of placing a textview directly inside a 
+# splitpane, unless you size it so that the entire TV is visible inside
+# the splitpane. If the TV is too large, you won't be able to scroll down to the
+# bottom-most portion using TV's inbuilt scrolling (C-n C-p). This is *not* a bug.
+# TV does not know you've put it inside a small SPLP.
+#
+# The ideal way is to put a TV inside a scrollpane, and put the scrollpane inside
+# a SPLP just like all frames on the internet do. That is the subject of the next example.
 #
 #
 #            Released under ruby license. See           #
