@@ -85,6 +85,19 @@ module RubyCurses
           ##+ it can create 2 tiled buffers.
           @first_component.row(1)  # this suddenly causes an initial extra blank which goes away
           @first_component.col(1)
+
+          ## trying out 2010-01-16 12:11 so component does not have to set size
+          # The suggestd heights really depend on orientation.
+          if @orientation == :HORIZONTAL_SPLIT
+             @first_component.height ||= @first_component.preferred_height || @height/2 - 1
+             @first_component.width ||= @first_component.preferred_width || @width - 2
+          else
+             @first_component.height ||= @first_component.preferred_height || @height - 2
+             @first_component.width ||= @first_component.preferred_width || @width/2 -1
+          end
+          @first_component.min_height ||= 5
+          @first_component.min_width ||= 5
+
           # if i set the above 2 to 0, it starts fine but then on any action loses the first row.
           # Just begun happeing suddenly! 2010-01-11 23:38 
 
@@ -115,6 +128,8 @@ module RubyCurses
           ## jeez, we;ve postponed create of buffer XX
           #@second_component.row(1)
           #@second_component.col(1)
+          @second_component.min_height ||= 5 # added 2010-01-16 12:37 
+          @second_component.min_width ||= 5 # added 2010-01-16 12:37 
       end # second_component
 
       ## faster access to the 2 components
@@ -241,9 +256,9 @@ module RubyCurses
             end
           elsif rc < old_divider_location
             if @first_component != nil
+               $log.debug " fc min width #{rc}, #{@first_component.min_width} "
               if @orientation == :VERTICAL_SPLIT
                 # check first comps width
-                $log.debug " fc min width #{rc}, #{@first_component.min_width} "
 
                 if rc-1 < @first_component.min_width
                   $log.debug " SORRY fc min width prevents further resizing"
@@ -387,9 +402,11 @@ module RubyCurses
           @repaint_required = true
           ph, pw = @first_component.get_preferred_size
           if @orientation == :VERTICAL_SPLIT
+             pw ||= @width/2-1  # added 2010-01-16 12:31 so easier to use
               rc = pw+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.width ||= pw ## added 2010-01-11 23:19 
           else
+             ph ||= @height/2 - 1  # added 2010-01-16 12:31 so easier to use
               rc = ph+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.height ||= ph ## added 2010-01-11 23:19 
           end
