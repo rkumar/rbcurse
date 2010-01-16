@@ -128,6 +128,15 @@ module RubyCurses
           ## jeez, we;ve postponed create of buffer XX
           #@second_component.row(1)
           #@second_component.col(1)
+          ## trying out 2010-01-16 12:11 so component does not have to set size
+          # The suggestd heights really depend on orientation.
+          if @orientation == :HORIZONTAL_SPLIT
+             @second_component.height ||= @second_component.preferred_height || @height/2 - 1
+             @second_component.width ||= @second_component.preferred_width || @width - 2
+          else
+             @second_component.height ||= @second_component.preferred_height || @height - 2
+             @second_component.width ||= @second_component.preferred_width || @width/2 -4 # 1 to 4 2010-01-16 22:10  TRYING COULD BREAK STUFF testsplit3a;s right splitpane
+          end
           @second_component.min_height ||= 5 # added 2010-01-16 12:37 
           @second_component.min_width ||= 5 # added 2010-01-16 12:37 
       end # second_component
@@ -186,7 +195,7 @@ module RubyCurses
           super
           @width = val[0]
           delta = @width - oldvalue
-          $log.debug " SPLP width #{oldvalue}, #{@width}, #{delta} "
+          $log.debug " SPLP #{@name} width #{oldvalue}, #{@width}, #{delta} "
           @repaint_required = true
           if !@cascade_boundary_changes.nil?
             # must adjust to components own offsets too
@@ -196,14 +205,14 @@ module RubyCurses
                 old = @first_component.width 
                 #@first_component.width = @width - @col_offset + @divider_offset
                 @first_component.width += delta
-                $log.debug " set fc width to #{@first_component.width}, old was #{old}  "
+                $log.debug " #{@name} set fc width to #{@first_component.width}, old was #{old}  "
               end
               # added 2010-01-11 23:02  horiz 2c not displaying since width issue
               if @second_component != nil 
                 old = @second_component.width 
                 #@first_component.width = @width - @col_offset + @divider_offset
                 @second_component.width += delta
-                $log.debug " set 2c width to #{@second_component.width}, old was #{old}  "
+                $log.debug "  #{@name} set 2c width to #{@second_component.width}, old was #{old}  "
               end
             else
               rc = @divider_location
@@ -215,7 +224,7 @@ module RubyCurses
                   old = @second_component.width 
                   #@second_component.width = @width - @col_offset + @divider_offset
                   @second_component.width += delta
-                  $log.debug " set 2c width to #{@second_component.width} , old was #{old} "
+                  $log.debug " #{@name}  set 2c width to #{@second_component.width} , old was #{old} "
                 end
               end
             end
@@ -242,21 +251,21 @@ module RubyCurses
               if @orientation == :VERTICAL_SPLIT
                 # check second comps width
                 if @width - (rc + @col_offset + @divider_offset+1) < @second_component.min_width
-                  $log.debug " SORRY 2c min width prevents further resizing: #{@width} #{rc}"
+                  $log.debug " #{@name}  SORRY 2c min width prevents further resizing: #{@width} #{rc}"
                   return :ERROR
                 end
               else
                 # check second comps ht
                   $log.debug " YYYY SORRY 2c  H:#{@height} rc: #{rc} 2cmh: #{@second_component.name} "
                 if @height - rc -2 < @second_component.min_height
-                  $log.debug " SORRY 2c min height prevents further resizing"
+                  $log.debug " #{@name}  SORRY 2c min height prevents further resizing"
                   return :ERROR
                 end
               end
             end
           elsif rc < old_divider_location
             if @first_component != nil
-               $log.debug " fc min width #{rc}, #{@first_component.min_width} "
+               $log.debug " #{@name}  fc min width #{rc}, #{@first_component.min_width} "
               if @orientation == :VERTICAL_SPLIT
                 # check first comps width
 
@@ -279,7 +288,7 @@ module RubyCurses
             @first_component.height ||= 0
             @first_component.width ||= 0
             
-              $log.debug " set div location, setting first comp width #{rc}"
+              $log.debug " #{@name}  set div location, setting first comp width #{rc}"
               if !@cascade_changes.nil?
                 if @orientation == :VERTICAL_SPLIT
                   @first_component.width(rc-1) #+ @col_offset + @divider_offset
@@ -338,7 +347,7 @@ module RubyCurses
                 # added 2010-01-09 22:49 to be tested XXX
                 # In a vertical split, if widgets w and thus buffer w is less than
                 #+ pane, a copywin can crash process, so we must expand component, and thus buffer
-                $log.debug " 2c width does it come here? #{@second_component.width} < #{@width} -( #{rc}+#{@col_offset}+#{@divider_offset} +1 "
+                $log.debug " #{@name}  2c width does it come here? #{@second_component.name} #{@second_component.width} < #{@width} -( #{rc}+#{@col_offset}+#{@divider_offset} +1 "
                 if @second_component.width < @width - (rc + @col_offset + @divider_offset + 1)
                   $log.debug " YES 2c width "
                   @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
@@ -347,21 +356,25 @@ module RubyCurses
                 end
               end
           else
+             ## HORIZ SPLIT
               @second_component.row = rc + 1 #@row_offset + @divider_offset
               @second_component.col = 1
               if !@cascade_changes.nil?
                 @second_component.width = @width - 2 #+ @col_offset + @divider_offset
                 @second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
               else
-                if @second_component.height < @height-2  #+ @row_offset + @divider_offset
-                  $log.debug " INCRease 2c ht #{@second_component.height} to match #{@height}-2 "
-                  @second_component.height = @height-2  #+ @row_offset + @divider_offset
+                 # added 2010-01-16 19:14 -rc since its a HORIZ split
+                 #  2010-01-16 20:45 made 2 to 3 for scrollpanes within splits!!! hope it doesnt
+                 #  break, and why 3. 
+                if @second_component.height < @height-rc-3  #+ @row_offset + @divider_offset
+                  $log.debug " #{@name}  INCRease 2c #{@second_component.name}  ht #{@second_component.height} to match #{@height}-3- #{rc}  "
+                  @second_component.height = @height-rc-3  #+ @row_offset + @divider_offset
                   @second_component.repaint_all(true) 
                   @repaint_required = true
                 end
                 # # added 2010-01-10 15:36 still not expanding 
                 if @second_component.width < @width - 2 #+ @col_offset + @divider_offset
-                  $log.debug " INCRease 2c wi #{@second_component.width} to match #{@width}-2 "
+                  $log.debug " #{@name}  INCRease 2c #{@second_component.name}  wi #{@second_component.width} to match #{@width}-2 "
                   @second_component.width = @width - 2 #+ @col_offset + @divider_offset
                   @second_component.repaint_all(true) 
                   @repaint_required = true
@@ -372,7 +385,7 @@ module RubyCurses
           if !@second_component.get_buffer().nil?
             @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
           end
-          $log.debug " 2 set div location, rc #{rc} width #{@width} height #{@height}" 
+          $log.debug " #{@name}  2 set div location, rc #{rc} width #{@width} height #{@height}" 
           $log.debug " 2 set div location, setting r #{@second_component.row} "
           $log.debug " 2 set div location, setting c #{@second_component.col} "
           $log.debug " 2 set div location, setting w #{@second_component.width} "
@@ -402,7 +415,7 @@ module RubyCurses
           @repaint_required = true
           ph, pw = @first_component.get_preferred_size
           if @orientation == :VERTICAL_SPLIT
-             pw ||= @width/2-1  # added 2010-01-16 12:31 so easier to use
+             pw ||= @width/2-1  # added 2010-01-16 12:31 so easier to use, 1 to 2 2010-01-16 22:13 
               rc = pw+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.width ||= pw ## added 2010-01-11 23:19 
           else
@@ -444,7 +457,7 @@ module RubyCurses
           @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
         end
         if @first_component != nil
-          $log.debug " SPLP repaint 1c ..."
+          $log.debug " SPLP #{@name}  repaint 1c ..."
           # this means that some components will create a buffer with default top and left of 0 the
           # first time. Is there no way we can tell FC what top and left to use.
           @first_component.repaint
@@ -458,10 +471,10 @@ module RubyCurses
             @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, @width-2)
           end
           ret = @first_component.buffer_to_screen(@graphic)
-          $log.debug " SPLP repaint fc ret = #{ret} "
+          $log.debug " SPLP repaint  #{@name} fc ret = #{ret} "
         end
         if @second_component != nil
-          $log.debug " SPLP repaint 2c ..."
+          $log.debug " SPLP repaint #{@name}  2c ..."
           @second_component.repaint
 
           # we need to keep top and left of buffer synced with components row and col.
@@ -474,7 +487,7 @@ module RubyCurses
           end
 
           ret = @second_component.buffer_to_screen(@graphic)
-          $log.debug " SPLP repaint 2c ret = #{ret} "
+          $log.debug " SPLP repaint #{@name}  2c ret = #{ret} "
         end
         @buffer_modified = true
         paint # has to paint border if needed, 
