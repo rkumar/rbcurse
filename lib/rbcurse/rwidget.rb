@@ -543,11 +543,12 @@ module RubyCurses
     def create_buffer()
       $log.debug " #{self.class}  CB called with #{@should_create_buffer} H: #{@height} W #{@width}  "
       if @should_create_buffer
+         @height or $log.warn " CB height is nil, setting to 1. This may not be what you want"
         mheight = @height ||  1 # some widgets don't have height XXX
-        mwidth = @width ||  30 # some widgets don't have width as yet
-        mrow = @row || 0
-        mcol = @col || 0
-        layout = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
+        mwidth  = @width ||  30 # some widgets don't have width as yet
+        mrow    = @row || 0
+        mcol    = @col || 0
+        layout  = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
         $log.debug "  cb .. #{@name} create_buffer #{mrow} #{mcol} #{mheight} #{mwidth}"
         @screen_buffer = VER::Pad.create_with_layout(layout)
         @is_double_buffered = true # will be checked prior to blitting
