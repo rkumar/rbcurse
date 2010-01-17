@@ -26,7 +26,7 @@ if $0 == __FILE__
 #      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
-      @help = "q to quit. v for vertical split, h - horizontal. -/+/= to resize split"
+      @help = "q to quit. v for vertical split, h - horizontal. -/+/= to resize split. : #{$0}"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
         splitp = SplitPane.new @form do
           name   "mainpane" 
