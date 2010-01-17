@@ -489,3 +489,16 @@ Now both setformrowcol and setrowcol are correct. However, i think the form
 route of setrowcol is better since a form's offset won't get duplicated.
 
 * * * * * * * *
+
+Subject: container widgets
+--------------------------
+Date: 2010-01-16 23:57
+
+Widgets such as splitpane, scrollpane, viewport and any future widgets should be
+able to pass changes to dimensions down to their children.
+
+So they should have a `height` and `width` method that adds the delta to the
+child, or relevant children. and calls `super`, so that buffers can be
+rebuilt.
+
+* * * * * * * *

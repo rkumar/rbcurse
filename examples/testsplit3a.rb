@@ -66,10 +66,10 @@ if $0 == __FILE__
         end
         # note that splitleft has no form. so focus has to be managed XXX
         splitleft = SplitPane.new nil do
-          name   "C1-left" 
+          name   "splitleft" 
           
-          width w/2 # 30
-          height ht #/2-1
+          #width w/3 # 30
+          #height ht-0 #/2-1
 
           orientation :HORIZONTAL_SPLIT
           border_color $promptcolor
@@ -152,7 +152,7 @@ if $0 == __FILE__
         ret = splitleft.reset_to_preferred_sizes
         splitleft.set_resize_weight(0.50) if ret == :ERROR
 
-        splitleft.preferred_width w/2
+        splitleft.preferred_width w/2 #w/3
         splitleft.preferred_height ht/2-2
         #splitleft.set_resize_weight 0.50
         #ta1.min_width 10
