@@ -45,7 +45,7 @@ if $0 == __FILE__
 #      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
-      @help = "F1 to quit. M- M+ M= v h   C-n   C-p   M-w (alt-w)                   . Check view.log too"
+      @help = "F1 to quit. M- M+ M= v h   C-n   C-p   M-w (alt-w)  : #{$0}      . Check view.log too"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
 
       splitp = SplitPane.new @form do
