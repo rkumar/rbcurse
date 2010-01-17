@@ -62,7 +62,7 @@ if $0 == __FILE__
         @scroll.child(listb)
 
 
-      @help = "q to quit. This is a test of testWidget which uses a pad/buffer."
+      @help = "q to quit. This is a test of Listbox which uses a pad/buffer.: #{$0}"
       #RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
 
       @form.repaint
