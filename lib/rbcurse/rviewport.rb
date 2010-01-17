@@ -90,15 +90,12 @@ module RubyCurses
       # should call child's repaint onto pad
       # then this should return clipped pad
        $log.debug "VP calling child #{@child.name}  repaint"
+       @graphic.wclear # required otherwise bottom of scrollpane had old rows still repeated. 2010-01-17 22:51 
       @child.repaint_all
       @child.repaint
       # copy as much of child's buffer to own as per dimensions
-      # @child.get_buffer().set_screen_row_col(@child.row, @child.col)
        $log.debug "VP calling child b2s"
-#        @graphic.printstring(@row+1,@col+6, "VIEWP", $datacolor)
-#        @child.get_buffer().printstring(@row+5,@col+8, "CHILD", $datacolor)
       ret = @child.buffer_to_screen(@graphic)
-#        @graphic.printstring(@row+3,@col+6, "VIEWPORT", $datacolor)
       @buffer_modified = true
       paint
       # TODO

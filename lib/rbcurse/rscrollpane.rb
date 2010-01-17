@@ -9,8 +9,10 @@
 TODO section:
   - add events, property changed etc
   - scrollbars to be classes
+  - if scrollpane reduced it should also resize, as example inside splitpane.
   * file created 2009-10-27 19:20 
   Added a call to child's set_form_col from set_form_row
+  
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -230,10 +232,10 @@ module RubyCurses
       when ?\M-p.getbyte(0)
           ## scroll up one row (currently one only)
         ret = _up
-      when ?0.getbyte(0), ?\C-[.getbyte(0)
-        goto_start #start of buffer # cursor_start
-      when ?\C-].getbyte(0)
-        goto_end # end / bottom cursor_end # TODO
+      #when ?0.getbyte(0), ?\C-[.getbyte(0)
+        #goto_start #start of buffer # cursor_start
+      #when ?\C-].getbyte(0)
+        #goto_end # end / bottom cursor_end # TODO
       when ?\M-\<.getbyte(0)
         @height.times { _up ; }
       when ?\M-\>.getbyte(0)

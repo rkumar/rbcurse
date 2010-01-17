@@ -1,12 +1,13 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 #*******************************************************#
-#                     testsplit3a.rb                    #
+#                     testsplit3b.rb                    #
 #                 written by Rahul Kumar                #
-#                    January 16, 2010                   #
+#                    January 17, 2010                   #
 #                                                       #
 #  Test textview, split and textarea inside splitpane   #
 #  This wraps a textview inside a scrollpane, and       #
 #  puts the SCRP inside a SPLP                          #
+#  Adds a listbox to the menagerie of objects.          #
 #
 #  /----+---------------\
 #  |   V|              V|
@@ -106,23 +107,46 @@ if $0 == __FILE__
         content = File.open("../README.markdown","r").readlines
         t1.set_content content #, :WRAP_WORD
 
-        # to see lower border i need to set height to ht/2 -2 in both cases, but that
-        # crashes ruby when i reduce height by 1.
-        t2 = TextView.new nil do
-          name   "myView2" 
-          #row 0
-          #col  0 
-          width w/2-1
-          #height ht
-          height (ht/2)-1
-          title "NOTES"
-          title_attrib 'bold'
-          print_footer true
-          footer_attrib 'bold'
+        mylist = []
+        0.upto(50) { |v| mylist << "#{v} scrollable data" }
+        $listdata = Variable.new mylist
+        listb = Listbox.new nil do
+          name   "mylist" 
+          row 0
+          col  0 
+          width w/2
+          height ht/2
+          list_variable $listdata
+          #selection_mode :SINGLE
+          show_selector true
+          row_selected_symbol "[X] "
+          row_unselected_symbol "[ ] "
+          title "A long list"
+          title_attrib 'reverse'
+          cell_editing_allowed true
           should_create_buffer true
         end
-        content = File.open("../NOTES","r").readlines
-        t2.set_content content #, :WRAP_WORD
+        ## The next 2 are not advised since they don't trigger events
+        #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        listb.list_data_model.insert 25, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi cloJure", "git Go"
+        # to see lower border i need to set height to ht/2 -2 in both cases, but that
+        # crashes ruby when i reduce height by 1.
+        #t2 = TextView.new nil do
+          #name   "myView2" 
+          ##row 0
+          ##col  0 
+          #width w/2-1
+          ##height ht
+          #height (ht/2)-1
+          #title "NOTES"
+          #title_attrib 'bold'
+          #print_footer true
+          #footer_attrib 'bold'
+          #should_create_buffer true
+        #end
+        #content = File.open("../NOTES","r").readlines
+        #t2.set_content content #, :WRAP_WORD
 
         scroll1 = ScrollPane.new nil do
           name   "myScroll1" 
@@ -145,7 +169,7 @@ if $0 == __FILE__
         splitleft.first_component(scroll1)
         scroll1.child(t1)
         splitleft.second_component(scroll2)
-        scroll2.child(t2)
+        scroll2.child(listb)
         #t1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
         #t1.preferred_height (ht/2)-1 ## this messes things up when we change orientation
         #t1.set_resize_weight 0.50

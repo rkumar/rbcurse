@@ -50,3 +50,4 @@
  32	[ ] (C) size changes immediately trigger a buffer resize ...instead set a flag so one resize can be done in repaint. otherwise too many resizes (2010-01-16)
  33	[ ] (C) maybe we should combine set_form_row and col since we call them one after another nowadays (2010-01-16)
  34	[ ] (D) ensure scrollpane redraws child only if resized, else it only pans child (2010-01-17)
+ 35	[ ] Scrollpane shold probably reduce when outer is reduced. (2010-01-17)
