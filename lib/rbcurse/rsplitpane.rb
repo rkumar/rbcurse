@@ -136,6 +136,7 @@ module RubyCurses
           else
              @second_component.height ||= @second_component.preferred_height || @height - 2
              @second_component.width ||= @second_component.preferred_width || @width/2 -4 # 1 to 4 2010-01-16 22:10  TRYING COULD BREAK STUFF testsplit3a;s right splitpane
+    # added 2010-01-16 23:55 
           end
           @second_component.min_height ||= 5 # added 2010-01-16 12:37 
           @second_component.min_width ||= 5 # added 2010-01-16 12:37 
@@ -354,9 +355,10 @@ module RubyCurses
                  # added 2010-01-16 19:14 -rc since its a HORIZ split
                  #  2010-01-16 20:45 made 2 to 3 for scrollpanes within splits!!! hope it doesnt
                  #  break, and why 3. 
-                if @second_component.height < @height-rc-3  #+ @row_offset + @divider_offset
-                  $log.debug " #{@name}  INCRease 2c #{@second_component.name}  ht #{@second_component.height} to match #{@height}-3- #{rc}  "
-                  @second_component.height = @height-rc-3  #+ @row_offset + @divider_offset
+                 # 2010-01-17 13:33 reverted to 2. 3 was required since i was not returning when error in set_screen_max.
+                if @second_component.height < @height-rc-2  #+ @row_offset + @divider_offset
+                  $log.debug " #{@name}  INCRease 2c #{@second_component.name}  ht #{@second_component.height} to match #{@height}-2- #{rc}  "
+                  @second_component.height = @height-rc-2  #+ @row_offset + @divider_offset
                   @second_component.repaint_all(true) 
                   @repaint_required = true
                 end
