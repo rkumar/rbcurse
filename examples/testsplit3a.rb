@@ -53,7 +53,7 @@ if $0 == __FILE__
       r = 0; c = 0; ht = 24; w = 100
 
 
-      @help = "F1 to quit. -/+/= to resize outer split, M-, M+, M= for inner split"
+      @help = "F1 to quit. -/+/= to resize outer split, M-, M+, M= for inner split : #{$0}"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
 
         outer = SplitPane.new @form do
@@ -79,7 +79,7 @@ if $0 == __FILE__
           name   "myTextArea" 
           #row 0
           #col  0 
-          width w/2
+          width w # this is ofcourse large, full width
           #height (ht/2)-1
           height ht
           title "README.md"
