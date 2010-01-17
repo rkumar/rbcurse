@@ -539,7 +539,7 @@ module VER
       if mr > (@sheight + @top -1 -@pminrow)
         $log.warn " ->>> ** set_screen_max_row_col #{mr} > #{@sheight} + #{@top} -1 - #{@pminrow} ** "
         $log.warn " ->>> can result in error in copy_win or in some rows not displaying"
-        #return # some situations actually require this ...
+        return # some situations actually require this ...
       end unless mr.nil?
       @screen_maxrow = mr unless mr.nil? # || mr > (@sheight + @top -1 -@pminrow)
       @screen_maxcol = mc unless mc.nil?
@@ -556,7 +556,7 @@ module VER
     def smaxrow
       #$log.debug "    ... niside smaxrow #{@sheight} + #{@top} -1 "
       #@sheight + @top -1 
-      $log.debug " #{@screen_maxrow}   ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
+      $log.debug "smr: #{@screen_maxrow}   ... niside smaxrow #{@sheight} + #{@top} -1 - #{@pminrow}"
       @screen_maxrow || @sheight + @top -1 -@pminrow
     end
     ##
@@ -600,6 +600,10 @@ module VER
       if smr >= osmr
         smr = osmr-1 # XXX causing issues in viewport, wont print footer with this
       end
+      if smr > @sheight + @top -1 -@pminrow # 2010-01-17 13:27 
+         smr = @sheight + @top -1 -@pminrow 
+         $log.debug " adjusted smr to #{smr} to prevent crash "
+      end
       smc = smaxcol()
       $log.debug " SMC original = #{smc} "
       if smc >= osmc
@@ -622,7 +626,7 @@ module VER
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} "
       $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} "
       $log.debug "  -otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
-      ret = @window.copywin(@otherwin.get_window,@pminrow,@pmincol, @top, @left, smr, smc, 0)
+      ret="-"
       #if ret == -1
         $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
         $log.debug "  #{ret} otherwin copy pad H: #{@otherwin.height} W: #{@otherwin.width}"
@@ -644,6 +648,8 @@ module VER
         if smr - @top > @padheight
           $log.debug "  #{ret} ERROR smr  - top  exceeds padheight   #{smr}- #{@top}   PH: #{@padheight} "
         end
+      ret = @window.copywin(@otherwin.get_window,@pminrow,@pmincol, @top, @left, smr, smc, 0)
+      $log.debug " copywin ret #{ret} "
         # 2010-01-11 19:42 one more cause of -1 coming is that padheight (actual height which never
         # changes unless pad increases) or padwidth is smaller than area being printed. Solution: increase 
         # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
