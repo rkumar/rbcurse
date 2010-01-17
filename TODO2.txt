@@ -48,4 +48,5 @@
  30	[ ] setformrow col or setrowcol requires 2 iterations for column and row since both are calc separately. thats for each keypress (2010-01-15)
  31	[ ] move create_buffer to repaintin TA and TV and others, so that enduser does not have to bother. scroll and split can set internally (2010-01-16)
  32	[ ] (C) size changes immediately trigger a buffer resize ...instead set a flag so one resize can be done in repaint. otherwise too many resizes (2010-01-16)
- 33	[ ] maybe we should combine set_form_row and col since we call them one after another nowadays (2010-01-16)
+ 33	[ ] (C) maybe we should combine set_form_row and col since we call them one after another nowadays (2010-01-16)
+ 34	[ ] (D) ensure scrollpane redraws child only if resized, else it only pans child (2010-01-17)

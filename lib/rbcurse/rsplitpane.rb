@@ -55,6 +55,7 @@ module RubyCurses
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
+          
           # cascade_changes keeps the child exactly sized as per the pane which looks nice
           #+ but may not really be what you want.
           #@cascade_changes=true
@@ -342,6 +343,11 @@ module RubyCurses
                   @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
                   @second_component.repaint_all(true) 
                   @repaint_required = true
+                end
+                # adding 2010-01-17 19:33 since when changing to VERT, it was not expanding
+                if @second_component.height < @height-2  #+ @row_offset + @divider_offset
+                   $log.debug " JUST ADDED 2010-01-17 19:35 HOPE DOES NOT BREAK ANYTHING "
+                   @second_component.height = @height-2  #+ @row_offset + @divider_offset
                 end
               end
           else

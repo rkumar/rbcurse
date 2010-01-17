@@ -54,6 +54,7 @@ module RubyCurses
     end
     def set_view_size h,w
       # calling the property shoudl uniformally trigger fire_property_change
+      $log.debug " setting viewport to h #{h} , w #{w} "
       height(h)
       width(w)
       #fire_handler :PROPERTY_CHANGE, self # XXX should it be an event STATE_CHANGED with details
@@ -135,7 +136,12 @@ module RubyCurses
           delta = @height - oldvalue
           return if delta == 0
           @repaint_required = true
-          @child.height += delta
+          if @child.height.nil?
+             @child.height = @height
+             $log.warn " viewport setting child #{@child.name} to default h of #{@height} -- child is usually larger. "
+          else
+             @child.height += delta
+          end
       end
     # set width
     # a container must pass down changes in size to it's children
@@ -149,7 +155,13 @@ module RubyCurses
           delta = @width - oldvalue
           return if delta == 0
           @repaint_required = true
-          @child.width += delta
+          # another safeguard if user did not enter. usesomething sensible 2010-01-17 15:23 
+          if @child.width.nil?
+             @child.width = @width
+             $log.warn " viewport setting child #{@child.name} to default w of #{@width}. Usually child is larger. "
+          else
+             @child.width += delta
+          end
       end
   end # class viewport
 end # module
