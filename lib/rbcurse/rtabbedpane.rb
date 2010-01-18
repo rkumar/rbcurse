@@ -208,7 +208,7 @@ module RubyCurses
       end
       @form.repaint #  This paints the outer form not inner
       @window.wrefresh ## ADDED  2009-11-02 23:29 
-      @buttons.first().fire # make the first form active to start with.
+      @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
     end
     def display_form form
       pad = form.window
