@@ -20,6 +20,9 @@
      <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
     Demos horizontal and vertical scrolling of data.
+    (If this doesn't work, try _sqlc.rb. I was integrating tabbedpanes
+    into sqlc.rb and left off somewhere).
+
 
   * testtodo.rb is a test TODO application (now using fastercsv)
 
