@@ -17,6 +17,7 @@
    FIXME - tabbing in a row, should auto scroll to columns not displayed ?
    currently it moves to next row. (examples/sqlc.rb) - DONE
   
+  * 2010-01-18 19:54 - BUFFERING related changes.
   --------
   * Date:   2008-12-27 21:33 
   * License:
@@ -55,7 +56,7 @@ module RubyCurses
     include RubyCurses::ListSelectable
     include RubyCurses::ListKeys
 
-    dsl_accessor :height
+    #dsl_accessor :height # removed 2010-01-18 19:56 since it would override widget
     dsl_accessor :title
     dsl_accessor :title_attrib
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
@@ -76,6 +77,8 @@ module RubyCurses
       init_vars
       install_list_keys
       install_keys_bindings
+      ## create_buffer needs to move to repaint. widget needs values to use when i creates buffer in repaint.
+      safe_create_buffer # 2010-01-18 19:52 BUFFERED
     end
 
     def init_vars
@@ -781,14 +784,20 @@ module RubyCurses
     end
     def set_form_row
       r,c = rowcol
+      win_row=@form.window.top # 2010-01-18 20:28 added
       # +1 is due to header
-      @form.row = r + (@current_index-@toprow) + 1
+      #@form.row = r + (@current_index-@toprow) + 1
+      frow = r + (@current_index-@toprow) + 1 + win_row + @form.rows_panned
+      setrowcol(frow, nil) # 2010-01-18 20:04 
     end
     # set cursor on correct column, widget
     def set_form_col col=@curpos
       @curpos = col
       @current_column_offset = get_column_offset 
-      @form.col = @col + @col_offset + @curpos + @current_column_offset
+      #@form.col = @col + @col_offset + @curpos + @current_column_offset
+      win_col=@form.window.left
+      fcol = @col + @col_offset + @curpos + @current_column_offset + @form.cols_panned + win_col
+      setrowcol(nil, fcol) # 2010-01-18 20:04 
     end
     # protected
     def get_column_offset columnid=@current_column
@@ -798,8 +807,9 @@ module RubyCurses
 
 
     def repaint
+      #safe_create_buffer # 2010-01-18 19:52 BUFFERED should be here, not above
       return unless @repaint_required
-      print_border @form.window if @to_print_borders == 1 # do this once only, unless everything changes
+      print_border @graphic if @to_print_borders == 1 # do this once only, unless everything changes
       return if @table_model.nil? # added 2009-02-17 12:45 
       @_first_column_print ||= 0
       cc = @table_model.column_count
@@ -840,7 +850,7 @@ module RubyCurses
               renderer.display_length acolumn.width unless acolumn.nil?
             end
             width = renderer.display_length + @inter_column_spacing
-            #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+(colix*11), content, focussed, selected
             acolumn.column_offset = offset
             # trying to ensure that no overprinting
             #  $log.debug "  c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
@@ -868,21 +878,21 @@ module RubyCurses
               # in other cases should be just pass the content as-is. XXX
               contenttrim = content[0..clen] rescue content # .to_s[0..clen]
               # print the inter cell padding just in case things mess up while scrolling
-              @form.window.mvprintw r+hh, c+offset-@inter_column_spacing, inter_column_padding
-              #renderer.repaint @form.window, r+hh, c+offset, crow, content[0..clen], focussed, selected
-              #renderer.repaint @form.window, r+hh, c+offset, crow, contenttrim, focussed, selected
+              @graphic.mvprintw r+hh, c+offset-@inter_column_spacing, inter_column_padding
+              #renderer.repaint @graphic, r+hh, c+offset, crow, content[0..clen], focussed, selected
+              #renderer.repaint @graphic, r+hh, c+offset, crow, contenttrim, focussed, selected
               # 2009-10-05 20:35 XXX passing self so we check it doesn't print outside
               renderer.repaint self, r+hh, c+offset, crow, contenttrim, focussed, selected
               break
             end
             # added crow on 2009-02-11 22:46 
-            #renderer.repaint @form.window, r+hh, c+(offset), crow, content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+(offset), crow, content, focussed, selected
               # 2009-10-05 20:35 XXX
             renderer.repaint self, r+hh, c+(offset), crow, content, focussed, selected
             offset += width
           end
         else
-          #@form.window.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          #@graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
           printstring r+hh, c, " " * (@width-2), acolor,@attr
           # clear rows
         end
@@ -895,6 +905,7 @@ module RubyCurses
       $log.debug " _print_more_data_marker(#{rc} >= #{tr} + #{h})"
       @table_changed = false
       @repaint_required = false
+      @buffer_modified = true
     end
     # NEW to correct overflow
     #  2009-10-05 21:34 
@@ -909,9 +920,9 @@ module RubyCurses
       # if date exceeds boundary truncate
       if c+string.length > (@col+@width)-3
         len = string.length-((c+string.length)-(@col+@width-3))
-        @form.window.printstring(r,c,string[0..len], color,att)
+        @graphic.printstring(r,c,string[0..len], color,att)
       else
-        @form.window.printstring(r,c,string, color,att)
+        @graphic.printstring(r,c,string, color,att)
       end
     end
     def print_border g
@@ -925,16 +936,16 @@ module RubyCurses
     # private
     def _print_more_data_marker tf
       marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
-      @form.window.mvwaddch @row+@height-1, @col+@width-1, marker
+      @graphic.mvwaddch @row+@height-1, @col+@width-1, marker
       marker = @toprow > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
-      @form.window.mvwaddch @row+1, @col+@width-1, marker
+      @graphic.mvwaddch @row+1, @col+@width-1, marker
     end
     def _print_more_columns_marker tf
       marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
-      @form.window.mvwaddch @row+@height, @col+@width-2, marker
+      @graphic.mvwaddch @row+@height, @col+@width-2, marker
       # show if columns to left or not
       marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
-      @form.window.mvwaddch @row+@height, @col+@_first_column_print+1, marker
+      @graphic.mvwaddch @row+@height, @col+@_first_column_print+1, marker
     end
     def print_header
       return unless @table_changed
@@ -966,12 +977,12 @@ module RubyCurses
               end
               #$log.debug " TABLE BREAKING SINCE sl: #{space_left},#{crow},#{colix}: #{clen} "
         # passing self so can prevent renderer from printing outside 2009-10-05 22:56 
-              #renderer.repaint @form.window, r, c+(offset), 0, content[0..clen], false, false
+              #renderer.repaint @graphic, r, c+(offset), 0, content[0..clen], false, false
               renderer.repaint self, r, c+(offset), 0, content[0..clen], false, false
           break
         end
         # passing self so can prevent renderer from printing outside 2009-10-05 22:56 
-        #renderer.repaint @form.window, r, c+(offset),0, content, false, false
+        #renderer.repaint @graphic, r, c+(offset),0, content, false, false
         renderer.repaint self, r, c+(offset),0, content, false, false
         offset += width
       end
