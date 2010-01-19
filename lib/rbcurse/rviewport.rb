@@ -110,8 +110,10 @@ module RubyCurses
       # if this gets key it should just hand it to child
       if @child != nil
         ret = @child.handle_key ch
-        @repaint_required=true # added 2009-12-27 22:25 BUFFERED
+        # 2010-01-19 19:26 commenting off repaint to see.
         return :UNHANDLED if ret == :UNHANDLED
+        # moved below return so only if table handles
+        @repaint_required=true # added 2009-12-27 22:25 BUFFERED WHY ??
       else
         return :UNHANDLED
       end
@@ -120,6 +122,7 @@ module RubyCurses
     end
     def paint
       @repaint_required = false
+      @repaint_all = false
     end
     # set height
     # a container must pass down changes in size to it's children

@@ -166,17 +166,19 @@ module RubyCurses
         # TODO this only if major change
        if @repaint_border && @repaint_all # added 2010-01-16 20:15 
         @graphic.wclear
-        $log.debug " #{@name} repaint scroll: r #{@row} c #{@col}  h  #{@height}-1 w #{@width} "
+        $log.debug " #{@name} repaint all scroll: r #{@row} c #{@col}  h  #{@height}-1 w #{@width} "
         bordercolor = @border_color || $datacolor
         borderatt = @border_attrib || Ncurses::A_NORMAL
         @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
         h_scroll_bar
         v_scroll_bar
+        @viewport.repaint_all(true) unless @viewport.nil? # brought here 2010-01-19 19:34 
         #@repaint_border = false # commented off on 2010-01-16 20:15 so repaint_all can have effect
        end
       return if @viewport == nil
       $log.debug "SCRP  #{@name} calling viewport repaint"
-      @viewport.repaint_all true # 2010-01-16 23:09 
+      #@viewport.repaint_all true # 2010-01-16 23:09 
+      @viewport.repaint_required true # changed 2010-01-19 19:34 
       @viewport.repaint # child's repaint should do it on its pad
       $log.debug "SCRP   #{@name} calling viewport b2s "
       ret = @viewport.buffer_to_screen(@graphic)
@@ -199,10 +201,11 @@ module RubyCurses
     def handle_key ch
       # if this gets key it should just hand it to child
       if @viewport != nil
-        $log.debug "    calling child handle_key KEY"
+        $log.debug "    calling child handle_key #{ch} "
         ret = @viewport.handle_key ch
         # XXX ret returns 0under normal circumstance, so will next line work ?
         # what i mean is if ret == 0
+        
         @repaint_required = true if ret == 0  # added 2009-12-27 22:21 BUFFERED
         $log.debug "  ... child ret #{ret}"
 
@@ -222,7 +225,7 @@ module RubyCurses
         #end
         ##
 
-        return ret if ret == 0
+        return ret if ret != :UNHANDLED
       end
       $log.debug " scrollpane gets KEY #{ch}"
       case ch
@@ -341,6 +344,7 @@ module RubyCurses
 
     def paint
       @repaint_required = false
+      @repaint_all = false
     end
     def h_scroll_bar
       sz = (@viewport.width*1.00/@viewport.child().width)*@viewport.width
