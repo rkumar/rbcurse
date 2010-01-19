@@ -46,10 +46,6 @@ if $0 == __FILE__
       @form = Form.new @window
       r = 1; c = 5; w = 80
       ht = 20
-      # print filler stars
-      filler = "*" * (w+2)
-      #(ht+3).times(){|i| @form.window.printstring(i,c-1, filler, $datacolor) }
-
 
         scroll = ScrollPane.new @form do
           name   "myScroller" 
@@ -58,18 +54,28 @@ if $0 == __FILE__
           width w
           height ht
         end
-      data = [["You're beautiful",3,"James Blunt",3.21, true, "WIP"],
-        ["Where are you",3,"London Beat",3.47, true, "WIP"],
-        ["I'll always love my mama",92,"Intruders",412, true, "Fin"],
-        ["I believe in love",4,"Paula Cole",110.0, false, "Cancel"],
-        ["Red Sky at night",4,"Dave Gilmour",102.72, false, "Postp"],
-        ["Midnight and you",8,"Barry White",12.72, false, "Todo"],
-        ["Let the music play",9,"Barry White",12.2, false, "WIP"],
-        ["I swear",nil,"Boyz II Men",112.7, true, "Cancel"],
-        ["Believe",9,"Elton John",12.2, false, "Todo"],
-        ["Private Dancer",9,"Tina Turner",12.2, false, "Todo"],
-        ["Liberian Girl",9,"Michael Jackson",12.2, false, "Todo"],
-        ["Like a prayer",163,"Charlotte Perrelli",5.4, false, "WIP"]]
+      data = [["Pathetique",3,"Tchaikovsky",3.21, true, "WIP"],
+        ["Ali Maula Ali Maula",3,"NFAK",3.47, true, "WIP"],
+        ["Tera Hijr Mera Nasib",92,"Razia Sultan",412, true, "Fin"],
+        ["Piano Concerto 4&5",4,"Beethoven",110.0, false, "Cancel"],
+        ["Toccata and Fugue",4,"J S Bach",102.72, false, "Postp"],
+        ["Symphony No. 3",4,"Henryk Gorecki",102.72, true, "Postp"],
+        ["The Great Gig in the Sky",8,"Pink Floyd",12.72, false, "Todo"],
+        ["Steppes of Central Asia",9,"Borodin",12.2, false, "WIP"],
+        ["Wish You Were Here",8,"Pink Floyd",2.7, false, "Todo"],
+        ["Habanera",nil,"Maria Callas",112.7, true, "Cancel"],
+        ["Mack the Knife",9,"Loius Armstrong",12.2, false, "Todo"],
+        ["Prince Igor",9,"Borodin",16.3, false, "WIP"],
+        ["Shahbaaz Qalandar",9,"Nusrat Fateh Ali Jhan",12.2, false, "Todo"],
+        ["Raag Darbari",9,"Ustad Fateh Ali Khan",12.2, false, "Todo"],
+        ["Yaad-e-Mustafa Aisi",9,"Santoo Khan",12.2, true, "Todo"],
+        ["Chaconne",4,"Johann S Bach",12.42, true, "Postp"],
+        ["Raag Jaunpuri",9,"Ustad Fateh Ali Khan",12.2, false, "Todo"],
+        ["Dalaleragita",9,"Vaishnava",12.2, false, "Todo"],
+        ["Prasada sevaya",9,"Vaishnava",12.2, false, "Todo"],
+        ["Sri Rupamanjiri",9,"Vaishnava",12.2, false, "Todo"],
+        ["M Vlast ",9,"Smetana",12.2, false, "Todo"],
+        ["Jai Radha Madhava",163,"Jagjit Singh",5.4, false, "WIP"]]
 
       colnames = %w[ Song Cat Artist Ratio Flag Status]
       statuses = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
@@ -131,24 +137,9 @@ if $0 == __FILE__
           #bind_key(KEY_RIGHT) { sel_col.value = sel_col.value+1; current_column sel_col.value}
           #bind_key(KEY_LEFT) { sel_col.value = sel_col.value-1;current_column sel_col.value}
         end
-        #@textview = TextView.new nil do
-          #name   "myView" 
-          #row 0
-          #col  0 
-          #width w+10
-          #height ht+20
-          #title "README.txt"
-          #title_attrib 'bold'
-          #print_footer true
-          #footer_attrib 'bold'
-          #should_create_buffer true
-        #end
-        #content = File.open("../README.markdown","r").readlines
-        #@textview.set_content content #, :WRAP_WORD
-        #@scroll.child(@textview)
         scroll.child(atable)
 
-      @help = "F1 to quit. This is a test of Table inside a scrollpane. #{$0} "
+      @help = "F1 to quit. This is a test of Table inside a scrollpane. #{$0} M-n M-p M-< M-> M-h M-l"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r+1, "col" => 2, "color" => "yellow"}
 
       @form.repaint
