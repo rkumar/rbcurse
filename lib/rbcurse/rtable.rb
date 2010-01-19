@@ -441,6 +441,12 @@ module RubyCurses
       end
       @cell_editor = editor
       @repaint_required = true
+      # copied from rlistbox, so that editors write on parent's graphic, otherwise
+      # their screen updates get overwritten by parent. 2010-01-19 20:17 
+      if @should_create_buffer
+        $log.debug "LB #{@name} overriding editors comp with GRAPHIC #{@graphic} "
+        editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
+      end
       set_form_col 
     end
     ## Its too late to call components on_leave here
