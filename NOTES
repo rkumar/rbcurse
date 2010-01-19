@@ -39,11 +39,11 @@ Use `safe_create_buffer`
 
 4. Replace @form.window with @graphic
 
-5. `set_form_col` needs to call `@form.setrowcol` as in rtextarea.
+5. `set_form_col` needs to call `setrowcol` as in rtextarea.
    Also, you need to add cols_panned and rows_panned so the widget knows
    how much it as been panned, and keeps the cursor in correct place.
 
-6. `set_form_row` needs to call @form.setrowcol as in rtextarea. See above entry
+6. `set_form_row` needs to call setrowcol as in rtextarea. See above entry
    for details.
 
 7. Need to add the following in initialization of container such as rscrollpane
@@ -52,14 +52,21 @@ Use `safe_create_buffer`
 
    Also when creating a widget to put inside a container, use this line (see
    samples below), as this needs to happen at construction time.
+   (This is in the application file when creating an instance, not the widget class).
 
 8. Remove any `dsl_accessor` on height or width since this will override widget.
-   If you create a method, call `super()`.
+   If you create a method, call `super()`. You need to create a method called
+   height and width in order to pass delta down to children components if
+   applicable, also call `super`.
 
-9. You may have to `print_borders()` in `repaint()`, checking for `@Wrepaint_all` (see
+9. You may have to `print_borders()` in `repaint()`, checking for `@repaint_all` (see
    rtextview.rb). i.e, don't print just once in constructor, since when the
    object is placed inside a splitpane, its size can change.
 
+      if @should_create_buffer
+        $log.debug " overriding editors comp with GRAPHIC #{@graphic} "                                                   editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
+      end
+ 
 See testscrollp.rb or testscrollta.rb for working sample.
 
 * * *
@@ -500,5 +507,56 @@ able to pass changes to dimensions down to their children.
 So they should have a `height` and `width` method that adds the delta to the
 child, or relevant children. and calls `super`, so that buffers can be
 rebuilt.
+
+* * * * * * * *
+
+Subject: scrolling and wrefresh
+-------------------------------
+Date: 2010-01-19 12:26
+
+Suggested optimizations to pad and `wclear.`
+Currently, i have to do a `wclear` everytime i scroll a pad or else
+previously displayed data if often not cleared off and remains.
+**Can this extra clearing be avoided**. i once tried `clr_to_bot` but
+did not seem to work.
+
+This happens when we scroll past last row (or last col in horizontal
+scrolling).
+
+Options to reduce or obviate `wclear:`
+
+1. Get scroll exactly so that no empty rows or columns shown. Very
+   dicey.
+
+2. `wclear` only after a point when reaching the end. Setting some flag.
+   e.g. when `number of rows < scrollatrow().`
+
+3. Don't clear entire window, but only the region you don't paint over.
+   Try clear to bottom again.
+
+4. Define pad larger (extra rows by size of widget) so that there's
+   alway that much blank rows there. Same for width.
+   If displaying 100 rows in a 10 row widget, define pad as 110, so when
+   scrolling last page, there's always blank space ahead. This should
+   totally obviate `wclear`.
+
+* * * * * * * *
+
+Subject: scrollpane updates
+---------------------------
+Date: 2010-01-19 19:40
+
+A scrollpane only clears and repaints the entire area if its size is
+changed or it is scrolled. In such cases, the `repaint_all` variable is set
+to true. 
+
+In all other cases, it only copies the child's buffer up. This is
+required otherwise changes to the child will not show up at all. Thus,
+changes to `rviewport` and `rscrollpane` have been made. 
+
+The awful flashing has stopped, however all test programs that use
+Scrollpane have to be retested -- YAY !
+
+Isn't testing over and over again such fun.
 
 * * * * * * * *
