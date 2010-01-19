@@ -57,8 +57,8 @@ if $0 == __FILE__
         @textview << "Love all creatures for they are none but yourself."
 
 
-      @help = "q to quit. This is a test of TextArea which uses a pad/buffer.: #{$0}"
-      #RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
+      @help = "q to quit. This is a test of TextArea which uses a pad/buffer.: #{$0} (M-L to elongate)"
+      RubyCurses::Label.new @form, {'text' => @help, "row" => 23, "col" => 2, "color" => "yellow"}
 
       @form.repaint
       @window.wrefresh
