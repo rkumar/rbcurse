@@ -58,6 +58,8 @@ applications.
 * labels with mnemonics (hotkeys)
 * Table: multi-column table - with cell selection and editing, horizontal and
   vertical scrolling
+* Scrollpanes which can contain textviews, textareas, listboxes.
+* Splitpanes which can contain scrollpanes, textviews/areas, listboxes *or splitpanes* ...
 * Various others, too
 
 Above may be created using DSL like syntax, or hashes, and modified at
@@ -65,9 +67,7 @@ will/runtime. Very flexible unlike ncurses forms and fields.
 
 ## Current work
 
-Currently working on **scrollpanes** and **splitpanes**. Made a lot of progress. Things
-are shaping up.  Have changed textarea and textview to work in scrollpanes. Now
-to make the same changes in listboxes, tabbedpanes and tables.
+Currently working once again on tabbedpanes to see they work with various widgets. 
 
 That should call for a major release.
 
@@ -119,7 +119,9 @@ For test programs, see test1, test2, testcombo etc in examples folder.
 
 This depends only on "window" provided by ncurses. Does not use forms
 and fields. Minor changes and improvements may have happened to sample
-code below. See test programs for latest, working code.
+code below. **See test programs for latest, working code.**
+
+THE following samples are only demonstrative of how widgets are built. See samples in examples folder for initialization of ncurses etc which is necessary before the following code can be run. The following samples may be slightly obsolete.
 
 ### create a window and a form based on window
 
@@ -175,8 +177,8 @@ code below. See test programs for latest, working code.
           width 40
           height 20
         end
-        texta << "hello there" << "we are testing deletes in this application"
-        texta << "HELLO there" << "WE ARE testing deletes in this application"
+        texta << "hello there" << "Some text to go into textarea."
+        texta << "HELLO ruby" << "Some text to go into textarea."
 
 ### create a check box, updates a Variable
 
@@ -280,7 +282,7 @@ code below. See test programs for latest, working code.
           width 40
           height 7
         end
-        content = File.open("../../README.txt","r").readlines
+        content = File.open("../../README.markdown","r").readlines
         @textview.set_content content
 
         ## set it to point to row 21
@@ -353,14 +355,19 @@ errors will persist at runtime.
 first line regarding interpreter first).
 8. As a last resort, I've put up a copy of the gem [here](http://www.benegal.org/files/ncurses-1.2.4.gem).
 
+(edit: I am told that step 2 installs ncurses-ruby locally, so you don't need to create a gem)
+
 STEP 2.
 
    `sudo gem install rbcurse`
 
- Now go to the the examples folder and execute some examples.
+ Now go to the the `examples` folder and execute some examples.
 
     cd examples 
     ruby test2.rb
+
+
+Note: if you are downloading the git repo, you may find that the Manifest.txt does not contain some files, or README.txt has changed to README.markdown. I have not been creating a 1.9 gem while testing changes, so the Manifest can be outdated. I'll try to keep it updated.
 
 ## LICENSE:
 
