@@ -57,4 +57,5 @@ lib/ver/window.rb
 test/test_rbcurse.rb
 lib/rbcurse/rscrollpane.rb
 lib/rbcurse/rsplitpane.rb
+lib/rbcurse/rviewport.rb
 
