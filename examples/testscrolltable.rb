@@ -5,17 +5,19 @@
 #                    January 18, 2010                   #
 #                                                       #
 #  Test table inside a scrollpane.                      #
+#  The table here has minimal functionality. Pls refer  #
+#  testtable.rb for more complete functionality.        #
 #
 #  /----+----+----+-----\
-#  |                   V|
-#  |                   V|
-#  |                   V|
-#  +            1      V|
-#  |                   V|
-#  |                   V|
-#  |>>>>>>>>>>>         |
-#  \----+---------------/
-# 
+#  |____|____|____|_____|
+#  |    |    |    |    V|
+#  |    |    |    |    V|
+#  +    |    |    |    V|
+#  |    |    |    |    V|
+#  |    |    |    |    V|
+#  |>>>>>>>>>>>   |     |
+#  \----+----+----+-----/
+#  http://totalrecall.files.wordpress.com/2010/01/rbcurse-tablescrollpane.png
 #
 #
 #            Released under ruby license. See           #
@@ -66,7 +68,7 @@ if $0 == __FILE__
         ["Habanera",nil,"Maria Callas",112.7, true, "Cancel"],
         ["Mack the Knife",9,"Loius Armstrong",12.2, false, "Todo"],
         ["Prince Igor",9,"Borodin",16.3, false, "WIP"],
-        ["Shahbaaz Qalandar",9,"Nusrat Fateh Ali Jhan",12.2, false, "Todo"],
+        ["Shahbaaz Qalandar",9,"Nusrat Fateh Ali Khan",12.2, false, "Todo"],
         ["Raag Darbari",9,"Ustad Fateh Ali Khan",12.2, false, "Todo"],
         ["Yaad-e-Mustafa Aisi",9,"Santoo Khan",12.2, true, "Todo"],
         ["Chaconne",4,"Johann S Bach",12.42, true, "Postp"],

@@ -38,6 +38,7 @@ module RubyCurses
     attr_reader :toprow    # the toprow in the view (offsets are 0)
 #    attr_reader :prow     # the row on which cursor/focus is
     attr_reader :winrow   # the row in the viewport/window
+    # painting the footer does slow down cursor painting slightly if one is moving cursor fast
     dsl_accessor :print_footer
 
     def initialize form, config={}, &block
@@ -151,6 +152,7 @@ module RubyCurses
       $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
       #@graphic.printstring( @height, 2, footer, $datacolor, @footer_attrib) 
+      @repaint_footer_required = false # 2010-01-23 22:55 
     end
     ### FOR scrollable ###
     def get_content
@@ -161,9 +163,9 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textview
-      return unless @repaint_required
-      paint
-      print_foot if @print_footer
+      
+      paint if @repaint_required
+      print_foot if @print_footer && @repaint_footer_required
     end
     def getvalue
       @list
@@ -283,7 +285,8 @@ module RubyCurses
       #@form.setrowcol @form.row, col
       setrowcol nil, col2
       # XXX 
-      @repaint_required = true
+      #@repaint_required = true
+      @repaint_footer_required = true
     end
     def cursor_forward
       maxlen = @maxlen || @width-2
@@ -294,14 +297,17 @@ module RubyCurses
         @pcol += 1 if @pcol <= @buffer.length
       end
       set_form_col 
-      @repaint_required = true
+      #@repaint_required = true
+      @repaint_footer_required = true # 2010-01-23 22:41 
     end
     def addcol num
-      @repaint_required = true
+      #@repaint_required = true
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @form.addcol num
     end
     def addrowcol row,col
-      @repaint_required = true
+      #@repaint_required = true
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @form.addrowcol row, col
     end
     def cursor_backward
@@ -312,7 +318,8 @@ module RubyCurses
       elsif @pcol > 0 
         @pcol -= 1   
       end
-      @repaint_required = true
+      #@repaint_required = true
+      @repaint_footer_required = true # 2010-01-23 22:41 
     end
     # gives offset of next line, does not move
     def next_line
@@ -370,8 +377,10 @@ module RubyCurses
           @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
+      show_caret_func
       @table_changed = false
       @repaint_required = false
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false # added 2010-01-08 18:56 for redrawing everything
     end

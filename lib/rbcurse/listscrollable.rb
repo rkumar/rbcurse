@@ -9,6 +9,7 @@
 #
 module ListScrollable
   attr_reader :search_found_ix, :find_offset, :find_offset1
+  attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
   def previous_row
     @oldrow = @current_index
     @current_index -= 1 if @current_index > 0
@@ -104,6 +105,31 @@ module ListScrollable
     #@form.setrowcol row, nil
     #setformrowcol row, nil
     setrowcol row, nil
+    paint_internal_cursor
+  end
+  ## In many situations like placing a textarea or textview inside a splitpane 
+  ##+ or scrollpane there have been issues getting the cursor at the right point, 
+  ##+ since there are multiple buffers. Finally in tabbedpanes, i am pretty 
+  ##+ lost getting the correct position, and i feel we should set the cursor 
+  ##+ internally once and for all. So here's an attempt
+
+  # paint the cursor ourselves on the widget, rather than rely on getting to the top window with
+  # the correct coordinates. I do need to erase cursor too. Can be dicey, but is worth the attempt.
+  def show_caret_func
+      return unless @show_caret
+      # trying highlighting cursor 2010-01-23 19:07 TABBEDPANE TRYING
+      # TODO take into account rows_panned etc ?
+      r,c = rowcol
+      yy = r + @current_index - @toprow - @form.window.top
+      xx = @form.col
+      #$log.debug " printing CURSOR at #{yy}: fr: #{@form.row} fwt: #{@form.window.top} r:#{@row} tr:#{@toprow} ci:#{@current_index}  "
+      if !@oldcursorrow.nil?
+          @graphic.mvchgat(y=@oldcursorrow, x=@oldcursorcol, 1, Ncurses::A_NORMAL, $datacolor, NIL)
+      end
+      @oldcursorrow = yy
+      @oldcursorcol = xx
+      @graphic.mvchgat(y=yy, x=xx, 1, Ncurses::A_NORMAL, $reversecolor, nil)
+      @buffer_modified = true
   end
   def right
     @hscrollcols ||= @cols/2

@@ -51,3 +51,5 @@
  37	[ ] (B) test rtable in splitpane and scrollpanes (2010-01-18)
  38	[ ] (B) test various widgets inside rtabbedpane (2010-01-19)
  39	[ ] +Scrollpane cursor issues  * cursor goes off. need to hide when off (2010-01-19)
+ 40	[ ] correct gemspec files for master and rb19, remove unneeded files and corrected readme etc (2010-01-22)
+ 41	[ ] textareas: C-a C-e does not repain which is good, but footer not updated (2010-01-23)

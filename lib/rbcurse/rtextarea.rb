@@ -77,6 +77,7 @@ module RubyCurses
     end
     def init_vars
       @repaint_required = true
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @toprow = @current_index = @pcol = 0
       @repaint_all=true 
     end
@@ -194,10 +195,11 @@ module RubyCurses
     def print_foot
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos}, #{@list.length} lines  "
-      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+      #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       # changed 2010-01-02 19:31 BUFFERED we were exceeding 1
       #@graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
       @graphic.printstring( @row + @height-1, @col+2, footer, $datacolor, @footer_attrib) 
+      @repaint_footer_required = false
     end
     ### FOR scrollable ###
     def get_content
@@ -208,9 +210,9 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textarea
-      return unless @repaint_required
-      paint
-      print_foot if @print_footer
+      
+      paint if @repaint_required
+      print_foot if @print_footer && (@repaint_footer_required || @repaint_required)
     end
     def getvalue
       @list
@@ -350,6 +352,7 @@ module RubyCurses
       #@form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
       $log.debug " TA calling setformrow col nil, #{col} "
       setrowcol nil, col   # added 2009-12-29 18:50 BUFFERED
+      @repaint_footer_required = true
     end
     def cursor_bounds_check
       max = buffer_len()
@@ -407,12 +410,18 @@ module RubyCurses
       return true if @list.length == @current_index + 1
       return false
     end
+    # FIXME : these 2 only require the footer to be repainted not everything
+    # We should be able to manage that. We need a repaint_footer_required.
+    # Setting repaint_required really slows performance when one presses the right arrow key
+    # since a repaint is happenign repeatedly for each key.
     def addcol num
-      @repaint_required = true # added 2010-01-15 23:59 
+#     @repaint_required = true # added 2010-01-15 23:59, so that footer is updated, sucks!
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @form.addcol num
     end
     def addrowcol row,col
-      @repaint_required = true # added 2010-01-15 23:59 
+      #@repaint_required = true # added 2010-01-15 23:59 
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @form.addrowcol row, col
     end
     ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
@@ -690,6 +699,7 @@ module RubyCurses
     def set_modified tf=true
       @modified = tf
       @repaint_required = tf
+      @repaint_footer_required = tf
       # 2010-01-14 22:45 putting a check for form, so not necessary to have form set when appending data
       @form.modified = true if tf and !@form.nil?
     end
@@ -768,8 +778,11 @@ module RubyCurses
           @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
+      show_caret_func
+
       @table_changed = false
       @repaint_required = false
+      @repaint_footer_required = true # 2010-01-23 22:41 
       @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false # added 2010-01-14 for redrawing everything
     end
@@ -783,6 +796,10 @@ module RubyCurses
           set_form_col @find_offset
         end
     end
+    ## trying out for tabbedpanes 2010-01-21 19:48 
+    #def on_enter
+        #set_form_row
+    #end
   end # class textarea
   ##
 end # modul
