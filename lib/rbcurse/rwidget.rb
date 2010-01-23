@@ -359,6 +359,10 @@ module RubyCurses
     def on_leave
       fire_handler :LEAVE, self
     end
+    ## 
+    # @return row and col of a widget where painting data actually starts
+    # row and col is where a widget starts. offsets usually take into account borders.
+    # the offsets typically are where the cursor should be positioned inside, upon on_enter.
     def rowcol
     # $log.debug "widgte rowcol : #{@row+@row_offset}, #{@col+@col_offset}"
       return @row+@row_offset, @col+@col_offset
