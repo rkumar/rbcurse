@@ -91,7 +91,7 @@ module RubyCurses
   #  include EventHandler - widget does
     #attr_reader :visible
     #dsl_accessor :row, :col
-    dsl_accessor :height, :width
+#    dsl_accessor :height, :width # commented off 2010-01-21 20:37 
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
     attr_reader :selected_index
@@ -111,6 +111,7 @@ module RubyCurses
       @config = aconfig
       #@config.each_pair { |k,v| variable_set(k,v) }
       #instance_eval &block if block_given?
+      @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
       should_create_buffer true # added 2010-01-10 22:54 
     end
     ##
@@ -153,21 +154,21 @@ module RubyCurses
     def create_window
       set_buffer_modified()
       # first create the main top window with the tab buttons on it.
-      $log.debug "create_window R #{@row}, C #{@col} #{@height} #{@width} "
-      @layout = { :height => @height, :width => @width, :top => @row, :left => @col } 
-      #@layout = { :height => 2, :width => @width, :top => @row, :left => @col } 
-      #@window = VER::Window.new(@layout)
-      #@window = @parentwin.derwin(@height, @width, @row, @col)
-      #@window = @parentwin.derwin(@layout)
+      $log.debug " TPane create_buff Top #{@row}, Left #{@col} H #{@height} W #{@width} "
+      #$log.debug " parentwin #{@parentwin.left} #{@parentwin.top} "
+      r = @row
+      c = @col
+      @layout = { :height => @height, :width => @width, :top => r, :left => c } 
       @window = safe_create_buffer # trying this out.
       $log.debug("WINDOW PAD #{@window}")
       ## seems this form is for the tabbed buttons on top XXX
       @form = RubyCurses::Form.new @window
+      @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
       @current_form = @form
       @window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       @window.box( 0, 0);
-      #@parentwin.get_window().touchwin()
+      
       ##### XXX @window.wrefresh
       Ncurses::Panel.update_panels
       col = 1
@@ -212,11 +213,11 @@ module RubyCurses
     end
     def display_form form
       pad = form.window
-      $log.debug " before pad copy "
+      $log.debug " TP display form before pad copy "
       #ret = pad.wrefresh # overridden to prefresh.
       pad.set_backing_window(@graphic)
       ret = pad.copy_pad_to_win
-      $log.debug " after pad copy #{ret} "
+      $log.debug " display form after pad copy #{ret} "
       form.repaint #   added 2009-11-03 23:27  paint widgets in inside form
       @window.wrefresh
     end
@@ -231,6 +232,8 @@ module RubyCurses
       #window = safe_create_buffer() # DARN, this overwrites higher one, if at all created.
       # needed to be at tab level, but that's not a widget
       form = RubyCurses::Form.new window # we now pass a pad and hope for best
+      ## added 2010-01-21 15:46 to pass cursor up
+      form.parent_form = @parent  ## TRYING OUT BUFFERED CURSOR PLACEMENT
       form.navigation_policy = :NON_CYCLICAL
       window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       window.box( 0, 0);
