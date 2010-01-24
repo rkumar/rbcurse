@@ -105,7 +105,7 @@ module ListScrollable
     #@form.setrowcol row, nil
     #setformrowcol row, nil
     setrowcol row, nil
-    paint_internal_cursor
+    show_caret_func
   end
   ## In many situations like placing a textarea or textview inside a splitpane 
   ##+ or scrollpane there have been issues getting the cursor at the right point, 
