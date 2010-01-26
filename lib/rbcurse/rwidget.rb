@@ -755,8 +755,6 @@ module RubyCurses
            # this is stupid, going through this route i was losing windows top and left
            # And this could get repeated if there are mult objects. 
         if !@parent_component.nil? and @parent_component != self
-           #r +=  @parent_component.row_offset unless r.nil?
-           #c +=  @parent_component.col_offset unless c.nil?
            r+= @parent_component.form.window.top unless  r.nil?
            c+= @parent_component.form.window.left unless c.nil?
            $log.debug " (#{@name}) calling parents setformrowcol #{r}, #{c} pa: #{@parent_component.name} self: #{name}, #{self.class}, poff #{@parent_component.row_offset}, #{@parent_component.col_offset}, top:#{@form.window.left} left:#{@form.window.left} "
@@ -807,6 +805,9 @@ module RubyCurses
     attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED 
     # how many cols the component is panning embedded widget by
     attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED 
+    ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
+    attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
+    attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
     def initialize win, &block
       @window = win
       @widgets = []
@@ -814,6 +815,7 @@ module RubyCurses
       @active_index = -1
       @padx = @pady = 0
       @row = @col = -1
+      @add_cols = @add_rows = 0 # 2010-01-26 20:28 
       @handler = {}
       @modified = false
       @focusable = true
@@ -1126,6 +1128,9 @@ module RubyCurses
     def setrowcol r, c
       @row = r unless r.nil?
       @col = c unless c.nil?
+           r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
+           c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
+           $log.debug " addcols #{@add_cols} addrow #{@add_rows} "
       if !@parent_form.nil? and @parent_form != self
         $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : #{@parent_form}; #{self}, #{self.class}  "
         r += @parent_form.window.top unless  r.nil?

@@ -222,7 +222,9 @@ module RubyCurses
       @window.wrefresh
     end
     def create_tab_form tab
-      layout = { :height => @height-2, :width => @width, :top => 2, :left => 0 } 
+        mtop = 2
+        mleft = 0
+      layout = { :height => @height-2, :width => @width, :top => mtop, :left => mleft } 
       #layout = { :height => @height-2, :width => @width, :top => @row+0, :left => @col+0 } 
       #window = VER::Window.new(layout)
       #window = @parentwin.derwin(@height-2, @width, @row+2, @col)
@@ -241,6 +243,8 @@ module RubyCurses
       window.mvprintw(1,1, tab.text.tr('&', ''))
       ##window.wrefresh
       ##Ncurses::Panel.update_panels
+      form.add_cols=@col-mleft # added 2010-01-26 20:25 since needs accounting by cursor
+      form.add_rows=@row-mtop # added 2010-01-26 20:25 since needs accounting by cursor
       return form
     end
     ##
