@@ -716,3 +716,17 @@ and `addrowcol`).
 I am thinking of making this method paint_internal_cursor conditional.
 
 * * * * * * * *
+
+Subject: aah the tabbedpane cursor offset issue
+-----------------------------------------------
+Date: 2010-01-26 20:10
+
+How daft of me! The tabbedpane's own row and col were resulting in the
+textarea not being able to calculate the correct cursor offset.
+So we do have to look at parent objects and their own row and col, do
+we? But what of scrollpanes and splitpanes ?
+
+So basically while setting cursor, i need to add parent's row and col,
+too.
+
+* * * * * * * *
