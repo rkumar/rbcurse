@@ -301,6 +301,7 @@ module VER
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
+      #$log.debug " inside window printstring r #{r} c #{c} #{string} "
       att = Ncurses::A_NORMAL if att.nil?
       case att.to_s.downcase
       when 'underline'
@@ -361,9 +362,11 @@ module VER
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
 
-      $log.debug " inside print_border r #{row} c #{col} h #{height} w #{width} "
+      $log.debug " inside window print_border r #{row} c #{col} h #{height} w #{width} "
 
       # 2009-11-02 00:45 made att nil for blanking out
+      # FIXME - in tabbedpanes this clears one previous line ??? XXX when using a textarea/view
+      # when using a pad this calls pads printstring which again reduces top and left !!! 2010-01-26 23:53 
       (row+1).upto(row+height-1) do |r|
         printstring( r, col+1," "*(width-2) , $datacolor, nil)
       end
@@ -682,6 +685,8 @@ module VER
     # @param [Fixnum] color - color combination
     # @param [Fixnum, nil] attrib defaults to NORMAL
 
+    # FIXME when called from super.print_border this once again removed top and left
+    # which clears one row above
     def printstring(row,col,value,color,attrib=Ncurses::A_NORMAL)
       #$log.debug " pad printstring #{row} - #{@top} , #{col} - #{@left} "
       super(row - @top, col - @left, value, color, attrib)
