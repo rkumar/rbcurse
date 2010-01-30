@@ -1091,19 +1091,23 @@ module RubyCurses
     alias :req_next_field :select_next_field
     alias :req_prev_field :select_prev_field
     ##
-    # move cursor by num columns
+    # move cursor by num columns. Form
     def addcol num
       return if @col.nil? or @col == -1
       @col += num
       @window.wmove @row, @col
+      ## 2010-01-30 23:45 exchange calling parent with calling this forms setrow
+      # since in tabbedpane with table i am not gietting this forms offset. 
+        setrowcol nil, col
       # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
-      if !@parent_form.nil? and @parent_form != self #@form
-        $log.debug " #{@name} addcol calling parents setrowcol #{row}, #{col}  "
-        @parent_form.setrowcol nil, col
-      end
+      #if !@parent_form.nil? and @parent_form != self #@form
+        #$log.debug " #{@name} addcol calling parents setrowcol #{row}, #{col}: #{@parent_form}   "
+        #@parent_form.setrowcol nil, col
+      #end
     end
     ##
     # move cursor by given rows and columns, can be negative.
+    # 2010-01-30 23:47 FIXME, if this is called we should call setrowcol like in addcol
     def addrowcol row,col
       return if @col.nil? or @col == -1   # contradicts comment on top
       return if @row.nil? or @row == -1
@@ -1130,9 +1134,9 @@ module RubyCurses
       @col = c unless c.nil?
            r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
            c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
-           $log.debug " addcols #{@add_cols} addrow #{@add_rows} "
+           $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self}  "
       if !@parent_form.nil? and @parent_form != self
-        $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : #{@parent_form}; #{self}, #{self.class}  "
+        $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
         r += @parent_form.window.top unless  r.nil?
         c += @parent_form.window.left unless c.nil?
         @parent_form.setrowcol r, c
@@ -1533,6 +1537,7 @@ module RubyCurses
       set_modified 
       addcol -1
     end
+    ## add a column to cursor position. Field
     def addcol num
       if num < 0
         if @form.col <= @col + @col_offset
