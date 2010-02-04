@@ -808,7 +808,7 @@ module RubyCurses
     ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
     attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
-    attr_accessor :dname # for debugging 2010-02-02 20:12 
+    attr_accessor :name # for debugging 2010-02-02 20:12 
     def initialize win, &block
       @window = win
       @widgets = []
@@ -827,7 +827,7 @@ module RubyCurses
       ##+ cursor coordinate to system.
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
       @firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
-      @dname ||= ""
+      @name ||= ""
     end
     ##
     # set this menubar as the form's menu bar.
@@ -1180,7 +1180,7 @@ module RubyCurses
         when -1
           return
         else
-       $log.debug " form HK #{ch} #{self}, #{@dname} "
+       $log.debug " form HK #{ch} #{self}, #{@name} "
           field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
