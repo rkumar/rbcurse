@@ -438,7 +438,7 @@ module RubyCurses
       # added 2009-12-27 20:05 BUFFERED in case child object needs a form.
       # We don;t wish to overwrite the graphic object
       if @graphic.nil?
-        $log.debug " setting graphic to form window for #{self.class}, #{form.class} "
+        $log.debug " setting graphic to form window for #{self.class}, #{form} "
         @graphic = form.window unless form.nil? # use screen for writing, not buffer
       end
     end
@@ -613,7 +613,7 @@ module RubyCurses
       ##+ so i put current window here.
       if screen == nil
         #$log.debug " XXX calling graphic.wrefresh 2010-01-03 12:27 (parent_buffer was nil) "
-        $log.debug " XXX 2010-01-03 20:47 now copying pad onto form.window"
+        $log.debug " XXX 2010-01-03 20:47 now copying pad #{@graphic} onto form.window"
         ret = @graphic.wrefresh
        ## 2010-01-03 20:45 rather than writing to phys screen, i write to forms window
        ##+ so later updates to that window do not overwrite this widget.
@@ -622,7 +622,7 @@ module RubyCurses
       else
       # screen is passed when a parent object calls this to copy child buffer to itself
         @graphic.set_backing_window(screen)
-        $log.debug "   #{@name} calling copy pad to win COPY"
+        $log.debug "   #{@name} #{@graphic} calling copy pad to win COPY"
         ret = @graphic.copy_pad_to_win
       end
       @buffer_modified = false
@@ -808,6 +808,7 @@ module RubyCurses
     ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
     attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
+    attr_accessor :dname # for debugging 2010-02-02 20:12 
     def initialize win, &block
       @window = win
       @widgets = []
@@ -826,6 +827,7 @@ module RubyCurses
       ##+ cursor coordinate to system.
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
       @firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
+      @dname ||= ""
     end
     ##
     # set this menubar as the form's menu bar.
@@ -901,12 +903,12 @@ module RubyCurses
        # although this does show cursor movement etc.
        ### XXX@window.wrefresh
        if @window.window_type == :WINDOW
-         $log.debug " XXX calling window.wrefresh COOMENTED OFF FOR TABBEDPANE 2009-11-02 23:08 "
+         $log.debug " formrep calling window.wrefresh #{@window} "
          @window.wrefresh
        else
          # UGLY HACK TO MAKE TABBEDPANES WORK !!
          if @parent_buffer!=nil
-           $log.debug " coming to set backing window part "
+           $log.debug " formrep coming to set backing window part #{@window} , #{@parent_buffer}  "
            @window.set_backing_window(@parent_buffer)
            @window.copy_pad_to_win
          end
@@ -1178,7 +1180,7 @@ module RubyCurses
         when -1
           return
         else
-       $log.debug " form HK #{ch}"
+       $log.debug " form HK #{ch} #{self}, #{@dname} "
           field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
@@ -1212,11 +1214,12 @@ module RubyCurses
               field.height -= 1
             else
               ret = process_key ch, self
+              $log.debug " process_key #{ch} got ret #{ret} in #{self} "
               return :UNHANDLED if ret == :UNHANDLED
             end
           end
         end
-       $log.debug " form before repaint"
+       $log.debug " form before repaint #{self} , ret #{ret}"
        repaint
   end
   ##
