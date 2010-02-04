@@ -59,7 +59,9 @@ module RubyCurses
       @win = @graphic
       #init_scrollable
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
-      create_buffer
+      safe_create_buffer
+      @screen_buffer.name = "TV-PAD" unless @screen_buffer.nil?
+      $log.debug " textview creates pad #{@screen_buffer} "
       #XXX print_borders if (@to_print_borders == 1 ) # do this once only, unless everything changes
       # 2010-01-10 19:19 commented off setting maxlen since width can change (e.g. splitpane
       #+ but maxlen remains fixed, and repaint uses it for width. Maxlen is now always
@@ -135,7 +137,7 @@ module RubyCurses
     ## print a border
     ## Note that print_border clears the area too, so should be used sparingly.
     def print_borders
-      $log.debug " #{@name} print_borders "
+      $log.debug " #{@name} print_borders, #{@graphic} "
       window = @graphic
       color = $datacolor
       window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
@@ -337,7 +339,7 @@ module RubyCurses
       print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen || @width-2
-      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen} "
+      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
