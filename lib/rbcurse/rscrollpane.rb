@@ -45,6 +45,7 @@ module RubyCurses
     # column_viewport
     # horizontal scrollbar 0-NONE, 1=ALWAYS, 2=AS_NEEDED
     # vertical scrollbar 0-NONE, 1=ALWAYS, 2=AS_NEEDED
+    attr_accessor :cascade_changes  # should changes in size go down to child, default false
 
     def initialize form, config={}, &block
       @focusable = true
@@ -57,6 +58,7 @@ module RubyCurses
       @orig_col = @col
       init_vars
       should_create_buffer true
+      $log.debug " SCROLLPANE recvs form #{form}, #{form.window} "
 
 
       # next line does not seem to have an effect.
@@ -71,8 +73,18 @@ module RubyCurses
       # create_b moved from repaint since we need to pass form to child component
          #  2010-01-16 20:03 moved again from init so height can be set by parent or whatever
          if @subform.nil?
-            @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+             $log.debug " CLASS #{@form.window} "
+             if @form.window.window_type == :WINDOW
+                 @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+             else
+                 # 2010-02-02 23:16 TRYING OUT FOR TABBEDPANE but can i create 2 form from one pad ?
+                 @subpad=@form.window
+             end
             @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+            @subpad.name = "SCRP-CHILDPAD" # -#{child.name}"
+            @subform.name = "SCRP-CHILDFORM " #-#{child.name}"
+            $log.debug " SCRP creates pad and form for child #{@subpad} #{@subpad.name} , #{@subform} #{@subform.name}  "
+
          end
         ## setting a form is a formality to prevent bombing
         ##+ however, avoid setting main form, which will then try to
@@ -96,13 +108,16 @@ module RubyCurses
       @repaint_border = true
       @row_outofbounds=0
       @col_outofbounds=0
+      @border_width = 2
     end
     # set the component to be viewed
     def set_viewport_view ch
       @viewport = Viewport.new nil
       @viewport.set_view ch
-      @viewport.set_view_size(@height-2, @width-2) # XXX make it one less
+      ## this -2 should depend on whether we are putting border/scrollbars or not.
+      @viewport.set_view_size(@height-@border_width, @width-@border_width) # XXX make it one less
       @viewport.set_view_position(1,1) # @row, @col
+      @viewport.cascade_changes = @cascade_changes # added 2010-02-04 18:19 
     end
     # return underlying viewport
     # in order to run some of its methods
@@ -162,7 +177,7 @@ module RubyCurses
       # viewport then clips
       # this calls viewports refresh from its refresh
       return unless @repaint_required
-      $log.debug " #{@name}  SCRP scrollpane repaint"
+      $log.debug " #{@name}  SCRP scrollpane repaint #{@graphic} "
         # TODO this only if major change
        if @repaint_border && @repaint_all # added 2010-01-16 20:15 
         @graphic.wclear
@@ -180,9 +195,9 @@ module RubyCurses
       #@viewport.repaint_all true # 2010-01-16 23:09 
       @viewport.repaint_required true # changed 2010-01-19 19:34 
       @viewport.repaint # child's repaint should do it on its pad
-      $log.debug "SCRP   #{@name} calling viewport b2s "
+      $log.debug "SCRP   #{@name} calling viewport b2s #{@graphic}  "
       ret = @viewport.buffer_to_screen(@graphic)
-      $log.debug "  #{@name}  rscollpane vp b2s ret = #{ret} "
+      $log.debug "  #{@name}  rscrollpane vp b2s ret = #{ret} "
 
       ## next line rsults in ERROR in log file, does increment rowcol
       ##+ but still not shown on screen.
@@ -200,6 +215,7 @@ module RubyCurses
     # If not consumed, returns :UNHANDLED, else 0.
     def handle_key ch
       # if this gets key it should just hand it to child
+        return :UNHANDLED if @viewport.nil? # added 2010-02-02 12:44 
       if @viewport != nil
         $log.debug "    calling child handle_key #{ch} "
         ret = @viewport.handle_key ch
@@ -227,6 +243,7 @@ module RubyCurses
 
         return ret if ret != :UNHANDLED
       end
+      ret = 0 # default return value
       $log.debug " scrollpane gets KEY #{ch}"
       case ch
         when ?\M-n.getbyte(0)
@@ -261,11 +278,12 @@ module RubyCurses
         @form.setrowcol @form.row, @form.col-1+@col_outofbounds if ret 
         $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
       when KEY_BACKSPACE, 127
-        cursor_backward
+        ret = cursor_backward
       else
         return :UNHANDLED
       end
-      return 0
+      ret = :UNHANDLED if !ret
+      return ret # 0 2010-02-04 18:47 returning ret else repaint is happening when UNHANDLED
     end
     def down
       increment_view_row(1)
@@ -282,6 +300,7 @@ module RubyCurses
     def _down
       ## scroll down one row (currently one only)
       ret = down
+      return unless ret # 2010-02-04 18:29 
       ## we've scrolled down, but we need  to keep the cursor where
       ##+ editing actually is. Isn't this too specific to textarea ?
       $log.debug " SCRP setting row to #{@form.row-1} upon scrolling down  "
@@ -300,6 +319,7 @@ module RubyCurses
     def _up
           ## scroll up one row (currently one only)
         ret = up
+        return unless ret # 2010-02-04 18:29 
         $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up #{@row} #{@height}  "
    #     if @form.row < @row + @height
           @subform.rows_panned = @subform.rows_panned+1  if ret 
@@ -336,6 +356,7 @@ module RubyCurses
     def rowcol
       r1 = @row #+@row_offset
       c1 = @col #+@col_offset
+      return r1, c1 if @viewport.nil? # added 2010-02-02 12:41 
 
       r,c = @viewport.child.rowcol # added 2009-12-28 15:23 BUFFERED
       $log.debug "SCRP rowcol:  #{r1} + #{r} , #{c1} + #{c} "
@@ -347,6 +368,7 @@ module RubyCurses
       @repaint_all = false
     end
     def h_scroll_bar
+        return if @viewport.nil?
       sz = (@viewport.width*1.00/@viewport.child().width)*@viewport.width
       #$log.debug " h_scroll_bar sz #{sz}, #{@viewport.width} #{@viewport.child().width}" 
       sz = sz.ceil
@@ -363,6 +385,7 @@ module RubyCurses
       sz.times{ |i| @graphic.mvaddch(@height-1, start+1+i, ACS_CKBOARD) }
     end
     def v_scroll_bar
+        return if @viewport.nil?
       sz = (@viewport.height*1.00/@viewport.child().height)*@viewport.height
       #$log.debug " h_scroll_bar sz #{sz}, #{@viewport.width} #{@viewport.child().width}" 
       sz = sz.ceil
@@ -380,6 +403,9 @@ module RubyCurses
     end
     # set height
     # a container must pass down changes in size to it's children
+    #  2010-02-04 18:06 - i am not sure about this. When viewport is set then it passes down 
+    #  changes to child which user did not intend. Maybe in splitpane it is okay but other cases?
+    #  Perhaps its okay if scrollpane gets larger than child, not otherwise.
     # added 2010-01-16 23:55 
       def height(*val)
           return @height if val.empty?
