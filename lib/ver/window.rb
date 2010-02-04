@@ -5,6 +5,7 @@ module VER
     attr_accessor :layout
     attr_reader   :panel   # reader requires so he can del it in end
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
+    attr_accessor :dname  # more for debugging log files. 2010-02-02 19:58 
 
     def initialize(layout)
       @visible = true
@@ -459,6 +460,7 @@ module VER
     attr_reader :otherwin
     # dimensions the pad was created with, used so we don't keep recreating pad, only if increase.
     attr_reader :padheight, :padwidth
+    attr_accessor :dname  # more for debugging log files. 2010-02-02 19:58 
     def initialize(height, width)
       @visible = true
       # do we set height and width ?? XXX
@@ -477,6 +479,7 @@ module VER
       @pmincol ||= 0 # pad will print from this col
       @pminrow ||= 0 # pad will print from this row
       @window_type = :PAD
+      $log.debug "        PAD constructor #{self} , #{@window} "
     end
     #
     # @param layout is a hash (@see Window.initialize)
@@ -580,7 +583,7 @@ module VER
     # trying to make things as easy as possible
     # returns -1 if error in prefresh
     def wrefresh
-      $log.debug " inside pad's wrefresh #{@window}.  #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} "
+      $log.debug " inside pad's wrefresh #{@window}.  #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} self: #{self} "
 
       # caution, prefresh uses maxrow and maxcol not height and width
       # so we have to add top and less one since we are zero based
@@ -601,6 +604,7 @@ module VER
       osw = @otherwin.width
       osh = @otherwin.height
       if smr >= osmr
+         $log.debug " adjusted smr from #{smr} to #{osmr} -1 causing issues in viewfooter"
         smr = osmr-1 # XXX causing issues in viewport, wont print footer with this
       end
       if smr > @sheight + @top -1 -@pminrow # 2010-01-17 13:27 
@@ -626,9 +630,10 @@ module VER
       end
       @pminrow = 0 if @pminrow < 0
       @pmincol = 0 if @pmincol < 0
-      $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} "
-      $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} "
-      $log.debug "  -otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
+      $log.debug " COPYING #{self} to #{@otherwin} "
+      $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} self #{self} "
+      $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} WIN:#{@window} "
+      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin} "
       ret="-"
       #if ret == -1
         $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
@@ -641,6 +646,7 @@ module VER
         end
         if smr >= @otherwin.height
           $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{@otherwin.height} "
+          #smr = @otherwin.height() -1 # testing 2010-01-31 21:47 
         end
         if smc >= @otherwin.width
           $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{@otherwin.width} "
