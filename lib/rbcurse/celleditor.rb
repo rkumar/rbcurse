@@ -11,8 +11,7 @@ require 'logger'
 # so it can display itself. Otherwise it is not added to the forms widget list, so the 
 # form has no idea tha this widget exists.
 #
-# Tested with Field, combo and checkbox
-# TODO test and integrate with tables.
+# Tested with Field, combo and checkbox, tables.
 #
 module RubyCurses
   class CellEditor
@@ -98,6 +97,7 @@ module RubyCurses
       widget.visible = true
       widget.form = parent.form
       #$log.debug " prepare editor value #{widget.display_length} displlen #{widget.maxlen}"
+      $log.debug " prepare editor form: #{widget.form} "
       #widget.display_length = widget.display_length -1
       widget.bgcolor = 'yellow'
       widget.color = 'black'
