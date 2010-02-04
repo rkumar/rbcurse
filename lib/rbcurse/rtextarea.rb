@@ -68,6 +68,8 @@ module RubyCurses
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       safe_create_buffer # 2009-12-26 14:54 BUFFERED
+      @screen_buffer.name = "TXTA-PAD"
+      $log.debug " textarea creates pad #{@screen_buffer} "
     #  init_scrollable
       #print_borders
       # 2010-01-10 19:35 compute locally if not set
@@ -740,7 +742,7 @@ module RubyCurses
       print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
-      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen} "
+      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
@@ -775,6 +777,7 @@ module RubyCurses
 
         else
           # clear rows
+            # TODO the spaces string can be stored once outside loop
           @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
