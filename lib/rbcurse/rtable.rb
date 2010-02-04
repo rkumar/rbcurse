@@ -468,15 +468,15 @@ module RubyCurses
         case cname
         when 'String'
           # I do not know cell width here, you will have toset display_length NOTE
-          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 8}
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 8, :name => "tb_field_str"}
           @ceh['String'] = ce
           return ce
         when 'Fixnum'
-          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 5}
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 5, :name => "tb_field_num"}
           @ceh[cname] = ce
           return ce
         when 'Float'
-          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 5}
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 5, :name => "tb_field_flt"}
           @ceh[cname] = ce
           return ce
         when "Boolean" #'TrueClass', 'FalseClass'
@@ -485,7 +485,7 @@ module RubyCurses
           return ce
         else
           $log.debug " get_default_cell_editor_for_class UNKNOWN #{cname}"
-          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 6}
+          ce = RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> 6, :name => "tb_field_unk"}
           @ceh[cname] = ce
           return ce
         end
@@ -512,6 +512,7 @@ module RubyCurses
         ret = @cell_editor.component.handle_key(ch)
         @repaint_required = true
         $log.debug "RET #{ret} got from to cell editor"
+        #set_form_col if ret != :UNHANDLED # added 2010-01-30 20:17 CURSOR POS TABBEDPANE
         return if ret != :UNHANDLED
       end
       case ch
