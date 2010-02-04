@@ -30,6 +30,7 @@ module RubyCurses
   class Viewport < Widget
     # row and col also present int widget
     dsl_accessor :child  # component that is being viewed
+    attr_accessor :cascade_changes
 
     def initialize form, config={}, &block
       @focusable = false
@@ -47,6 +48,7 @@ module RubyCurses
     def init_vars
       #@curpos = @pcol = @toprow = @current_index = 0
       should_create_buffer true
+      @border_width = 2
     end
     # set the component to be viewed
     def set_view ch
@@ -66,12 +68,13 @@ module RubyCurses
     #
     def set_view_position r,c
       return false if r < 0 or c < 0
-      if r+ @height > @child.height
-        $log.debug " set_view_position : trying to exceed ht #{r} + #{@height}  returned"
+      # 2010-02-04 19:29 TRYING -2 for borders
+      if r+ (@height-@border_width) > @child.height
+        $log.debug " set_view_position : trying to exceed ht #{r} + #{@height} > #{@child.height}  returned false"
         return false
       end
-      if c+ @width > @child.width
-        $log.debug " set_view_position : trying to exceed width #{c} + #{@width} . returned"
+      if c+ (@width-@border_width) > @child.width
+        $log.debug " set_view_position : trying to exceed width #{c} + #{@width} . returned false"
         return false
       end
       row(r)
@@ -84,7 +87,9 @@ module RubyCurses
     end
     def repaint # viewport
       if @screen_buffer == nil
-        create_buffer
+        safe_create_buffer
+        @screen_buffer.name = "VP-PADSCR"
+        $log.debug " VP creates pad  #{@screen_buffer} "
       end
       return unless @repaint_required
       # should call child's repaint onto pad
@@ -94,7 +99,7 @@ module RubyCurses
       @child.repaint_all
       @child.repaint
       # copy as much of child's buffer to own as per dimensions
-       $log.debug "VP calling child b2s"
+       $log.debug "VP calling child b2s -> #{@graphic} "
       ret = @child.buffer_to_screen(@graphic)
       @buffer_modified = true
       paint
@@ -126,6 +131,9 @@ module RubyCurses
     end
     # set height
     # a container must pass down changes in size to it's children
+    #+ 2010-02-04 18:06 - i am not sure about this. When viewport is set then it passes down 
+    #+ changes to child which user did not intend. Maybe in splitpane it is okay but other cases?
+    #+ Perhaps its okay if scrollpane gets larger than child, not otherwise.
     # added 2010-01-16 23:55 
       def height(*val)
           return @height if val.empty?
@@ -140,7 +148,10 @@ module RubyCurses
              @child.height = @height
              $log.warn " viewport setting child #{@child.name} to default h of #{@height} -- child is usually larger. "
           else
-             @child.height += delta
+              if @cascade_changes
+                  $log.debug "warn!! viewport adding #{delta} to child ht #{child.height} "
+                  @child.height += delta
+              end
           end
       end
     # set width
@@ -160,7 +171,13 @@ module RubyCurses
              @child.width = @width
              $log.warn " viewport setting child #{@child.name} to default w of #{@width}. Usually child is larger. "
           else
-             @child.width += delta
+              ## sometime we are needless increasing. this happens when we set viewport and
+              ##+ child has been set. Or may do only if scrollpane is getting larger than child
+              ##+ largely a situation with splitpanes.
+              if @cascade_changes
+                  $log.debug "warn!! viewport adding #{delta} to child wt #{child.width} "
+                  @child.width += delta
+              end
           end
       end
   end # class viewport
