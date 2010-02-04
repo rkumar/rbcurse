@@ -5,7 +5,7 @@ module VER
     attr_accessor :layout
     attr_reader   :panel   # reader requires so he can del it in end
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
-    attr_accessor :dname  # more for debugging log files. 2010-02-02 19:58 
+    attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
 
     def initialize(layout)
       @visible = true
@@ -22,6 +22,7 @@ module VER
       @window_type = :WINDOW
       Ncurses::keypad(@window, true)
       @stack = []
+      @name ||="#{self}"
     end
     ##
     # this is an alternative constructor
@@ -460,7 +461,7 @@ module VER
     attr_reader :otherwin
     # dimensions the pad was created with, used so we don't keep recreating pad, only if increase.
     attr_reader :padheight, :padwidth
-    attr_accessor :dname  # more for debugging log files. 2010-02-02 19:58 
+    #attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     def initialize(height, width)
       @visible = true
       # do we set height and width ?? XXX
@@ -479,6 +480,7 @@ module VER
       @pmincol ||= 0 # pad will print from this col
       @pminrow ||= 0 # pad will print from this row
       @window_type = :PAD
+      @name ||="#{self}"
       $log.debug "        PAD constructor #{self} , #{@window} "
     end
     #
