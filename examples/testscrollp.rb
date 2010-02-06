@@ -25,7 +25,7 @@ if $0 == __FILE__
       r = 1; c = 5; w = 80
       ht = 20
       # print filler stars
-      filler = "*" * (w+2)
+      #filler = "*" * (w+2)
       #(ht+3).times(){|i| @form.window.printstring(i,c-1, filler, $datacolor) }
 
 

@@ -37,7 +37,7 @@ class TestTabbedPane
       @tp = RubyCurses::TabbedPane.new @form  do
         height h
         width  w
-        row 2
+        row 5
         col 8
         #button_type :ok
       end
@@ -46,19 +46,20 @@ class TestTabbedPane
       f1 = @tab1.form
       $log.debug "scrollpane ( textview ) tp form #{f1} "
 
-      sr = 0 # seems to have no impact
-      sc = 4
+      sr = 4 
+      sc = 2
+      f1.add_rows+=2
         @scroll = ScrollPane.new f1 do
           name   "myScroller" 
           row sr #+ht+1
           col  sc 
-          width w-1
-          height h-2
+          width w-2
+          height h-4
         end
         textview = TextView.new nil do
           name   "myView" 
-          row 1 #sr+1 # 4
-          col 1 #sc+1 # 2 
+          row 0 #sr+1 # 4
+          col 0 #sc+1 # 2 
           width w-0
           height h
           title "README.mrku"
@@ -112,7 +113,7 @@ class TestTabbedPane
           col 5
         end
       end
-      @help = "F1 to quit. Use any key of key combination to see what's caught. #{$0} Check logger too"
+      @help = "F1 to quit. M- T/S/E for tabs. M-n p h l scrollpane  #{$0} Check logger too"
             RubyCurses::Label.new @form, {'text' => @help, "row" => r+h+2, "col" => 2, "color" => "yellow"}
       @form.repaint
       @window.wrefresh

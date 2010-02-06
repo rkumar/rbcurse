@@ -37,7 +37,7 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors  --------- #{@window} "
       @form = Form.new @window
-      @form.window.printstring 0, 25, "Demo of Ruby Curses Widgets", $normalcolor, 'reverse'
+      @form.window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|

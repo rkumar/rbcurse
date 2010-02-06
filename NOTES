@@ -730,3 +730,106 @@ So basically while setting cursor, i need to add parent's row and col,
 too.
 
 * * * * * * * *
+
+Subject: microemacs user setup tabbedpane
+-----------------------------------------
+Date: 2010-01-30 00:06
+
+Micremacs has user setup tabbedpanes.
+Left and right keys are used to move from one tab to another.
+
+Tab jumps to form associated with a tab. Tab does not cycle between
+tabs. IN some fields, where there are selectable values (combos) a "v"
+is shown but i am not clear how to access that list. Pressing Enter
+opens up the config file.
+
+* * * * * * * *
+
+Subject: tabbedpanes and scrollpanes
+------------------------------------
+Date: 2010-02-02 23:04
+
+I've spent more than 2 days battling a scrollpane inside a tabbedpane.
+It wont print anything. I know what's going on, but unable to fix it.
+Its simple but i am unable to catch it.
+
+When i place a textarea directly in a tabbedpane (TP), it takes TP's
+tab form. It does not create its own buffer. It writes to TP's form/pad
+which is then copied to TP's own window. This works.
+
+But when i place a textview inside a scrollpane and place that inside a
+TP, it takes the TPs form, but then creates a form and pad, required for
+the child. The TV writes to its own pad, which is then copied to
+Viewport, to Scrollpane, to TP. But at this point, the tab form which
+was given to Scrollpane and not used, kicks in and writes to TP.
+
+So whatever was written to TP is overwritten by the unused TP tab
+form/pad. Scrollpane should use this, but it creates its own buffer. If
+i mess with this, all those other programs could go for a toss.
+
+* * * * * * * *
+
+Subject: scrollpane tabbedpane update
+-------------------------------------
+Date: 2010-02-03 19:06
+
+I've finally got something displaying and working .. textview inside a
+scrollpane inside a tabbedpane.
+If the form given to a scrollpane has a pad as a window, then we use the
+pad, if its a window, we do the usual create_buffer crap.
+
+However, sadly the positioning is slightly off, the borders and not
+printing fully (left and top not there). I've played around with the
+`row` and `col`, but seems scrollpanes row and col have no impact. Its a
+tricky situation since I have created a second form on the same pad.
+
+I cannot set the same form as that passed in since then the mainform
+would own the child inside scrollpane. So its very hackish really - not
+clean. Getting messy -- we need to overhaul this whole new buffered
+stuff - too much copying of buffers and breaking my nut over `copywin`.
+
+Need to simplify.
+
+* * * * * * * *
+
+Subject: return values for form: false vs UNHANDLED
+---------------------------------------------------
+Date: 2010-02-04 19:12
+
+Sometimes some methods like `down`, `up` etc return a `false` if they cannot go
+down or up or scroll. However, when the `ret` is returned up, repainting
+still happens. A form typically won't repaint if the return of
+`handle_key` is `:UNHANDLED`. So, in scrollpane, I've had to convert
+`ret` to `:UNHANDLED` if false, so no useless repainting happens.
+
+* * * * * * * *
+
+Subject: scrollpane inside tabbepanes PROBLEMS
+----------------------------------------------
+Date: 2010-02-04 20:52
+
+Okay, I've got an idea what's happening.
+This largely is since I've put in an ugly hack to take the PAD of a
+parent form, if its a PAD (not a window). Otherwise, what I was
+printing on Scrollpane's pad was getting overwritten by the TAB's pad
+which was never written to.
+
+1) `ScrollPane` does a `wclear` of the pad. This erases everything earlier
+   put on the pad, including the border.
+
+2) Since Scrollpane does not know its picked up some other pad, its
+   border height and width are not correct. They would be fine if it had
+   created its own pad.
+
+The options are:
+
+1. Hack further so that this case is taken care of. 
+2. Do the sensible thing. Create own pad, and somehow copy scrollpane's
+   pad onto it at the end.
+
+Even though i could not get #2 done, I think I should look into that now,
+so the code is not mysterious and impossible to understand or maintain.
+
+Also, I've got to simplify ScrollPane *completely*.
+
+* * * * * * * *

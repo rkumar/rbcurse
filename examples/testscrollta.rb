@@ -21,10 +21,11 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
+      $log.debug " MAIN FORM #{@form}   w #{@window}  "
       r = 1; c = 10; w = 40
       ht = 10
       # print filler stars
-      filler = "*" * (w+2)
+      #filler = "*" * (w+2)
       #(ht+3).times(){|i| @form.window.printstring(i,c-1, filler, $datacolor) }
 
 
