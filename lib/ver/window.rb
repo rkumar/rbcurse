@@ -302,6 +302,11 @@ module VER
     # @ param att - ncurses attribute: normal, bold, reverse, blink,
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
+        prv_printstring(r,c,string, color, att )
+    end
+
+    ## name changed from printstring to prv_prinstring
+    def prv_printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
       #$log.debug " inside window printstring r #{r} c #{c} #{string} "
       att = Ncurses::A_NORMAL if att.nil?
@@ -370,7 +375,8 @@ module VER
       # FIXME - in tabbedpanes this clears one previous line ??? XXX when using a textarea/view
       # when using a pad this calls pads printstring which again reduces top and left !!! 2010-01-26 23:53 
       (row+1).upto(row+height-1) do |r|
-        printstring( r, col+1," "*(width-2) , $datacolor, nil)
+        #printstring( r, col+1," "*(width-2) , $datacolor, nil)
+        prv_printstring( r, col+1," "*(width-2) , $datacolor, nil)
       end
       attron(Ncurses.COLOR_PAIR(color) | att)
 
@@ -648,7 +654,7 @@ module VER
         end
         if smr >= @otherwin.height
           $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{@otherwin.height} "
-          #smr = @otherwin.height() -1 # testing 2010-01-31 21:47 
+          smr = @otherwin.height() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
         end
         if smc >= @otherwin.width
           $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{@otherwin.width} "
