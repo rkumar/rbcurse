@@ -74,12 +74,13 @@ module RubyCurses
          #  2010-01-16 20:03 moved again from init so height can be set by parent or whatever
          if @subform.nil?
              $log.debug " CLASS #{@form.window} "
-             if @form.window.window_type == :WINDOW
-                 @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
-             else
-                 # 2010-02-02 23:16 TRYING OUT FOR TABBEDPANE but can i create 2 form from one pad ?
-                 @subpad=@form.window
-             end
+             #if @form.window.window_type == :WINDOW
+                 #@subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
+             #else
+                 ## 2010-02-02 23:16 TRYING OUT FOR TABBEDPANE but can i create 2 form from one pad ?
+                 #@subpad=@form.window
+             #end
+            @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
             @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
             @subpad.name = "SCRP-CHILDPAD" # -#{child.name}"
             @subform.name = "SCRP-CHILDFORM " #-#{child.name}"
@@ -116,7 +117,11 @@ module RubyCurses
       @viewport.set_view ch
       ## this -2 should depend on whether we are putting border/scrollbars or not.
       @viewport.set_view_size(@height-@border_width, @width-@border_width) # XXX make it one less
-      @viewport.set_view_position(1,1) # @row, @col
+      # 2010-02-06 21:58 i am not sure if this should be 1,1 or 0,0.
+      # 1,1 means it doesn't print row 0 of textview (border) to start with,
+      # 0,0 means it does print, but when doing M-n overwrites scrollpane top border
+      #@viewport.set_view_position(1,1) # @row, @col should be 0,0 but to test that in other situa FIXME
+      #@viewport.set_view_position(0,0) # @row, @col should be 0,0 but to test that in other situa FIXME
       @viewport.cascade_changes = @cascade_changes # added 2010-02-04 18:19 
     end
     # return underlying viewport
@@ -156,8 +161,9 @@ module RubyCurses
     end
     # @return [true, false] false if r,c not changed
     def increment_view_row num
-      r = @viewport.row()
-      c = @viewport.col()
+      r = @viewport.row() #- @viewport.top_margin
+      c = @viewport.col() #- @viewport.left_margin
+      $log.debug " SCR inc viewport r #{r} c #{c} "
       r += num
       ret = set_view_position r, c
       v_scroll_bar if ret
@@ -165,8 +171,8 @@ module RubyCurses
     end
     # @return [true, false] false if r,c not changed
     def increment_view_col num
-      r = @viewport.row()
-      c = @viewport.col()
+      r = @viewport.row() #- @viewport.top_margin
+      c = @viewport.col() #- @viewport.left_margin
       c += num
       ret = set_view_position r, c
       h_scroll_bar if ret
@@ -180,7 +186,7 @@ module RubyCurses
       $log.debug " #{@name}  SCRP scrollpane repaint #{@graphic} "
         # TODO this only if major change
        if @repaint_border && @repaint_all # added 2010-01-16 20:15 
-        @graphic.wclear
+        #@graphic.wclear
         $log.debug " #{@name} repaint all scroll: r #{@row} c #{@col}  h  #{@height}-1 w #{@width} "
         bordercolor = @border_color || $datacolor
         borderatt = @border_attrib || Ncurses::A_NORMAL
@@ -195,9 +201,28 @@ module RubyCurses
       #@viewport.repaint_all true # 2010-01-16 23:09 
       @viewport.repaint_required true # changed 2010-01-19 19:34 
       @viewport.repaint # child's repaint should do it on its pad
-      $log.debug "SCRP   #{@name} calling viewport b2s #{@graphic}  "
+      $log.debug "SCRP   #{@name} calling viewport to SCRP  b2s #{@graphic}  "
       ret = @viewport.buffer_to_screen(@graphic)
-      $log.debug "  #{@name}  rscrollpane vp b2s ret = #{ret} "
+      $log.debug "  #{@name}  VP to rscrollpane b2s ret = #{ret} "
+
+      ## if WINDOW then do a copy scrp's pad to form.window since that's a pad too. TODO''
+      if @form.window.window_type == :PAD
+          $log.debug " XXX SCRP PAD CASe copying   #{@name} calling #{@graphic} b2s to #{@form.window}  "
+          #@graphic.set_backing_window(@form.window)
+          #ret = @graphic.copy_pad_to_win
+          r = 2 # @row
+          c = 1 # @col
+          #ret = @graphic.copywin(@form.window.get_window, 0, 0, r, c, r+@height-1, c+@width-1,0)
+          # this is fine for starters but doesn't take scrolling into account !! pminrow and pmincol
+          #ret = @graphic.copywin(@form.window.get_window, 0, 0, r, c, 0+@height-0, 0+@width-0,0)
+          @buffer_modified = true
+          # i hope this is not a magic assignment. When scrollpane used within tabbedpane it is using
+          # the objects row and col which is wrong. So i am passing 2 and 1 for copywin to work correct.
+          @graphic.set_screen_row_col 2,1 ## XXX
+          buffer_to_screen(@form.window) #??? XXX
+          #
+          $log.debug " XXX SCRP   #{@name} after calling #{@graphic} b2s to #{@form.window} ret = #{ret}  "
+      end
 
       ## next line rsults in ERROR in log file, does increment rowcol
       ##+ but still not shown on screen.
