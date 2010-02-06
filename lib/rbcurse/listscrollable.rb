@@ -121,8 +121,12 @@ module ListScrollable
       # TODO take into account rows_panned etc ?
       r,c = rowcol
       yy = r + @current_index - @toprow - @form.window.top
-      xx = @form.col
-      #$log.debug " printing CURSOR at #{yy}: fr: #{@form.row} fwt: #{@form.window.top} r:#{@row} tr:#{@toprow} ci:#{@current_index}  "
+      xx = @form.col # how do we know what value has been set earlier ?
+      #yy = @row_offset if yy < @row_offset # sometimes r is 0, we are missing something in tabbedpane+scroll
+      #xx = @col_offset if xx < @col_offset
+      #xx = 0 if xx < 0
+
+      $log.debug " #{@name} printing CARET at #{yy},#{xx}: fr: #{@form.row} fwt:- #{@form.window.top} r:#{@row} tr:-#{@toprow} ci:#{@current_index}  "
       if !@oldcursorrow.nil?
           @graphic.mvchgat(y=@oldcursorrow, x=@oldcursorcol, 1, Ncurses::A_NORMAL, $datacolor, NIL)
       end
