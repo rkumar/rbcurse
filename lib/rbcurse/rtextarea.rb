@@ -55,7 +55,7 @@ module RubyCurses
     #  @show_focus = false
       @list = []
       super
-      @row_offset = @col_offset = 1
+      @row_offset = @col_offset = 1 # for cursor display on first entry, so not positioned on border
       @orig_col = @col
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
