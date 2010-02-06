@@ -602,10 +602,10 @@ module RubyCurses
     #  Somewhere we need to clear screen if scrolling.???
     #  aka b2s
     # @param [Window, #get_window, nil] screen to write to, if nil then write to phys screen
-    # @return [true, false] comment
+    # @return 0 - copy success, -1 copy failure, 1 - did nothing, usually since buffer_modified false
 
    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
-      return unless @is_double_buffered and @buffer_modified
+      return 1 unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
       $log.debug " screen inside buffer_to_screen b2s :#{screen} "
       ## 2010-01-03 19:38 i think its wrong to put the pad onto the screen
@@ -881,9 +881,10 @@ module RubyCurses
         f.repaint
         # added 2009-10-29 20:11 for double buffered widgets
         # this should only happen if painting actually happened
-        $log.debug " form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
+        $log.debug " #{self} form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
         pb = @parent_buffer #|| @window
-        f.buffer_to_screen(pb) if f.is_double_buffered?
+        # is next line used 2010-02-05 00:04 its wiping off top in scrollpane in tabbedpane
+        f.buffer_to_screen(pb) if f.is_double_buffered? 
       end
       @window.clear_error
       @window.print_status_message $status_message unless $status_message.nil?
