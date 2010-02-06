@@ -31,18 +31,17 @@ module RubyCurses
     # row and col also present int widget
     dsl_accessor :child  # component that is being viewed
     attr_accessor :cascade_changes
+    #attr_reader :top_margin, :left_margin
 
     def initialize form, config={}, &block
       @focusable = false
       @editable = false
-      #@left_margin = 1
-      @row = 0
-      @col = 0
+      #@top_margin = @left_margin = 1 # 2010-02-06 23:27  reduce in scrollpane
+      @row = 1 # 0 2010-02-06 22:46 so we don't write on scrollpanes border
+      @col = 1 #  0 2010-02-06 22:47 
       super
       #@row_offset = @col_offset = 1
       #@orig_col = @col
-      # this does result in a blank line if we insert after creating. That's required at 
-      # present if we wish to only insert
       init_vars
     end
     def init_vars
@@ -77,8 +76,10 @@ module RubyCurses
         $log.debug " set_view_position : trying to exceed width #{c} + #{@width} . returned false"
         return false
       end
-      row(r)
-      col(c)
+      $log.debug " VP row #{@row} col #{@col}, now will be #{r} , #{c} "
+      row(r) # commnting off 2010-02-06 22:47 
+      col(c) # commnting off 2010-02-06 22:47 
+      # next call sets pminrow and pmincol 
       @child.get_buffer().set_pad_top_left(r, c)
       @child.fire_property_change("row", r, r) # XXX quick dirty, this should happen
       @repaint_required = true
