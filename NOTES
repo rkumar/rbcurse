@@ -833,3 +833,54 @@ so the code is not mysterious and impossible to understand or maintain.
 Also, I've got to simplify ScrollPane *completely*.
 
 * * * * * * * *
+
+Subject: maintaining logs and keystrokes
+----------------------------------------
+Date: 2010-02-07 11:48
+
+Maybe one way of my tracking down when something breaks, which is
+happening and is nerve-wrackig since its all UI stuff...
+
+Maintain the log file. Also somehow mark what keystrokes we run.
+That way when things break, i can run the same program with same keys
+and compare. Keystrokes actually are already mentioned in file, but it
+would be easier to put them separately.
+
+Maybe i could just mail the log files to myself with a comment.
+
+* * * * * * * *
+
+Subject: reworking cursor positioning
+-------------------------------------
+Date: 2010-02-07 20:44
+
+Two approaches:
+
+1. Pass absolute coordinates down all the way, so widget can set abs
+   coords for cursor.
+   This still needs to go all the way up. Also any changes need to be
+   cascaded all the way down.
+
+   I am trying this.
+
+2. A window or pad should print its own cursor. Why pass it to higher
+   forms. That way only absolute position within a pad or window is
+   required which is quite simple.
+   Also changes can be passed down quite easily.
+   However, when a pad prints cursor, control will come back to setpos
+   of main form, and it will move the cursor.
+   So it an inner pad or window is setting cursor, the main should not.
+
+   Somehow, mainform should know whether it should set cursor or not.
+
+   Actually this sounds simpler than option 1.
+
+   The danger of allowing widgets to set the cursor is that if multiple
+   are being updated in a loop, they will all set the cursor, and only
+   the last will show up.
+   Maybe the selected field can have an attrib, manages_cursor - if yes,
+   main form does nothig, assuming either a cursor is not needed, or
+   that widget has a form and is handling cursors. Containers will have
+   a true value.
+
+* * * * * * * *

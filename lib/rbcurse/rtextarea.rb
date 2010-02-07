@@ -68,7 +68,7 @@ module RubyCurses
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       safe_create_buffer # 2009-12-26 14:54 BUFFERED
-      @screen_buffer.name = "TXTA-PAD"
+      @screen_buffer.name = "Pad::TXTA-PAD"
       $log.debug " textarea creates pad #{@screen_buffer} "
     #  init_scrollable
       #print_borders
@@ -346,6 +346,7 @@ module RubyCurses
       
       ## added win_col on 2009-12-28 20:21 for embedded forms BUFFERED TRYING OUT
       win_col=@form.window.left
+      win_col = 0 # 2010-02-07 23:19 new cursor stuff
       #col = win_col + @orig_col + @col_offset + @curpos
       #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
       # 2010-01-14 13:31 changed orig_col to col for embedded forms, splitpanes.
@@ -742,7 +743,7 @@ module RubyCurses
       print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
-      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic} "
+      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor

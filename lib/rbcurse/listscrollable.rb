@@ -94,10 +94,12 @@ module ListScrollable
     ##+ in which case setting the form row has no effect. We need to set the main forms
     ##+ row, which sucks. 
     win_row=@form.window.top
+    win_row=0 # 2010-02-07 21:44 now ext offset added by widget
+    #win_row = 0 # new approach, we have it 
     #win_col=@form.window.left
     row = win_row + r + (@current_index-@toprow)  + @form.rows_panned
     $log.debug " #{@name} LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow} (orig #{orig_row} )"
-    $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} , c= #{c} "
+    $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} , c= #{c}, rowsp: #{@rows_panned}  "
 
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
     ## this needs to percolate up a heirarchy.

@@ -37,8 +37,8 @@ module RubyCurses
       @focusable = false
       @editable = false
       #@top_margin = @left_margin = 1 # 2010-02-06 23:27  reduce in scrollpane
-      @row = 1 # 0 2010-02-06 22:46 so we don't write on scrollpanes border
-      @col = 1 #  0 2010-02-06 22:47 
+      @row = 1 # 1 # 0 2010-02-06 22:46 so we don't write on scrollpanes border
+      @col = 1 # 1 #  0 2010-02-06 22:47 
       super
       #@row_offset = @col_offset = 1
       #@orig_col = @col
@@ -86,10 +86,15 @@ module RubyCurses
       #fire_handler :PROPERTY_CHANGE, self
       return true
     end
+    # instead of using row and col to increment, try using this, since this is what's actually incremented.
+    def get_pad_top_left
+        p = @child.get_buffer()
+        return p.pminrow, p.pmincol
+    end
     def repaint # viewport
       if @screen_buffer == nil
         safe_create_buffer
-        @screen_buffer.name = "VP-PADSCR"
+        @screen_buffer.name = "Pad::VP-PADSCR"
         $log.debug " VP creates pad  #{@screen_buffer} "
       end
       return unless @repaint_required
@@ -100,7 +105,7 @@ module RubyCurses
       @child.repaint_all
       @child.repaint
       # copy as much of child's buffer to own as per dimensions
-       $log.debug "VP calling child b2s -> #{@graphic} "
+       $log.debug "VP calling child b2s -> #{@graphic.name} "
       ret = @child.buffer_to_screen(@graphic)
       @buffer_modified = true
       paint

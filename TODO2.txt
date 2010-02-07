@@ -55,3 +55,4 @@
  41	[x] textareas: C-a C-e does not repain which is good, but footer not updated (2010-01-23) (x2010-01-25)
  42	[x] check where we are directly calling wmove and why (2010-01-23) (x2010-01-25)
  43	[ ] we need to pass actual highest form down as well as each components absolute coords so cursor display can happen quickly and accurately. (2010-01-23)
+ 44	[ ] TextView: add more vi keys (2010-02-07)

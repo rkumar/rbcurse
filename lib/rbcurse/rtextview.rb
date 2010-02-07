@@ -60,7 +60,7 @@ module RubyCurses
       #init_scrollable
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       safe_create_buffer
-      @screen_buffer.name = "TV-PAD" unless @screen_buffer.nil?
+      @screen_buffer.name = "Pad::TV-PAD" unless @screen_buffer.nil?
       $log.debug " textview creates pad #{@screen_buffer} "
       #XXX print_borders if (@to_print_borders == 1 ) # do this once only, unless everything changes
       # 2010-01-10 19:19 commented off setting maxlen since width can change (e.g. splitpane
@@ -137,7 +137,7 @@ module RubyCurses
     ## print a border
     ## Note that print_border clears the area too, so should be used sparingly.
     def print_borders
-      $log.debug " #{@name} print_borders, #{@graphic} "
+      $log.debug " #{@name} print_borders, #{@graphic.name} "
       window = @graphic
       color = $datacolor
       window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
@@ -279,11 +279,12 @@ module RubyCurses
       ## changed on 2010-01-12 18:46 so carried upto topmost form
       #@form.col = @orig_col + @col_offset + @curpos
       win_col=@form.window.left
+      win_col = 0 # 2010-02-07 23:19 new cursor stuff
       #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
       ## 2010-01-13 18:19 trying col instead of orig, so that can work in splitpanes
       ##+ impact has to be seen elsewhere too !!! XXX
       col2 = win_col + @col + @col_offset + @curpos + @form.cols_panned
-      $log.debug "TV SFC #{@name} setting c to #{col2} FORM #{@form}, #{win_col} #{@col} #{@col_offset} #{@curpos} "
+      $log.debug "TV SFC #{@name} setting c to #{col2} FORM #{@form.name}, #{win_col} #{@col} #{@col_offset} #{@curpos} "
       #@form.setrowcol @form.row, col
       setrowcol nil, col2
       # XXX 
@@ -339,7 +340,7 @@ module RubyCurses
       print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen || @width-2
-      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic} "
+      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor

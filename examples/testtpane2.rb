@@ -31,14 +31,15 @@ class TestTabbedPane
     $config_hash ||= Variable.new Hash.new
     @window = VER::Window.root_window
     @form = Form.new @window
+    @form.name = "MAINFORM"
     $log.debug " MAIN FORM #{@form}  , #{@window} "
     r = 1; c = 1;
     h = 20; w = 70
       @tp = RubyCurses::TabbedPane.new @form  do
         height h
         width  w
-        row 5
-        col 8
+        row 1 #5
+        col 1 #8
         #button_type :ok
       end
       $log.debug "  before adding tab to TP "
@@ -82,7 +83,7 @@ class TestTabbedPane
         texta = TextArea.new f2 do
           name   "myText" 
           row r
-          col 2 
+          col 1 
           width w-5
           height h-5
           title "EditMe.txt"

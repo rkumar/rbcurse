@@ -113,6 +113,7 @@ module RubyCurses
       #instance_eval &block if block_given?
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
       should_create_buffer true # added 2010-01-10 22:54 
+      @manages_cursor = true
     end
     ##
     # This is a public, user called method for creating a new tab
@@ -144,8 +145,9 @@ module RubyCurses
       instance_eval &block if block_given?
     end
     def repaint
-        $log.debug " tabbedpane repaint #{@window} "
+      $log.debug " tabbedpane repaint "
       @window || create_window
+      $log.debug " tabbedpane repaint #{@window.name} "
       @window.show
       set_buffer_modified()
     end
@@ -164,13 +166,14 @@ module RubyCurses
       ## seems this form is for the tabbed buttons on top XXX
       ## more likely this is what the tabs write onto then this is wrefreshed onto its window
       @form = RubyCurses::Form.new @window
-      $log.debug("TP WINDOW TOP ? PAD MAIN FORM#{@window},  #{@form} ")
+      @window.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
+      @form.name = "Form::TPTOPFORM"
+      $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
       @current_form = @form
       @window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       @window.box( 0, 0);
-      @window.name = "TPTOPPAD" # 2010-02-02 20:01 
       
       ##### XXX @window.wrefresh
       Ncurses::Panel.update_panels
@@ -218,11 +221,11 @@ module RubyCurses
     # On a tabbed button press, this will display the relevant form
     def display_form form
       pad = form.window
-      $log.debug " TP display form before pad copy: #{pad}, set_backing: #{@graphic}  "
+      $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{@graphic.name}  "
       #ret = pad.wrefresh # overridden to prefresh.
       pad.set_backing_window(@graphic)
       ret = pad.copy_pad_to_win
-      $log.debug " display form after pad copy #{ret}. #{form} "
+      $log.debug " display form after pad copy #{ret}. #{form.name} "
       form.repaint #   added 2009-11-03 23:27  paint widgets in inside form
       @window.wrefresh
     end
@@ -240,7 +243,7 @@ module RubyCurses
       #window = safe_create_buffer() # DARN, this overwrites higher one, if at all created.
       # needed to be at tab level, but that's not a widget
       form = RubyCurses::Form.new window # we now pass a pad and hope for best
-      $log.debug " pad created in TP create_tab_form: #{window} , form #{form}  "
+      $log.debug " pad created in TP create_tab_form: #{window.name} , form #{form.name}  "
       ## added 2010-01-21 15:46 to pass cursor up
       form.parent_form = @parent  ## TRYING OUT BUFFERED CURSOR PLACEMENT
       form.navigation_policy = :NON_CYCLICAL
@@ -251,7 +254,7 @@ module RubyCurses
 
       ## this prints the tab name on top left
       window.mvprintw(1,1, tab.text.tr('&', ''))
-      window.name = "TAB-#{tab.text}" # 2010-02-02 19:59 
+      window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
       ##window.wrefresh
       ##Ncurses::Panel.update_panels
       form.add_cols=@col-mleft # added 2010-01-26 20:25 since needs accounting by cursor

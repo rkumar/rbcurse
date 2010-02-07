@@ -306,11 +306,16 @@ module RubyCurses
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
+    # tired of getting the cursor wrong and guessing, i am now going to try to get absolute
+    # coordinates - 2010-02-07 20:17 this should be updated by parent.
+    attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
+    attr_accessor :manages_cursor # does this widget manage cursor, or should form handle it 2010-02-07 20:54 
 
     def initialize form, aconfig={}, &block
       @form = form
       @bgcolor ||=  "black" # 0
       @row_offset = @col_offset = 0
+      @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
       @state = :NORMAL
       @color ||= "white" # $datacolor
       @attr = nil
@@ -325,6 +330,7 @@ module RubyCurses
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
       @buffer_modified = false 
+      @manages_cursor = false # form should manage it, I will pass row and col to it.
     end
 
     # modified
@@ -765,10 +771,14 @@ module RubyCurses
            @form.setrowcol r, c
         end
      end
-     ## i am putting one extra level of indirection so i can switch here
+     ## widget: i am putting one extra level of indirection so i can switch here
      # between form#setrowcol and setformrowcol, since i am not convinced either
      # are giving the accurate result. i am not sure what the issue is.
      def setrowcol r, c
+         # 2010-02-07 21:32 is this where i should add ext_offsets
+        $log.debug " #{@name}  w.setrowcol #{r} + #{@ext_row_offset}, #{c} + #{@ext_col_offset}  "
+        r += @ext_row_offset unless r.nil?
+        c += @ext_col_offset unless c.nil?
         @form.setrowcol r, c
         #setformrowcol r,c 
      end
@@ -809,6 +819,7 @@ module RubyCurses
     attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :name # for debugging 2010-02-02 20:12 
+    attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
     def initialize win, &block
       @window = win
       @widgets = []
@@ -816,6 +827,7 @@ module RubyCurses
       @active_index = -1
       @padx = @pady = 0
       @row = @col = -1
+      @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
       @add_cols = @add_rows = 0 # 2010-01-26 20:28 
       @handler = {}
       @modified = false
@@ -861,6 +873,10 @@ module RubyCurses
 
       $log.debug " #{self} adding a widget #{@widgets.length} .. #{widget} "
       @widgets << widget
+      # add form offsets to widget's external offsets - 2010-02-07 20:22 
+      widget.ext_col_offset += @window.left # just hope window aint undef!! XXX
+      $log.debug " #{@name} add widget ( #{widget.name} ) ext_row #{widget.ext_row_offset} += #{@window.top} "
+      widget.ext_row_offset += @window.top
       return @widgets.length-1
    end
     # remove a widget
@@ -919,6 +935,9 @@ module RubyCurses
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
+      # next 2 lines added, only do cursor if current field doesn't manage it.
+      #curr = get_current_field
+      #return if curr.manages_cursor
       $log.debug "setpos : (#{self}) #{r} #{c}"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
@@ -1132,7 +1151,7 @@ module RubyCurses
     # infinite recursion.
     # This is being done for embedded objects so that the cursor
     # can be maintained correctly.
-    def setrowcol r, c
+    def OLDsetrowcol r, c
       @row = r unless r.nil?
       @col = c unless c.nil?
            r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
@@ -1142,6 +1161,22 @@ module RubyCurses
         $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
         r += @parent_form.window.top unless  r.nil?
         c += @parent_form.window.left unless c.nil?
+        @parent_form.setrowcol r, c
+      end
+    end
+    ## Form
+    # New attempt at setting cursor using absolute coordinates
+    # Also, trying NOT to go up. let this pad or window print cursor.
+    def setrowcol r, c
+      @row = r unless r.nil?
+      @col = c unless c.nil?
+           r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
+           c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
+           $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self}  "
+      if !@parent_form.nil? and @parent_form != self
+        $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
+        #r += @parent_form.window.top unless  r.nil?
+        #c += @parent_form.window.left unless c.nil?
         @parent_form.setrowcol r, c
       end
     end
@@ -1251,6 +1286,8 @@ module RubyCurses
   def set_parent_buffer b
     @parent_buffer = b
   end
+  # 2010-02-07 14:50 to aid in debugging and comparing log files.
+  def to_s; @name || self; end
 
     ## ADD HERE FORM
   end

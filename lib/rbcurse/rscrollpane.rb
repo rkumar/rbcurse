@@ -58,7 +58,7 @@ module RubyCurses
       @orig_col = @col
       init_vars
       should_create_buffer true
-      $log.debug " SCROLLPANE recvs form #{form}, #{form.window} "
+      $log.debug " SCROLLPANE recvs form #{form.name}, #{form.window.name} " unless form.nil?
 
 
       # next line does not seem to have an effect.
@@ -73,7 +73,7 @@ module RubyCurses
       # create_b moved from repaint since we need to pass form to child component
          #  2010-01-16 20:03 moved again from init so height can be set by parent or whatever
          if @subform.nil?
-             $log.debug " CLASS #{@form.window} "
+             #$log.debug " CLASS #{@form.window} "
              #if @form.window.window_type == :WINDOW
                  #@subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
              #else
@@ -82,9 +82,10 @@ module RubyCurses
              #end
             @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
             @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
-            @subpad.name = "SCRP-CHILDPAD" # -#{child.name}"
-            @subform.name = "SCRP-CHILDFORM " #-#{child.name}"
-            $log.debug " SCRP creates pad and form for child #{@subpad} #{@subpad.name} , #{@subform} #{@subform.name}  "
+            @subpad.name = "Pad::SCRP-CHILDPAD" # -#{child.name}"
+            @subform.name = "Form::SCRP-CHILDFORM " #-#{child.name}"
+            @subform.rows_panned = @subform.cols_panned = 0
+            $log.debug " SCRP creates pad and form for child #{@subpad.name} , #{@subform.name}  "
 
          end
         ## setting a form is a formality to prevent bombing
@@ -94,10 +95,18 @@ module RubyCurses
         @subform.parent_form=@form # added 2009-12-28 23:02 for cursor stuff BUFFERED
 
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
-        ## the next line causes the cursor to atleast move on the screen when we do up and down
-        ##+ although it is not within the scrollpane, but starting with 0 offset
-        #ch.form=@form  # added 2009-12-28 15:37 BUFFERED SHOCKINGLY, i overwrite formso cursor can be updated
 
+        # lets set the childs ext offsets
+        $log.debug "SCRP adding ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
+        $log.debug "SCRP adding ext_col_off: #{ch.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
+        #ch.ext_col_offset += @ext_col_offset #+ @col_offset
+        #ch.ext_row_offset +=  @ext_row_offset #+ @row_offset
+        if @form.window.window_type == :PAD
+            @screen_top = 2
+            @screen_left = 1
+        end
+        ch.ext_col_offset += @ext_col_offset + @col_offset - @screen_left
+        ch.ext_row_offset +=  @ext_row_offset + @row_offset - @screen_top
         set_viewport_view(ch)
       end
     end
@@ -110,6 +119,8 @@ module RubyCurses
       @row_outofbounds=0
       @col_outofbounds=0
       @border_width = 2
+      @screen_top = 0
+      @screen_left = 0
     end
     # set the component to be viewed
     def set_viewport_view ch
@@ -163,6 +174,7 @@ module RubyCurses
     def increment_view_row num
       r = @viewport.row() #- @viewport.top_margin
       c = @viewport.col() #- @viewport.left_margin
+      r, c = @viewport.get_pad_top_left()
       $log.debug " SCR inc viewport r #{r} c #{c} "
       r += num
       ret = set_view_position r, c
@@ -183,7 +195,7 @@ module RubyCurses
       # viewport then clips
       # this calls viewports refresh from its refresh
       return unless @repaint_required
-      $log.debug " #{@name}  SCRP scrollpane repaint #{@graphic} "
+      $log.debug " #{@name}  SCRP scrollpane repaint #{@graphic.name} "
         # TODO this only if major change
        if @repaint_border && @repaint_all # added 2010-01-16 20:15 
         #@graphic.wclear
@@ -201,13 +213,13 @@ module RubyCurses
       #@viewport.repaint_all true # 2010-01-16 23:09 
       @viewport.repaint_required true # changed 2010-01-19 19:34 
       @viewport.repaint # child's repaint should do it on its pad
-      $log.debug "SCRP   #{@name} calling viewport to SCRP  b2s #{@graphic}  "
+      $log.debug "SCRP   #{@name} calling viewport to SCRP  b2s #{@graphic.name}  "
       ret = @viewport.buffer_to_screen(@graphic)
       $log.debug "  #{@name}  VP to rscrollpane b2s ret = #{ret} "
 
       ## if WINDOW then do a copy scrp's pad to form.window since that's a pad too. TODO''
       if @form.window.window_type == :PAD
-          $log.debug " XXX SCRP PAD CASe copying   #{@name} calling #{@graphic} b2s to #{@form.window}  "
+          $log.debug " XXX SCRP PAD CASe copying   #{@name} calling #{@graphic.name} b2s to #{@form.window.name}  "
           #@graphic.set_backing_window(@form.window)
           #ret = @graphic.copy_pad_to_win
           r = 2 # @row
@@ -218,10 +230,10 @@ module RubyCurses
           @buffer_modified = true
           # i hope this is not a magic assignment. When scrollpane used within tabbedpane it is using
           # the objects row and col which is wrong. So i am passing 2 and 1 for copywin to work correct.
-          @graphic.set_screen_row_col 2,1 ## XXX
+          @graphic.set_screen_row_col @screen_top, @screen_left ## XXX
           buffer_to_screen(@form.window) #??? XXX
           #
-          $log.debug " XXX SCRP   #{@name} after calling #{@graphic} b2s to #{@form.window} ret = #{ret}  "
+          $log.debug " XXX SCRP   #{@name} after calling #{@graphic.name} b2s to #{@form.window.name} ret = #{ret}  "
       end
 
       ## next line rsults in ERROR in log file, does increment rowcol
@@ -345,7 +357,7 @@ module RubyCurses
           ## scroll up one row (currently one only)
         ret = up
         return unless ret # 2010-02-04 18:29 
-        $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up #{@row} #{@height}  "
+        $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up R:#{@row} H:#{@height}  "
    #     if @form.row < @row + @height
           @subform.rows_panned = @subform.rows_panned+1  if ret 
           @subform.row =@form.row+1+@row_outofbounds if ret 
@@ -372,7 +384,7 @@ module RubyCurses
         ret = @viewport.child.set_form_row # added 2009-12-27 23:23 BUFFERED
         ret = @viewport.child.set_form_col # added 2010-01-16 21:09 
       end
-      $log.debug " FORM SCRP #{@form} "
+      $log.debug " FORM SCRP #{@form.name} "
       $log.debug "SCRP set_form_row #{@form.row}  #{@form.col} "
     end
 

@@ -30,6 +30,7 @@ module VER
       #VER::start_ncurses
       @layout = layout
       @window = Window.new(@layout)
+      @window.name = "Window::ROOTW"
       @window.wrefresh
       Ncurses::Panel.update_panels
       return @window
@@ -398,6 +399,7 @@ module VER
       return VER::SubWindow.new(self, layout)
     end
     def get_window; @window; end
+    def to_s; @name || self; end
   end
   ##
   # added RK 2009-10-08 23:57 for tabbedpanes
@@ -515,6 +517,7 @@ module VER
       destroy
       $log.debug " L502 resize, creating newpad with #{@padheight} and #{@padwidth} "
       @window = Ncurses.newpad(@padheight, @padwidth)
+      $log.debug " L502 resize created #{@window} "
       return @window
     end
     ## used if pad and window are same size only
@@ -546,6 +549,7 @@ module VER
     end
     ## added user setting screens max row and col (e.g splitpanes first component)
     def set_screen_max_row_col mr, mc
+        $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{screen_maxrow}, #{screen_maxcol}  "
       # added || check on 2010-01-09 18:39 since crashing if mr > sh + top ..
       # I removed the check, since it results in a blank area on screen since the 
       # widget has not expanded itself. Without the check it will  crash on copywin so you
@@ -561,7 +565,7 @@ module VER
     # start row and col correspond to pad's top and left which will change if scrolling
     # However, if we use this as a backing store for subwindows it could remain the same
     def set_pad_top_left top, left=-1
-      $log.debug "   inside set_pad_top_left to #{top} #{left} earlier #{@pminrow}, #{@pmincol}"
+      $log.debug "#{@name} inside set_pad_top_left to #{top} #{left} earlier #{@pminrow}, #{@pmincol}"
       @pminrow = top unless top < 0
       @pmincol = left unless left < 0
     end
@@ -591,7 +595,7 @@ module VER
     # trying to make things as easy as possible
     # returns -1 if error in prefresh
     def wrefresh
-      $log.debug " inside pad's wrefresh #{@window}.  #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} self: #{self} "
+      $log.debug " inside pad's wrefresh #{@window}.  #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} self: #{self.name} "
 
       # caution, prefresh uses maxrow and maxcol not height and width
       # so we have to add top and less one since we are zero based
@@ -638,10 +642,10 @@ module VER
       end
       @pminrow = 0 if @pminrow < 0
       @pmincol = 0 if @pmincol < 0
-      $log.debug " COPYING #{self} to #{@otherwin} "
-      $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} self #{self} "
+      $log.debug " COPYING #{self.name} to #{@otherwin.name} "
+      $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} self #{self.name} "
       $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} WIN:#{@window} "
-      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin} "
+      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
       ret="-"
       #if ret == -1
         $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
@@ -679,6 +683,7 @@ module VER
       if smr >= @window.smaxrow()
         smr = @window.smaxrow()-1
       end
+      $log.debug " copy_win_to_pad #{@otherwin.name}, #{@window.name}, pminr:#{@pminrow} pminc:#{@pmincol} top:#{@top} left:#{@left} smr:#{smr} "
       ret = @otherwin.copywin(@window.get_window,@pminrow,@pmincol, @top, @left, smr, smaxcol(), 1)
       return ret
     end
