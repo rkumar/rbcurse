@@ -1,10 +1,10 @@
 =begin
-  * Name: TestWidget 
-  * $Id$
+  * Name: TestView 
   * Description   View text in this widget.
   * Author: rkumar (arunachalesha)
 TODO 
   * file created 2009-01-08 15:23  
+  * major change: 2010-02-10 19:43 simplifying the buffer stuff.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -40,6 +40,7 @@ module RubyCurses
     attr_reader :winrow   # the row in the viewport/window
     # painting the footer does slow down cursor painting slightly if one is moving cursor fast
     dsl_accessor :print_footer
+    dsl_accessor :suppress_borders # added 2010-02-10 20:05 values true or false
 
     def initialize form, config={}, &block
       @focusable = true
@@ -50,29 +51,29 @@ module RubyCurses
       @show_focus = false  # don't highlight row under focus
       @list = []
       super
-      @row_offset = @col_offset = 1
+      @row_offset = @col_offset = 1 # take care of borders
       @orig_col = @col
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
       @scrollatrow = @height-2
       @content_rows = @list.length
       @win = @graphic
-      #init_scrollable
-      @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
-      safe_create_buffer
-      @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
-      $log.debug " textview creates pad #{@screen_buffer} #{@name}"
-      #XXX print_borders if (@to_print_borders == 1 ) # do this once only, unless everything changes
-      # 2010-01-10 19:19 commented off setting maxlen since width can change (e.g. splitpane
-      #+ but maxlen remains fixed, and repaint uses it for width. Maxlen is now always
-      #+ calculated if nil.
-      #@maxlen ||= @width-2
+      #@to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
+
+      ## MOVE TO REPAIN AND SEE
+      #safe_create_buffer
+      #@screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
+      # $log.debug " textview creates pad #{@screen_buffer} #{@name}"
+
       install_keys
       init_vars
     end
     def init_vars
       @curpos = @pcol = @toprow = @current_index = 0
       @repaint_all=true 
+      ## 2010-02-10 20:20 RFED16 taking care if no border requested
+      @suppress_borders ||= false
+      @row_offset = @col_offset = 0 if @suppress_borders == true
     end
     ## 
     # send in a list
@@ -165,6 +166,11 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textview
+      safe_create_buffer
+      if !@screen_buffer.nil?
+          @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
+          $log.debug " textview creates pad #{@screen_buffer} #{@name}"
+      end
       
       paint if @repaint_required
       print_foot if @print_footer && @repaint_footer_required
@@ -337,10 +343,10 @@ module RubyCurses
     ##+ border would not be seen in splitpane unless the width coincided exactly with
     ##+ what is calculated in divider_location.
     def paint
-      print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
+      print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen || @width-2
-      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} "
+      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
