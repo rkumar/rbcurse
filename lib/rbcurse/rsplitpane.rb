@@ -76,16 +76,26 @@ module RubyCurses
       # but now SPLP bombs since it creates a buffer in repaint.
 
       def first_component(comp)
+          screen_col = 1
+          screen_row = 1 # offset for copying pad 2010-02-09 19:02 
           @first_component      = comp;
           @first_component.parent_component = self ## added 2010-01-13 12:54 
           subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
+          subpad.name           = "#{@name}-SPLITPAD1"
           @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
+          @subform1.name = "#{@name}-SPLITFORM1"
           comp.set_form(@subform1) # added 2010 BUFFERED
           @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
           ## These setting are quite critical, otherwise on startup
           ##+ it can create 2 tiled buffers.
           @first_component.row(1)  # this suddenly causes an initial extra blank which goes away
           @first_component.col(1)
+          # adding ext_offsets 2010-02-09 13:39 
+          # setting the form is again adding top and left which are the row and col from here.
+          $log.debug "SPLP exp_row #{@name}  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row} -1  "
+          comp.ext_row_offset += @ext_row_offset + @row - @subform1.window.top #0# screen_row
+          $log.debug "SPLP exp_col  #{@name}  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}   -1"
+          comp.ext_col_offset += @ext_col_offset + @col -@subform1.window.left # 0# screen_col
 
           ## trying out 2010-01-16 12:11 so component does not have to set size
           # The suggestd heights really depend on orientation.
@@ -107,7 +117,7 @@ module RubyCurses
           # so they don't print off. i need to find a way to have create_buffer pick an
           # explicit top and left.
           if !@first_component.get_buffer().nil?
-            @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
+            @first_component.get_buffer().set_screen_row_col(screen_row, screen_col)  # check this out XXX
             #@first_component.get_buffer().top=1;  # 2010-01-08 13:24 trying out
             #@first_component.get_buffer().left=1;  # 2010-01-08 13:24 trying out
           end
@@ -123,9 +133,16 @@ module RubyCurses
           @second_component = comp;
           @second_component.parent_component = self ## added 2010-01-13 12:54 
           subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
+          subpad.name           = "#{@name}-SPLITPAD2"
           @subform2             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
+          @subform2.name = "#{@name}-SPLITFORM2"
           comp.set_form(@subform2) # added 2010 BUFFERED
           @subform2.parent_form = @form # added 2010 for cursor stuff BUFFERED
+          # adding ext_offsets 2010-02-09 13:39 
+          $log.debug "SPLP exp_row #{@name} 2  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}  "
+          comp.ext_row_offset += @ext_row_offset #+ @row
+          $log.debug "SPLP exp_col #{@name} 2  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}  "
+          comp.ext_col_offset += @ext_col_offset #+ @col
           ## jeez, we;ve postponed create of buffer XX
           #@second_component.row(1)
           #@second_component.col(1)
@@ -569,6 +586,17 @@ module RubyCurses
          if !@current_component.nil?
             $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
             @current_component.set_form_row 
+            @current_component.set_form_col 
+         end
+      end
+      # added 2010-02-09 10:10 
+      # sets the forms cursor column correctly
+      # earlier the super was being called which missed out on child's column.
+      # Note: splitpane does not use the cursor, so it does not know where cursor should be displayed,
+      #+ the child has to decide where it should be displayed.
+      def set_form_col
+         if !@current_component.nil?
+            $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
             @current_component.set_form_col 
          end
       end

@@ -549,7 +549,7 @@ module VER
     end
     ## added user setting screens max row and col (e.g splitpanes first component)
     def set_screen_max_row_col mr, mc
-        $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{screen_maxrow}, #{screen_maxcol}  "
+        $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{@screen_maxrow}, #{@screen_maxcol}  "
       # added || check on 2010-01-09 18:39 since crashing if mr > sh + top ..
       # I removed the check, since it results in a blank area on screen since the 
       # widget has not expanded itself. Without the check it will  crash on copywin so you

@@ -68,8 +68,8 @@ module RubyCurses
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       safe_create_buffer # 2009-12-26 14:54 BUFFERED
-      @screen_buffer.name = "Pad::TXTA-PAD"
-      $log.debug " textarea creates pad #{@screen_buffer} "
+      @screen_buffer.name = "Pad::TXTA_PAD_#{@name}"
+      $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
     #  init_scrollable
       #print_borders
       # 2010-01-10 19:35 compute locally if not set

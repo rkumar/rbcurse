@@ -97,7 +97,7 @@ module RubyCurses
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
         # lets set the childs ext offsets
-        $log.debug "SCRP adding ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
+        $log.debug "SCRP #{@name} adding (to #{ch.name}) ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
         $log.debug "SCRP adding ext_col_off: #{ch.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
         #ch.ext_col_offset += @ext_col_offset #+ @col_offset
         #ch.ext_row_offset +=  @ext_row_offset #+ @row_offset
@@ -105,8 +105,12 @@ module RubyCurses
             @screen_top = 2
             @screen_left = 1
         end
-        ch.ext_col_offset += @ext_col_offset + @col_offset - @screen_left
-        ch.ext_row_offset +=  @ext_row_offset + @row_offset - @screen_top
+        # 2010-02-09 18:58 i think we should not put col_offset since the col
+        # of child would take care of that. same for row_offset. XXX 
+        #ch.ext_col_offset += @ext_col_offset + @col_offset - @screen_left
+        #ch.ext_row_offset +=  @ext_row_offset + @row_offset - @screen_top
+        ch.ext_col_offset += @ext_col_offset  - @screen_left # 2010-02-09 19:14 
+        ch.ext_row_offset +=  @ext_row_offset  - @screen_top
         set_viewport_view(ch)
       end
     end
@@ -386,6 +390,19 @@ module RubyCurses
       end
       $log.debug " FORM SCRP #{@form.name} "
       $log.debug "SCRP set_form_row #{@form.row}  #{@form.col} "
+    end
+    ## added 2010-02-09 10:17 
+    # Sometimes some parent objects may just call this.
+    # Would be better if they only called row and row called both ??? or is that less reliable
+    # In any case we have to combine this someday!!
+    def set_form_col
+      #@form.row = @row + 1 unless @form.nil?
+      if @viewport != nil
+        #$log.debug "    calling scrollpane set_form_row"
+        ret = @viewport.child.set_form_col # added 2010-01-16 21:09 
+      end
+      $log.debug " FORM SCRP #{@form.name} "
+      $log.debug "SCRP set_form_col #{@form.row}  #{@form.col} "
     end
 
     ## this is called once only, on select_field by form.

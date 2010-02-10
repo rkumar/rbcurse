@@ -60,8 +60,8 @@ module RubyCurses
       #init_scrollable
       @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
       safe_create_buffer
-      @screen_buffer.name = "Pad::TV-PAD" unless @screen_buffer.nil?
-      $log.debug " textview creates pad #{@screen_buffer} "
+      @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
+      $log.debug " textview creates pad #{@screen_buffer} #{@name}"
       #XXX print_borders if (@to_print_borders == 1 ) # do this once only, unless everything changes
       # 2010-01-10 19:19 commented off setting maxlen since width can change (e.g. splitpane
       #+ but maxlen remains fixed, and repaint uses it for width. Maxlen is now always

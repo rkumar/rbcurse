@@ -52,7 +52,8 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
-      $log.debug " MAIN FORM #{@form}  "
+      @form.name = "Form::MAINFORM"
+      $log.debug " MAIN FORM #{@form} #{$0}  "
       r = 1; c = 3; ht = 18; w = 70
       r = 0; c = 0; ht = 20; w = 100
 
@@ -88,7 +89,7 @@ if $0 == __FILE__
           border_attrib Ncurses::A_NORMAL
         end
         ta1 = TextArea.new nil do
-          name   "myTextArea" 
+          name   "myTextArea-right" 
           #row 0
           #col  0 
           width w/2-2
@@ -102,7 +103,7 @@ if $0 == __FILE__
         end
 
         t1 = TextView.new nil do
-          name   "myView" 
+          name   "myView-left-first" 
           #row 0
           #col  0 
           #width w-2
@@ -121,7 +122,7 @@ if $0 == __FILE__
         # to see lower border i need to set height to ht/2 -2 in both cases, but that
         # crashes ruby when i reduce height by 1.
         t2 = TextView.new nil do
-          name   "myView2" 
+          name   "myView2-left-second" 
           #row 0
           #col  0 
           width w/2-1

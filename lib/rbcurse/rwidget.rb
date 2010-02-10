@@ -455,10 +455,13 @@ module RubyCurses
       @form.row = @row + 1 
     end
     # set cursor on correct column, widget
+    # Ideally, this should be overriden, as it is not likely to be correct.
     def set_form_col col1=@curpos
       @curpos = col1 || 0 # 2010-01-14 21:02 
-      @form.col = @col + @col_offset + @curpos
-      $log.debug " widget set_form_col #{@form.col} "
+      #@form.col = @col + @col_offset + @curpos
+      c = @col + @col_offset + @curpos
+      $log.debug " #{@name} widget WARNING super set_form_col #{c}, #{@form} "
+      setrowcol nil, c
     end
     def hide
       @visible = false
@@ -1170,9 +1173,9 @@ module RubyCurses
     def setrowcol r, c
       @row = r unless r.nil?
       @col = c unless c.nil?
-           r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
-           c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
-           $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self}  "
+      r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
+      c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
+      $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self}  "
       if !@parent_form.nil? and @parent_form != self
         $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
         #r += @parent_form.window.top unless  r.nil?
@@ -1234,20 +1237,20 @@ module RubyCurses
               select_prev_field
             when KEY_DOWN
               select_next_field
-            when ?\M-L.getbyte(0)
-              ## trying out these for fuun and testing splitpane 2010-01-10 20:32 
-              $log.debug " field #{field.name} was #{field.width} "
-              field.width += 1
-              $log.debug " field #{field.name} now #{field.width} "
-              field.repaint_all
-            when ?\M-H.getbyte(0), ?\M-<.getbyte(0)
-              field.width -= 1
-              $log.debug " field #{field.name} now #{field.width} "
-              field.repaint_all
-            when ?\M-J.getbyte(0)
-              field.height += 1
-            when ?\M-K.getbyte(0)
-              field.height -= 1
+            #when ?\M-L.getbyte(0)
+              ### trying out these for fuun and testing splitpane 2010-01-10 20:32 
+              #$log.debug " field #{field.name} was #{field.width} "
+              #field.width += 1
+              #$log.debug " field #{field.name} now #{field.width} "
+              #field.repaint_all
+            #when ?\M-H.getbyte(0), ?\M-<.getbyte(0)
+              #field.width -= 1
+              #$log.debug " field #{field.name} now #{field.width} "
+              #field.repaint_all
+            #when ?\M-J.getbyte(0)
+              #field.height += 1
+            #when ?\M-K.getbyte(0)
+              #field.height -= 1
             else
               ret = process_key ch, self
               $log.debug " process_key #{ch} got ret #{ret} in #{self} "

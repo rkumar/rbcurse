@@ -43,6 +43,7 @@ if $0 == __FILE__
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
+    show_caret_flag = true
 
     @window = VER::Window.root_window
 
@@ -89,6 +90,7 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
+        ta1.show_caret = show_caret_flag
 
         t1 = TextView.new nil do
           name   "myView" 
@@ -104,6 +106,7 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
+        t1.show_caret = show_caret_flag
         content = File.open("../README.markdown","r").readlines
         t1.set_content content #, :WRAP_WORD
 

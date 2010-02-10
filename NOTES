@@ -884,3 +884,97 @@ Two approaches:
    a true value.
 
 * * * * * * * *
+
+Subject: Major change: buffered version, splitpane, scrollpane NOW
+------------------------------------------------------------------
+Date: 2010-02-10 11:09
+
+Too much breakage, too much debugging -- I need to redo the buffered
+approach largely meaning that:
+
+1. `SplitPane` and `ScrollPane` will have an almost complete rewrite.
+
+2. Window and Widget will be touched, in terms of repainting - only the
+   buffered portion, so the classic version of rbcurse should not be
+   affected.
+
+3. Yesterday, looking at the show_caret routine (carelessly tacked on
+   recently) in `Listscrollable`, I saw some glaring flaws, fixed it and
+   now Textviews and Textareas show their own caret (cursor) correctly,
+   no matter where they are placed. However, what one needs to do when
+   using this, is display it only on_enter, and hide it when on_exit.
+
+   Also, do remember that using this forces a `repaint` even when you move
+   the cursor inside the textarea. The original cursor routine does not
+   involve repainting unless scrolling happens due to movement.
+
+   However, it does solve a HUGE headache regarding cursor display in
+   complex setups like scrollpanes within a splitpane within another
+   splitpane.
+
+To detail point 1. 
+
+### Current approach to using buffers (ncurses' Pad):
+
+1. Too many pads which results in slow response, too much copying which
+   is very prone to bugs, too much impact of change.
+   Its too complex.
+
+2. Copying pads from inner to outer widgets is too messy, very hard to
+   debug errors, slow.
+
+3. Need to avoid or minimize pad usage.
+
+### Alternatives:
+
+1. **No pad** 
+   - This means that we `repaint` each time scrolling happens
+   - Widget takes care of cropping and can make errors. Responsibility
+     is on each widget to crop. Cropping has to be from both sides, not
+     just right.
+     Typically, this cropping will happen for each line of a multi-line
+     widget. In the `copywin()` case, the widget writes without checking
+     len or cropping. The lower level `copywin()` takes care of cropping
+     so that's more efficient.
+
+     This does obviate the recreating of pads that happens due to
+     resizing or even setting the parent object's dimensions.
+
+2. Use only **one pad** for the widget that's actually writing such as
+   `Textarea` or `Listbox`.
+
+   This widget is passed the coordinates to crop and the target window
+   (typically `form.window`).
+   It uses `prefresh()` to write onto form.window using coordinates.
+   Most likely this code can be put in superclass `Widget` so there are no
+   errors.
+   The container such as `Splitpane` and `Scrollpane` merely pass down
+   their bounds, so it doesn't matter how many levels there are. Only
+   bounds are being passed down and calculated. 
+
+   Now its possibly that the container *suggests* to inner object to use a
+   pad. The inner object can if its programmed to, use a pad and use the
+   cropping, or it can just paint to the target. In the case of optional
+   pads, the widget will have code to crop each line, so that code will
+   exist even with a pad.
+
+   After that, the `Scrollpane` will put its border or scrollbars directly
+   onto `form.window` using the bounds it has. Similarly the higher level
+   `Splitpane` will paint its own border or divider etc onto the
+   `form.window` and so on.
+
+
+### Tasks:
+
+1. push all existing code to rbcurse19 branch
+
+2. create a new branch for this change
+
+3. Have `SplitPane` and `ScrollPane` push their dimensions down and paint onto
+   `@form.window` directly.
+
+4. Have final widget (`TextArea`, `TextView`, `Listbox`) respect the
+   dimensions passed in, and refresh `Pad` onto actual target
+   (`@form.window`).
+
+* * * * * * * *

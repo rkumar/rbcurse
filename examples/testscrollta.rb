@@ -53,18 +53,18 @@ if $0 == __FILE__
         @textview << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         @textview << "Let me not defer it or neglect it, for I shall not pass this way again."
         @textview << " "
-        @textview << "q to exit."
+        @textview << "F1 to exit. M-n, M-p, M-h, M-l for scrolling."
         @textview << "Some more text going below scrollpane.. "
-        @textview << "Love all creatures for they are none but yourself."
+        @textview << "Try C-[ C-] for going to start and end "
 
 
-      @help = "q to quit. This is a test of TextArea which uses a pad/buffer.: #{$0} (M-L to elongate)"
+      @help = "F1 to quit. This is a test of TextArea inside a Scrollpane (it uses a pad/buffer).: #{$0} "
       RubyCurses::Label.new @form, {'text' => @help, "row" => 23, "col" => 2, "color" => "yellow"}
 
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != ?q.getbyte(0) )
+      while((ch = @window.getchar()) != KEY_F1)
         str = keycode_tos ch
         @form.handle_key(ch)
         @form.repaint

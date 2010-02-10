@@ -66,7 +66,7 @@ if $0 == __FILE__
         end
         # note that splitleft has no form. so focus has to be managed XXX
         splitleft = SplitPane.new nil do
-          name   "splitleft" 
+          name   "splitleft-outer" 
           
           #width w/3 # 30
           #height ht-0 #/2-1
@@ -75,8 +75,8 @@ if $0 == __FILE__
           border_color $promptcolor
           border_attrib Ncurses::A_NORMAL
         end
-        ta1 = TextArea.new nil do
-          name   "myTextArea" 
+        taoutrt = TextArea.new nil do
+          name   "myTextArea-outrt" 
           #row 0
           #col  0 
           width w # this is ofcourse large, full width
@@ -88,9 +88,10 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
+          taoutrt.show_caret=true
 
-        t1 = TextView.new nil do
-          name   "myView" 
+        tvleft1 = TextView.new nil do
+          name   "myviewleft1" 
           #row 0
           #col  0 
           #width w-2
@@ -103,13 +104,14 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
+          tvleft1.show_caret=true
         content = File.open("../README.markdown","r").readlines
-        t1.set_content content #, :WRAP_WORD
+        tvleft1.set_content content #, :WRAP_WORD
 
         # to see lower border i need to set height to ht/2 -2 in both cases, but that
         # crashes ruby when i reduce height by 1.
-        t2 = TextView.new nil do
-          name   "myView2" 
+        tvleft2 = TextView.new nil do
+          name   "myviewleft2" 
           #row 0
           #col  0 
           width w/2-1
@@ -121,42 +123,45 @@ if $0 == __FILE__
           footer_attrib 'bold'
           should_create_buffer true
         end
+          tvleft2.show_caret=true
         content = File.open("../NOTES","r").readlines
-        t2.set_content content #, :WRAP_WORD
+        tvleft2.set_content content #, :WRAP_WORD
 
-        scroll1 = ScrollPane.new nil do
-          name   "myScroll1" 
+        leftscroll1 = ScrollPane.new nil do
+          name   "myScrollLeftTop" 
         end
-        scroll2 = ScrollPane.new nil do
-          name   "myScroll2" 
+        leftscroll2 = ScrollPane.new nil do
+          name   "myScrollLeftBot" 
         end
-        scroll3 = ScrollPane.new nil do
-          name   "myScroll3" 
+        scroutrt = ScrollPane.new nil do
+          name   "myScroll3-outer-right" 
           #width 46
         end
-        #scroll1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
-        scroll1.preferred_height (ht/2)-4 ## this messes things up when we change orientation
+        leftscroll1.cascade_changes = true
+        leftscroll2.cascade_changes = true
+        #leftscroll1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
+        leftscroll1.preferred_height (ht/2)-4 ## this messes things up when we change orientation
         # the outer compo needs child set first else cursor does not reach up from
         # lower levels. Is the connection broken ?
         outer.first_component(splitleft)
-        outer.second_component(scroll3)
-        #scroll2.preferred_height ht/2-2
-        scroll3.child(ta1)
-        splitleft.first_component(scroll1)
-        scroll1.child(t1)
-        splitleft.second_component(scroll2)
-        scroll2.child(t2)
-        #t1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
-        #t1.preferred_height (ht/2)-1 ## this messes things up when we change orientation
-        #t1.set_resize_weight 0.50
+        outer.second_component(scroutrt)
+        #leftscroll2.preferred_height ht/2-2
+        scroutrt.child(taoutrt)
+        splitleft.first_component(leftscroll1)
+        leftscroll1.child(tvleft1)
+        splitleft.second_component(leftscroll2)
+        leftscroll2.child(tvleft2)
+        #tvleft1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
+        #tvleft1.preferred_height (ht/2)-1 ## this messes things up when we change orientation
+        #tvleft1.set_resize_weight 0.50
         ret = splitleft.reset_to_preferred_sizes
         splitleft.set_resize_weight(0.50) if ret == :ERROR
 
         splitleft.preferred_width w/2 #w/3
         splitleft.preferred_height ht/2-2
         #splitleft.set_resize_weight 0.50
-        #ta1.min_width 10
-        #ta1.min_height 5
+        #taoutrt.min_width 10
+        #taoutrt.min_height 5
         #splitleft.min_width 12
         #splitleft.min_height 6
         ret = outer.reset_to_preferred_sizes
@@ -164,7 +169,7 @@ if $0 == __FILE__
 
         File.open("../README.markdown","r") do |file|
            while (line = file.gets)
-              ta1 << line.chomp
+              taoutrt << line.chomp
            end
         end
 
