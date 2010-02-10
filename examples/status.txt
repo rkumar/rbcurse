@@ -1,0 +1,68 @@
+PROGRAM STATUS
+==============
+/// vim:ts=4:sw=4:tw=80:ai:formatoptions=tcqnl:
+
+I need to maintain the status of various test programs, what all is working and
+particularly what is not, after testing. That way after making changes if
+something is not working, i know whether it was a newly introduced issue or an
+existing issue that was not closed.
+
+
+testsplit3_1.rb ERROR
+  2010-02-08 20:47 
+  ERROR
+  M-w works on left split to jump. C-a C-e etc working fine.
+
+  [ ] TAB no longer working to go to right split. Tab puts me in the top left corner
+  of current split.
+
+------------
+testsplit3.rb
+  2010-02-08 20:49 
+  OK
+
+  M-w working.
+  Tab working to get to right side.
+
+------------
+testsplit3a.rb ERROR
+  2010-02-08 20:53 
+  ERROR
+
+ Display. Left top split shows NOTES instead of README. After cursor movement,
+ it shows README.
+ Middle separator not showing.
+ Cursor off by -2, -1 in top left.
+ TAB does not go to right split.
+ M-w brings bottom tab to top!
+------------
+
+testsplitta.rb
+  2010-02-08 21:00 
+  OKAY
+
+  M-w
+  Ca Ce
+  M- M+ M=
+  Cursor pos
+
+------------
+testsplittv.rb
+  2010-02-08 21:37 
+  OKAY
+
+  M-w
+  Ca Ce
+  + - =
+  curpos
+
+------------
+testsplittvv.rb
+  2010-02-08 21:39 
+  OKAY
+
+  M-w
+  Ca Ce
+  + = -
+  Cn Tab Cn
+------------
