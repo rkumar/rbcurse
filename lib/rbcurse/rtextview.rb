@@ -1,10 +1,16 @@
 =begin
-  * Name: TestView 
+  * Name: TextView 
   * Description   View text in this widget.
   * Author: rkumar (arunachalesha)
-TODO 
   * file created 2009-01-08 15:23  
   * major change: 2010-02-10 19:43 simplifying the buffer stuff.
+  * FIXME : since currently paint is directly doing copywin, there are no checks
+    to prevent crashing or -1 when panning. We need to integrate it back to a call to Pad.
+  * h_scroll printing off whle scrolling right.
+  * unnecessary repainting when moving cursor, evn if no change in coords and data
+  * on reentering cursor does not go to where it last was (test2.rb) - sure it used to.
+TODO 
+   * border, and footer could be objects (classes) at some future stage.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -45,25 +51,17 @@ module RubyCurses
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
-      @left_margin = 1
       @row = 0
       @col = 0
       @show_focus = false  # don't highlight row under focus
       @list = []
       super
-      @row_offset = @col_offset = 1 # take care of borders
-      @orig_col = @col
-      # this does result in a blank line if we insert after creating. That's required at 
-      # present if we wish to only insert
-      @scrollatrow = @height-2
+      # ideally this should have been 2 to take care of borders, but that would break
+      # too much stuff !
+      @row_offset = @col_offset = 1 
+      #@scrollatrow = @height-2
       @content_rows = @list.length
       @win = @graphic
-      #@to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
-
-      ## MOVE TO REPAIN AND SEE
-      #safe_create_buffer
-      #@screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
-      # $log.debug " textview creates pad #{@screen_buffer} #{@name}"
 
       install_keys
       init_vars
@@ -74,6 +72,9 @@ module RubyCurses
       ## 2010-02-10 20:20 RFED16 taking care if no border requested
       @suppress_borders ||= false
       @row_offset = @col_offset = 0 if @suppress_borders == true
+      # added 2010-02-11 15:11 RFED16 so we don't need a form.
+      @win_left = 0
+      @win_top = 0
     end
     ## 
     # send in a list
@@ -111,7 +112,6 @@ module RubyCurses
     end
     ## ---- for listscrollable ---- ##
     def scrollatrow
-      #@height - 2
       @height - 3 # trying out 2009-10-31 15:22 XXX since we seem to be printing one more line
     end
     def row_count
@@ -125,8 +125,9 @@ module RubyCurses
       end
       return nil
     end
+    ## returns the position where cursor was to be positioned by default
+    # It may no longer work like that. 
     def rowcol
-      #return @row+@row_offset+@winrow, @col+@col_offset
       return @row+@row_offset, @col+@col_offset
     end
     def wrap_text(txt, col = @maxlen)
@@ -139,10 +140,8 @@ module RubyCurses
     ## Note that print_border clears the area too, so should be used sparingly.
     def print_borders
       $log.debug " #{@name} print_borders, #{@graphic.name} "
-      window = @graphic
       color = $datacolor
-      window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
-      #window.print_border 0, 0, @height, @width, color #, Ncurses::A_REVERSE
+      @graphic.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       print_title
     end
     def print_title
@@ -154,7 +153,6 @@ module RubyCurses
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
       $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
-      #@graphic.printstring( @height, 2, footer, $datacolor, @footer_attrib) 
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
     ### FOR scrollable ###
@@ -166,14 +164,41 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textview
-      safe_create_buffer
-      if !@screen_buffer.nil?
-          @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
-          $log.debug " textview creates pad #{@screen_buffer} #{@name}"
+      if @screen_buffer.nil?
+        safe_create_buffer
+        @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
+        $log.debug " textview creates pad #{@screen_buffer} #{@name}"
       end
       
       paint if @repaint_required
       print_foot if @print_footer && @repaint_footer_required
+      if @is_double_buffered and @buffer_modified
+          # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
+          $log.debug "RFED16 paint  #{@name} calling b2s #{@graphic}  "
+          # TODO need to call set_screen_row_col (top, left), set_pad_top_left (pminrow, pmaxrow), set_screen_max_row_col
+          if false
+              # boh these print the pad behind 0,0, later scroll etc cover it and show bars.
+              ret = buffer_to_screen #@target_window.get_window
+              #ret = @graphic.wrefresh
+          else
+             # ext gives me parents offset. often the row would be zero, so we still need one extra
+              r = @ext_row_offset  
+              c = @ext_col_offset  
+              maxr = @buffer_params[:bottom]
+              maxc = @buffer_params[:right]
+              ## sadly this is bypassing the method that does this stuff in Pad. We need to assimilate it back, so not so much work here
+              pminr = @graphic.pminrow
+              pminc = @graphic.pmincol
+              $log.debug " ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} -1, #{c} + #{maxc} -1,0)"
+              # this print the view at 0,0, byt covers the scrllare, bars not shown.
+              # this can crash if textview is smaller than container dimension
+              # can crash/give -1 when panning, giong beyond pad size XXX
+              border_width = 2
+              ret = @graphic.copywin(@target_window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
+          end
+          $log.debug " copywin ret --> #{ret} "
+          #
+      end
     end
     def getvalue
       @list
@@ -273,6 +298,8 @@ module RubyCurses
     end
     # set cursor on correct column tview
     def set_form_col col1=@curpos
+      @cols_panned ||= 0
+      @pad_offset ||= 0 # added 2010-02-11 21:54 since padded widgets get an offset.
       @curpos = col1
       maxlen = @maxlen || @width-2
       #@curpos = maxlen if @curpos > maxlen
@@ -284,13 +311,13 @@ module RubyCurses
       end
       ## changed on 2010-01-12 18:46 so carried upto topmost form
       #@form.col = @orig_col + @col_offset + @curpos
-      win_col=@form.window.left
+      #win_col=@form.window.left
       win_col = 0 # 2010-02-07 23:19 new cursor stuff
       #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
       ## 2010-01-13 18:19 trying col instead of orig, so that can work in splitpanes
       ##+ impact has to be seen elsewhere too !!! XXX
-      col2 = win_col + @col + @col_offset + @curpos + @form.cols_panned
-      $log.debug "TV SFC #{@name} setting c to #{col2} FORM #{@form.name}, #{win_col} #{@col} #{@col_offset} #{@curpos} "
+      col2 = win_col + @col + @col_offset + @curpos + @cols_panned + @pad_offset
+      $log.debug "TV SFC #{@name} setting c to #{col2} #{win_col} #{@col} #{@col_offset} #{@curpos} "
       #@form.setrowcol @form.row, col
       setrowcol nil, col2
       # XXX 
@@ -312,12 +339,20 @@ module RubyCurses
     def addcol num
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
-      @form.addcol num
+      if @form
+        @form.addcol num
+      else
+        @parent_component.form.addcol num
+      end
     end
     def addrowcol row,col
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
+      if @form
       @form.addrowcol row, col
+      else
+        @parent_component.form.addrowcol num
+      end
     end
     def cursor_backward
       if @curpos > 0
@@ -343,6 +378,17 @@ module RubyCurses
     ##+ border would not be seen in splitpane unless the width coincided exactly with
     ##+ what is calculated in divider_location.
     def paint
+      # not sure where to put this, once for all or repeat 2010-02-11 15:06 RFED16
+      my_win = nil
+      if @form
+        my_win = @form.window
+      else
+        my_win = @target_window
+      end
+      $log.warn "neither form not target window given!!! TV paint 368" unless my_win
+      @win_left = my_win.left
+      @win_top = my_win.top
+
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen || @width-2
@@ -367,10 +413,6 @@ module RubyCurses
                 content = content[@pcol..-1]
               end
             end
-            #renderer = get_default_cell_renderer_for_class content.class.to_s
-            #renderer = cell_renderer()
-            #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
-            #renderer.repaint @form.window, r+hh, c, content, focussed, selected
             @graphic.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
             if @search_found_ix == tr+hh
               if !@find_offset.nil?
@@ -392,6 +434,22 @@ module RubyCurses
       @repaint_footer_required = true # 2010-01-23 22:41 
       @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false # added 2010-01-08 18:56 for redrawing everything
+
+      # 2010-02-10 22:08 RFED16
+    end
+    ## When a container requests buffering, it should pass a target window for the buffer to copy onto.
+    # Also, window offsets are required. This is currently happening once only. I am working on this.
+    # We could move this to Pad, so i don't have to duplicate it in textarea and others. XXX
+    def set_buffering params
+        #@should_create_buffer = params[:should_create_buffer] || true
+        @target_window = params[:target_window]
+        $log.debug " got target window #{@target_window} "
+        # @top = params[:top]
+        # @left = params[:left]
+        # @bottom = params[:bottom]
+        # @right = params[:right]
+        # offsets ?
+        @buffer_params = params
     end
   end # class textview
 end # modul

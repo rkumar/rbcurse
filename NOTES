@@ -978,3 +978,24 @@ To detail point 1.
    (`@form.window`).
 
 * * * * * * * *
+
+Subject: method rowcol and offset fields
+----------------------------------------
+Date: 2010-02-11 21:56
+
+method rowcol() is supposed to return the location where form would
+place the cursor by default. So it takes row + row_offset.
+row_offset usually is 1 by default, if you have a border.
+
+However, there's some issue with placing an item inside a Scrollpane and
+perhaps others. The buffer is copied with an offset of 1. So rowcol by
+itself does not yield the correct cursor position.
+
+If i add 1 to this, many other routines start printing one off. rowcol
+has been used rather extensively because somewhere down the line, i
+forgot its purpose (not having thought it necessary to document it).
+
+So i've added a pad_offset in textview, for the pad cases. I know i am
+redoing it and already started hacking.
+
+* * * * * * * *

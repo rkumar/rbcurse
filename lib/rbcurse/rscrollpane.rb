@@ -11,7 +11,13 @@ TODO section:
   - scrollbars to be classes
   - if scrollpane reduced it should also resize, as example inside splitpane.
   * file created 2009-10-27 19:20 
-  Added a call to child's set_form_col from set_form_row
+  * Added a call to child's set_form_col from set_form_row
+Major changes 2010-02-11 19:51 to simplify version RFED16
+  * Still need to clean up this and viewport. make as light as possible
+  * If scrolling, no repainting should happen. Scrollpane could get the buffer
+    and scroll itself. Or ensure that inner object does not rework...
+
+  
   
   --------
   * License:
@@ -36,10 +42,6 @@ module RubyCurses
   # TODO - 
   
   class ScrollPane < Widget
-    #dsl_property :height  # height of viewport
-    #dsl_accessor :width  # already present in widget
-    # row and col also present int widget
-    #dsl_accessor :child  # component that is being viewed
     # viewport
     # row_viewport
     # column_viewport
@@ -55,62 +57,32 @@ module RubyCurses
       @col = 0
       super
       @row_offset = @col_offset = 1
-      @orig_col = @col
       init_vars
-      should_create_buffer true
-      $log.debug " SCROLLPANE recvs form #{form.name}, #{form.window.name} " unless form.nil?
+    #  $log.debug " SCROLLPANE recvs form #{form.name}, #{form.window.name} " unless form.nil?
 
 
-      # next line does not seem to have an effect.
-      # @subform.set_parent_buffer(@graphic) # added 2009-12-28 19:38 BUFFERT (trying out for cursor)
     end
     ##
     # set child component being used in viewport
     # @see set_viewport_view
     def child ch
       if ch != nil
-
-      # create_b moved from repaint since we need to pass form to child component
-         #  2010-01-16 20:03 moved again from init so height can be set by parent or whatever
-         if @subform.nil?
-             #$log.debug " CLASS #{@form.window} "
-             #if @form.window.window_type == :WINDOW
-                 #@subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
-             #else
-                 ## 2010-02-02 23:16 TRYING OUT FOR TABBEDPANE but can i create 2 form from one pad ?
-                 #@subpad=@form.window
-             #end
-            @subpad=create_buffer # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
-            @subform = RubyCurses::Form.new @subpad # added 2009-12-27 13:35 BUFFERED  (moved from repaint)
-            @subpad.name = "Pad::SCRP-CHILDPAD" # -#{child.name}"
-            @subform.name = "Form::SCRP-CHILDFORM " #-#{child.name}"
-            @subform.rows_panned = @subform.cols_panned = 0
-            $log.debug " SCRP creates pad and form for child #{@subpad.name} , #{@subform.name}  "
-
-         end
-        ## setting a form is a formality to prevent bombing
-        ##+ however, avoid setting main form, which will then try to
-        ##+ traverse this object and print using its own coordinates
-        ch.set_form(@subform) # added 2009-12-27 13:35 BUFFERED 
-        @subform.parent_form=@form # added 2009-12-28 23:02 for cursor stuff BUFFERED
+        @child = ch # added 2010-02-11 15:28 we might do away with viewport, setting panned to child
+        @child.rows_panned = @child.cols_panned = 0
 
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
+        @child.should_create_buffer true 
+        @child.set_buffering(:target_window => @form.window, :bottom => @height-1, :right => @width-1 )
         # lets set the childs ext offsets
-        $log.debug "SCRP #{@name} adding (to #{ch.name}) ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
+        $log.debug "SCRP #{name} adding (to #{ch.name}) ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
         $log.debug "SCRP adding ext_col_off: #{ch.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
-        #ch.ext_col_offset += @ext_col_offset #+ @col_offset
-        #ch.ext_row_offset +=  @ext_row_offset #+ @row_offset
-        if @form.window.window_type == :PAD
-            @screen_top = 2
-            @screen_left = 1
-        end
-        # 2010-02-09 18:58 i think we should not put col_offset since the col
-        # of child would take care of that. same for row_offset. XXX 
-        #ch.ext_col_offset += @ext_col_offset + @col_offset - @screen_left
-        #ch.ext_row_offset +=  @ext_row_offset + @row_offset - @screen_top
-        ch.ext_col_offset += @ext_col_offset  - @screen_left # 2010-02-09 19:14 
-        ch.ext_row_offset +=  @ext_row_offset  - @screen_top
+        ## 2010-02-09 18:58 i think we should not put col_offset since the col
+        ## of child would take care of that. same for row_offset. XXX 
+        ch.ext_col_offset += @ext_col_offset + @col + @col_offset - @screen_left # 2010-02-09 19:14 
+
+        $log.debug " #{ch.ext_row_offset} +=  #{@ext_row_offset} + #{@row} -#{@screen_top}  "
+        ch.ext_row_offset +=  @ext_row_offset  + @row   + @row_offset - @screen_top 
         set_viewport_view(ch)
       end
     end
@@ -132,11 +104,6 @@ module RubyCurses
       @viewport.set_view ch
       ## this -2 should depend on whether we are putting border/scrollbars or not.
       @viewport.set_view_size(@height-@border_width, @width-@border_width) # XXX make it one less
-      # 2010-02-06 21:58 i am not sure if this should be 1,1 or 0,0.
-      # 1,1 means it doesn't print row 0 of textview (border) to start with,
-      # 0,0 means it does print, but when doing M-n overwrites scrollpane top border
-      #@viewport.set_view_position(1,1) # @row, @col should be 0,0 but to test that in other situa FIXME
-      #@viewport.set_view_position(0,0) # @row, @col should be 0,0 but to test that in other situa FIXME
       @viewport.cascade_changes = @cascade_changes # added 2010-02-04 18:19 
     end
     # return underlying viewport
@@ -176,10 +143,10 @@ module RubyCurses
     end
     # @return [true, false] false if r,c not changed
     def increment_view_row num
-      r = @viewport.row() #- @viewport.top_margin
-      c = @viewport.col() #- @viewport.left_margin
+#x      r = @viewport.row() #- @viewport.top_margin
+#x      c = @viewport.col() #- @viewport.left_margin
       r, c = @viewport.get_pad_top_left()
-      $log.debug " SCR inc viewport r #{r} c #{c} "
+      $log.debug " SCR inc viewport currently :  r #{r} c #{c} "
       r += num
       ret = set_view_position r, c
       v_scroll_bar if ret
@@ -187,8 +154,9 @@ module RubyCurses
     end
     # @return [true, false] false if r,c not changed
     def increment_view_col num
-      r = @viewport.row() #- @viewport.top_margin
-      c = @viewport.col() #- @viewport.left_margin
+      r, c = @viewport.get_pad_top_left()
+      #r = @viewport.row() #- @viewport.top_margin
+      #c = @viewport.col() #- @viewport.left_margin
       c += num
       ret = set_view_position r, c
       h_scroll_bar if ret
@@ -199,30 +167,33 @@ module RubyCurses
       # viewport then clips
       # this calls viewports refresh from its refresh
       return unless @repaint_required
-      $log.debug " #{@name}  SCRP scrollpane repaint #{@graphic.name} "
+      if @viewport
+        $log.debug "SCRP  #{@name} calling viewport repaint"
+        #@viewport.repaint_all true # 2010-01-16 23:09 
+        @viewport.repaint_required true # changed 2010-01-19 19:34 
+        @viewport.repaint # child's repaint should do it on its pad
+        $log.debug " #{@name}  SCRP scrollpane repaint #{@graphic.name} "
+      end
         # TODO this only if major change
        if @repaint_border && @repaint_all # added 2010-01-16 20:15 
         #@graphic.wclear
         $log.debug " #{@name} repaint all scroll: r #{@row} c #{@col}  h  #{@height}-1 w #{@width} "
         bordercolor = @border_color || $datacolor
         borderatt = @border_attrib || Ncurses::A_NORMAL
-        @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
+        @graphic.print_border_only(@row, @col, @height-1, @width, bordercolor, borderatt)
         h_scroll_bar
         v_scroll_bar
-        @viewport.repaint_all(true) unless @viewport.nil? # brought here 2010-01-19 19:34 
+#x XXX       @viewport.repaint_all(true) unless @viewport.nil? # brought here 2010-01-19 19:34 
         #@repaint_border = false # commented off on 2010-01-16 20:15 so repaint_all can have effect
        end
       return if @viewport == nil
-      $log.debug "SCRP  #{@name} calling viewport repaint"
-      #@viewport.repaint_all true # 2010-01-16 23:09 
-      @viewport.repaint_required true # changed 2010-01-19 19:34 
-      @viewport.repaint # child's repaint should do it on its pad
       $log.debug "SCRP   #{@name} calling viewport to SCRP  b2s #{@graphic.name}  "
-      ret = @viewport.buffer_to_screen(@graphic)
-      $log.debug "  #{@name}  VP to rscrollpane b2s ret = #{ret} "
+#x      ret = @viewport.buffer_to_screen(@graphic)
+#x      $log.debug "  #{@name}  VP to rscrollpane b2s ret = #{ret} "
 
       ## if WINDOW then do a copy scrp's pad to form.window since that's a pad too. TODO''
       if @form.window.window_type == :PAD
+        $log.warn "should not come here any longer "
           $log.debug " XXX SCRP PAD CASe copying   #{@name} calling #{@graphic.name} b2s to #{@form.window.name}  "
           #@graphic.set_backing_window(@form.window)
           #ret = @graphic.copy_pad_to_win
@@ -234,16 +205,16 @@ module RubyCurses
           @buffer_modified = true
           # i hope this is not a magic assignment. When scrollpane used within tabbedpane it is using
           # the objects row and col which is wrong. So i am passing 2 and 1 for copywin to work correct.
-          @graphic.set_screen_row_col @screen_top, @screen_left ## XXX
-          buffer_to_screen(@form.window) #??? XXX
+#x          @graphic.set_screen_row_col @screen_top, @screen_left ## XXX
+#x          buffer_to_screen(@form.window) #??? XXX
           #
-          $log.debug " XXX SCRP   #{@name} after calling #{@graphic.name} b2s to #{@form.window.name} ret = #{ret}  "
+#x          $log.debug " XXX SCRP   #{@name} after calling #{@graphic.name} b2s to #{@form.window.name} ret = #{ret}  "
       end
 
       ## next line rsults in ERROR in log file, does increment rowcol
       ##+ but still not shown on screen.
       #@subform.repaint # should i really TRYthis out 2009-12-28 20:41  BUFFERED
-      @buffer_modified = true
+#x      @buffer_modified = true
       paint # has to paint border if needed, and scrollbars
       # TODO
     end
@@ -285,7 +256,8 @@ module RubyCurses
         return ret if ret != :UNHANDLED
       end
       ret = 0 # default return value
-      $log.debug " scrollpane gets KEY #{ch}"
+      ks = keycode_tos(ch)
+      $log.debug " scrollpane gets KEY #{ch}, ks #{ks} "
       case ch
         when ?\M-n.getbyte(0)
           ## scroll down one row (currently one only)
@@ -307,17 +279,17 @@ module RubyCurses
       when  ?\M-h.getbyte(0)
         ## scroll left one position
         ret = cursor_backward
-        @subform.cols_panned = @subform.cols_panned+1  if ret
-        @subform.col         = @form.col+1+@col_outofbounds if ret
+        @child.cols_panned = @child.cols_panned+1  if ret
+#x XXX        @subform.col         = @form.col+1+@col_outofbounds if ret
         @form.setrowcol @form.row, @form.col+1+@col_outofbounds if ret 
-        $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
+#x        $log.debug " - SCRP setting col to #{@subform.col}, #{@child.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
       when  ?\M-l.getbyte(0)
         ## scroll right one position
         ret = cursor_forward
-        @subform.cols_panned = @subform.cols_panned-1  if ret
-        @subform.col         = @form.col-1+@col_outofbounds if ret
+        @child.cols_panned = @child.cols_panned-1  if ret
+#x        @subform.col         = @form.col-1+@col_outofbounds if ret
         @form.setrowcol @form.row, @form.col-1+@col_outofbounds if ret 
-        $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
+#x        $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
       when KEY_BACKSPACE, 127
         ret = cursor_backward
       else
@@ -347,10 +319,10 @@ module RubyCurses
       $log.debug " SCRP setting row to #{@form.row-1} upon scrolling down  "
       ## only move up the cursor if its within bounds
       #       if @form.row > @row
-      @subform.rows_panned = @subform.rows_panned-1  if ret 
-      @subform.row =@form.row-1+@row_outofbounds if ret 
+      @child.rows_panned = @child.rows_panned-1  if ret 
+#x      @subform.row =@form.row-1+@row_outofbounds if ret 
       @form.setrowcol @form.row-1+@row_outofbounds, @form.col if ret 
-      $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
+#x      $log.debug " - SCRP setting row to #{@subform.row}, #{@child.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
       #       @row_outofbounds = @row_outofbounds-1 if ret and @row_outofbounds > 0
       #       else
       #         @row_outofbounds = @row_outofbounds-1 if ret
@@ -363,10 +335,10 @@ module RubyCurses
         return unless ret # 2010-02-04 18:29 
         $log.debug " SCRP setting row to #{@form.row+1} upon scrolling up R:#{@row} H:#{@height}  "
    #     if @form.row < @row + @height
-          @subform.rows_panned = @subform.rows_panned+1  if ret 
-          @subform.row =@form.row+1+@row_outofbounds if ret 
+          @child.rows_panned = @child.rows_panned+1  if ret 
+#x          @subform.row =@form.row+1+@row_outofbounds if ret 
           @form.setrowcol @form.row+1+@row_outofbounds, @form.col if ret 
-          $log.debug " - SCRP setting row to #{@subform.row}, #{@subform.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
+#x          $log.debug " - SCRP setting row to #{@subform.row}, #{@child.rows_panned},oo #{@row_outofbounds} fr:#{@form.row} "
    #       @row_outofbounds = @row_outofbounds+1 if ret and @row_outofbounds < 0
    #     else
    #       $log.debug " SCRP setting refusing to scroll #{@form.row}, #{@row} upon scrolling up  "
@@ -422,7 +394,7 @@ module RubyCurses
       @repaint_all = false
     end
     def h_scroll_bar
-        return if @viewport.nil?
+      return if @viewport.nil?
       sz = (@viewport.width*1.00/@viewport.child().width)*@viewport.width
       #$log.debug " h_scroll_bar sz #{sz}, #{@viewport.width} #{@viewport.child().width}" 
       sz = sz.ceil
@@ -434,9 +406,11 @@ module RubyCurses
       start = start.ceil
       # # the problem with next 2 lines is that attributes of border could be overwritten
       # draw horiz line
-      @graphic.mvwhline(@height-1, 1, ACS_HLINE, @width-2)
+      r = @row + @ext_row_offset # 2010-02-11 11:57 RFED16
+      c = @col + @ext_col_offset # 2010-02-11 11:57 RFED16
+      @graphic.mvwhline(r+@height-1, c+1, ACS_HLINE, @width-2)
       # draw scroll bar
-      sz.times{ |i| @graphic.mvaddch(@height-1, start+1+i, ACS_CKBOARD) }
+      sz.times{ |i| @graphic.mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
     end
     def v_scroll_bar
         return if @viewport.nil?
@@ -444,16 +418,19 @@ module RubyCurses
       #$log.debug " h_scroll_bar sz #{sz}, #{@viewport.width} #{@viewport.child().width}" 
       sz = sz.ceil
       return if sz < 1
-      start = 1
+      start = 1 
       start = ((@viewport.row*1.00+@viewport.height)/@viewport.child().height)*@viewport.height
       start -= sz
       #$log.debug " h_scroll_bar start #{start}, #{@viewport.col} #{@viewport.width}" 
       start = start.ceil
       # # the problem with next 2 lines is that attributes of border could be overwritten
       # draw horiz line
-      @graphic.mvwvline(1,@width-1, ACS_VLINE, @height-2)
+      r = @row + @ext_row_offset # 2010-02-11 11:57 RFED16
+      c = @col + @ext_col_offset # 2010-02-11 11:57 RFED16
+      # this is needed to erase previous bar when shrinking
+      @graphic.mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
       # draw scroll bar
-      sz.times{ |i| @graphic.mvaddch(start+1+i, @width-1, ACS_CKBOARD) }
+      sz.times{ |i| @graphic.mvaddch(r+start+1+i, c+@width-1, ACS_CKBOARD) }
     end
     # set height
     # a container must pass down changes in size to it's children

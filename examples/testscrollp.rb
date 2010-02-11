@@ -22,7 +22,7 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
-      r = 1; c = 5; w = 80
+      r = 3; c = 5; w = 80
       ht = 20
       # print filler stars
       #filler = "*" * (w+2)
@@ -40,19 +40,22 @@ if $0 == __FILE__
           name   "myView" 
           row 0
           col  0 
-          width w+10
-          height ht+20
+          width w 
+          height ht +20
           title "README.txt"
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
+          #suppress_borders true
         end
+        #@textview.should_create_buffer true # can be moved to scrollpane
+        #@textview.set_buffering(:target_window => @form.window, :bottom => @scroll.height-1, :right => @scroll.width-1 )
         content = File.open("../README.markdown","r").readlines
         @textview.set_content content #, :WRAP_WORD
         @scroll.child(@textview)
+        @textview.show_caret=true
 
-      @help = "F1 to quit. This is a test of TextView inside a scrollpane. M-n M-p M-h M-l M-< M-> "
+      @help = "F1 to quit. #{$0} This is a test of TextView inside a scrollpane. M-n M-p M-h M-l M-< M-> "
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r+1, "col" => 2, "color" => "yellow"}
 
       @form.repaint

@@ -310,6 +310,8 @@ module RubyCurses
     # coordinates - 2010-02-07 20:17 this should be updated by parent.
     attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
     attr_accessor :manages_cursor # does this widget manage cursor, or should form handle it 2010-02-07 20:54 
+    attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
+    attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
     def initialize form, aconfig={}, &block
       @form = form
@@ -330,7 +332,7 @@ module RubyCurses
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
       @buffer_modified = false 
-      @manages_cursor = false # form should manage it, I will pass row and col to it.
+      @manages_cursor = false # form should manage it, I will pass row and col to it. XXX ?
     end
 
     # modified
@@ -402,7 +404,7 @@ module RubyCurses
     end
 
     def destroy
-      $log.debug "DESTROY : widget"
+      $log.debug "DESTROY : widget #{@name} "
       panel = @window.panel
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
@@ -722,6 +724,8 @@ module RubyCurses
            $log.debug " widget #{@name} setting repaint_all to true"
            @repaint_all=true
          end
+         # XXX this troubles me a lot. gets fired more than we would like
+         # XXX When both h and w change then happens 2 times.
          if is_double_buffered? and newvalue != oldvalue
            $log.debug " #{@name} h calling resize of screen buffer with #{newvalue}"
            @screen_buffer.resize(newvalue, 0)
@@ -782,7 +786,15 @@ module RubyCurses
         $log.debug " #{@name}  w.setrowcol #{r} + #{@ext_row_offset}, #{c} + #{@ext_col_offset}  "
         r += @ext_row_offset unless r.nil?
         c += @ext_col_offset unless c.nil?
-        @form.setrowcol r, c
+        if @form
+          @form.setrowcol r, c
+        else
+          # ouch, parent will add ext_row !!!
+          #@parent.setrowcol r, c
+          ## what if parent too has no form
+          #@parent_component.form.setrowcol r, c
+          @parent_component.setrowcol r, c
+        end
         #setformrowcol r,c 
      end
 

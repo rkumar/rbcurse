@@ -87,19 +87,17 @@ module ListScrollable
   # the cursor should be appropriately positioned
   def set_form_row
     r,c = rowcol
-    orig_row=@form.row
+    @rows_panned ||= 0
     
-    ## the next is in case the form is not starting at 0,0.
-    ## However, this typically happens if its a form within another container such as scrollpane
-    ##+ in which case setting the form row has no effect. We need to set the main forms
-    ##+ row, which sucks. 
-    win_row=@form.window.top
-    win_row=0 # 2010-02-07 21:44 now ext offset added by widget
+    #win_row=@form.window.top
+    win_row=@win_top # 2010-02-11 15:12 RFED16
+    win_row = 0 # 2010-02-07 21:44 now ext offset added by widget
     #win_row = 0 # new approach, we have it 
     #win_col=@form.window.left
-    row = win_row + r + (@current_index-@toprow)  + @form.rows_panned
-    $log.debug " #{@name} LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow} (orig #{orig_row} )"
-    $log.debug "  - LIST set_form_row win_row: #{win_row} , r #{r} , c= #{c}, rowsp: #{@rows_panned}  "
+    # added 1 ?? in copywin too 2010-02-11 18:51  RFED16 this results in extra in normal situations.
+    row = win_row + r + (@current_index-@toprow) + @rows_panned 
+    $log.debug " #{@name} LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow}, off #{@row_offset} )"
+    $log.debug "  - LIST set_form_row win_row: #{win_row} + r #{r} + ci - topr + rowsp: #{@rows_panned}. c= #{c}  "
 
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
     ## this needs to percolate up a heirarchy.
@@ -120,18 +118,19 @@ module ListScrollable
   def show_caret_func
       return unless @show_caret
       # trying highlighting cursor 2010-01-23 19:07 TABBEDPANE TRYING
-      # TODO take into account rows_panned etc ?
+      # TODO take into account rows_panned etc ? I don't think so.
+      @rows_panned ||= 0
       r,c = rowcol
-      yy = r + @current_index - @toprow - @form.window.top
-      xx = @form.col # how do we know what value has been set earlier ?
-      yy = r + @current_index - @toprow #- @form.window.top
-      yy = @row_offset + @current_index - @toprow #- @form.window.top
+      yy = r + @current_index - @toprow - @win_top
+      #xx = @form.col # how do we know what value has been set earlier ?
+      yy = r + @current_index - @toprow #- @win_top
+      yy = @row_offset + @current_index - @toprow #- @win_top
       xx = @col_offset + @curpos || 0
       #yy = @row_offset if yy < @row_offset # sometimes r is 0, we are missing something in tabbedpane+scroll
       #xx = @col_offset if xx < @col_offset
       #xx = 0 if xx < 0
 
-      $log.debug " #{@name} printing CARET at #{yy},#{xx}: fr: #{@form.row} fwt:- #{@form.window.top} r:#{@row} tr:-#{@toprow}+ci:#{@current_index},+r #{r}  "
+      $log.debug " #{@name} printing CARET at #{yy},#{xx}: fwt:- #{@win_top} r:#{@row} tr:-#{@toprow}+ci:#{@current_index},+r #{r}  "
       if !@oldcursorrow.nil?
           @graphic.mvchgat(y=@oldcursorrow, x=@oldcursorcol, 1, Ncurses::A_NORMAL, $datacolor, NIL)
       end

@@ -80,6 +80,7 @@ module RubyCurses
       row(r) # commnting off 2010-02-06 22:47 
       col(c) # commnting off 2010-02-06 22:47 
       # next call sets pminrow and pmincol 
+      $log.debug " VP setting child buffer pmin to #{r} #{c} "
       @child.get_buffer().set_pad_top_left(r, c)
       @child.fire_property_change("row", r, r) # XXX quick dirty, this should happen
       @repaint_required = true
@@ -92,27 +93,27 @@ module RubyCurses
         return p.pminrow, p.pmincol
     end
     def repaint # viewport
-      if @screen_buffer == nil
-        safe_create_buffer
-        @screen_buffer.name = "Pad::VP-PADSCR"
-        $log.debug " VP creates pad  #{@screen_buffer} "
-      end
+        # RFED16 commented
+      #if @screen_buffer == nil 
+        #safe_create_buffer
+        #@screen_buffer.name = "Pad::VP-PADSCR"
+        #$log.debug " VP creates pad  #{@screen_buffer} "
+      #end
       return unless @repaint_required
       # should call child's repaint onto pad
       # then this should return clipped pad
        $log.debug "VP calling child #{@child.name}  repaint"
-       @graphic.wclear # required otherwise bottom of scrollpane had old rows still repeated. 2010-01-17 22:51 
+     #x  @graphic.wclear # required otherwise bottom of scrollpane had old rows still repeated. 2010-01-17 22:51 
       @child.repaint_all
       @child.repaint
       # copy as much of child's buffer to own as per dimensions
-       $log.debug "VP calling child b2s -> #{@graphic.name} "
-      ret = @child.buffer_to_screen(@graphic)
-      @buffer_modified = true
+    #x   $log.debug "VP calling child b2s -> #{@graphic.name} "
+    #x  ret = @child.buffer_to_screen(@graphic)
+    #x  @buffer_modified = true
       paint
-      # TODO
     end
     def getvalue
-      # TODO
+      # TODO ???
     end
     ## most likely should just return an unhandled and not try being intelligent
     # should viewport handle keys or should parent do so directly to child
