@@ -379,9 +379,16 @@ module VER
         #printstring( r, col+1," "*(width-2) , $datacolor, nil)
         prv_printstring( r, col+1," "*(width-2) , $datacolor, nil)
       end
+      print_border_only row, col, height, width, color, att
+    end
+
+
+      ## print just the border, no cleanup
+      #+ Earlier, we would clean up. Now in some cases, i'd like
+      #+ to print border over what's been done. 
+    def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
+      att ||= Ncurses::A_NORMAL
       attron(Ncurses.COLOR_PAIR(color) | att)
-
-
       mvwaddch row, col, ACS_ULCORNER
       mvwhline( row, col+1, ACS_HLINE, width-2)
       mvwaddch row, col+width-1, Ncurses::ACS_URCORNER
@@ -547,6 +554,8 @@ module VER
       @top = top
       @left = left unless left < 0
     end
+    alias :set_screen_pad_left :set_screen_row_col
+
     ## added user setting screens max row and col (e.g splitpanes first component)
     def set_screen_max_row_col mr, mc
         $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{@screen_maxrow}, #{@screen_maxcol}  "
@@ -595,12 +604,12 @@ module VER
     # trying to make things as easy as possible
     # returns -1 if error in prefresh
     def wrefresh
-      $log.debug " inside pad's wrefresh #{@window}.  #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} self: #{self.name} "
+      $log.debug " inside pad's wrefresh #{@window}. minr,minc,top,left,smaxr,c: #{@pminrow}, #{@pmincol}, #{@top} #{@left} #{smaxrow()} #{smaxcol()} self: #{self.name} "
 
       # caution, prefresh uses maxrow and maxcol not height and width
       # so we have to add top and less one since we are zero based
       ret = @window.prefresh(@pminrow, @pmincol, @top, @left, smaxrow(), smaxcol())
-      $log.debug " WREFRESH returns -1 ERROR " if ret == -1
+      $log.warn " WREFRESH returns -1 ERROR - width or height must be exceeding " if ret == -1
       return ret
     end
     ##
@@ -714,6 +723,10 @@ module VER
     #  Please note that this requires that buffer have latest top and left.
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       $log.debug " pad printborder #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
+      super(row - @top, col - @left, height, width,  color, att)
+    end
+    def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
+      $log.debug " pad printborder_only #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
       super(row - @top, col - @left, height, width,  color, att)
     end
   end # class Pad
