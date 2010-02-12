@@ -798,6 +798,20 @@ module RubyCurses
         #setformrowcol r,c 
      end
 
+     # move from TextView
+     # parameters relating to buffering - new 2010-02-12 12:09 RFED16
+     def set_buffering params
+       #@should_create_buffer = params[:should_create_buffer] || true
+       @target_window = params[:target_window]
+       $log.debug " got target window #{@target_window} "
+       # @top = params[:top]
+       # @left = params[:left]
+       # @bottom = params[:bottom]
+       # @right = params[:right]
+       # offsets ?
+       @buffer_params = params
+     end
+ 
      ##
     ## ADD HERE WIDGET
   end
