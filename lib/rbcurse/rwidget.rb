@@ -812,6 +812,38 @@ module RubyCurses
        @buffer_params = params
      end
  
+     # copy buffer onto window
+     # RFED16 added 2010-02-12 14:42 0 simpler buffer management
+     def buffer_to_window
+      if @is_double_buffered and @buffer_modified
+          # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
+          $log.debug "RFED16 paint  #{@name} calling b2s #{@graphic}  "
+          # TODO need to call set_screen_row_col (top, left), set_pad_top_left (pminrow, pmaxrow), set_screen_max_row_col
+          if false
+            # boh these print the pad behind 0,0, later scroll etc cover it and show bars.
+            # adding window was giving error
+              ret = buffer_to_screen #@target_window.get_window
+              #ret = @graphic.wrefresh
+          else
+             # ext gives me parents offset. often the row would be zero, so we still need one extra
+              r = @ext_row_offset  
+              c = @ext_col_offset  
+              maxr = @buffer_params[:bottom]
+              maxc = @buffer_params[:right]
+              ## sadly this is bypassing the method that does this stuff in Pad. We need to assimilate it back, so not so much work here
+              pminr = @graphic.pminrow
+              pminc = @graphic.pmincol
+              border_width = 2 #XXX in a generalized version this could give issues.
+              $log.debug " ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} - #{border_width}, #{c} + #{maxc} - #{border_width} ,0)"
+              # this print the view at 0,0, byt covers the scrllare, bars not shown.
+              # this can crash if textview is smaller than container dimension
+              # can crash/give -1 when panning, giong beyond pad size XXX
+              ret = @graphic.copywin(@target_window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
+          end
+          $log.debug " copywin ret --> #{ret} "
+          #
+      end
+     end
      ##
     ## ADD HERE WIDGET
   end

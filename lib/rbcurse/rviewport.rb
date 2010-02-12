@@ -73,11 +73,15 @@ module RubyCurses
     def set_view_position r,c
       return false if r < 0 or c < 0
       # 2010-02-04 19:29 TRYING -2 for borders
-      if r+ (@height-@border_width) > @child.height
+      $log.debug " set_view if #{r} + #{@height} - #{@border_width} )} >=#{@child.height} "
+      # 2010-02-12 15:33 XXX made > into >= and added +1 since -1 in set_buffering
+      # testscrollp was crashing out when child height exceeded
+      if r+ (@height+1-@border_width) >= @child.height
         $log.debug " set_view_position : trying to exceed ht #{r} + #{@height} > #{@child.height}  returned false"
         return false
       end
-      if c+ (@width-@border_width) > @child.width
+      # testscrollp was printing junk on right end. Why the 1? 
+      if c+ (@width+1-@border_width) >=@child.width
         $log.debug " set_view_position : trying to exceed width #{c} + #{@width} . returned false"
         return false
       end

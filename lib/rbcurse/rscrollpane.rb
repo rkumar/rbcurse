@@ -190,35 +190,7 @@ module RubyCurses
        end
       return if @viewport == nil
       $log.debug "SCRP   #{@name} calling viewport to SCRP  b2s #{@graphic.name}  "
-#x      ret = @viewport.buffer_to_screen(@graphic)
-#x      $log.debug "  #{@name}  VP to rscrollpane b2s ret = #{ret} "
-
-      ## if WINDOW then do a copy scrp's pad to form.window since that's a pad too. TODO''
-      if @form.window.window_type == :PAD
-        $log.warn "should not come here any longer "
-          $log.debug " XXX SCRP PAD CASe copying   #{@name} calling #{@graphic.name} b2s to #{@form.window.name}  "
-          #@graphic.set_backing_window(@form.window)
-          #ret = @graphic.copy_pad_to_win
-          r = 2 # @row
-          c = 1 # @col
-          #ret = @graphic.copywin(@form.window.get_window, 0, 0, r, c, r+@height-1, c+@width-1,0)
-          # this is fine for starters but doesn't take scrolling into account !! pminrow and pmincol
-          #ret = @graphic.copywin(@form.window.get_window, 0, 0, r, c, 0+@height-0, 0+@width-0,0)
-          @buffer_modified = true
-          # i hope this is not a magic assignment. When scrollpane used within tabbedpane it is using
-          # the objects row and col which is wrong. So i am passing 2 and 1 for copywin to work correct.
-#x          @graphic.set_screen_row_col @screen_top, @screen_left ## XXX
-#x          buffer_to_screen(@form.window) #??? XXX
-          #
-#x          $log.debug " XXX SCRP   #{@name} after calling #{@graphic.name} b2s to #{@form.window.name} ret = #{ret}  "
-      end
-
-      ## next line rsults in ERROR in log file, does increment rowcol
-      ##+ but still not shown on screen.
-      #@subform.repaint # should i really TRYthis out 2009-12-28 20:41  BUFFERED
-#x      @buffer_modified = true
-      paint # has to paint border if needed, and scrollbars
-      # TODO
+      paint 
     end
     def getvalue
       # TODO
