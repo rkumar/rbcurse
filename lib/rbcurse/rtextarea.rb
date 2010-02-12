@@ -4,6 +4,8 @@
   * Author: rkumar (arunachalesha)
 TODO: 
    2009-12-26 14:43 buffered version of rtextarea.rb. See BUFFERED
+  * major change: 2010-02-12 13:34  simplifying the buffer stuff.
+  * see FIXME of textview for some common issues to look at.
   --------
   * Date: 2008-11-14 23:43 
   * License:
@@ -31,28 +33,23 @@ module RubyCurses
   #   work correctly.
   class TextArea < Widget
     include ListScrollable
-    #dsl_accessor :height # commented s2010-01-14 15:36 ince widget has method
     dsl_accessor :title
     dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :footer_attrib   # bold, reverse, normal added 2009-12-26 18:25 was this missing or delib
     dsl_accessor :list    # the array of data to be sent by user
     dsl_accessor :maxlen    # the array of data to be sent by user
     attr_reader :toprow
-    #attr_reader :prow
-    #attr_reader :winrow
     dsl_accessor :auto_scroll # boolean, keeps view at end as data is inserted.
     dsl_accessor :print_footer
     dsl_accessor :editable          # allow editing
-#    attr_accessor :modified          # boolean, value modified or not 2009-01-08 12:29  REM 2009-01-18 14:46 
+    dsl_accessor :suppress_borders # added 2010-02-12 12:21 values true or false
 
     def initialize form, config={}, &block
       @focusable = true
       @editable = true
-      @left_margin = 1
       @row = 0
       @col = 0
       @curpos = 0
-    #  @show_focus = false
       @list = []
       super
       @row_offset = @col_offset = 1 # for cursor display on first entry, so not positioned on border
@@ -66,10 +63,6 @@ module RubyCurses
       @content_rows = @list.length
       #@win = @form.window
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
-      @to_print_borders ||= 1 # any other value and it won't print - this should be user overridable
-      safe_create_buffer # 2009-12-26 14:54 BUFFERED
-      @screen_buffer.name = "Pad::TXTA_PAD_#{@name}"
-      $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
     #  init_scrollable
       #print_borders
       # 2010-01-10 19:35 compute locally if not set
@@ -82,6 +75,12 @@ module RubyCurses
       @repaint_footer_required = true # 2010-01-23 22:41 
       @toprow = @current_index = @pcol = 0
       @repaint_all=true 
+      ## 2010-02-12 12:20 RFED16 taking care if no border requested
+      @suppress_borders ||= false
+      @row_offset = @col_offset = 0 if @suppress_borders == true
+      # added 2010-02-11 15:11 RFED16 so we don't need a form.
+      @win_left = 0
+      @win_top = 0
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -168,7 +167,6 @@ module RubyCurses
     ##
     # private
     def print_borders
-      #window = @form.window
       window = @graphic # 2009-12-26 14:54 BUFFERED
       color = $datacolor
       #window.print_border @row, @col, @height, @width, color
@@ -212,9 +210,41 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textarea
+      if @screen_buffer.nil?
+        safe_create_buffer
+        @screen_buffer.name = "Pad::TXTA_PAD_#{@name}"
+        $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
+      end
       
       paint if @repaint_required
       print_foot if @print_footer && (@repaint_footer_required || @repaint_required)
+      if @is_double_buffered and @buffer_modified
+          # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
+          $log.debug "RFED16 paint  #{@name} calling b2s #{@graphic}  "
+          # TODO need to call set_screen_row_col (top, left), set_pad_top_left (pminrow, pmaxrow), set_screen_max_row_col
+          if false
+              # boh these print the pad behind 0,0, later scroll etc cover it and show bars.
+              ret = buffer_to_screen #@target_window.get_window
+              #ret = @graphic.wrefresh
+          else
+             # ext gives me parents offset. often the row would be zero, so we still need one extra
+              r = @ext_row_offset  
+              c = @ext_col_offset  
+              maxr = @buffer_params[:bottom]
+              maxc = @buffer_params[:right]
+              ## sadly this is bypassing the method that does this stuff in Pad. We need to assimilate it back, so not so much work here
+              pminr = @graphic.pminrow
+              pminc = @graphic.pmincol
+              $log.debug " ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} -1, #{c} + #{maxc} -1,0)"
+              # this print the view at 0,0, byt covers the scrllare, bars not shown.
+              # this can crash if textview is smaller than container dimension
+              # can crash/give -1 when panning, giong beyond pad size XXX
+              border_width = 2
+              ret = @graphic.copywin(@target_window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
+          end
+          $log.debug " copywin ret --> #{ret} "
+          #
+      end
     end
     def getvalue
       @list
@@ -345,13 +375,12 @@ module RubyCurses
       cursor_bounds_check
       
       ## added win_col on 2009-12-28 20:21 for embedded forms BUFFERED TRYING OUT
-      win_col=@form.window.left
       win_col = 0 # 2010-02-07 23:19 new cursor stuff
       #col = win_col + @orig_col + @col_offset + @curpos
-      #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      #col = win_col + @orig_col + @col_offset + @curpos + @cols_panned
       # 2010-01-14 13:31 changed orig_col to col for embedded forms, splitpanes.
-      col = win_col + @col + @col_offset + @curpos + @form.cols_panned
-      $log.debug "sfc: wc:#{win_col}  oc:#{@orig_col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@form.cols_panned} . "
+      col = win_col + @col + @col_offset + @curpos + @cols_panned
+      $log.debug "sfc: wc:#{win_col}  oc:#{@orig_col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@cols_panned} . "
       #@form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
       $log.debug " TA calling setformrow col nil, #{col} "
       setrowcol nil, col   # added 2009-12-29 18:50 BUFFERED
@@ -420,12 +449,14 @@ module RubyCurses
     def addcol num
 #     @repaint_required = true # added 2010-01-15 23:59, so that footer is updated, sucks!
       @repaint_footer_required = true # 2010-01-23 22:41 
-      @form.addcol num
+      my_win = @form || @parent_component.form # 2010-02-12 12:51 
+      my_win.addcol num
     end
     def addrowcol row,col
       #@repaint_required = true # added 2010-01-15 23:59 
       @repaint_footer_required = true # 2010-01-23 22:41 
-      @form.addrowcol row, col
+      my_win = @form || @parent_component.form # 2010-02-12 12:51 
+      my_win.addrowcol row, col
     end
     ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
     # it was going onto border
@@ -521,7 +552,10 @@ module RubyCurses
         fire_handler :CHANGE, InputDataEvent.new(oldcurpos,carry_up.length, self, :DELETE, oldprow, carry_up)     #  2008-12-24 18:34 
         fire_handler :CHANGE, InputDataEvent.new(prevlen,carry_up.length, self, :INSERT, oldprow-1, carry_up)     #  2008-12-24 18:34 
       end
-      @form.col = @orig_col + @col_offset + @curpos
+      # FIXME -- can;t have a naked for reference here.
+      #@form.col = @orig_col + @col_offset + @curpos
+      col1 = @orig_col + @col_offset + @curpos
+      setrowcol nil, col1 # 2010-02-12 13:09  RFED16
 
 #     $log.debug "carry up: nil" if carry_up.nil?
 #     $log.debug "listrow nil " if @list[@current_index].nil?
@@ -732,15 +766,18 @@ module RubyCurses
     alias :get_text :to_s
     ## ---- for listscrollable ---- ##
     def scrollatrow
-      @height-2
-      @height-3 # 2010-01-02 19:28 BUFFERED we were doing on more earlier
+      @height-3 # 2010-01-02 19:28 BUFFERED 
     end
     def row_count
       @list.size
     end
     def paint
-      #print_borders if @to_print_borders == 1 # do this once only, unless everything changes
-      print_borders if (@to_print_borders == 1 && @repaint_all) # do this once only, unless everything changes
+      # not sure where to put this, once for all or repeat 2010-02-12 RFED16
+      my_win = @form? @form.window : @target_window
+      $log.warn "neither form not target window given!!! TA paint 751" unless my_win
+      @win_left = my_win.left
+      @win_top = my_win.top
+      print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
       $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} "
