@@ -372,6 +372,7 @@ module RubyCurses
     # set cursor on correct column
     def set_form_col col1=@curpos
       @curpos = col1
+      @cols_panned ||= 0
       cursor_bounds_check
       
       ## added win_col on 2009-12-28 20:21 for embedded forms BUFFERED TRYING OUT
