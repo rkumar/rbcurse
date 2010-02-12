@@ -21,17 +21,15 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
+      @form.name = "Form::MAINFORM"
       $log.debug " MAIN FORM #{@form}   w #{@window}  "
-      r = 1; c = 10; w = 40
+      r = 3; c = 10; w = 40
       ht = 10
-      # print filler stars
-      #filler = "*" * (w+2)
-      #(ht+3).times(){|i| @form.window.printstring(i,c-1, filler, $datacolor) }
 
 
         @scroll = ScrollPane.new @form do
           name   "myScroller" 
-          row r+ht+1
+          row r+1
           col  c 
           width w
           height ht
@@ -47,7 +45,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
         @scroll.child(@textview)
         @textview << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
@@ -58,7 +55,7 @@ if $0 == __FILE__
         @textview << "Try C-[ C-] for going to start and end "
 
 
-      @help = "F1 to quit. This is a test of TextArea inside a Scrollpane (it uses a pad/buffer).: #{$0} "
+      @help = "F1 to quit. #{$0}. This is a test of TextArea inside a Scrollpane (it uses a pad/buffer)."
       RubyCurses::Label.new @form, {'text' => @help, "row" => 23, "col" => 2, "color" => "yellow"}
 
       @form.repaint

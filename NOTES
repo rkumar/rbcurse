@@ -999,3 +999,35 @@ So i've added a pad_offset in textview, for the pad cases. I know i am
 redoing it and already started hacking.
 
 * * * * * * * *
+
+Subject: changes to buffered objects
+------------------------------------
+Date: 2010-02-11 23:21
+
+Based on what I've done to TextView, to be done to TextArea, ListBox.
+
+1. No references to @form. 
+   win_left and win_top store window's offsets.
+
+2. target_window passed if form not passed.
+
+3. move create_buffer to paint.
+   Also, paint buffer here only, no passing up.
+
+4. accept buffering_params hash and use for copywin
+
+
+5. For textarea, suppress borders.
+
+-----
+
+Containers should set should_buffer and pass bounds.
+Containers themselves do not create buffers. Just pass down.
+Containers only draw their borders etc. 
+Move this drawing to after the inner object has painted. Paint onto
+window. Pass down ext_offset + col_offset.o
+
+Since container are writing to window, add row and col to print-border
+and other print statements.
+
+* * * * * * * *
