@@ -437,19 +437,5 @@ module RubyCurses
 
       # 2010-02-10 22:08 RFED16
     end
-    ## When a container requests buffering, it should pass a target window for the buffer to copy onto.
-    # Also, window offsets are required. This is currently happening once only. I am working on this.
-    # We could move this to Pad, so i don't have to duplicate it in textarea and others. XXX
-    def set_buffering params
-        #@should_create_buffer = params[:should_create_buffer] || true
-        @target_window = params[:target_window]
-        $log.debug " got target window #{@target_window} "
-        # @top = params[:top]
-        # @left = params[:left]
-        # @bottom = params[:bottom]
-        # @right = params[:right]
-        # offsets ?
-        @buffer_params = params
-    end
   end # class textview
 end # modul
