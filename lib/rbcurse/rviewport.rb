@@ -6,6 +6,11 @@
   * Author: rkumar arunachala
 TODO 
   * file created  2009-10-27 18:05 
+Major change 2010-02-11 23:32 
+  * removed buffering, was totally unnecessary
+  * FIXME avoid repaint and handle_keys totally, let scrollpane talk to child.
+    Do we really need this ?
+    If we do strip it down to its major function - nothign extraneous. Currently its a huge layer in between.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -93,12 +98,6 @@ module RubyCurses
         return p.pminrow, p.pmincol
     end
     def repaint # viewport
-        # RFED16 commented
-      #if @screen_buffer == nil 
-        #safe_create_buffer
-        #@screen_buffer.name = "Pad::VP-PADSCR"
-        #$log.debug " VP creates pad  #{@screen_buffer} "
-      #end
       return unless @repaint_required
       # should call child's repaint onto pad
       # then this should return clipped pad
@@ -106,10 +105,6 @@ module RubyCurses
      #x  @graphic.wclear # required otherwise bottom of scrollpane had old rows still repeated. 2010-01-17 22:51 
       @child.repaint_all
       @child.repaint
-      # copy as much of child's buffer to own as per dimensions
-    #x   $log.debug "VP calling child b2s -> #{@graphic.name} "
-    #x  ret = @child.buffer_to_screen(@graphic)
-    #x  @buffer_modified = true
       paint
     end
     def getvalue
