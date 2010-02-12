@@ -17,6 +17,8 @@ Major changes 2010-02-11 19:51 to simplify version RFED16
   * If scrolling, no repainting should happen. Scrollpane could get the buffer
     and scroll itself. Or ensure that inner object does not rework...
 
+  Pass handle_key to child, also repaint refer child.
+  Avoid passing to viewport as this would slow down alot.
   
   
   --------
