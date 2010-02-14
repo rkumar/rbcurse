@@ -418,7 +418,7 @@ module VER
       l = @layout[:left]
       layout[:top] = layout[:top] + t
       layout[:left] = layout[:left] + l
-      $log.debug " #{self} EXP: returning a subwin in derwin"
+      $log.debug " #{self} EXP: returning a subwin in derwin. Adding #{t} and #{l} "
       v = VER::SubWindow.new(self, layout)
       $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
       return v

@@ -118,6 +118,7 @@ class VimSplit
 
     # hash of windows and component attached
     @win_comp = {}
+    @children = {} # parent and children array, since we have not designed this properly
     # only those windows that can be focused, child windows when split, parent is invisible
     @focusables = []
     # main window
@@ -175,6 +176,7 @@ class VimSplit
     spl.divider_location(h/2,0)
     @splits[split1] = spl
     @splits[split2] = spl
+    @children[win] = [ split1, split2 ]
     #return split1, split2
     return spl
   end
@@ -199,6 +201,7 @@ class VimSplit
     spl.divider_location(0,h/2)
     @splits[split1] = spl
     @splits[split2] = spl
+    @children[win] = [ split1, split2 ]
     #return split1, split2
     return spl
   end

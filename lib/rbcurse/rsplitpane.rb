@@ -6,6 +6,10 @@
   * file created 2009-10-27 19:20 
 TODO 
   * Need to add events and property changed
+  * major change: Feb 2010, removed buffers, so some coords need to be absolute.
+  *  those methods that are overriden in Pad were okay, others like line drawing were relative
+  *  and need to be abs by adding row and col.
+  *  Also, that means checks for going out are wrong now.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -48,20 +52,42 @@ module RubyCurses
           super
           @row_offset = @col_offset = 1
           @orig_col = @col
+          @use_absolute = true; # set to true if not using subwins XXX
           init_vars
+          @subwin_created = true # set to true if you don't want subwins created
+          @@ctr ||= 0
+        if @@ctr == 0
+        if @subwin_created == false
+          #layout = { :height => @height, :width => @width, :top => @row, :left => @col }
+          layout = { :height => @height-1, :width => @width-1, :top => @row+1, :left => @col+1 }
+          @graphic = @graphic._subwin(layout)
+          fw = form.window 
+          raise "graphic nil #{@name} " unless @graphic
+          $log.debug " SUBWIN CREATED "
+          @subwin_created = true
+          @target_window = @graphic
+          @@ctr += 1
+          @use_absolute = false
+          bordercolor = @border_color || $datacolor
+          borderatt = @border_attrib || Ncurses::A_NORMAL
+        end
+        end
       end
       def init_vars
-          should_create_buffer(true) #if should_create_buffer().nil?
+          #should_create_buffer(true) #if should_create_buffer().nil?
           @divider_location ||= 10
           @divider_offset ||= 1
           #@curpos = @pcol = @toprow = @current_index = 0
           
           # cascade_changes keeps the child exactly sized as per the pane which looks nice
           #+ but may not really be what you want.
-          #@cascade_changes=true
+          @cascade_changes=true
           ## if this splp is increased (ht or wid) then expand the child
           @cascade_boundary_changes = true
           @orientation ||= :HORIZONTAL_SPLIT # added 2010-01-13 15:05 since not set
+
+          # true means will request child to create a buffer, since cropping will be needed
+          @_child_buffering = true # private, internal. not to be changed by callers.
 
       end
 
@@ -80,34 +106,46 @@ module RubyCurses
           screen_row = 1 # offset for copying pad 2010-02-09 19:02 
           @first_component      = comp;
           @first_component.parent_component = self ## added 2010-01-13 12:54 
-          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
-          subpad.name           = "#{@name}-SPLITPAD1"
-          @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
-          @subform1.name = "#{@name}-SPLITFORM1"
-          comp.set_form(@subform1) # added 2010 BUFFERED
-          @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
+#XXX          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
+#XXX          subpad.name           = "#{@name}-SPLITPAD1"
+#XXX          @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
+#XXX          @subform1.name = "#{@name}-SPLITFORM1"
+#XXX          comp.set_form(@subform1) # added 2010 BUFFERED
+#XXX          @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
           ## These setting are quite critical, otherwise on startup
           ##+ it can create 2 tiled buffers.
-          @first_component.row(1)  # this suddenly causes an initial extra blank which goes away
-          @first_component.col(1)
+          a = 0 # =1
+          @first_component.row(@row + a)  
+          @first_component.col(@col + a)
+          comp.should_create_buffer @_child_buffering 
           # adding ext_offsets 2010-02-09 13:39 
           # setting the form is again adding top and left which are the row and col from here.
-          $log.debug "SPLP exp_row #{@name}  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row} -1  "
-          comp.ext_row_offset += @ext_row_offset + @row - @subform1.window.top #0# screen_row
-          $log.debug "SPLP exp_col  #{@name}  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}   -1"
-          comp.ext_col_offset += @ext_col_offset + @col -@subform1.window.left # 0# screen_col
+          $log.debug "SPLP exp_row #{@name}, #{comp}  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}   "
+          $log.debug "SPLP exp_col  #{@name}  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}   "
+#XXX          comp.ext_row_offset += @ext_row_offset + @row - @subform1.window.top #0# screen_row
+#XXX          comp.ext_col_offset += @ext_col_offset + @col -@subform1.window.left # 0# screen_col
+          comp.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row
+          comp.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col
 
           ## trying out 2010-01-16 12:11 so component does not have to set size
           # The suggestd heights really depend on orientation.
+           a = 0 # = 2
           if @orientation == :HORIZONTAL_SPLIT
-             @first_component.height ||= @first_component.preferred_height || @height/2 - 1
-             @first_component.width ||= @first_component.preferred_width || @width - 2
+             @first_component.height ||= @first_component.preferred_height || @height/2 - 0 #1
+             @first_component.width ||= @first_component.preferred_width || @width - a
           else
-             @first_component.height ||= @first_component.preferred_height || @height - 2
+             @first_component.height ||= @first_component.preferred_height || @height - a
              @first_component.width ||= @first_component.preferred_width || @width/2 -1
           end
+          layout = { :height => @height-1, :width => @width-1, :top => @row, :left => @col }
+          #_graphic = @graphic._subwin(layout)
+          #raise "graphic nil for comp 1 SPLP" unless _graphic
+          #comp.set_buffering(:target_window => _graphic || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+            comp.set_buffering(:screen_top => @row, :screen_left => @col)
           @first_component.min_height ||= 5
           @first_component.min_width ||= 5
+
 
           # if i set the above 2 to 0, it starts fine but then on any action loses the first row.
           # Just begun happeing suddenly! 2010-01-11 23:38 
@@ -132,30 +170,44 @@ module RubyCurses
       def second_component(comp)
           @second_component = comp;
           @second_component.parent_component = self ## added 2010-01-13 12:54 
-          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
-          subpad.name           = "#{@name}-SPLITPAD2"
-          @subform2             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
-          @subform2.name = "#{@name}-SPLITFORM2"
-          comp.set_form(@subform2) # added 2010 BUFFERED
-          @subform2.parent_form = @form # added 2010 for cursor stuff BUFFERED
+#XXX          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
+#XXX           subpad.name           = "#{@name}-SPLITPAD2"
+#XXX          @subform2             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
+#XXX          @subform2.name = "#{@name}-SPLITFORM2"
+#XXX          comp.set_form(@subform2) # added 2010 BUFFERED
+#XXX          @subform2.parent_form = @form # added 2010 for cursor stuff BUFFERED
           # adding ext_offsets 2010-02-09 13:39 
-          $log.debug "SPLP exp_row #{@name} 2  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}  "
-          comp.ext_row_offset += @ext_row_offset #+ @row
-          $log.debug "SPLP exp_col #{@name} 2  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}  "
-          comp.ext_col_offset += @ext_col_offset #+ @col
+#XXX          $log.debug "SPLP exp_row #{@name} 2  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}  "
+          comp.should_create_buffer @_child_buffering 
           ## jeez, we;ve postponed create of buffer XX
           #@second_component.row(1)
           #@second_component.col(1)
           ## trying out 2010-01-16 12:11 so component does not have to set size
           # The suggestd heights really depend on orientation.
           if @orientation == :HORIZONTAL_SPLIT
-             @second_component.height ||= @second_component.preferred_height || @height/2 - 1
-             @second_component.width ||= @second_component.preferred_width || @width - 2
+             @second_component.height ||= @second_component.preferred_height || @height/2 - 0 #1
+             @second_component.width ||= @second_component.preferred_width || @width - 0 # 2
           else
-             @second_component.height ||= @second_component.preferred_height || @height - 2
+             @second_component.height ||= @second_component.preferred_height || @height - 0 # 2
              @second_component.width ||= @second_component.preferred_width || @width/2 -4 # 1 to 4 2010-01-16 22:10  TRYING COULD BREAK STUFF testsplit3a;s right splitpane
     # added 2010-01-16 23:55 
           end
+          comp.ext_row_offset += @ext_row_offset + @row
+          $log.debug "SPLP exp_col #{@name} 2 #{comp}:  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}  "
+          comp.ext_col_offset += @ext_col_offset + @col 
+          layout = { :height => @height-1, :width => @width-1, :top => comp.row, :left => comp.col }
+          #_graphic = @graphic._subwin(layout)
+          #raise "graphic nil for comp 2 SPLP" unless _graphic
+          #comp.set_buffering(:target_window => _graphic || @form.window, :bottom => comp.height-1, 
+                             #:right => comp.width-1, :form => @form )
+          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
+                             :right => comp.width-1, :form => @form )
+          ## XXX second comps row and col not yet set.
+          # Also since extoffset is accumulated, i can't keep updating it as widths change!
+          #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
+          #                   :right => comp.width-1, :form => @form )
+            #comp.set_buffering(:screen_top => @row, :screen_left => @col)
+            @second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
           @second_component.min_height ||= 5 # added 2010-01-16 12:37 
           @second_component.min_width ||= 5 # added 2010-01-16 12:37 
       end # second_component
@@ -248,6 +300,16 @@ module RubyCurses
       # If this returns :ERROR, caller may avoid repainting form needlessly.
       # We may give more meaningful error retval in future. TODO
       def set_divider_location rc
+        # add a check for out of bounds since no buffering
+        if @orientation == :HORIZONTAL_SPLIT
+          if rc < 2 || rc > @height-2
+            return :ERROR
+          end
+        else
+          if rc < 2 || rc > @width -2
+            return :ERROR
+          end
+        end
           @repaint_required = true
           old_divider_location = @divider_location || 0
           # we first check against min_sizes
@@ -299,10 +361,10 @@ module RubyCurses
               if !@cascade_changes.nil?
                 if @orientation == :VERTICAL_SPLIT
                   @first_component.width(rc-1) #+ @col_offset + @divider_offset
-                  @first_component.height(@height-2) #+ @col_offset + @divider_offset
+                  @first_component.height(@height-0) #2+ @col_offset + @divider_offset
                 else
-                  @first_component.height(rc-1) #+ @col_offset + @divider_offset
-                  @first_component.width(@width-2) #+ @col_offset + @divider_offset
+                  @first_component.height(rc+1) #-1) #1+ @col_offset + @divider_offset
+                  @first_component.width(@width-0) #2+ @col_offset + @divider_offset
                 end
               else
                 if @orientation == :VERTICAL_SPLIT
@@ -315,15 +377,17 @@ module RubyCurses
                     @repaint_required = true
                   end
                   ## added this condition 2010-01-11 21:44  again switching needs this
-                  if @first_component.height < @height - 2 then
-                    $log.debug " INCRease fc ht #{@first_component.height} to match #{@height}-2 "
-                    @first_component.height(@height-2) #+ @col_offset + @divider_offset
+                  a = 0 #2
+                  if @first_component.height < @height - a then
+                    $log.debug " INCRease fc ht #{@first_component.height} to match #{@height}- #{a} "
+                    @first_component.height(@height-a) #+ @col_offset + @divider_offset
                   end
                 else
                   # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
-                  if @first_component.height < rc -1 then
+                  a = 0 #1
+                  if @first_component.height < rc -a then
                     $log.debug " INCRease fc ht #{@first_component.height} to match #{rc}-1 "
-                    @first_component.height(rc-1) #+ @col_offset + @divider_offset
+                    @first_component.height(rc-a) #+ @col_offset + @divider_offset
                     @first_component.repaint_all(true) if !@first_component.nil?
                     @repaint_required = true
                   end
@@ -341,15 +405,17 @@ module RubyCurses
           return if @second_component == nil
 
           ## added  2010-01-11 23:09  since some cases don't set, like splits within split.
-            @second_component.height ||= 0
-            @second_component.width ||= 0
+          @second_component.height ||= 0
+          @second_component.width ||= 0
 
           if @orientation == :VERTICAL_SPLIT
               @second_component.col = rc + @col_offset + @divider_offset
-              @second_component.row = 1
+              @second_component.row = 0 # 1
               if !@cascade_changes.nil?
+                #@second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
+                #@second_component.height = @height-2  #+ @row_offset + @divider_offset
                 @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
-                @second_component.height = @height-2  #+ @row_offset + @divider_offset
+                @second_component.height = @height-0  #+ @row_offset + @divider_offset
               else
                 # added 2010-01-09 22:49 to be tested XXX
                 # In a vertical split, if widgets w and thus buffer w is less than
@@ -368,20 +434,23 @@ module RubyCurses
                 end
               end
           else
+            #rc += @row
              ## HORIZ SPLIT
-              @second_component.row = rc + 1 #@row_offset + @divider_offset
-              @second_component.col = 1
+              @second_component.row = @row + rc + 0 #1 #@row_offset + @divider_offset
+              @second_component.col = 0 + @col # was 1
               if !@cascade_changes.nil?
-                @second_component.width = @width - 2 #+ @col_offset + @divider_offset
-                @second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
+                #@second_component.width = @width - 2 #+ @col_offset + @divider_offset
+                #@second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
+                @second_component.width = @width - 0 #+ @col_offset + @divider_offset
+                @second_component.height = @height - rc -0 #+ @row_offset + @divider_offset
               else
                  # added 2010-01-16 19:14 -rc since its a HORIZ split
                  #  2010-01-16 20:45 made 2 to 3 for scrollpanes within splits!!! hope it doesnt
                  #  break, and why 3. 
                  # 2010-01-17 13:33 reverted to 2. 3 was required since i was not returning when error in set_screen_max.
-                if @second_component.height < @height-rc-2  #+ @row_offset + @divider_offset
+                if @second_component.height < @height-rc-1 #2  #+ @row_offset + @divider_offset
                   $log.debug " #{@name}  INCRease 2c #{@second_component.name}  ht #{@second_component.height} to match #{@height}-2- #{rc}  "
-                  @second_component.height = @height-rc-2  #+ @row_offset + @divider_offset
+                  @second_component.height = @height-rc-1  #2 #+ @row_offset + @divider_offset
                   @second_component.repaint_all(true) 
                   @repaint_required = true
                 end
@@ -396,11 +465,18 @@ module RubyCurses
           end
           # i need to keep top and left sync for print_border which uses it UGH !!!
           if !@second_component.get_buffer().nil?
-            @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
+            # now that TV and others are creating a buffer in repaint we need another way to set
+            $log.debug " setting second comp row col offset - i think it doesn't come here till much later "
+            #XXX @second_component.get_buffer().set_screen_row_col(@second_component.row+@ext_row_offset+@row, @second_component.col+@ext_col_offset+@col)
+            # 2010-02-13 09:15 RFED16
           end
+            #@second_component.set_buffering(:screen_top => @row, :screen_left => @col)
+            @second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
+          #@second_component.ext_row_offset = @row + @ext_row_offset
+          #@second_component.ext_col_offset = @col + @ext_col_offset
           $log.debug " #{@name}  2 set div location, rc #{rc} width #{@width} height #{@height}" 
-          $log.debug " 2 set div location, setting r #{@second_component.row} "
-          $log.debug " 2 set div location, setting c #{@second_component.col} "
+          $log.debug " 2 set div location, setting r #{@second_component.row}, #{@ext_row_offset}, #{@row} "
+          $log.debug " 2 set div location, setting c #{@second_component.col}, #{@ext_col_offset}, #{@col}  "
           $log.debug " 2 set div location, setting w #{@second_component.width} "
           $log.debug " 2 set div location, setting h #{@second_component.height} "
 
@@ -432,21 +508,25 @@ module RubyCurses
               rc = pw+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.width ||= pw ## added 2010-01-11 23:19 
           else
-             ph ||= @height/2 - 1  # added 2010-01-16 12:31 so easier to use
-              rc = ph+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
+             ph ||= @height/2 - 0 # 1  # added 2010-01-16 12:31 so easier to use
+              rc = ph+0 #1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.height ||= ph ## added 2010-01-11 23:19 
           end
           set_divider_location rc
       end
       def repaint # splitpane
-        safe_create_buffer
+        if @graphic.nil?
+          @graphic = @target_window || @form.window
+          raise "graphic nil in rsplitpane #{@name} " unless @graphic
+        end
+#XXX        safe_create_buffer
         # this is in case, not called by form
         # we need to clip components
         # note that splitpanes can be nested
 
         if @repaint_required
           # Note: this only if major change
-          @graphic.wclear
+#XXX          @graphic.wclear
           @first_component.repaint_all(true) if !@first_component.nil?
           @second_component.repaint_all(true) if !@second_component.nil?
         end
@@ -455,17 +535,28 @@ module RubyCurses
           $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
           bordercolor = @border_color || $datacolor
           borderatt = @border_attrib || Ncurses::A_NORMAL
-          #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
-          @graphic.print_border(@row, @col, @height-1, @width, bordercolor, borderatt)
+          absrow = abscol = 0
+          if @use_absolute
+            absrow = @row
+            abscol = @col
+          end
+          $log.debug " #{@graphic} calling print_border"
+          if @use_absolute
+            @graphic.print_border(@row, @col, @height-1, @width-1, bordercolor, borderatt)
+          else
+            @graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
+          end
           rc = @divider_location
 
           @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+          # 2010-02-14 18:23 - non buffered, have to make relative coords into absolute
+          #+ by adding row and col
           if @orientation == :VERTICAL_SPLIT
-            $log.debug "SPLP #{@name} prtingign split vline 1, rc: #{rc} "
-            @graphic.mvvline(1, rc, 0, @height-2)
+            $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
+            @graphic.mvvline(absrow+1, rc+abscol, 0, @height-2)
           else
-            $log.debug "SPLP #{@name} prtingign split hline  rc: #{rc} , 1 "
-            @graphic.mvhline(rc, 1, 0, @width-2)
+            $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
+            @graphic.mvhline(rc+absrow, abscol+1, 0, @width-2)
           end
           @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
         end
@@ -475,16 +566,16 @@ module RubyCurses
           # first time. Is there no way we can tell FC what top and left to use.
           @first_component.repaint
           # earlier before repaint but bombs since some chaps create buffer in repaint
-          @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
+#XXX          @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
           ## the next block is critical for when we switch from one orientation to the other
           ##+ We want first component to expand as much as possible
           if @orientation == :VERTICAL_SPLIT
-            @first_component.get_buffer().set_screen_max_row_col(@height-2, @divider_location-1)
+#XXX            @first_component.get_buffer().set_screen_max_row_col(@height-2, @divider_location-1)
           else
-            @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, @width-2)
+#XXX            @first_component.get_buffer().set_screen_max_row_col(@divider_location-1, @width-2)
           end
-          ret = @first_component.buffer_to_screen(@graphic)
-          $log.debug " SPLP repaint  #{@name} fc ret = #{ret} "
+#XXX          ret = @first_component.buffer_to_screen(@graphic)
+#XXX          $log.debug " SPLP repaint  #{@name} fc ret = #{ret} "
         end
         if @second_component != nil
           $log.debug " SPLP repaint #{@name}  2c ..."
@@ -492,18 +583,19 @@ module RubyCurses
 
           # we need to keep top and left of buffer synced with components row and col.
           # Since buffer has no link to comp therefore it can't check back.
-          @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
+#XXX          @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
           if @orientation == :VERTICAL_SPLIT
-            @second_component.get_buffer().set_screen_max_row_col(@height-2, @width-2)
+#XXX            @second_component.get_buffer().set_screen_max_row_col(@height-2, @width-2)
           else
-            @second_component.get_buffer().set_screen_max_row_col(@height-2, @width-2)
+#XXX            @second_component.get_buffer().set_screen_max_row_col(@height-2, @width-2)
           end
 
-          ret = @second_component.buffer_to_screen(@graphic)
-          $log.debug " SPLP repaint #{@name}  2c ret = #{ret} "
+#XXX          ret = @second_component.buffer_to_screen(@graphic)
+#XXX          $log.debug " SPLP repaint #{@name}  2c ret = #{ret} "
         end
-        @buffer_modified = true
-        paint # has to paint border if needed, 
+#XXX        @buffer_modified = true
+        @graphic.wrefresh # 2010-02-14 20:18 SUBWIN ONLY
+        paint 
         # TODO
       end
       def getvalue

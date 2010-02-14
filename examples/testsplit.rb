@@ -24,7 +24,7 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
-      r = 1; c = 3; ht = 18
+      r = 3; c = 7; ht = 18
       # filler just to see that we are covering correct space and not wasting lines or cols
       filler = "*" * 88
       (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }

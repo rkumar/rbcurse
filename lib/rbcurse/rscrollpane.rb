@@ -75,7 +75,7 @@ module RubyCurses
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
         @child.should_create_buffer true 
-        @child.set_buffering(:target_window => @form.window, :bottom => @height-1, :right => @width-1 )
+        @child.set_buffering(:target_window => @form.window, :form => @form, :bottom => @height-1, :right => @width-1 )
         # lets set the childs ext offsets
         $log.debug "SCRP #{name} adding (to #{ch.name}) ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
         $log.debug "SCRP adding ext_col_off: #{ch.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "

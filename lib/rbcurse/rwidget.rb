@@ -800,23 +800,34 @@ module RubyCurses
 
      # move from TextView
      # parameters relating to buffering - new 2010-02-12 12:09 RFED16
+     # I am merging so i can call multiple times
      def set_buffering params
+       @buffer_params ||= {}
        #@should_create_buffer = params[:should_create_buffer] || true
-       @target_window = params[:target_window]
-       $log.debug " got target window #{@target_window} "
+       @target_window ||= params[:target_window]
+       # trying out, 2010-02-12 19:40 sometimes no form even with parent.
+       @form = params[:form] unless @form
+       ## XXX trying this out.
+       # what if container does not ask child to buffer, as in splitpane
+       # then graphic could be nil
+       if @graphic.nil? # and should_create_buffer not set or false XXX
+         @graphic = @target_window
+       end
+       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} "
        # @top = params[:top]
        # @left = params[:left]
        # @bottom = params[:bottom]
        # @right = params[:right]
        # offsets ?
-       @buffer_params = params
+       @buffer_params.merge!(params)
      end
  
      # copy buffer onto window
      # RFED16 added 2010-02-12 14:42 0 simpler buffer management
      def buffer_to_window
-      if @is_double_buffered and @buffer_modified
-          # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
+       if @is_double_buffered and @buffer_modified
+         raise " #{@name} @buffer_params not passed. Use set_buffering()" unless @buffer_params
+         # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
           $log.debug "RFED16 paint  #{@name} calling b2s #{@graphic}  "
           # TODO need to call set_screen_row_col (top, left), set_pad_top_left (pminrow, pmaxrow), set_screen_max_row_col
           if false
@@ -826,10 +837,15 @@ module RubyCurses
               #ret = @graphic.wrefresh
           else
              # ext gives me parents offset. often the row would be zero, so we still need one extra
-              r = @ext_row_offset  
-              c = @ext_col_offset  
+              r1 = @ext_row_offset # XXX NO, i should use top and left 
+              c1 = @ext_col_offset  
+              r = @graphic.top # 2010-02-12 21:12 TRYING THIS.
+              c = @graphic.left
               maxr = @buffer_params[:bottom]
               maxc = @buffer_params[:right]
+              r = @buffer_params[:screen_top] || 0
+              c = @buffer_params[:screen_left] || 0
+              $log.debug " b2w #{r1} #{c1} , #{r} #{c} "
               ## sadly this is bypassing the method that does this stuff in Pad. We need to assimilate it back, so not so much work here
               pminr = @graphic.pminrow
               pminc = @graphic.pmincol

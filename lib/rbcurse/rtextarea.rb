@@ -210,12 +210,13 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textarea
-      if @screen_buffer.nil?
+      if @screen_buffer.nil? and @should_create_buffer
         safe_create_buffer
         @screen_buffer.name = "Pad::TXTA_PAD_#{@name}"
         $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
       end
       
+      return unless @repaint_required # 2010-02-12 19:08  TRYING
       paint if @repaint_required
       print_foot if @print_footer && (@repaint_footer_required || @repaint_required)
       buffer_to_window # 2010-02-12 14:54 RFED16

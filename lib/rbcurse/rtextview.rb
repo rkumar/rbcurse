@@ -139,7 +139,7 @@ module RubyCurses
     ## print a border
     ## Note that print_border clears the area too, so should be used sparingly.
     def print_borders
-      $log.debug " #{@name} print_borders, #{@graphic.name} "
+      $log.debug " #{@name} print_borders,  #{@graphic.name} "
       color = $datacolor
       @graphic.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       print_title
@@ -169,8 +169,10 @@ module RubyCurses
         @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
         $log.debug " textview creates pad #{@screen_buffer} #{@name}"
       end
-      
+
+      return unless @repaint_required # 2010-02-12 19:08  TRYING
       paint if @repaint_required
+      raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && @repaint_footer_required
       buffer_to_window
     end
@@ -359,7 +361,10 @@ module RubyCurses
       else
         my_win = @target_window
       end
-      $log.warn "neither form not target window given!!! TV paint 368" unless my_win
+      @graphic = my_win unless @graphic
+      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
+      raise " #{@name} neither form, nor target window given TV paint " unless my_win
+      raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
 

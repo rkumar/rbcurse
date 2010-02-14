@@ -1105,3 +1105,46 @@ It was too good to be true. I guess I have to go back to `pads` and `copywin` wh
 I've learned to hate.
 
 * * * * * * * *
+
+Subject: subwins > derwin
+-------------------------
+Date: 2010-02-14 12:06
+
+Okay, i've got ncurses subwins to resize and move, since they have absolute
+coordinates (unlike derwins) which lose their orientation. However, my
+scrollbar repainting is sucking since i need to paint it on the
+underlying window/subwin.
+
+Somehow it prints a line 2 times - duh. Will have to see how far i can
+go with approach.
+
+* * * * * * * *
+
+Subject: splitpane nonbuffer change
+-----------------------------------
+Date: 2010-02-14 18:34
+
+Due to removing buffers, now some methods that had relative coords such
+as hline and vline need absolute coordinate, by adding row and col
+respectively.
+
+* * * * * * * *
+
+Subject: giving up on splitpanes without buffers
+------------------------------------------------
+Date: 2010-02-15 00:17
+
+Okay, i am not having fun with subwindows. Too much existing code it has
+to work with.
+
+Not having buffers at all is tough, since one can easily print outside
+the widget while moving it. Especially the boundaries.
+
+So i might have to just go back to the dreaded buffered version. Only
+problem is going back to that version that worked perfectly except for
+the one condition in which a scrollpane was inside a splitpane, and only
+the cursor was a tad off.
+
+Have to find that version!
+
+* * * * * * * *
