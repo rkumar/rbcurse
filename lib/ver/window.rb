@@ -379,14 +379,17 @@ module VER
         #printstring( r, col+1," "*(width-2) , $datacolor, nil)
         prv_printstring( r, col+1," "*(width-2) , $datacolor, nil)
       end
-      print_border_only row, col, height, width, color, att
+      prv_print_border_only row, col, height, width, color, att
+    end
+    def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
+      prv_print_border_only row, col, height, width, color, att
     end
 
 
       ## print just the border, no cleanup
       #+ Earlier, we would clean up. Now in some cases, i'd like
       #+ to print border over what's been done. 
-    def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
+    def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
       attron(Ncurses.COLOR_PAIR(color) | att)
       mvwaddch row, col, ACS_ULCORNER
@@ -402,8 +405,23 @@ module VER
     end
   # added RK 2009-10-08 23:57 for tabbedpanes
   # THIS IS EXPERIMENTAL - 
+    # Acco to most sources, derwin and subwin are not thoroughly tested, avoid usage
+    # subwin moving and resizing not functioning.
     def derwin(layout)
-      return VER::SubWindow.new(self, layout)
+      $log.debug " #{self} EXP: returning a subwin in derwin"
+      v = VER::SubWindow.new(self, layout)
+      $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
+      return v
+    end
+    def _subwin(layout)
+      t = @layout[:top]
+      l = @layout[:left]
+      layout[:top] = layout[:top] + t
+      layout[:left] = layout[:left] + l
+      $log.debug " #{self} EXP: returning a subwin in derwin"
+      v = VER::SubWindow.new(self, layout)
+      $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
+      return v
     end
     def get_window; @window; end
     def to_s; @name || self; end
@@ -426,9 +444,10 @@ module VER
       reset_layout(layout)
 
       @parent = parent
-      @subwin = @parent.get_window().derwin(@height, @width, @top, @left)
+      #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
+      @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
       $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
-      $log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
+      #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
       @panel = Ncurses::Panel.new_panel(@subwin)
 
       @window = @subwin # makes more mthods available
@@ -437,6 +456,7 @@ module VER
     end
     # no need really now 
     def reset_layout layout
+      @layout = layout # 2010-02-13 22:23 
       @height = layout[:height]
       @width = layout[:width]
       @top = layout[:top]
