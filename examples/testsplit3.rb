@@ -54,12 +54,12 @@ if $0 == __FILE__
       @form = Form.new @window
       @form.name = "Form::MAINFORM"
       $log.debug " MAIN FORM #{@form} #{$0}  "
-      r = 1; c = 3; ht = 18; w = 70
-      r = 0; c = 0; ht = 20; w = 100
+      r = 3; c = 5; ht = 18; w = 90
+#      r = 0; c = 0; ht = 20; w = 100
 
 
       @help = "F1 to quit. -/+/= to resize outer split, M-, M+, M= for inner split:  #{$0}"
-      RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
+      RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r+2, "col" => 2, "color" => "yellow"}
 
         outer = SplitPane.new @form do
           name   "mainpane" 
@@ -74,13 +74,13 @@ if $0 == __FILE__
         end
         # note that splitleft has no form. so focus has to be managed XXX
         splitleft = SplitPane.new nil do
-          name   "C1-left" 
+          name   "C1-leftpane" 
           #row  r 
           #col  c
 
           ## earlier commented now bombing
           width w/2 # 30
-          height ht #/2-1
+          height ht-2 #/2-1
 
           #focusable false
           orientation :HORIZONTAL_SPLIT
@@ -99,7 +99,7 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
+          #should_create_buffer true
         end
 
         t1 = TextView.new nil do
@@ -114,7 +114,7 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
+          #should_create_buffer true
         end
         content = File.open("../README.markdown","r").readlines
         t1.set_content content #, :WRAP_WORD
@@ -132,7 +132,7 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
+          #should_create_buffer true
         end
         content = File.open("../NOTES","r").readlines
         t2.set_content content #, :WRAP_WORD
