@@ -1031,3 +1031,77 @@ Since container are writing to window, add row and col to print-border
 and other print statements.
 
 * * * * * * * *
+
+Subject: ext_offsets explanation
+--------------------------------
+Date: 2010-02-13 10:33
+
+`ext_row_offset` and `ext_col_offset` are essentially for a widget to be
+able to place the cursor. This is exactly how to set this variable.
+
+A form, when adding a widget puts its `window.top` and `window.left` as row
+and col offset respectively.
+
+In cases, where an object contains another object such as `ScrollPane` or
+`SplitPane`, ext_row_offset is set to row + ext_row_offset of parent
+class.
+
+    child.ext_row_offset = @row + @ext_row_offset.
+
+Thus, this contains the starting point of the widget in absolute terms.
+This should not be used by any other programs as this is only to cater
+to `set_form_row` and `set_form_col` and could change to accomodate these 2
+methods.
+
+However, the above assignment is at present the correct assignment.
+
+* * * * * * * *
+
+Subject: vimsplits or splitpane with subwins
+--------------------------------------------
+Date: 2010-02-13 20:14
+
+I was just checking out `subwins` today and one thing led to another. I
+basically have a very barebones vim-splitty thing which has subwins for
+each split - `VimSplit`.
+It splits in half, yes, i need to allow moving. I've been wasting time
+putting text in each split.
+So each split returns 2 subwins. You can either attach a component to a
+split, so all keys go to it.
+Or else create a form with that window.
+Or create a widget with the window, and send keys to it. Attaching a
+widget to the window is best since it takes care of everything after
+that.
+
+We still have to deal with setting the cursor, not sure if set_form_col
+is meant to deal witha subwin. Also its easy to use subwins.wmove but in
+our real application, the subwins wmove will get erased by the later
+windows that refresh.
+
+* * * * * * * *
+
+Subject: subwin does not resize and move
+----------------------------------------
+Date: 2010-02-13 23:05
+
+subwins were working great for my splitpane (vimsplit) till i needed to
+implement the pane movement. That requires moving and resizing subwins.
+This was not happening since the coords are relative to the parent
+window, and somehow this link is lost. The moved window lands up with
+its relative coordinates as absolute coords now.
+
+The man page says that subwindows resizing and movement should be
+avoided. Another page says:
+
+>    The subwindow functions (subwin, derwin, mvderwin, wsyncup, wsyncdown,
+>    wcursyncup, syncok) are flaky, incompletely implemented, and not well
+>    tested. 
+
+I could delete and recreate 2 new windows when a split pane's split is
+moved, but the reference to the window would change, and programs using
+that ref would keep referring a destroyed window.
+
+It was too good to be true. I guess I have to go back to `pads` and `copywin` which
+I've learned to hate.
+
+* * * * * * * *
