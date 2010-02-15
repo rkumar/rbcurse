@@ -38,7 +38,7 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       @form = Form.new @window
       $log.debug " FORM #{@form} "
-      r = 1; c = 3; ht = 28; w = 100
+      r = 1; c = 7; ht = 20; w = 100
       #r = 1; c = 3; ht = 24; w = 70
       # filler just to see that we are covering correct space and not wasting lines or cols
 #      filler = "*" * 88
@@ -118,17 +118,11 @@ if $0 == __FILE__
       while((ch = @window.getchar()) != KEY_F1 )
         str = keycode_tos ch
         case ch
-        when ?v.getbyte(0)
+        when ?\M-v.getbyte(0)
           splitp.orientation(:VERTICAL_SPLIT)
           splitp.set_resize_weight(0.50)
-        when ?h.getbyte(0)
+        when ?\M-h.getbyte(0)
           splitp.orientation(:HORIZONTAL_SPLIT)
-          splitp.set_resize_weight(0.50)
-        when ?-.getbyte(0)
-          splitp.set_divider_location(splitp.divider_location-1)
-        when ?+.getbyte(0)
-          splitp.set_divider_location(splitp.divider_location+1)
-        when ?=.getbyte(0)
           splitp.set_resize_weight(0.50)
         end
         #splitp.get_buffer().wclear
