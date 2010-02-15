@@ -356,7 +356,7 @@ module RubyCurses
       #col = win_col + @orig_col + @col_offset + @curpos + @cols_panned
       # 2010-01-14 13:31 changed orig_col to col for embedded forms, splitpanes.
       col = win_col + @col + @col_offset + @curpos + @cols_panned
-      $log.debug "sfc: wc:#{win_col}  oc:#{@orig_col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@cols_panned} . "
+      $log.debug "sfc: wc:#{win_col}  col:#{@col}, coff:#{@col_offset}. cp:#{@curpos} colsp:#{@cols_panned} . "
       #@form.setrowcol @form.row, col   # added 2009-12-29 18:50 BUFFERED
       $log.debug " TA calling setformrow col nil, #{col} "
       setrowcol nil, col   # added 2009-12-29 18:50 BUFFERED
@@ -762,7 +762,7 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
-      $log.debug " TA:::: #{tr} , #{h}"
+      $log.debug " TA:::: #{tr} , #{h}, r #{r} c #{c} "
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
