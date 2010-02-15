@@ -96,8 +96,8 @@ module ListScrollable
     #win_col=@form.window.left
     # added 1 ?? in copywin too 2010-02-11 18:51  RFED16 this results in extra in normal situations.
     row = win_row + r + (@current_index-@toprow) + @rows_panned 
-    $log.debug " #{@name} LIST set_form_row #{row} , ci #{@current_index} , toprow #{@toprow}, off #{@row_offset} )"
-    $log.debug "  - LIST set_form_row win_row: #{win_row} + r #{r} + ci - topr + rowsp: #{@rows_panned}. c= #{c}  "
+    $log.debug " #{@name} LIST set_form_row #{row} = ci #{@current_index} + r #{r} + winrow: #{win_row} - tr:#{@toprow} #{@toprow} + rowsp #{@rows_panned} "
+    $log.debug "  - LIST set_form_row row_offset: #{@row_offset} + r #{r} + ci - topr + rowsp: #{@rows_panned}. c= #{c}  "
 
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
     ## this needs to percolate up a heirarchy.
