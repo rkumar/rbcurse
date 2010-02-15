@@ -76,7 +76,8 @@ module RubyCurses
       def init_vars
           #should_create_buffer(true) #if should_create_buffer().nil?
           @divider_location ||= 10
-          @divider_offset ||= 1
+          #@divider_offset ||= 1
+          @divider_offset ||= 0
           #@curpos = @pcol = @toprow = @current_index = 0
           
           # cascade_changes keeps the child exactly sized as per the pane which looks nice
@@ -207,7 +208,9 @@ module RubyCurses
           #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
           #                   :right => comp.width-1, :form => @form )
             #comp.set_buffering(:screen_top => @row, :screen_left => @col)
-            @second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
+            #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
+          $log.debug " setting c2 screen_top n left to #{@row} #{@col} "
+            @second_component.set_buffering(:screen_top => @row, :screen_left => @col)
           @second_component.min_height ||= 5 # added 2010-01-16 12:37 
           @second_component.min_width ||= 5 # added 2010-01-16 12:37 
       end # second_component
@@ -300,6 +303,7 @@ module RubyCurses
       # If this returns :ERROR, caller may avoid repainting form needlessly.
       # We may give more meaningful error retval in future. TODO
       def set_divider_location rc
+        $log.debug " SPLP setting divider to #{rc} "
         # add a check for out of bounds since no buffering
         if @orientation == :HORIZONTAL_SPLIT
           if rc < 2 || rc > @height-2
@@ -402,6 +406,7 @@ module RubyCurses
                 end
               end
           end
+          $log.debug " #{@name} TA set C1 H W RC #{@first_component.height} #{@first_component.width} #{rc} "
           return if @second_component == nil
 
           ## added  2010-01-11 23:09  since some cases don't set, like splits within split.
@@ -409,8 +414,10 @@ module RubyCurses
           @second_component.width ||= 0
 
           if @orientation == :VERTICAL_SPLIT
-              @second_component.col = rc + @col_offset + @divider_offset
-              @second_component.row = 0 # 1
+              #@second_component.col = rc + @col_offset + @divider_offset
+              #@second_component.row = 0 # 1
+              @second_component.col = @col + rc + @col_offset + @divider_offset
+              @second_component.row = @row # 1
               if !@cascade_changes.nil?
                 #@second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
                 #@second_component.height = @height-2  #+ @row_offset + @divider_offset
@@ -436,8 +443,13 @@ module RubyCurses
           else
             #rc += @row
              ## HORIZ SPLIT
-              @second_component.row = @row + rc + 0 #1 #@row_offset + @divider_offset
-              @second_component.col = 0 + @col # was 1
+            offrow = offcol = 0
+              #@second_component.row = offrow + rc + 0 #1 #@row_offset + @divider_offset
+              #@second_component.col = 0 + offcol # was 1
+            offrow = @row; offcol = @col
+              @second_component.row = offrow + rc + 0 #1 #@row_offset + @divider_offset
+              $log.debug "C2 Horiz row #{@second_component.row} = #{offrow} + #{rc} "
+              @second_component.col = 0 + offcol # was 1
               if !@cascade_changes.nil?
                 #@second_component.width = @width - 2 #+ @col_offset + @divider_offset
                 #@second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
@@ -466,19 +478,23 @@ module RubyCurses
           # i need to keep top and left sync for print_border which uses it UGH !!!
           if !@second_component.get_buffer().nil?
             # now that TV and others are creating a buffer in repaint we need another way to set
-            $log.debug " setting second comp row col offset - i think it doesn't come here till much later "
+            #$log.debug " setting second comp row col offset - i think it doesn't come here till much later "
             #XXX @second_component.get_buffer().set_screen_row_col(@second_component.row+@ext_row_offset+@row, @second_component.col+@ext_col_offset+@col)
             # 2010-02-13 09:15 RFED16
+            @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
           end
             #@second_component.set_buffering(:screen_top => @row, :screen_left => @col)
-            @second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
+            #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
+            #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
+          $log.debug "sdl: setting C2 screen_top n left to #{@second_component.row}, #{@second_component.col} "
+          @second_component.set_buffering(:screen_top => @second_component.row, :screen_left => @second_component.col)
           #@second_component.ext_row_offset = @row + @ext_row_offset
           #@second_component.ext_col_offset = @col + @ext_col_offset
           $log.debug " #{@name}  2 set div location, rc #{rc} width #{@width} height #{@height}" 
           $log.debug " 2 set div location, setting r #{@second_component.row}, #{@ext_row_offset}, #{@row} "
           $log.debug " 2 set div location, setting c #{@second_component.col}, #{@ext_col_offset}, #{@col}  "
-          $log.debug " 2 set div location, setting w #{@second_component.width} "
-          $log.debug " 2 set div location, setting h #{@second_component.height} "
+          $log.debug " C2 set div location, setting w #{@second_component.width} "
+          $log.debug " C2 set div location, setting h #{@second_component.height} "
 
       end
 
@@ -540,10 +556,11 @@ module RubyCurses
             absrow = @row
             abscol = @col
           end
-          $log.debug " #{@graphic} calling print_border"
           if @use_absolute
+            $log.debug " #{@graphic} calling print_border #{@row} #{@col} "
             @graphic.print_border(@row, @col, @height-1, @width-1, bordercolor, borderatt)
           else
+            $log.debug " #{@graphic} calling print_border 0,0"
             @graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
           end
           rc = @divider_location
