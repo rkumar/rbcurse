@@ -737,16 +737,21 @@ module VER
     # which clears one row above
     def printstring(row,col,value,color,attrib=Ncurses::A_NORMAL)
       #$log.debug " pad printstring #{row} - #{@top} , #{col} - #{@left} "
+      raise "printstring row < top, pls correct code #{row} #{@top} " if row < @top
+      #$log.warn "printstring row < top, pls correct code #{row} #{@top} " if row < @top
       super(row - @top, col - @left, value, color, attrib)
     end # printstring
     #  convenience method so that pad can use print_border but remove screen's row and col
     #  Please note that this requires that buffer have latest top and left.
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       $log.debug " pad printborder #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
+      raise "print_border: row < top, pls correct code #{row} #{@top} " if row < @top
+      #$log.warn   "print_border: row < top, pls correct code #{row} #{@top} " if row < @top
       super(row - @top, col - @left, height, width,  color, att)
     end
     def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       $log.debug " pad printborder_only #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
+      raise "print_border row < top, pls correct code #{row} #{@top} " if row < @top
       super(row - @top, col - @left, height, width,  color, att)
     end
   end # class Pad
