@@ -205,7 +205,7 @@ module RubyCurses
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
       def fire_handler event, object
-        $log.debug " def fire_handler evt:#{event}, o: #{object}, #{self}, hdnler:#{@handler}"
+        $log.debug " def fire_handler evt:#{event}, o: #{object}, hdnler:#{@handler}"
         if !@handler.nil?
         #blk = @handler[event]
           ablk = @handler[event]
@@ -784,8 +784,9 @@ module RubyCurses
      def setrowcol r, c
          # 2010-02-07 21:32 is this where i should add ext_offsets
         $log.debug " #{@name}  w.setrowcol #{r} + #{@ext_row_offset}, #{c} + #{@ext_col_offset}  "
-        r += @ext_row_offset unless r.nil?
-        c += @ext_col_offset unless c.nil?
+        # commented off 2010-02-15 18:22 
+        #r += @ext_row_offset unless r.nil?
+        #c += @ext_col_offset unless c.nil?
         if @form
           @form.setrowcol r, c
         else
@@ -801,6 +802,7 @@ module RubyCurses
      # move from TextView
      # parameters relating to buffering - new 2010-02-12 12:09 RFED16
      # I am merging so i can call multiple times
+     # WARNING NOTE : this does not set Pad's top and left since Pad may not be created yet, or at all
      def set_buffering params
        @buffer_params ||= {}
        #@should_create_buffer = params[:should_create_buffer] || true
@@ -813,12 +815,13 @@ module RubyCurses
        if @graphic.nil? # and should_create_buffer not set or false XXX
          @graphic = @target_window
        end
-       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} "
+       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} - THIS DOES NOT UPDATE PAD ... "
        # @top = params[:top]
        # @left = params[:left]
        # @bottom = params[:bottom]
        # @right = params[:right]
        # offsets ?
+       # warning, this does not touch @top and left of Pad, often pad will bot yet be created
        @buffer_params.merge!(params)
      end
  
@@ -849,7 +852,7 @@ module RubyCurses
               ## sadly this is bypassing the method that does this stuff in Pad. We need to assimilate it back, so not so much work here
               pminr = @graphic.pminrow
               pminc = @graphic.pmincol
-              border_width = 2 #XXX in a generalized version this could give issues.
+              border_width = 0 # 2 #XXX  2010-02-15 23:40 2 to 0
               $log.debug " ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} - #{border_width}, #{c} + #{maxc} - #{border_width} ,0)"
               # this print the view at 0,0, byt covers the scrllare, bars not shown.
               # this can crash if textview is smaller than container dimension
