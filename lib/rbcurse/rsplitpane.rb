@@ -405,8 +405,8 @@ module RubyCurses
                   end
                 end
               end
+              $log.debug " #{@name} TA set C1 H W RC #{@first_component.height} #{@first_component.width} #{rc} "
           end
-          $log.debug " #{@name} TA set C1 H W RC #{@first_component.height} #{@first_component.width} #{rc} "
           return if @second_component == nil
 
           ## added  2010-01-11 23:09  since some cases don't set, like splits within split.
