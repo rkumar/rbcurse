@@ -75,13 +75,22 @@ module RubyCurses
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
         @child.should_create_buffer true 
-        @child.set_buffering(:target_window => @form.window, :form => @form, :bottom => @height-1, :right => @width-1 )
+        # -3 since we start row +1 to get indented by 1, also we use
+        # height -1 in scrollpane, so we need -2 to indent, and one more
+        # for row
+        @child.set_buffering(:target_window => @target_window || @form.window, :form => @form, :bottom => @height-3, :right => @width-3 )
+        ch.set_buffering(:screen_top => @row+1, :screen_left => @col+1)
         # lets set the childs ext offsets
         $log.debug "SCRP #{name} adding (to #{ch.name}) ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
         $log.debug "SCRP adding ext_col_off: #{ch.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
         ## 2010-02-09 18:58 i think we should not put col_offset since the col
         ## of child would take care of that. same for row_offset. XXX 
         ch.ext_col_offset += @ext_col_offset + @col + @col_offset - @screen_left # 2010-02-09 19:14 
+        # added row and col setting to child RFED16 2010-02-17 00:22 as
+        # in splitpane. seems we are not using ext_offsets now ? texta
+        # and TV are not. and i've commented off from widget
+        ch.row(@row+@row_offset)
+        ch.col(@col+@col_offset)
 
         $log.debug " #{ch.ext_row_offset} +=  #{@ext_row_offset} + #{@row} -#{@screen_top}  "
         ch.ext_row_offset +=  @ext_row_offset  + @row   + @row_offset - @screen_top 
@@ -105,7 +114,8 @@ module RubyCurses
       @viewport = Viewport.new nil
       @viewport.set_view ch
       ## this -2 should depend on whether we are putting border/scrollbars or not.
-      @viewport.set_view_size(@height-@border_width, @width-@border_width) # XXX make it one less
+      # -1 added on 2010-02-16 23:35 since we are red 1, and bw
+      @viewport.set_view_size(@height-@border_width-0, @width-@border_width-0) # XXX make it one less
       @viewport.cascade_changes = @cascade_changes # added 2010-02-04 18:19 
     end
     # return underlying viewport
@@ -182,6 +192,9 @@ module RubyCurses
         $log.debug " #{@name} repaint all scroll: r #{@row} c #{@col}  h  #{@height}-1 w #{@width} "
         bordercolor = @border_color || $datacolor
         borderatt = @border_attrib || Ncurses::A_NORMAL
+        # NOTE - should be width-1 print_b reduces one from width, but
+        # not height !
+
         @graphic.print_border_only(@row, @col, @height-1, @width, bordercolor, borderatt)
         h_scroll_bar
         v_scroll_bar
