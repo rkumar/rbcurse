@@ -132,7 +132,7 @@ module RubyCurses
           # The suggestd heights really depend on orientation.
            a = 0 # = 2
           if @orientation == :HORIZONTAL_SPLIT
-             @first_component.height ||= @first_component.preferred_height || @height/2 - 0 #1
+             @first_component.height ||= @first_component.preferred_height || @height/2 - 1 #1
              @first_component.width ||= @first_component.preferred_width || @width - a
           else
              @first_component.height ||= @first_component.preferred_height || @height - a
@@ -143,7 +143,7 @@ module RubyCurses
           #raise "graphic nil for comp 1 SPLP" unless _graphic
           #comp.set_buffering(:target_window => _graphic || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
           comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
-            comp.set_buffering(:screen_top => @row, :screen_left => @col)
+          comp.set_buffering(:screen_top => @row, :screen_left => @col)
           @first_component.min_height ||= 5
           @first_component.min_width ||= 5
 
@@ -186,7 +186,7 @@ module RubyCurses
           ## trying out 2010-01-16 12:11 so component does not have to set size
           # The suggestd heights really depend on orientation.
           if @orientation == :HORIZONTAL_SPLIT
-             @second_component.height ||= @second_component.preferred_height || @height/2 - 0 #1
+             @second_component.height ||= @second_component.preferred_height || @height/2 - 1 #1
              @second_component.width ||= @second_component.preferred_width || @width - 0 # 2
           else
              @second_component.height ||= @second_component.preferred_height || @height - 0 # 2
@@ -364,19 +364,19 @@ module RubyCurses
               $log.debug " #{@name}  set div location, setting first comp width #{rc}"
               if !@cascade_changes.nil?
                 if @orientation == :VERTICAL_SPLIT
-                  @first_component.width(rc-1) #+ @col_offset + @divider_offset
+                  @first_component.width(rc-0) #+ @col_offset + @divider_offset
                   @first_component.height(@height-0) #2+ @col_offset + @divider_offset
                 else
-                  @first_component.height(rc+1) #-1) #1+ @col_offset + @divider_offset
+                  @first_component.height(rc+0) #-1) #1+ @col_offset + @divider_offset
                   @first_component.width(@width-0) #2+ @col_offset + @divider_offset
                 end
               else
                 if @orientation == :VERTICAL_SPLIT
                   $log.debug " DOES IT COME HERE compare fc wt #{@first_component.width} to match #{rc}-1 "
                   # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
-                  if @first_component.width < rc -1 then
+                  if @first_component.width < rc -0 then
                     $log.debug " INCRease fc wt #{@first_component.width} to match #{rc}-1 "
-                    @first_component.width(rc-1) #+ @col_offset + @divider_offset
+                    @first_component.width(rc-0) #+ @col_offset + @divider_offset
                     @first_component.repaint_all(true) if !@first_component.nil?
                     @repaint_required = true
                   end
@@ -406,6 +406,7 @@ module RubyCurses
                 end
               end
               $log.debug " #{@name} TA set C1 H W RC #{@first_component.height} #{@first_component.width} #{rc} "
+              @first_component.set_buffering(:bottom => @first_component.height-1, :right => @first_component.width-1, :form => @form )
           end
           return if @second_component == nil
 
@@ -416,28 +417,28 @@ module RubyCurses
           if @orientation == :VERTICAL_SPLIT
               #@second_component.col = rc + @col_offset + @divider_offset
               #@second_component.row = 0 # 1
-              @second_component.col = @col + rc + @col_offset + @divider_offset
+              @second_component.col = @col + rc #+ @col_offset + @divider_offset
               @second_component.row = @row # 1
               if !@cascade_changes.nil?
                 #@second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
                 #@second_component.height = @height-2  #+ @row_offset + @divider_offset
-                @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
+                @second_component.width = @width - rc #+ @col_offset + @divider_offset + 1)
                 @second_component.height = @height-0  #+ @row_offset + @divider_offset
               else
                 # added 2010-01-09 22:49 to be tested XXX
                 # In a vertical split, if widgets w and thus buffer w is less than
                 #+ pane, a copywin can crash process, so we must expand component, and thus buffer
                 $log.debug " #{@name}  2c width does it come here? #{@second_component.name} #{@second_component.width} < #{@width} -( #{rc}+#{@col_offset}+#{@divider_offset} +1 "
-                if @second_component.width < @width - (rc + @col_offset + @divider_offset + 1)
+                if @second_component.width < @width - rc #+ @col_offset + @divider_offset + 1)
                   $log.debug " YES 2c width "
-                  @second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
+                  @second_component.width = @width - rc #+ @col_offset + @divider_offset + 1)
                   @second_component.repaint_all(true) 
                   @repaint_required = true
                 end
                 # adding 2010-01-17 19:33 since when changing to VERT, it was not expanding
-                if @second_component.height < @height-2  #+ @row_offset + @divider_offset
+                if @second_component.height < @height-0  #+ @row_offset + @divider_offset
                    $log.debug " JUST ADDED 2010-01-17 19:35 HOPE DOES NOT BREAK ANYTHING "
-                   @second_component.height = @height-2  #+ @row_offset + @divider_offset
+                   @second_component.height = @height-0  #+ @row_offset + @divider_offset
                 end
               end
           else
@@ -488,6 +489,7 @@ module RubyCurses
             #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
           $log.debug "sdl: setting C2 screen_top n left to #{@second_component.row}, #{@second_component.col} "
           @second_component.set_buffering(:screen_top => @second_component.row, :screen_left => @second_component.col)
+          @second_component.set_buffering(:bottom => @second_component.height-1, :right => @second_component.width-1, :form => @form )
           #@second_component.ext_row_offset = @row + @ext_row_offset
           #@second_component.ext_col_offset = @col + @ext_col_offset
           $log.debug " #{@name}  2 set div location, rc #{rc} width #{@width} height #{@height}" 
@@ -672,6 +674,7 @@ module RubyCurses
           end
         when ?\M-V.getbyte(0)
           self.orientation(:VERTICAL_SPLIT)
+          @repaint_required = true
         when ?\M-H.getbyte(0)
           self.orientation(:HORIZONTAL_SPLIT)
         when ?\M--.getbyte(0)
