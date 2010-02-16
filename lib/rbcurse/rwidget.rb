@@ -693,7 +693,7 @@ module RubyCurses
            repaint_all(true)  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
          if is_double_buffered? and newvalue != oldvalue
-           $log.debug " #{@name} w calling resize of screen buffer with #{newvalue}"
+           $log.debug " #{@name} w calling resize of screen buffer with #{newvalue}. WARNING: does not change buffering_params"
            @screen_buffer.resize(0, newvalue)
          end
        end
@@ -783,7 +783,7 @@ module RubyCurses
      # are giving the accurate result. i am not sure what the issue is.
      def setrowcol r, c
          # 2010-02-07 21:32 is this where i should add ext_offsets
-        $log.debug " #{@name}  w.setrowcol #{r} + #{@ext_row_offset}, #{c} + #{@ext_col_offset}  "
+        #$log.debug " #{@name}  w.setrowcol #{r} + #{@ext_row_offset}, #{c} + #{@ext_col_offset}  "
         # commented off 2010-02-15 18:22 
         #r += @ext_row_offset unless r.nil?
         #c += @ext_col_offset unless c.nil?
@@ -823,6 +823,10 @@ module RubyCurses
        # offsets ?
        # warning, this does not touch @top and left of Pad, often pad will bot yet be created
        @buffer_params.merge!(params)
+       if !@screen_buffer.nil?
+         # update Pad since some folks take from there
+         
+       end
      end
  
      # copy buffer onto window
