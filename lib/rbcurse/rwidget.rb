@@ -858,6 +858,7 @@ module RubyCurses
               # this can crash if textview is smaller than container dimension
               # can crash/give -1 when panning, giong beyond pad size XXX
               ret = @graphic.copywin(@target_window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
+              $log.warn "ERROR !!! copywin returns -1 check " if ret == -1
           end
           $log.debug " copywin ret --> #{ret} "
           #
