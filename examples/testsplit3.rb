@@ -71,6 +71,7 @@ if $0 == __FILE__
           orientation :VERTICAL_SPLIT
           #orientation :HORIZONTAL_SPLIT
           #set_resize_weight 0.60
+          border_color $promptcolor
         end
         # note that splitleft has no form. so focus has to be managed XXX
         splitleft = SplitPane.new nil do
@@ -79,8 +80,8 @@ if $0 == __FILE__
           #col  c
 
           ## earlier commented now bombing
-          width w/2 # 30
-          height ht-2 #/2-1
+          #width w/2 # 30
+          #height ht-2 #/2-1
 
           #focusable false
           orientation :HORIZONTAL_SPLIT
@@ -109,7 +110,7 @@ if $0 == __FILE__
           #width w-2
           #height ht
           height (ht/2)-1
-          width w/2-1
+          width w/2 #-1
           title "README.md"
           title_attrib 'bold'
           print_footer true
@@ -125,7 +126,7 @@ if $0 == __FILE__
           name   "myView2-left-second" 
           #row 0
           #col  0 
-          width w/2-1
+          width w/2
           #height ht
           height (ht/2)-1
           title "NOTES"
