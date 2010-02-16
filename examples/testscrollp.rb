@@ -22,6 +22,7 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
+      @form.name = "Form::MAINFORM"
       r = 3; c = 5; w = 80
       ht = 20
       # print filler stars
