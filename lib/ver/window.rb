@@ -389,6 +389,7 @@ module VER
       ## print just the border, no cleanup
       #+ Earlier, we would clean up. Now in some cases, i'd like
       #+ to print border over what's been done. 
+    # XXX this reduces 1 from width but not height !!! FIXME 
     def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
       attron(Ncurses.COLOR_PAIR(color) | att)
