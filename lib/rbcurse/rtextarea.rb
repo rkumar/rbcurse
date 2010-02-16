@@ -106,8 +106,8 @@ module RubyCurses
     ## 
     # trying to wrap and insert
     def insert off0, data
-       maxlen = @maxlen || @width - 2
-      if data.length > maxlen
+       _maxlen = @maxlen || @width - 2
+      if data.length > _maxlen
         data = wrap_text data
       #  $log.debug "after wrap text done :#{data}"
         data = data.split("\n")
@@ -122,11 +122,11 @@ module RubyCurses
       #$log.debug " AFTER INSERT: #{@list}"
     end
     ##
-    # wraps line sent in if longer than maxlen
+    # wraps line sent in if longer than _maxlen
     # Typically a line is sent in. We wrap and put a hard return at end.
     def << data
-       maxlen = @maxlen || @width - 2
-      if data.length > maxlen
+      _maxlen = @maxlen || @width - 2
+      if data.length > _maxlen
         #$log.debug "wrapped append for #{data}"
         data = wrap_text data
         #$log.debug "after wrap text for :#{data}"
@@ -502,8 +502,8 @@ module RubyCurses
         up
         return
       end
-      maxlen = @maxlen || @width - 2
-      space_left = maxlen - prev.length
+      _maxlen = @maxlen || @width - 2
+      space_left = _maxlen - prev.length
       # BUG. carry full words up, or if no space then bring down last word of prev lien and join with first
       carry_up = words_in_length @buffer, space_left #@buffer[0..space_left] # XXX
       if carry_up.nil?
@@ -555,11 +555,11 @@ module RubyCurses
     # This was needed for if i push 10 chars to next line, and the last word is less then the line will 
     # exceed. So i must push as many words as exceed length.
     def push_last_word lineno=@current_index
-       maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - 2
       #lastspace = @buffer.rindex(" ")
       #lastspace = @list[lineno].rindex(/ \w/)
       line = @list[lineno]
-      line = @list[lineno][0..maxlen+1] if line.length > maxlen
+      line = @list[lineno][0.._maxlen+1] if line.length > _maxlen
       lastspace = line.rindex(/ \w/)
       $log.debug " PUSH:2 #{lastspace},#{line},"
       if !lastspace.nil?
@@ -588,19 +588,19 @@ module RubyCurses
     # this attempts to recursively insert into a row, seeing that any stuff exceeding is pushed down further.
     # Yes, it should check for a para end and insert. Currently it could add to next para.
     def insert_wrap lineno, pos, lastchars
-       maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - 2
       @list[lineno].insert pos, lastchars 
       len = @list[lineno].length 
-      if len > maxlen
+      if len > _maxlen
           push_last_word lineno #- sometime i may push down 10 chars but the last word is less
         end
     end
     ## 
     # add one char. careful, i shoved a string in yesterday.
     def putch char
-       maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - 2
       @buffer ||= @list[@current_index]
-        return -1 if !@editable #or @buffer.length >= maxlen
+        return -1 if !@editable #or @buffer.length >= _maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
       end
@@ -609,13 +609,13 @@ module RubyCurses
       $log.debug "putch : pr:#{@current_index}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
       @buffer.insert(@curpos, char)
       @curpos += 1 
-      $log.debug "putch INS: cp:#{@curpos}, max:#{maxlen}, buf:(#{@buffer.length})"
-      if @curpos-1 > maxlen or @buffer.length()-1 > maxlen
+      $log.debug "putch INS: cp:#{@curpos}, max:#{_maxlen}, buf:(#{@buffer.length})"
+      if @curpos-1 > _maxlen or @buffer.length()-1 > _maxlen
         lastchars, lastspace = push_last_word @current_index
         #$log.debug "last sapce #{lastspace}, lastchars:#{lastchars},lc:#{lastchars[-1]}, #{@list[@current_index]} "
         ## wrap on word XX If last char is 10 then insert line
         @buffer = @list[@current_index]
-        if @curpos-1 > maxlen  or @curpos-1 > @buffer.length()-1
+        if @curpos-1 > _maxlen  or @curpos-1 > @buffer.length()-1
           ret = down 
           # keep the cursor in the same position in the string that was pushed down.
           @curpos = oldcurpos - lastspace  #lastchars.length # 0
@@ -691,8 +691,8 @@ module RubyCurses
     def move_chars_up
       oldprow = @current_index
       oldcurpos = @curpos
-       maxlen = @maxlen || @width - 2
-      space_left = maxlen - @buffer.length
+       _maxlen = @maxlen || @width - 2
+      space_left = _maxlen - @buffer.length
       can_move = [space_left, next_line.length].min
       carry_up =  @list[@current_index+1].slice!(0, can_move)
       @list[@current_index] << carry_up
@@ -717,8 +717,8 @@ module RubyCurses
       @form.modified = true if tf and !@form.nil?
     end
     def cursor_eol
-       maxlen = @maxlen || @width - 2
-      $log.error "ERROR !!! bufferlen gt maxlen #{@buffer.length}, #{maxlen}" if @buffer.length > maxlen
+       _maxlen = @maxlen || @width - 2
+      $log.error "ERROR !!! bufferlen gt _maxlen #{@buffer.length}, #{_maxlen}" if @buffer.length > _maxlen
       set_form_col current_line().chomp().length()-1
     end
     def cursor_bol
@@ -755,8 +755,8 @@ module RubyCurses
       @win_top = my_win.top
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
-      maxlen = @maxlen ||= @width-2
-      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} "
+      _maxlen = @maxlen || @width-2
+      $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{_maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
@@ -772,8 +772,8 @@ module RubyCurses
             content.gsub!(/\t/, '  ') # don't display tab
             content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
             if !content.nil? 
-              if content.length > maxlen # only show maxlen
-                content = content[@pcol..@pcol+maxlen-1] 
+              if content.length > _maxlen # only show _maxlen
+                content = content[@pcol..@pcol+_maxlen-1] 
               else
                 content = content[@pcol..-1]
               end
