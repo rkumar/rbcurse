@@ -1172,3 +1172,43 @@ RULE: All widgets should maintain absolute coordinates for row and col, even
 for internal objects. It is upto the Pad to remove @top and @left.
 
 * * * * * * * *
+
+Subject: changing width and height
+----------------------------------
+Date: 2010-02-16 20:49
+
+Wherever an object changes its childs dimensions, it should now also
+call `set_buffering` to update `:bottom` and `:right` (or :top and :left),
+since we are now using `buffer_to_window` in `Widget` which takes explicit
+values from this hash.
+
+Earlier, `Pad` picked up values from the pad, and otherwin and then tried
+to make sense of what to use. Thus coincidentally some things worked,
+some did not. 
+
+Now that our wrapper for `copywin` does no magic, callers are forced to
+pass correct values, which means there is complete clarity into waht is
+happening at the callers end, the rules for printing a widget in complex
+circumstances is becoming clear and less random or coincidental.
+
+* * * * * * * *
+
+Subject: cursor positioning
+---------------------------
+Date: 2010-02-17 00:25
+
+I  can't believe this. It seems I am not longer using ext_offsets any
+longer??
+I am setting the absolute coords of child components in scrollpane and
+splitpanes, which is kinda good, because its simple and no magic
+involved. No having 2 sets of coordinates around.
+
+Also, it seems widgtes are using buffer_to_window, which also uses
+absolute coordinates for the screen.
+
+Lastly, textview and textarea in set_form_row, don't use ext_offsets.
+They were earlier added in widget, later commented out to be added in
+indvidial programs. But everythings working without it, so i am free of
+one more hassle to look after.
+
+* * * * * * * *
