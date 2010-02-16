@@ -238,8 +238,13 @@ module RubyCurses
             if @orientation == :VERTICAL_SPLIT
               @first_component.height += delta
               @second_component.height += delta
+              # RFED16 2010-02-16 20:44 whenever we change dimensions need to update
+              # buffering_params since we are not using Pad's buffer_to_screen
+              @second_component.set_buffering(:bottom => @second_component.height-1)
+              @first_component.set_buffering(:bottom => @first_component.height-1)
             else
               @second_component.height += delta
+              @second_component.set_buffering(:bottom => @second_component.height-1)
             end
           end
       end
@@ -267,14 +272,16 @@ module RubyCurses
                 old = @first_component.width 
                 #@first_component.width = @width - @col_offset + @divider_offset
                 @first_component.width += delta
-                $log.debug " #{@name} set fc width to #{@first_component.width}, old was #{old}  "
+                $log.debug "width() #{@name} set fc width to #{@first_component.width}, old was #{old}  "
+                @first_component.set_buffering(:right => @first_component.width-1)
               end
               # added 2010-01-11 23:02  horiz 2c not displaying since width issue
               if @second_component != nil 
                 old = @second_component.width 
                 #@first_component.width = @width - @col_offset + @divider_offset
                 @second_component.width += delta
-                $log.debug "  #{@name} set 2c width to #{@second_component.width}, old was #{old}  "
+                @second_component.set_buffering(:right => @second_component.width-1)
+                $log.debug "width()  #{@name} set 2c width to #{@second_component.width}, old was #{old}  "
               end
             else
               rc = @divider_location
@@ -286,7 +293,8 @@ module RubyCurses
                   old = @second_component.width 
                   #@second_component.width = @width - @col_offset + @divider_offset
                   @second_component.width += delta
-                  $log.debug " #{@name}  set 2c width to #{@second_component.width} , old was #{old} "
+                  @second_component.set_buffering(:right => @second_component.width-1)
+                  $log.debug "width() #{@name}  set 2c width to #{@second_component.width} , old was #{old} "
                 end
               end
             end
@@ -397,9 +405,9 @@ module RubyCurses
                   end
                   # added 2010-01-11 19:24 to match c2. Sometimes switching from V to H means
                   # fc's width needs to be expanded.
-                  if @first_component.width < @width - 2 #+ @col_offset + @divider_offset
+                  if @first_component.width < @width - 1 #+ @col_offset + @divider_offset
                     $log.debug " INCRease fc wi #{@first_component.width} to match #{@width}-2 "
-                    @first_component.width = @width - 2 #+ @col_offset + @divider_offset
+                    @first_component.width = @width - 1 #+ @col_offset + @divider_offset
                     @first_component.repaint_all(true) 
                     @repaint_required = true
                   end
