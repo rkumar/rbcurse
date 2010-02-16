@@ -755,7 +755,7 @@ module RubyCurses
       @win_top = my_win.top
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
-      _maxlen = @maxlen || @width-2
+      _maxlen = @maxlen || @width-2 # TODO fix in other branches remove ||= 
       $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{_maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
