@@ -1148,3 +1148,27 @@ the cursor was a tad off.
 Have to find that version!
 
 * * * * * * * *
+
+Subject: changed to SplitPane (rfed16 version)
+----------------------------------------------
+Date: 2010-02-16 09:27
+
+Currently, Splitpane was in a sorry state meaning mostly the values
+passed by higher functions for locating both the comps and their cursor
+values. Parameters passed were based on how things were working inside
+and it made no sense.
+
+I've tried to make the parameters logical and sensible, and the inside
+functioning should work with those parameters rather than the other way
+round.
+
+Similarly, width and height should also make sense in all cases.
+Somewhere values of row and col were relative, some places absolute. 
+
+Now in setrowcol of widget, i do not add ext_offsets. programs can add
+it. 
+
+RULE: All widgets should maintain absolute coordinates for row and col, even
+for internal objects. It is upto the Pad to remove @top and @left.
+
+* * * * * * * *
