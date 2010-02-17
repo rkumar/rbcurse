@@ -495,7 +495,7 @@ module RubyCurses
             #@second_component.set_buffering(:screen_top => @row, :screen_left => @col)
             #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
             #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
-          $log.debug "sdl: setting C2 screen_top n left to #{@second_component.row}, #{@second_component.col} "
+          $log.debug "sdl: #{@name} setting C2 screen_top n left to #{@second_component.row}, #{@second_component.col} "
           @second_component.set_buffering(:screen_top => @second_component.row, :screen_left => @second_component.col)
           @second_component.set_buffering(:bottom => @second_component.height-1, :right => @second_component.width-1, :form => @form )
           #@second_component.ext_row_offset = @row + @ext_row_offset
