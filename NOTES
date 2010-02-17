@@ -1234,3 +1234,42 @@ must further update the same for its child. Earlier that was not
 required since each pad was printing to a relative location.
 
 * * * * * * * *
+
+Subject: Now quite some success with splits and scrolls combined
+----------------------------------------------------------------
+Date: 2010-02-17 14:38
+
+with testsplit3a.rb working (**rfed16** branch), resizing etc is working fine,
+finally splitpanes and scrollpanes are in decent shape.
+There are still some programs not displaying okay .. 3b 3_1 -- have to
+see what's there.
+
+Were those 2 ever working ? or was it only a cursor issue in them that
+wrecked everything and made me abandon rbcurse19 branch. I wonder how
+that branch is doing.
+
+I think i need to start git tagging. Anyway, i am also taking snapshots.
+I need to start releasing gems or atleast tgz's on github.
+
+* * * * * * * *
+
+Subject: broken status
+----------------------
+Date: 2010-02-17 22:23
+
+Please note that consequent to the simplified buffering, and the way of
+calling it from containers the following are broken:
+
+1. listbox (e.g. testscrolllb.rb, testsplit3b.rb)
+2. table
+3. tabbedpane (container) (e.g. testtpane.rb)
+
+Any program calling buffer_to_screen for a child is broken. The child
+now does a buffer_to_window using absolute coordinates.
+
+Containers such as SplitPane and ScrollPane are now passing absolute row
+and col to child, and updating exact top, left, bottom and right.
+
+I don't think children should be using ext_col_offset or ext_row_offset.
+
+* * * * * * * *
