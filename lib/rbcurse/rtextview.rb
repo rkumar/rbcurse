@@ -172,7 +172,7 @@ module RubyCurses
 
       return unless @repaint_required # 2010-02-12 19:08  TRYING
       paint if @repaint_required
-      raise "TV 175 graphic nil " unless @graphic
+    #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && @repaint_footer_required
       buffer_to_window
     end
