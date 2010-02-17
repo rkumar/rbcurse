@@ -52,7 +52,7 @@ if $0 == __FILE__
       @form = Form.new @window
       $log.debug " MAIN FORM #{@form}  "
       r = 1; c = 3; ht = 18; w = 70
-      r = 0; c = 0; ht = 24; w = 100
+      r = 3; c = 7; ht = 24; w = 100
 
 
       @help = "F1 to quit. To resize split: M-, M+, M=. TAB, M-w, M-n, M-p, M-l, M-h, C-n/p  : #{$0}"
@@ -118,7 +118,7 @@ if $0 == __FILE__
           row 0
           col  0 
           width w/2
-          height ht/2
+          height ht/2+5
           list_variable $listdata
           #selection_mode :SINGLE
           show_selector true
