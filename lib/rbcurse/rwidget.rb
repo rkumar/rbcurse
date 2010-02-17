@@ -824,8 +824,9 @@ module RubyCurses
        # warning, this does not touch @top and left of Pad, often pad will bot yet be created
        @buffer_params.merge!(params)
        if !@screen_buffer.nil?
-         # update Pad since some folks take from there
-         
+         # update Pad since some folks take from there such as print_border
+         @screen_buffer.top = params[:screen_top] if !params[:screen_top].nil?
+         @screen_buffer.left = params[:screen_left] if !params[:screen_left].nil?
        end
      end
  
