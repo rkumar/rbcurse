@@ -619,6 +619,7 @@ module RubyCurses
       return 1 unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
       $log.debug " screen inside buffer_to_screen b2s :#{screen} "
+      $log.warn "ERROR !I have moved away fomr this method. Your program is broken and will not be working"
       ## 2010-01-03 19:38 i think its wrong to put the pad onto the screen
       ##+ since wrefreshing the window will cause this to be overwriting
       ##+ so i put current window here.
@@ -863,7 +864,16 @@ module RubyCurses
               # this can crash if textview is smaller than container dimension
               # can crash/give -1 when panning, giong beyond pad size XXX
               ret = @graphic.copywin(@target_window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
-              $log.warn "ERROR !!! copywin returns -1 check " if ret == -1
+              if ret == -1
+                $log.debug " copywin #{@name} h #{@height} w #{@width} "
+                if @height <= maxr-border_width
+                  $log.warn " h #{@height} is less than :bottom #{maxr} "
+                end
+                if @width <= maxc-border_width
+                  $log.warn " h #{@width} is less than :right #{maxc} "
+                end
+                $log.warn "ERROR !!! copywin returns -1 check " if ret == -1
+              end
           end
           $log.debug " copywin ret --> #{ret} "
           #
