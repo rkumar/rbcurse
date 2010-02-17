@@ -1212,3 +1212,25 @@ indvidial programs. But everythings working without it, so i am free of
 one more hassle to look after.
 
 * * * * * * * *
+
+Subject: scrollpanes inside splitpanes
+--------------------------------------
+Date: 2010-02-17 10:14
+
+The issue with placing a scrollpane a splitpane, esp in the second pane
+of a split.
+Currently, a SPLP sets its second components (C2's) row and col and
+other buffer parameters only after its divider has been set. 
+Thus, when there is SPLP inside another SPLP, even the inner SPLP is
+able to inform its child of location when its divider is recomputed.
+
+However, scrollpane informs its child of its location at the point of
+assignment. When the SCRP is the 2nd component in a SPLP, it doesn't yet
+have any row and col etc. When that is later updated, it currently has
+no means to update its child.
+
+When SCRP's row and col are updated, or its set_buffering is called, it
+must further update the same for its child. Earlier that was not
+required since each pad was printing to a relative location.
+
+* * * * * * * *
