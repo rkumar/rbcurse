@@ -815,7 +815,7 @@ module RubyCurses
        if @graphic.nil? # and should_create_buffer not set or false XXX
          @graphic = @target_window
        end
-       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} - THIS DOES NOT UPDATE PAD ... "
+       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} - THIS DOES NOT UPDATE PAD ... sr:#{params[:screen_row]} sc:#{params[:screen_col]} top:#{params[:top]} left:#{params[:left]} bot:#{params[:bottom]} rt:#{params[:right]} "
        # @top = params[:top]
        # @left = params[:left]
        # @bottom = params[:bottom]
