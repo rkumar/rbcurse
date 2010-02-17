@@ -75,27 +75,36 @@ module RubyCurses
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
         @child.should_create_buffer true 
+        update_child
         # -3 since we start row +1 to get indented by 1, also we use
         # height -1 in scrollpane, so we need -2 to indent, and one more
         # for row
+        set_viewport_view(ch)
+      end
+    end
+    ## 
+    # update of child's coordinates, needs to be called whenever it
+    # changes, so i need to call it before calling child's update
+    # FIXME - this is become 2 calls, make it one - becoming expensive
+    # if called often
+    def update_child
         @child.set_buffering(:target_window => @target_window || @form.window, :form => @form, :bottom => @height-3, :right => @width-3 )
-        ch.set_buffering(:screen_top => @row+1, :screen_left => @col+1)
+        @child.set_buffering(:screen_top => @row+1, :screen_left => @col+1)
         # lets set the childs ext offsets
-        $log.debug "SCRP #{name} adding (to #{ch.name}) ext_row_off: #{ch.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
-        $log.debug "SCRP adding ext_col_off: #{ch.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
+        $log.debug "SCRP #{name} adding (to #{@child.name}) ext_row_off: #{@child.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
+        $log.debug "SCRP adding ext_col_off: #{@child.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
         ## 2010-02-09 18:58 i think we should not put col_offset since the col
         ## of child would take care of that. same for row_offset. XXX 
-        ch.ext_col_offset += @ext_col_offset + @col + @col_offset - @screen_left # 2010-02-09 19:14 
+        @child.ext_col_offset += @ext_col_offset + @col + @col_offset - @screen_left # 2010-02-09 19:14 
         # added row and col setting to child RFED16 2010-02-17 00:22 as
         # in splitpane. seems we are not using ext_offsets now ? texta
         # and TV are not. and i've commented off from widget
-        ch.row(@row+@row_offset)
-        ch.col(@col+@col_offset)
+        @child.row(@row+@row_offset)
+        @child.col(@col+@col_offset)
 
-        $log.debug " #{ch.ext_row_offset} +=  #{@ext_row_offset} + #{@row} -#{@screen_top}  "
-        ch.ext_row_offset +=  @ext_row_offset  + @row   + @row_offset - @screen_top 
-        set_viewport_view(ch)
-      end
+        $log.debug " #{@child.ext_row_offset} +=  #{@ext_row_offset} + #{@row} -#{@screen_top}  "
+        @child.ext_row_offset +=  @ext_row_offset  + @row   + @row_offset - @screen_top 
+
     end
     def init_vars
       #@curpos = @pcol = @toprow = @current_index = 0
@@ -180,6 +189,7 @@ module RubyCurses
       # this calls viewports refresh from its refresh
       return unless @repaint_required
       if @viewport
+        update_child
         $log.debug "SCRP  #{@name} calling viewport repaint"
         #@viewport.repaint_all true # 2010-01-16 23:09 
         @viewport.repaint_required true # changed 2010-01-19 19:34 
@@ -393,8 +403,8 @@ module RubyCurses
       start = start.ceil
       # # the problem with next 2 lines is that attributes of border could be overwritten
       # draw horiz line
-      r = @row + @ext_row_offset # 2010-02-11 11:57 RFED16
-      c = @col + @ext_col_offset # 2010-02-11 11:57 RFED16
+      r = @row #+ @ext_row_offset # 2010-02-11 11:57 RFED16
+      c = @col #+ @ext_col_offset # 2010-02-11 11:57 RFED16
       @graphic.mvwhline(r+@height-1, c+1, ACS_HLINE, @width-2)
       # draw scroll bar
       sz.times{ |i| @graphic.mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
@@ -402,18 +412,18 @@ module RubyCurses
     def v_scroll_bar
         return if @viewport.nil?
       sz = (@viewport.height*1.00/@viewport.child().height)*@viewport.height
-      #$log.debug " h_scroll_bar sz #{sz}, #{@viewport.width} #{@viewport.child().width}" 
+      #$log.debug " v_scroll_bar sz #{sz}, #{@viewport.width} #{@viewport.child().width}" 
       sz = sz.ceil
       return if sz < 1
       start = 1 
       start = ((@viewport.row*1.00+@viewport.height)/@viewport.child().height)*@viewport.height
       start -= sz
-      #$log.debug " h_scroll_bar start #{start}, #{@viewport.col} #{@viewport.width}" 
+      r = @row #+ @ext_row_offset # 2010-02-11 11:57 RFED16
+      c = @col #+ @ext_col_offset # 2010-02-11 11:57 RFED16
+      $log.debug " v_scroll_bar start #{start}, col:#{@col} w:#{@width}, r #{r}+1 c #{c}+w-1 " 
       start = start.ceil
       # # the problem with next 2 lines is that attributes of border could be overwritten
       # draw horiz line
-      r = @row + @ext_row_offset # 2010-02-11 11:57 RFED16
-      c = @col + @ext_col_offset # 2010-02-11 11:57 RFED16
       # this is needed to erase previous bar when shrinking
       @graphic.mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
       # draw scroll bar
