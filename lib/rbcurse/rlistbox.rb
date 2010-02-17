@@ -420,8 +420,12 @@ module RubyCurses
       @selection_mode ||= 'multiple'
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
-      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
+      # added 2010-02-17 23:05  RFED16 so we don't need a form.
+      @win_left = 0
+      @win_top = 0
+
+#x      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
+#x      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
@@ -753,7 +757,22 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint
+      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
+      # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
+      my_win = nil
+      if @form
+        my_win = @form.window
+      else
+        my_win = @target_window
+      end
+      @graphic = my_win unless @graphic
+      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
+      raise " #{@name} neither form, nor target window given TV paint " unless my_win
+      raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
+      @win_left = my_win.left
+      @win_top = my_win.top
+
       $log.debug " rlistbox repaint graphic #{@graphic} "
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       rc = row_count
@@ -815,6 +834,7 @@ module RubyCurses
       @table_changed = false
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
+      buffer_to_window # RFED16 2010-02-17 23:16 
     end
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
@@ -827,14 +847,17 @@ module RubyCurses
     def set_form_col col1=0
       # TODO BUFFERED use setrowcol @form.row, col
       # TODO BUFFERED use cols_panned
+      @cols_panned ||= 0 # RFED16 2010-02-17 23:40 
       # editable listboxes will involve changing cursor and the form issue
       ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
-      win_col=@form.window.left
+      #win_col=@form.window.left
+      win_col = 0 # 2010-02-17 23:19 RFED16
       #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
-      col2 = win_col + @col + @col_offset + col1 + @form.cols_panned + @left_margin
+      col2 = win_col + @col + @col_offset + col1 + @cols_panned + @left_margin
       $log.debug " set_form_col in rlistbox #{@col}+ left_margin #{@left_margin} ( #{col2} ) "
       #super col+@left_margin
-      @form.setrowcol @form.row, col2   # added 2009-12-29 18:50 BUFFERED
+      #@form.setrowcol @form.row, col2   # added 2009-12-29 18:50 BUFFERED
+      setrowcol nil, col2 # 2010-02-17 23:19 RFED16
     end
     #def rowcol
     ##  $log.debug "rlistbox rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
