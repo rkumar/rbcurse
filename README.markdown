@@ -2,11 +2,19 @@
 
 * Version to work with ruby 1.9 (backward compatible with 1.8.7)
 
-* <http://totalrecall.wordpress.com>   
+This branch - RFED19 - contains major rework on the buffering approach. It only affect
+programs that have used buffers such as splitpanes, scrollpanes and tabbedpanes.
+As of this moment, tabbedpanes are broken. So are tables. Tables should be fixed tomorrow, and tabbedpanes after that in a day or so.
 
-* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/>
+Some of the samples mentioned below may **not** work. test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.
 
-* See latest changes on
+* <http://totalrecall.wordpress.com>  - always has some status posted.
+
+* Notes on rbcurse - very frequent updates <http://rbcurse.tumblr.com/>
+
+* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/> - Not updated.
+
+* See changes on (not updated often)
  <http://github.com/rkumar/rbcurse/tree/master/CHANGELOG>
 
 * Many working demos in examples folder, such as:
@@ -22,7 +30,6 @@
     Demos horizontal and vertical scrolling of data.
     (If this doesn't work, try _sqlc.rb. I was integrating tabbedpanes
     into sqlc.rb and left off somewhere).
-
 
   * testtodo.rb is a test TODO application (now using fastercsv)
 
@@ -67,9 +74,7 @@ will/runtime. Very flexible unlike ncurses forms and fields.
 
 ## Current work
 
-Currently working once again on tabbedpanes to see they work with various widgets. 
-
-That should call for a major release.
+After a major rewrite and simplification of internal buffering, I still need to make relevant changes to TabbedPane and Table classes. Then testing all samples, making a new sql client app.
 
 ## Sample programs:
 
@@ -86,8 +91,14 @@ That should call for a major release.
    ruby test1.rb 1
    ruby test1.rb 2
 *  test2.rb  most widgets (including menus)
-   - partially tested, many widgets needs thorough testing.
+   - partially tested, many widgets, needs thorough testing.
 
+*  testscroll*.rb - various demos of scrollpanes with listboxes, text areas, tables etc
+
+*  testsplit*.rb - various splitpanes with scrollpanes and other objects placed inside
+   See screenshots on blog.
+
+*  testtpane.rb  - tabbedpane sample with a scrollpane and a textobject. 
 
 ## PROBLEMS, ISSUES
 

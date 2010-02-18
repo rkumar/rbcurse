@@ -746,9 +746,5 @@ module RubyCurses
             @current_component.set_form_col 
          end
       end
-      def set_buffering params
-        super
-
-      end
   end # class SplitPane
 end # module
