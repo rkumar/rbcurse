@@ -760,12 +760,7 @@ module RubyCurses
       safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
-      my_win = nil
-      if @form
-        my_win = @form.window
-      else
-        my_win = @target_window
-      end
+      my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
       #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
       raise " #{@name} neither form, nor target window given TV paint " unless my_win
@@ -900,7 +895,31 @@ module RubyCurses
       add_row_selection_interval(lower, higher)
       @repaint_required = true
     end
+    # 2010-02-18 11:40 
+    # TRYING OUT - canceling editing if resized otherwise drawing errors can occur
+    # the earlier painted edited comp in yellow keeps showing until a key is pressed
  
+    def set_buffering params
+      super
+      ## Ensuring that changes to top get reflect in editing comp
+      #+ otherwise it raises an exception. Still the earlier cell_edit is being
+      #+ printed where it was , until a key is moved
+      # FIXME - do same for col
+      if @cell_editor
+        r,c = rowcol
+        if @cell_editor.component.row < @row_offset + @buffer_params[:screen_top]
+          @cell_editor.component.row = @row_offset +  @buffer_params[:screen_top]
+        end
+        # TODO next block to be tested by placing a listbox in right split of vertical
+        if @cell_editor.component.col < @col_offset + @buffer_params[:screen_left]
+          @cell_editor.component.col = @col_offset +  @buffer_params[:screen_left]
+        end
+        #editing_canceled @current_index if @cell_editing_allowed and @cell_editor
+      end
+      #set_form_row
+      @repaint_required = true
+    end
+
 
     # ADD HERE
   end # class listb
