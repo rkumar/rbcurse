@@ -1302,3 +1302,36 @@ the `Textarea` is not resized. Only the object directly inside a splitpane
 is.
 
 * * * * * * * *
+
+Subject: More on splitpanes
+---------------------------
+Date: 2010-02-18 20:08
+
+Great news. I've got sample testsplit3_1.rb working which is an example
+with 2 splitpanes inside an outer splitpane.
+This exposed an issue, that since the second component's (right or
+bottom) coordinates are determined not when attached but only when the
+divider is set, therefore its too late for it to coomunicate that to
+some inner components.
+
+Basically, if your second component is something other than another
+Splitpane, its okay. However, in this example, the second is a SplitPane
+for the first time, and it seems to get its parameters a bit too late.
+
+
+So before it repaints the children i update the locations. This is
+required even for the first since the first could be the first of the
+second - lol. Otherwise, both components on the right were printing at
+0th column.
+
+So there could be some more such missing cases, when i put the outer
+splitpane as horizontal. But hopefully earlier programs will not break
+since i am not touching existing paths.
+
+I've still gotta fix TabbedPanes which are broken, I fixed Listboxes
+last night, but only lightly tested - surely there must be breaks
+somewhere. 
+Also, gotta fix Tables. Things looking upbeat with the new "simpler
+approach" (see branch RFED16 of rbcurse).
+
+* * * * * * * *
