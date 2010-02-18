@@ -816,7 +816,7 @@ module RubyCurses
        if @graphic.nil? # and should_create_buffer not set or false XXX
          @graphic = @target_window
        end
-       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} - THIS DOES NOT UPDATE PAD ... sr:#{params[:screen_row]} sc:#{params[:screen_col]} top:#{params[:top]} left:#{params[:left]} bot:#{params[:bottom]} rt:#{params[:right]} "
+       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} - THIS DOES NOT UPDATE PAD ... sr:#{params[:screen_top]} sc:#{params[:screen_left]} top:#{params[:top]} left:#{params[:left]} bot:#{params[:bottom]} rt:#{params[:right]} "
        # @top = params[:top]
        # @left = params[:left]
        # @bottom = params[:bottom]
@@ -859,7 +859,7 @@ module RubyCurses
               pminr = @graphic.pminrow
               pminc = @graphic.pmincol
               border_width = 0 # 2 #XXX  2010-02-15 23:40 2 to 0
-              $log.debug " ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} - #{border_width}, #{c} + #{maxc} - #{border_width} ,0)"
+              $log.debug " #{@name} ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} - #{border_width}, #{c} + #{maxc} - #{border_width} ,0)"
               # this print the view at 0,0, byt covers the scrllare, bars not shown.
               # this can crash if textview is smaller than container dimension
               # can crash/give -1 when panning, giong beyond pad size XXX
