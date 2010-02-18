@@ -181,14 +181,16 @@ module RubyCurses
 #XXX          $log.debug "SPLP exp_row #{@name} 2  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}  "
           comp.should_create_buffer @_child_buffering 
           ## jeez, we;ve postponed create of buffer XX
-          #@second_component.row(1)
-          #@second_component.col(1)
           ## trying out 2010-01-16 12:11 so component does not have to set size
           # The suggestd heights really depend on orientation.
           if @orientation == :HORIZONTAL_SPLIT
+            @second_component.row(@row+@divider_location)
+            @second_component.col(@col+@col_offset)
              @second_component.height ||= @second_component.preferred_height || @height/2 - 1 #1
              @second_component.width ||= @second_component.preferred_width || @width - 0 # 2
           else
+            @second_component.row(@row+@row_offset)
+            @second_component.col(@col+@divider_location)
              @second_component.height ||= @second_component.preferred_height || @height - 0 # 2
              @second_component.width ||= @second_component.preferred_width || @width/2 -4 # 1 to 4 2010-01-16 22:10  TRYING COULD BREAK STUFF testsplit3a;s right splitpane
     # added 2010-01-16 23:55 
@@ -311,7 +313,7 @@ module RubyCurses
       # If this returns :ERROR, caller may avoid repainting form needlessly.
       # We may give more meaningful error retval in future. TODO
       def set_divider_location rc
-        $log.debug " SPLP setting divider to #{rc} "
+        $log.debug " SPLP #{@name} setting divider to #{rc} "
         # add a check for out of bounds since no buffering
         if @orientation == :HORIZONTAL_SPLIT
           if rc < 2 || rc > @height-2
@@ -540,6 +542,27 @@ module RubyCurses
           end
           set_divider_location rc
       end
+      def update_first_component
+        $log.debug " #{@name} update+first dl: #{@divider_location} "
+        return if @divider_location == 0
+        @first_component.row(@row)
+        @first_component.col(@col)
+        $log.debug "UCF #{@name} #{@first_component.row} #{@first_component.col} "
+        @first_component.set_buffering(:screen_top => @first_component.row, :screen_left => @first_component.col)
+      end
+      def update_second_component
+        $log.debug " #{@name} update+secoond dl: #{@divider_location} "
+        return if @divider_location == 0
+          if @orientation == :HORIZONTAL_SPLIT
+            @second_component.row(@row+@divider_location)
+            @second_component.col(@col)
+          else
+            @second_component.row(@row)
+            @second_component.col(@col+@divider_location)
+          end
+          $log.debug "UCS #{@name} #{@second_component.row} #{@second_component.col} "
+          @second_component.set_buffering(:screen_top => @second_component.row, :screen_left => @second_component.col)
+      end
       def repaint # splitpane
         if @graphic.nil?
           @graphic = @target_window || @form.window
@@ -591,6 +614,7 @@ module RubyCurses
           $log.debug " SPLP #{@name}  repaint 1c ..."
           # this means that some components will create a buffer with default top and left of 0 the
           # first time. Is there no way we can tell FC what top and left to use.
+          update_first_component
           @first_component.repaint
           # earlier before repaint but bombs since some chaps create buffer in repaint
 #XXX          @first_component.get_buffer().set_screen_row_col(1, 1)  # check this out XXX
@@ -605,8 +629,10 @@ module RubyCurses
 #XXX          $log.debug " SPLP repaint  #{@name} fc ret = #{ret} "
         end
         if @second_component != nil
-          $log.debug " SPLP repaint #{@name}  2c ..."
-          @second_component.repaint
+          $log.debug " SPLP repaint #{@name}  2c ... dl: #{@divider_location} "
+          # this is required since c2 gets its row and col only after divider has been set
+          update_second_component
+          @second_component.repaint unless @divider_location == 0
 
           # we need to keep top and left of buffer synced with components row and col.
           # Since buffer has no link to comp therefore it can't check back.
@@ -719,6 +745,10 @@ module RubyCurses
             $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
             @current_component.set_form_col 
          end
+      end
+      def set_buffering params
+        super
+
       end
   end # class SplitPane
 end # module
