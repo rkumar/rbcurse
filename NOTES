@@ -1273,3 +1273,32 @@ and col to child, and updating exact top, left, bottom and right.
 I don't think children should be using ext_col_offset or ext_row_offset.
 
 * * * * * * * *
+
+Subject: splitpane = cascade changes is on (rfed16 branch)
+----------------------------------------------------------
+Date: 2010-02-18 09:43
+
+In RFED16, i've cut down on `Pad` usage, splitpanes and scrollpanes do not
+use pads themselves. Only the final object inserted in it such as a text
+are uses a Pad.
+
+Thus there can be cropping issues when a splitpane or scrollpane writes
+outside the box. Thus, i switched on `cascade_changes` (which i had
+switched off). That's why there's no printing out of the boundary. That means
+that any change in the splitpane dimensions or resizing the split,
+causes the internal object to resize. Earlier they would not reduce,
+since cropping was happening. 
+
+Since there is no pad now, it is necessary that splitpane and scrollpane
+are never bigger than the splitpane they are on. I had earlier noted
+that `cascade_changes` defeats the purpose of a splitpane, however do not
+that the internal object is Pad based and can still exceed the
+`Splitpane` boundary.
+
+Or rather. If you place a textarea in a splitpane, splitpane will resize
+the textarea (since `cascade_changes` in on). However, if you place a
+`Textarea` in a scrollpane, and the scrollpane inside a splitpane, then
+the `Textarea` is not resized. Only the object directly inside a splitpane
+is.
+
+* * * * * * * *
