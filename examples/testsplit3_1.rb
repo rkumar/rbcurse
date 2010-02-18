@@ -7,13 +7,13 @@
 #  test textview, split and textarea inside splitpane   #
 #                                                       #
 #
-#  /----+---------------\
-#  |    |               |
-#  | 1  |               |
-#  +----+       3       |
-#  | 2  |               |
-#  |    |               |
-#  \----+---------------/
+#  /---------|----------\
+#  |         |          |
+#  | 1       |  3       |
+#  +---------|----------|
+#  | 2       |  4       |
+#  |         |          |
+#  \---------|----------/
 #
 #
 #            Released under ruby license. See           #
@@ -35,7 +35,7 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("view.log")
+    $log = Logger.new("vv#{$0}.log")
     $log.level = Logger::DEBUG
     show_caret_flag = true
 
@@ -46,7 +46,7 @@ if $0 == __FILE__
       @form = Form.new @window
       @form.name = "Form::MAINFORM"
       r = 1; c = 3; ht = 18; w = 70
-      r = 0; c = 0; ht = 24; w = 100
+      r = 3; c = 7; ht = 24; w = 100
 
 
       @help = "F1 to quit. -/+/= to resize outer split, M-, M+, M= for inner split: #{$0}"
@@ -105,9 +105,8 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
-        ta1.show_caret=show_caret_flag
+        #ta1.show_caret=show_caret_flag
         ta2 = TextArea.new nil do
           name   "myTextArea2-right-bot" 
           #row 0
@@ -115,13 +114,12 @@ if $0 == __FILE__
           width w/2-2
           height (ht/2)-1
           #height ht
-          title "README.mrk"
+          title "Scratch Pad"
           title_attrib 'reverse'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
-        ta2.show_caret=show_caret_flag
+        #ta2.show_caret=show_caret_flag
 
         t1 = TextView.new nil do
           name   "myView-right-top" 
@@ -135,9 +133,8 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
-        t1.show_caret=show_caret_flag
+        #t1.show_caret=show_caret_flag
         content = File.open("../README.markdown","r").readlines
         t1.set_content content #, :WRAP_WORD
 
@@ -154,9 +151,8 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
-        t2.show_caret=show_caret_flag
+        #t2.show_caret=show_caret_flag
         content = File.open("../NOTES","r").readlines
         t2.set_content content #, :WRAP_WORD
 
@@ -208,7 +204,7 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
         str = keycode_tos ch
-        case ch
+        #case ch
         #when ?v.getbyte(0)
           #$log.debug " ORIENTATION VERTICAL"
           #outer.orientation(:VERTICAL_SPLIT)
@@ -217,16 +213,16 @@ if $0 == __FILE__
           #$log.debug " ORIENTATION HORIZ"
           #outer.orientation(:HORIZONTAL_SPLIT)
           #outer.reset_to_preferred_sizes
-        when ?-.getbyte(0)
-          $log.debug " KEY PRESS -"
-          outer.set_divider_location(outer.divider_location-1)
-        when ?+.getbyte(0)
-          $log.debug " KEY PRESS +"
-          outer.set_divider_location(outer.divider_location+1)
-        when ?=.getbyte(0)
-          $log.debug " KEY PRESS ="
-          outer.set_resize_weight(0.50)
-        end
+        #when ?-.getbyte(0)
+          #$log.debug " KEY PRESS -"
+          #outer.set_divider_location(outer.divider_location-1)
+        #when ?+.getbyte(0)
+          #$log.debug " KEY PRESS +"
+          #outer.set_divider_location(outer.divider_location+1)
+        #when ?=.getbyte(0)
+          #$log.debug " KEY PRESS ="
+          #outer.set_resize_weight(0.50)
+        #end
         #outer.get_buffer().wclear
         #outer << "#{ch} got (#{str})"
 #        outer.repaint

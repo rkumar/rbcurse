@@ -29,7 +29,7 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("view.log")
+    $log = Logger.new("v#{$0}.log")
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window
@@ -45,7 +45,7 @@ if $0 == __FILE__
 #      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
-      @help = "F1 to quit. M- M+ M= v h   C-n   C-p   M-w (alt-w)  : #{$0}      . Check view.log too"
+      @help = "F1 to quit. M- M+ M= v h   C-n   C-p   M-w (alt-w)  : #{$0}      . Check #{$0}.log too"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
 
       splitp = SplitPane.new @form do
