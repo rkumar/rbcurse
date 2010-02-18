@@ -43,7 +43,7 @@ if $0 == __FILE__
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
     $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
-    show_caret_flag = true
+    show_caret_flag = false #true
 
     @window = VER::Window.root_window
 
@@ -173,6 +173,7 @@ if $0 == __FILE__
         scroll1.child(t1)
         splitleft.second_component(scroll2)
         scroll2.child(listb)
+        #scroll2.cascade_changes = true
         #t1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
         #t1.preferred_height (ht/2)-1 ## this messes things up when we change orientation
         #t1.set_resize_weight 0.50
