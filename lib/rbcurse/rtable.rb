@@ -56,7 +56,6 @@ module RubyCurses
     include RubyCurses::ListSelectable
     include RubyCurses::ListKeys
 
-    #dsl_accessor :height # removed 2010-01-18 19:56 since it would override widget
     dsl_accessor :title
     dsl_accessor :title_attrib
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
@@ -78,7 +77,6 @@ module RubyCurses
       install_list_keys
       install_keys_bindings
       ## create_buffer needs to move to repaint. widget needs values to use when i creates buffer in repaint.
-      safe_create_buffer # 2010-01-18 19:52 BUFFERED
     end
 
     def init_vars
@@ -791,19 +789,23 @@ module RubyCurses
     end
     def set_form_row
       r,c = rowcol
-      win_row=@form.window.top # 2010-01-18 20:28 added
+      @rows_panned ||= 0 # RFED16 2010-02-19 10:00 
+      win_row = 0
+      #win_row=@form.window.top # 2010-01-18 20:28 added
       # +1 is due to header
       #@form.row = r + (@current_index-@toprow) + 1
-      frow = r + (@current_index-@toprow) + 1 + win_row + @form.rows_panned
+      frow = r + (@current_index-@toprow) + 1 + win_row + @rows_panned
       setrowcol(frow, nil) # 2010-01-18 20:04 
     end
     # set cursor on correct column, widget
     def set_form_col col=@curpos
       @curpos = col
+      @cols_panned ||= 0 # RFED16 2010-02-19 10:00 
       @current_column_offset = get_column_offset 
       #@form.col = @col + @col_offset + @curpos + @current_column_offset
-      win_col=@form.window.left
-      fcol = @col + @col_offset + @curpos + @current_column_offset + @form.cols_panned + win_col
+      #win_col=@form.window.left
+      win_col = 0 # RFED16 2010-02-19 10:00 
+      fcol = @col + @col_offset + @curpos + @current_column_offset + @cols_panned + win_col
       setrowcol(nil, fcol) # 2010-01-18 20:04 
     end
     # protected
@@ -814,8 +816,16 @@ module RubyCurses
 
 
     def repaint
-      #safe_create_buffer # 2010-01-18 19:52 BUFFERED should be here, not above
+      safe_create_buffer # moved here 2010-02-19 09:53 RFED16
       return unless @repaint_required
+      my_win = @form ? @form.window : @target_window
+      @graphic = my_win unless @graphic
+      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
+      raise " #{@name} neither form, nor target window given TV paint " unless my_win
+      raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
+      @win_left = my_win.left # unused remove TODO
+      @win_top = my_win.top
+
       print_border @graphic if @to_print_borders == 1 # do this once only, unless everything changes
       return if @table_model.nil? # added 2009-02-17 12:45 
       @_first_column_print ||= 0
@@ -913,6 +923,7 @@ module RubyCurses
       @table_changed = false
       @repaint_required = false
       @buffer_modified = true
+      buffer_to_window # RFED16 2010-02-19 09:55 
     end
     # NEW to correct overflow
     #  2009-10-05 21:34 
