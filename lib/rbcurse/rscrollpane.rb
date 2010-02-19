@@ -104,6 +104,14 @@ module RubyCurses
 
         $log.debug " #{@child.ext_row_offset} +=  #{@ext_row_offset} + #{@row} -#{@screen_top}  "
         @child.ext_row_offset +=  @ext_row_offset  + @row   + @row_offset - @screen_top 
+        # adding this since child's ht should not be less. or we have a
+        # copywin failure
+        if @child.height < @height
+          @child.height = @height
+        end
+        if @child.width < @width
+          @child.width = @width
+        end
 
     end
     def init_vars
