@@ -616,10 +616,11 @@ module RubyCurses
     # @return 0 - copy success, -1 copy failure, 1 - did nothing, usually since buffer_modified false
 
    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
+      raise "deprecated b2s "
       return 1 unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
       $log.debug " screen inside buffer_to_screen b2s :#{screen} "
-      $log.warn "ERROR !I have moved away fomr this method. Your program is broken and will not be working"
+      $log.error "ERROR !I have moved away fomr this method. Your program is broken and will not be working"
       ## 2010-01-03 19:38 i think its wrong to put the pad onto the screen
       ##+ since wrefreshing the window will cause this to be overwriting
       ##+ so i put current window here.
