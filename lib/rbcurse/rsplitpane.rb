@@ -647,7 +647,7 @@ module RubyCurses
 #XXX          $log.debug " SPLP repaint #{@name}  2c ret = #{ret} "
         end
 #XXX        @buffer_modified = true
-        @graphic.wrefresh # 2010-02-14 20:18 SUBWIN ONLY
+        @graphic.wrefresh # 2010-02-14 20:18 SUBWIN ONLY ??? what is this doing here ? XXX
         paint 
         # TODO
       end
