@@ -38,7 +38,8 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("v#{$0}.log")
+#    file = File.open("v#{$0}.log", File::WRONLY | File::APPEND | File::CREAT)
+    $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window
@@ -46,7 +47,7 @@ if $0 == __FILE__
     catch(:close) do
       colors = Ncurses.COLORS
       @form = Form.new @window
-      r = 1; c = 5; w = 80
+      r = 3; c = 7; w = 80
       ht = 20
 
         scroll = ScrollPane.new @form do
@@ -82,7 +83,7 @@ if $0 == __FILE__
       colnames = %w[ Song Cat Artist Ratio Flag Status]
       statuses = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
 
-        atable = Table.new @form do
+        atable = Table.new nil do
           name   "mytext" 
           row  0 
           col  0
@@ -93,7 +94,6 @@ if $0 == __FILE__
           cell_editing_allowed true
           editing_policy :EDITING_AUTO
           set_data data, colnames
-          should_create_buffer true
         end
         sel_col = Variable.new 0
         sel_col.value = 0
