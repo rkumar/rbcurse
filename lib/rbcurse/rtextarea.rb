@@ -751,7 +751,7 @@ module RubyCurses
       # not sure where to put this, once for all or repeat 2010-02-12 RFED16
       my_win = @form? @form.window : @target_window
       $log.warn "neither form not target window given!!! TA paint 751" unless my_win
-      @win_left = my_win.left
+      @win_left = my_win.left # unused remove TODO
       @win_top = my_win.top
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
