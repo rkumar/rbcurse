@@ -70,7 +70,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
 
         t2 = TextArea.new nil do
@@ -84,7 +83,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
 
         splitp.first_component(t1)
