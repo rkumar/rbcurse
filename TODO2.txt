@@ -57,5 +57,6 @@
  43	[x] we need to pass actual highest form down as well as each components absolute coords so cursor display can happen quickly and accurately.  * RFED16 branch has absolute positioning (2010-01-23) (x2010-02-18)
  44	[ ] TextView: add more vi keys (2010-02-07)
  45	[ ] RFED19 branch: clear out all commented code reg buffers (2010-02-18)
- 46	[ ] RFED16 branch: Redo table as per new simple approach (2010-02-18)
+ 46	[x] RFED16 branch: Redo table as per new simple approach (2010-02-18) (x2010-02-19)
  47	[ ] RFED16 branch: Redo tabbedpane as per new simple approach (2010-02-18)
+ 48	[ ] are we destroying these pads ?? I don;t think so. (2010-02-19)
