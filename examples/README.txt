@@ -12,6 +12,9 @@ midway. Will get back to it asap, now that i've woken up to the fact.
 
 * * * * *
 
+Please check the examples  with  test*.rb - since they are updated. I have not
+checked the rfe, sqlc and others lately after major changes. 2010-02-19 12:50.
+
 ## vim:tw=72:ai:formatoptions=tcqln:nocindent:
 
 
