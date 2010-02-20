@@ -66,7 +66,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
         content = File.open("../README.markdown","r").readlines
         t1.set_content content #, :WRAP_WORD
@@ -84,7 +83,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
         content = File.open("../NOTES","r").readlines
         t2.set_content content #, :WRAP_WORD
