@@ -7,7 +7,7 @@
     Also contains viewport for row and columns.
   * Author: rkumar 
 TODO section:
-  - add events, property changed etc
+  - add events, property changed etc at least for scrolling
   - scrollbars to be classes
   - if scrollpane reduced it should also resize, as example inside splitpane.
   * file created 2009-10-27 19:20 
