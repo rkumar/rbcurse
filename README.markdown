@@ -4,7 +4,9 @@
 
 This branch - RFED19 - contains major rework on the buffering approach. It only affect
 programs that have used buffers such as splitpanes, scrollpanes and tabbedpanes.
-As of this moment, tabbedpanes are broken. So are tables. Tables should be fixed tomorrow, and tabbedpanes after that in a day or so.
+As of this moment, tabbedpanes are broken. Tables have been fixed. Now starting on tabbedpanes.
+
+Check downloads at <http://github.com/rkumar/rbcurse/downloads>
 
 Some of the samples mentioned below may **not** work. test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.
 
