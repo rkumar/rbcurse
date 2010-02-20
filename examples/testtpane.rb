@@ -29,9 +29,11 @@ class TestTabbedPane
     $config_hash ||= Variable.new Hash.new
     @window = VER::Window.root_window
     @form = Form.new @window
-    r = 1; c = 1;
+    @form.name = "MainForm"
+    r = 4; c = 7;
     h = 20; w = 70
       @tp = RubyCurses::TabbedPane.new @form  do
+        name "MainPane"
         height h
         width  w
         row 2
@@ -44,14 +46,13 @@ class TestTabbedPane
         textview = TextView.new f1 do
           name   "myView" 
           row 4
-          col 2 
-          width w-5
-          height h-5
+          col 0 
+          width w-0
+          height h-4
           title "README.mrku"
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          #should_create_buffer true
         end
         content = File.open("../README.markdown","r").readlines
         textview.set_content content #, :WRAP_WORD
@@ -72,7 +73,6 @@ class TestTabbedPane
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          #should_create_buffer true
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
