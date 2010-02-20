@@ -67,7 +67,6 @@ class TestTabbedPane
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
         content = File.open("../README.markdown","r").readlines
         textview.set_content content #, :WRAP_WORD
@@ -90,7 +89,6 @@ class TestTabbedPane
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          #should_create_buffer true
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
