@@ -260,7 +260,7 @@ module RubyCurses
       form.add_cols=@col-mleft # added 2010-01-26 20:25 since needs accounting by cursor
       # reducing mtop causes a problem in cursor placement if scrollpane placed inside.
       # in testtpane2.rb i've had to add it back, temporarily.
-      form.add_rows=@row -mtop # added 2010-01-26 20:25 since needs accounting by cursor
+      form.add_rows=@row #-mtop # added 2010-01-26 20:25 since needs accounting by cursor
       return form
     end
     ##
