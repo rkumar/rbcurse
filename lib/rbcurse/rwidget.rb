@@ -616,7 +616,7 @@ module RubyCurses
     # @return 0 - copy success, -1 copy failure, 1 - did nothing, usually since buffer_modified false
 
    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
-      raise "deprecated b2s "
+      #raise "deprecated b2s "
       return 1 unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
       $log.debug " screen inside buffer_to_screen b2s :#{screen} "
@@ -999,6 +999,8 @@ module RubyCurses
         $log.debug " #{self} form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
         pb = @parent_buffer #|| @window
         # is next line used 2010-02-05 00:04 its wiping off top in scrollpane in tabbedpane
+        # RFED16 - the next line should never execute now, since no outer object is buffered
+        #+ only those within containers are.
         f.buffer_to_screen(pb) if f.is_double_buffered? 
       end
       @window.clear_error
@@ -1024,9 +1026,12 @@ module RubyCurses
        else
          # UGLY HACK TO MAKE TABBEDPANES WORK !!
          if @parent_buffer!=nil
-           $log.debug " formrep coming to set backing window part #{@window} , #{@parent_buffer}  "
+           $log.debug " formrep coming to set backing window part #{@window} , type:#{@window.window_type}, #{@parent_buffer}  "
+           # XXX RFED19 do we need at all 2010-02-19 15:26 
+           # this is required so that each key stroke registers on tabbedpane
            @window.set_backing_window(@parent_buffer)
            @window.copy_pad_to_win
+           $log.debug " DO I NEED TO DO SOMETHING HERE FOR TABBEDPANES now ? WARN ??"
          end
        end
     end
@@ -1354,7 +1359,7 @@ module RubyCurses
             end
           end
         end
-       $log.debug " form before repaint #{self} , ret #{ret}"
+       $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
   end
   ##
