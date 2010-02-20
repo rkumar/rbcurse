@@ -1335,3 +1335,16 @@ Also, gotta fix Tables. Things looking upbeat with the new "simpler
 approach" (see branch RFED16 of rbcurse).
 
 * * * * * * * *
+
+Subject: Fixed breakage in Table. Check testscrolltable.rb
+----------------------------------------------------------
+Date: 2010-02-19 12:32
+
+Done the tiny changes to `Table`. Working now.
+Also, `Scrollpane` increases size of child if child is smaller.
+
+Now to fix `TabbedPanes`, more work involved here since each situation has
+to be taken care of in terms of sizing of child. However, hopefully will
+be simpler than `Splitpane`.
+
+* * * * * * * *
