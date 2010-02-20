@@ -88,7 +88,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
         ta1.show_caret = show_caret_flag
 
@@ -104,7 +103,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
         t1.show_caret = show_caret_flag
         content = File.open("../README.markdown","r").readlines
@@ -127,7 +125,6 @@ if $0 == __FILE__
           title "A long list"
           title_attrib 'reverse'
           cell_editing_allowed true
-          should_create_buffer true
         end
         ## The next 2 are not advised since they don't trigger events
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
@@ -146,7 +143,6 @@ if $0 == __FILE__
           #title_attrib 'bold'
           #print_footer true
           #footer_attrib 'bold'
-          #should_create_buffer true
         #end
         #content = File.open("../NOTES","r").readlines
         #t2.set_content content #, :WRAP_WORD
