@@ -56,7 +56,7 @@ class TestTabbedPane
         end
         content = File.open("../README.markdown","r").readlines
         textview.set_content content #, :WRAP_WORD
-        textview.show_caret = true
+        #textview.show_caret = true
 
 
 
