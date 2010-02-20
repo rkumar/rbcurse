@@ -5,7 +5,7 @@
   * Author: rkumar (arunachalesha)
   * file created 2009-10-27 19:20 
 TODO 
-  * Need to add events and property changed
+  * Need to add events and property changed - at least for resizing partitions
   * major change: Feb 2010, removed buffers, so some coords need to be absolute.
   *  those methods that are overriden in Pad were okay, others like line drawing were relative
   *  and need to be abs by adding row and col.
