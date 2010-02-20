@@ -80,7 +80,6 @@ class TestTabbedPane
           cell_editing_allowed true
           editing_policy :EDITING_AUTO
           set_data data, colnames
-          #should_create_buffer true
         end
         sel_col = Variable.new 0
         sel_col.value = 0
@@ -149,7 +148,6 @@ class TestTabbedPane
           cell_editing_allowed true
           editing_policy :EDITING_AUTO
           set_data data, colnames
-          should_create_buffer true
         end
         sel_col = Variable.new 0
         sel_col.value = 0
