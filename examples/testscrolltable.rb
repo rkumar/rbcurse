@@ -39,7 +39,7 @@ if $0 == __FILE__
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
 #    file = File.open("v#{$0}.log", File::WRONLY | File::APPEND | File::CREAT)
-    $log = Logger.new("view.log")
+    $log = Logger.new("v#{$0}.log")
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window
