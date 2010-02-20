@@ -115,6 +115,8 @@ module ListScrollable
 
   # paint the cursor ourselves on the widget, rather than rely on getting to the top window with
   # the correct coordinates. I do need to erase cursor too. Can be dicey, but is worth the attempt.
+  # This works perfectly, except for when placed in a Tabbedpane since that prints the form with a row offset 
+  #+ of 2 and the widget does not know of the offset. cursor gets it correct since the form has an add_row.
   def show_caret_func
       return unless @show_caret
       # trying highlighting cursor 2010-01-23 19:07 TABBEDPANE TRYING
