@@ -86,9 +86,8 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
-          taoutrt.show_caret=true
+        #  taoutrt.show_caret=true
 
         tvleft1 = TextView.new nil do
           name   "myviewleft1" 
@@ -102,7 +101,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
           tvleft1.show_caret=true
         content = File.open("../README.markdown","r").readlines
@@ -121,7 +119,6 @@ if $0 == __FILE__
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
-          should_create_buffer true
         end
           tvleft2.show_caret=true
         content = File.open("../NOTES","r").readlines
