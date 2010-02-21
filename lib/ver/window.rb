@@ -426,6 +426,18 @@ module VER
     end
     def get_window; @window; end
     def to_s; @name || self; end
+    # use in place of mvwhline if your widget could be using a pad or window
+    def rb_mvwhline row, col, char, width
+      mvwhline row, col, char, width
+    end
+    # use in place of mvwvline if your widget could be using a pad or window
+    def rb_mvwvline row, col, char, width
+      mvwvline row, col, char, width
+    end
+    # use in place of mvaddch if your widget could be using a pad or window
+    def rb_mvaddch row, col, char
+      mvaddch row, col, char
+    end
   end
   ##
   # added RK 2009-10-08 23:57 for tabbedpanes
@@ -759,6 +771,18 @@ module VER
       $log.debug " pad printborder_only #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
       raise "print_border row < top, pls correct code #{row} #{@top},  #{col} #{@left} " if row < @top or col < @left
       super(row - @top, col - @left, height, width,  color, att)
+    end
+    # use in place of mvwhline if your widget could be using a pad or window
+    def rb_mvwhline row, col, char, width
+      super(row-@top, col-@left, char, width)
+    end
+    # use in place of mvwvline if your widget could be using a pad or window
+    def rb_mvwvline row, col, char, width
+      super(row-@top, col-@left, char, width)
+    end
+    # use in place of mvaddch if your widget could be using a pad or window
+    def rb_mvaddch row, col, char
+      super(row-@top, col-@left, char)
     end
   end # class Pad
 end
