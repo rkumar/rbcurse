@@ -25,6 +25,7 @@ module RubyCurses
 
   # TODO :  insert_tab, remove_tab, disable/hide tab
   # Hotkeys should be defined with ampersand, too.
+  # 2010-02-21 13:44 When switching tabs, cursor needs to be re-established
   # NOTE:I don't think this uses set_form_row or bothers with the cursor
   #+ since it manages highlighting etc on its own. 2009-12-29 13:30 
 
@@ -112,8 +113,7 @@ module RubyCurses
       #@config.each_pair { |k,v| variable_set(k,v) }
       #instance_eval &block if block_given?
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
-      should_create_buffer true # added 2010-01-10 22:54 
-      @manages_cursor = true
+      @manages_cursor = true # redundant, remove
     end
     ##
     # This is a public, user called method for creating a new tab
@@ -149,7 +149,7 @@ module RubyCurses
       @window || create_window
       $log.debug " tabbedpane repaint #{@window.name} "
       @window.show
-      set_buffer_modified()
+      #x set_buffer_modified()
     end
     def show
       repaint
@@ -162,22 +162,21 @@ module RubyCurses
       r = @row
       c = @col
       @layout = { :height => @height, :width => @width, :top => r, :left => c } 
-      @window = safe_create_buffer # trying this out.
+      ## We will use the parent window, and not a pad. We will write absolute coordinates.
+      @window = @parentwin
       ## seems this form is for the tabbed buttons on top XXX
-      ## more likely this is what the tabs write onto then this is wrefreshed onto its window
       @form = RubyCurses::Form.new @window
-      @window.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
+      #@window.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
       @current_form = @form
-      @window.bkgd(Ncurses.COLOR_PAIR($datacolor));
-      @window.box( 0, 0);
+      color = $datacolor
+      @window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       
-      ##### XXX @window.wrefresh
       Ncurses::Panel.update_panels
-      col = 1
+      col = @col + 1
       @buttons = []
       ## create a button for each tab
       $tabradio = Variable.new
@@ -188,24 +187,14 @@ module RubyCurses
           text text
           name text
           value text
-          row 1
+          row r + 1
           col col
         end
         col += text.length+4
-#       @forms << create_tab_form(tab)
-#       form = @forms.last
         form = tab.form
         form.set_parent_buffer(@window)
-#        form.window = @window if form.window.nil? ## XXX
-#        panel = form.window.panel rescue Ncurses::Panel.new_panel(form.window)
 
         @buttons.last.command { 
-=begin
-          Ncurses::Panel.top_panel(panel) 
-          Ncurses::Panel.update_panels();
-          Ncurses.doupdate();
-          form.repaint
-=end
           $log.debug " calling display form from button press"
           display_form(form)
           @current_form = form
@@ -219,31 +208,37 @@ module RubyCurses
     end
     ##
     # On a tabbed button press, this will display the relevant form
-    def display_form form
+    # On why I am directyl calling copywin and not using copy_pad_to_win etc
+    #+ those require setting top and left. However, while printing a pad, top and left are reduced and so 
+    #+ must be absolute r and c. But inside TP, objects have a relative coord. So the print functions
+    #+ were failing silently, and i was wondering why nothing was printing.
+    def display_form form, flag = true
       pad = form.window
+      form.repaint if flag #   added 2009-11-03 23:27  paint widgets in inside form
       $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{@graphic.name}  "
-      #ret = pad.wrefresh # overridden to prefresh.
-      pad.set_backing_window(@graphic)
-      ret = pad.copy_pad_to_win
+      ret = -1
+      pminr = pminc = 0
+      r = @row + 2
+      c = @col + 0
+      border_width = 0
+      maxr = @height -3
+      maxc = @width -1
+      $log.debug " ret = pad.copywin(@window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, r+ #{maxr} - border_width, c+ #{maxc} -border_width,0). W:#{@window}, #{@window.get_window} "
+      ret = pad.copywin(@window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
       $log.debug " display form after pad copy #{ret}. #{form.name} "
-      form.repaint #   added 2009-11-03 23:27  paint widgets in inside form
-      @window.wrefresh
     end
     def create_tab_form tab
         mtop = 2
         mleft = 0
         bottom_offset = 0 # 0 will overwrite bottom line, 1 will make another line for inner form
       layout = { :height => @height-(mtop+bottom_offset), :width => @width, :top => mtop, :left => mleft } 
-      #layout = { :height => @height-2, :width => @width, :top => @row+0, :left => @col+0 } 
-      #window = VER::Window.new(layout)
-      #window = @parentwin.derwin(@height-2, @width, @row+2, @col)
-      #window = @parentwin.derwin(layout)
-      # create a pad but it must behave like a window at all times 2009-10-25 12:25  XXX
+      # create a pad but it must behave like a window at all times 2009-10-25 12:25 
       window = VER::Pad.create_with_layout(layout)
-      #window = safe_create_buffer() # DARN, this overwrites higher one, if at all created.
+
       # needed to be at tab level, but that's not a widget
       form = RubyCurses::Form.new window # we now pass a pad and hope for best
       $log.debug " pad created in TP create_tab_form: #{window.name} , form #{form.name}  "
+      $log.debug " hwtl: #{layout[:height]} #{layout[:width]} #{layout[:top]} #{layout[:left]} "
       ## added 2010-01-21 15:46 to pass cursor up
       form.parent_form = @parent  ## TRYING OUT BUFFERED CURSOR PLACEMENT
       form.navigation_policy = :NON_CYCLICAL
@@ -255,9 +250,8 @@ module RubyCurses
       ## this prints the tab name on top left
       window.mvprintw(1,1, tab.text.tr('&', ''))
       window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
-      ##window.wrefresh
-      ##Ncurses::Panel.update_panels
-      form.add_cols=@col-mleft # added 2010-01-26 20:25 since needs accounting by cursor
+      form.name = "Form::TAB-#{tab.text}" # 2010-02-02 19:59 
+      form.add_cols=@col #-mleft # added 2010-01-26 20:25 since needs accounting by cursor
       # reducing mtop causes a problem in cursor placement if scrollpane placed inside.
       # in testtpane2.rb i've had to add it back, temporarily.
       form.add_rows=@row #-mtop # added 2010-01-26 20:25 since needs accounting by cursor
@@ -270,6 +264,8 @@ module RubyCurses
           $log.debug " handle_key in tabbed pane got : #{ch}"
         ret = @current_form.handle_key(ch)
           $log.debug " -- form.handle_key in tabbed pane got ret : #{ret}"
+          display_form @current_form, false
+          $log.debug " ++ form.handle_key in tabbed pane got ret : #{ret}"
         case ret
         when :NO_NEXT_FIELD
           if @current_form != @form
@@ -283,8 +279,7 @@ module RubyCurses
             $log.debug " calling display form from handle_key NO_NEXT_FIELD"
             display_form @current_form
             @current_form.req_first_field
-            #@current_form.select_field -1
-            #ret = @current_form.handle_key(ch)
+     
             end
           end
         when :NO_PREV_FIELD
@@ -441,7 +436,7 @@ module RubyCurses
         var = "@#{var}"
         instance_variable_set(var, val) 
       end
-      def repaint
+      def OLDrepaint
         
 
       end
