@@ -75,6 +75,7 @@ module RubyCurses
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
         @child.should_create_buffer true 
+        @form.add_rows += 2 # related to scr_top  XXX What if form not set. i cannot keep accumulating
         update_child
         # -3 since we start row +1 to get indented by 1, also we use
         # height -1 in scrollpane, so we need -2 to indent, and one more
@@ -88,8 +89,20 @@ module RubyCurses
     # FIXME - this is become 2 calls, make it one - becoming expensive
     # if called often
     def update_child
+      scr_top = 3 # for Pad, if Pad passed as in SplitPane
+      scr_left = 1 # for Pad, if Pad passed as in SplitPane
+      if @form.window.window_type == :WINDOW
+        scr_top = @row + 1
+        scr_left = @col + 1
+        @child.row(@row+@row_offset)
+        @child.col(@col+@col_offset)
+      else
+        # PAD case
+        @child.row(scr_top)
+        @child.col(scr_left)
+      end
         @child.set_buffering(:target_window => @target_window || @form.window, :form => @form, :bottom => @height-3, :right => @width-3 )
-        @child.set_buffering(:screen_top => @row+1, :screen_left => @col+1)
+        @child.set_buffering(:screen_top => scr_top, :screen_left => scr_left)
         # lets set the childs ext offsets
         $log.debug "SCRP #{name} adding (to #{@child.name}) ext_row_off: #{@child.ext_row_offset} +=  #{@ext_row_offset} +#{@row_offset}  "
         $log.debug "SCRP adding ext_col_off: #{@child.ext_col_offset} +=  #{@ext_col_offset} +#{@col_offset}  "
@@ -99,13 +112,13 @@ module RubyCurses
         # added row and col setting to child RFED16 2010-02-17 00:22 as
         # in splitpane. seems we are not using ext_offsets now ? texta
         # and TV are not. and i've commented off from widget
-        @child.row(@row+@row_offset)
-        @child.col(@col+@col_offset)
 
         $log.debug " #{@child.ext_row_offset} +=  #{@ext_row_offset} + #{@row} -#{@screen_top}  "
         @child.ext_row_offset +=  @ext_row_offset  + @row   + @row_offset - @screen_top 
         # adding this since child's ht should not be less. or we have a
         # copywin failure
+        @child.height ||= @height
+        @child.width ||= @width
         if @child.height < @height
           @child.height = @height
         end
@@ -407,15 +420,16 @@ module RubyCurses
       start = 1
       start = ((@viewport.col*1.00+@viewport.width)/@viewport.child().width)*@viewport.width
       start -= sz
-      #$log.debug " h_scroll_bar start #{start}, #{@viewport.col} #{@viewport.width}" 
       start = start.ceil
       # # the problem with next 2 lines is that attributes of border could be overwritten
       # draw horiz line
       r = @row #+ @ext_row_offset # 2010-02-11 11:57 RFED16
       c = @col #+ @ext_col_offset # 2010-02-11 11:57 RFED16
-      @graphic.mvwhline(r+@height-1, c+1, ACS_HLINE, @width-2)
+      $log.debug " h_scroll_bar start #{start}, r #{r} c #{c} h:#{@height} "
+      @graphic.rb_mvwhline(r+@height-1, c+1, ACS_HLINE, @width-2)
       # draw scroll bar
-      sz.times{ |i| @graphic.mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
+      #sz.times{ |i| @graphic.mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
+      sz.times{ |i| @graphic.rb_mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
     end
     def v_scroll_bar
         return if @viewport.nil?
@@ -431,11 +445,13 @@ module RubyCurses
       $log.debug " v_scroll_bar start #{start}, col:#{@col} w:#{@width}, r #{r}+1 c #{c}+w-1 " 
       start = start.ceil
       # # the problem with next 2 lines is that attributes of border could be overwritten
-      # draw horiz line
+      # draw verti line
       # this is needed to erase previous bar when shrinking
-      @graphic.mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
+      #@graphic.mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
+      @graphic.rb_mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
       # draw scroll bar
-      sz.times{ |i| @graphic.mvaddch(r+start+1+i, c+@width-1, ACS_CKBOARD) }
+      #sz.times{ |i| @graphic.mvaddch(r+start+1+i, c+@width-1, ACS_CKBOARD) }
+      sz.times{ |i| @graphic.rb_mvaddch(r+start+1+i, c+@width-1, ACS_CKBOARD) }
     end
     # set height
     # a container must pass down changes in size to it's children
