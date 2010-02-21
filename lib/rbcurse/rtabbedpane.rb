@@ -96,6 +96,7 @@ module RubyCurses
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
     attr_reader :selected_index
+    attr_reader :current_tab
     def initialize form, aconfig={}, &block
       super
       @parent = form
@@ -128,6 +129,11 @@ module RubyCurses
       tab.form = @forms.last
       return tab
     end
+
+    def selected_tab_index
+      @tabs.index(@current_tab)
+    end
+
     # private
     def variable_set var, val
         var = "@#{var}"
@@ -198,7 +204,7 @@ module RubyCurses
           $log.debug " calling display form from button press"
           display_form(form)
           @current_form = form
-          @current_tab = form
+          @current_tab = tab
         }
  
       end
