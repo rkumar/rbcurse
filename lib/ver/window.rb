@@ -617,6 +617,8 @@ module VER
     end
     ##
     # specify the window or subwin that the pad is writing to
+    # 2010-02-20 22:45 - actually since there are pad methods smaxrow used on otherwin
+    # therefor it can only be a Pad !! NOTE
     def set_backing_window win
       @otherwin = win
       # XX should we  extract the coordinates and use for printing ??
@@ -641,10 +643,13 @@ module VER
     def copy_pad_to_win
       # check that we don't exceed other windows height/maxrow
       smr = smaxrow()
-      osmr = @otherwin.smaxrow()
-      osmc = @otherwin.smaxcol()
+      # SHIT, this means the otherwin has to be a Pad, cannot be a window
       osw = @otherwin.width
       osh = @otherwin.height
+      osh = @height if osh == 0 # root window has 0
+      osw = @width if osw == 0 # root window has 0
+      osmr = @otherwin.smaxrow() rescue osh # TRYING for windows
+      osmc = @otherwin.smaxcol() rescue osw
       if smr >= osmr
          $log.debug " adjusted smr from #{smr} to #{osmr} -1 causing issues in viewfooter"
         smr = osmr-1 # XXX causing issues in viewport, wont print footer with this
@@ -675,23 +680,23 @@ module VER
       $log.debug " COPYING #{self.name} to #{@otherwin.name} "
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} self #{self.name} "
       $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} WIN:#{@window} "
-      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
+#      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
       ret="-"
       #if ret == -1
-        $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
-        $log.debug "  #{ret} otherwin copy pad H: #{@otherwin.height} W: #{@otherwin.width}"
-        if @top >= @otherwin.height
-          $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{@otherwin.height} "
+#x XXX        $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
+        $log.debug "  #{ret} otherwin copy pad H: #{osh} W: #{osw}"
+        if @top >= osh
+          $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{osh} "
         end
-        if @left >= @otherwin.width
-          $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{@otherwin.width} "
+        if @left >= osw
+          $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{osw} "
         end
-        if smr >= @otherwin.height
-          $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{@otherwin.height} "
-          smr = @otherwin.height() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
+        if smr >= osh
+          $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{osh} "
+          smr = osh() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
         end
-        if smc >= @otherwin.width
-          $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{@otherwin.width} "
+        if smc >= osw
+          $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{osw} "
         end
         if smc - @left > @padwidth
           $log.debug "  #{ret} ERROR smcol - left  exceeds padwidth   #{smc}- #{@left}   PW: #{@padwidth} "
@@ -738,7 +743,7 @@ module VER
     # which clears one row above
     def printstring(row,col,value,color,attrib=Ncurses::A_NORMAL)
       #$log.debug " pad printstring #{row} - #{@top} , #{col} - #{@left} "
-      raise "printstring row < top, pls correct code #{row} #{@top} " if row < @top
+      raise "printstring row < top, pls correct code #{row} #{@top}, #{col} #{@left} " if row < @top or col < @left
       #$log.warn "printstring row < top, pls correct code #{row} #{@top} " if row < @top
       super(row - @top, col - @left, value, color, attrib)
     end # printstring
@@ -746,13 +751,13 @@ module VER
     #  Please note that this requires that buffer have latest top and left.
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       $log.debug " pad printborder #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
-      raise "print_border: row < top, pls correct code #{row} #{@top} " if row < @top
+      raise "print_border: row < top, pls correct code #{row} #{@top},  #{col} #{@left} " if row < @top or col < @left
       #$log.warn   "print_border: row < top, pls correct code #{row} #{@top} " if row < @top
       super(row - @top, col - @left, height, width,  color, att)
     end
     def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       $log.debug " pad printborder_only #{row} - #{@top} , #{col} - #{@left}, #{height} , #{width}  "
-      raise "print_border row < top, pls correct code #{row} #{@top} " if row < @top
+      raise "print_border row < top, pls correct code #{row} #{@top},  #{col} #{@left} " if row < @top or col < @left
       super(row - @top, col - @left, height, width,  color, att)
     end
   end # class Pad
