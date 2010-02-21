@@ -33,13 +33,13 @@ class TestTabbedPane
     @form = Form.new @window
     @form.name = "MAINFORM"
     $log.debug " MAIN FORM #{@form}  , #{@window} "
-    r = 1; c = 1;
+    r = 3; c = 5;
     h = 20; w = 70
       @tp = RubyCurses::TabbedPane.new @form  do
         height h
         width  w
-        row 1 #5
-        col 1 #8
+        row r #5
+        col c #8
         #button_type :ok
       end
       $log.debug "  before adding tab to TP "
@@ -49,12 +49,11 @@ class TestTabbedPane
 
       sr = 4 
       sc = 2
-      f1.add_rows+=2
         @scroll = ScrollPane.new f1 do
           name   "myScroller" 
-          row sr #+ht+1
-          col  sc 
-          width w-2
+          row 4 #+ht+1
+          col 0
+          width w-1
           height h-4
         end
         textview = TextView.new nil do
@@ -62,7 +61,7 @@ class TestTabbedPane
           row 0 #sr+1 # 4
           col 0 #sc+1 # 2 
           width w-0
-          height h
+          height h+10
           title "README.mrku"
           title_attrib 'bold'
           print_footer true
