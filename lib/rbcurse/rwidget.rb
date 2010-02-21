@@ -990,13 +990,13 @@ module RubyCurses
    # form repaint
    # to be called at some interval, such as after each keypress.
     def repaint
-       $log.debug " form repaint:#{self}, r #{@row} c #{@col} "
+       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} "
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
         # added 2009-10-29 20:11 for double buffered widgets
         # this should only happen if painting actually happened
-        $log.debug " #{self} form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
+        #$log.debug " #{self} form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
         pb = @parent_buffer #|| @window
         # is next line used 2010-02-05 00:04 its wiping off top in scrollpane in tabbedpane
         # RFED16 - the next line should never execute now, since no outer object is buffered
@@ -1021,18 +1021,23 @@ module RubyCurses
        # although this does show cursor movement etc.
        ### XXX@window.wrefresh
        if @window.window_type == :WINDOW
-         $log.debug " formrep calling window.wrefresh #{@window} "
+         $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
        else
          # UGLY HACK TO MAKE TABBEDPANES WORK !!
-         if @parent_buffer!=nil
-           $log.debug " formrep coming to set backing window part #{@window} , type:#{@window.window_type}, #{@parent_buffer}  "
+         # If the form is based on a Pad, then it would come here to write the Pad onto the parent_buffer
+         # However, I've obviated the need to handle anything here by adding a display_form after handle_key
+         # in TP.
+         #x if @parent_buffer!=nil
+           #x $log.debug " formrep coming to set backing window part #{@window} , type:#{@window.window_type}, #{@parent_buffer}, #{@parent_buffer.window_type} "
            # XXX RFED19 do we need at all 2010-02-19 15:26 
            # this is required so that each key stroke registers on tabbedpane
-           @window.set_backing_window(@parent_buffer)
-           @window.copy_pad_to_win
-           $log.debug " DO I NEED TO DO SOMETHING HERE FOR TABBEDPANES now ? WARN ??"
-         end
+           # for this to work both have to be pads
+           #x @window.set_backing_window(@parent_buffer)
+           #x @window.copy_pad_to_win
+           #x @window.wrefresh #since the pads are writing onto window directly, i don't think we need  this
+           #x $log.debug " DO I NEED TO DO SOMETHING HERE FOR TABBEDPANES now ? WARN ?? YES, else keystrokes won't be updated "
+         #x end
        end
     end
     ## 
