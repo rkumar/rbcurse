@@ -11,7 +11,7 @@ module RubyCurses
       @selected_indices=[]
       @anchor_selection_index = -1
       @lead_selection_index = -1
-      @selection_mode = :MULTIPLE
+      @selection_mode = 'multiple'
       $log.debug " created DefaultListSelectionModel XXX"
     end
 
@@ -36,8 +36,8 @@ module RubyCurses
     end
     ## TODO should go in sorted, and no dupes
     def add_selection_interval ix0, ix1
-      $log.debug " def add_selection_interval #{ix0}, ix1"
-      if @selection_mode != :MULTIPLE
+      $log.debug " def add_selection_interval #{ix0}, #{ix1}, mode: #{@selection_mode} "
+      if @selection_mode != 'multiple'
         clear_selection
       end
       @anchor_selection_index = ix0
