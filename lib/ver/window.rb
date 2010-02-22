@@ -751,8 +751,10 @@ module VER
     # @param [Fixnum] color - color combination
     # @param [Fixnum, nil] attrib defaults to NORMAL
 
-    # FIXME when called from super.print_border this once again removed top and left
-    # which clears one row above
+    # Pls remove the raise once the program is working, extra line can slow things down
+    # Keep it on when testing.
+    # If the raise is thrown, it means your object could be positioned higher than it should be,
+    # or at some point you have increased top, without increasing the objects row.
     def printstring(row,col,value,color,attrib=Ncurses::A_NORMAL)
       #$log.debug " pad printstring #{row} - #{@top} , #{col} - #{@left} "
       raise "printstring row < top, pls correct code #{row} #{@top}, #{col} #{@left} " if row < @top or col < @left
