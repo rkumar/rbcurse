@@ -2057,9 +2057,16 @@ module RubyCurses
         # in toggle buttons the underline can change as the text toggles
         if !@underline.nil? or !@mnemonic.nil?
           uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          #$log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline} "
+          $log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline}- #{@graphic.left} #{@graphic} "
           #$log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
-          @graphic.mvchgat(y=r-@graphic.top, x=c+uline-@graphic.left, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+          y=r #-@graphic.top
+          x=c+uline #-@graphic.left
+          if @graphic.window_type == :PAD
+            x -= @graphic.top
+            y -= @graphic.left
+          end
+          raise "button underline location error #{x} , #{y} " if x < 0 or c < 0
+          @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
     ## command of button (invoked on press, hotkey, space)
