@@ -972,9 +972,11 @@ module RubyCurses
       @widgets << widget
       # add form offsets to widget's external offsets - 2010-02-07 20:22 
       if widget.is_a? RubyCurses::Widget
+        if @window # ext seems redundant
           widget.ext_col_offset += @window.left # just hope window aint undef!! XXX
           $log.debug " #{@name} add widget ( #{widget.name} ) ext_row #{widget.ext_row_offset} += #{@window.top} "
           widget.ext_row_offset += @window.top
+        end
       end
       return @widgets.length-1
    end
