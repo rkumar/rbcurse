@@ -69,7 +69,7 @@ module RubyCurses
           color = ColorMap.get_color(color, bgcolor)
         end
         value = getvalue_for_paint
-#       $log.debug("button repaint : r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ")
+       $log.debug("button repaint : r:#{r} #{@graphic.top}  c:#{c} #{@graphic.left} col:#{color} bg #{bgcolor} v: #{value} ")
         len = @display_length || value.length
         # paint the tabs name in approp place with attribs
         #@form.window.printstring r, c, "%-*s" % [len, value], color, attribs
@@ -215,7 +215,7 @@ module RubyCurses
     def display_form form, flag = true
       pad = form.window
       form.repaint if flag #   added 2009-11-03 23:27  paint widgets in inside form
-      $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{@graphic.name}  "
+      $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{@graphic.name}. #{form}: #{form.name}  "
       ret = -1
       pminr = pminc = 0
       r = @row + 2
@@ -264,7 +264,11 @@ module RubyCurses
           $log.debug " handle_key in tabbed pane got : #{ch}"
         ret = @current_form.handle_key(ch)
           $log.debug " -- form.handle_key in tabbed pane got ret : #{ret}"
-          display_form @current_form, false
+          # this is required so each keystroke on the widgets is refreshed
+          # but it causes a funny stagger effect if i press tab on the tabs.
+          # Staggered effect happens when we pass @form passed
+          display_form @current_form, false unless @current_form == @form
+
           $log.debug " ++ form.handle_key in tabbed pane got ret : #{ret}"
         case ret
         when :NO_NEXT_FIELD
@@ -302,7 +306,7 @@ module RubyCurses
           return ret if ret == :UNHANDLED
         end
         #@current_form.window.wrefresh # calling pad refresh XXX
-            $log.debug " calling display form from handle_key OUTSIDE LOOP commented off"
+        #    $log.debug " calling display form from handle_key OUTSIDE LOOP commented off"
         ##### XXX display_form(@current_form)
         ###### XXX@window.refresh
     end
@@ -436,7 +440,7 @@ module RubyCurses
         var = "@#{var}"
         instance_variable_set(var, val) 
       end
-      def OLDrepaint
+      def repaint
         
 
       end
