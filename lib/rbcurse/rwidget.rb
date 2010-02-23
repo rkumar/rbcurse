@@ -25,8 +25,6 @@ require 'ncurses'
 require 'logger'
 require 'rbcurse/mapper'
 require 'rbcurse/colormap'
-#require 'rbcurse/rdialogs'
-#require 'rbcurse/listcellrenderer'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
