@@ -286,13 +286,13 @@ class RFe
     status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>Ncurses.COLS-2}
     @status_row = status_row
     colb = Ncurses.COLS/2
-    ht = Ncurses.LINES - 7
+    ht = Ncurses.LINES - 5
     wid = Ncurses.COLS/2 - 0
     @trash_path = File.expand_path("~/.Trash")
     @trash_exists = File.directory? @trash_path
     $log.debug " trash_path #{@trash_path}, #{@trash_exists}"
-    @lista = FileExplorer.new @form, self, row=2, col=1, ht, wid
-    @listb = FileExplorer.new @form, self, row=2, col=colb, ht, wid
+    @lista = FileExplorer.new @form, self, row=1, col=1, ht, wid
+    @listb = FileExplorer.new @form, self, row=1, col=colb, ht, wid
 
     init_vars
   end
@@ -497,6 +497,9 @@ class RFe
     case File.extname(fp)
     when '.tgz','.gz'
       cmd = "tar -ztvf #{fp}"
+      content = %x[#{cmd}]
+    when '.zip'
+      cmd = "unzip -l #{fp}"
       content = %x[#{cmd}]
     else
       content = File.open(fp,"r").readlines
