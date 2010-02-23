@@ -6,7 +6,6 @@
   * major change: 2010-02-10 19:43 simplifying the buffer stuff.
   * FIXME : since currently paint is directly doing copywin, there are no checks
     to prevent crashing or -1 when panning. We need to integrate it back to a call to Pad.
-  * h_scroll printing off whle scrolling right.
   * unnecessary repainting when moving cursor, evn if no change in coords and data
   * on reentering cursor does not go to where it last was (test2.rb) - sure it used to.
 TODO 
@@ -197,37 +196,37 @@ module RubyCurses
       #$log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
       #pre_key
       case ch
-      when ?\C-n.getbyte(0)
+      when ?\C-n.getbyte(0), 32
         scroll_forward
-      when ?\C-p.getbyte(0)
+      when ?\C-p.getbyte(0), ?u.getbyte(0)
         scroll_backward
-      when ?0.getbyte(0), ?\C-[.getbyte(0)
+      when ?\C-[.getbyte(0), ?t.getbyte(0)
         goto_start #start of buffer # cursor_start
-      when ?\C-].getbyte(0)
+      when ?\C-].getbyte(0), ?G.getbyte(0)
         goto_end # end / bottom cursor_end
-      when KEY_UP
+      when KEY_UP, ?k.getbyte(0)
         #select_prev_row
         ret = up
         check_curpos
         #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
         #@form.row = @row + 1 + @winrow
-      when KEY_DOWN
+      when KEY_DOWN, ?j.getbyte(0)
         ret = down
         check_curpos
         #@form.row = @row + 1 + @winrow
-      when KEY_LEFT
+      when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
-      when KEY_RIGHT
+      when KEY_RIGHT, ?l.getbyte(0)
         cursor_forward
       when KEY_BACKSPACE, 127
         cursor_backward
       when 330
         cursor_backward
-      when ?\C-a.getbyte(0)
+      when ?\C-a.getbyte(0), ?0.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
         @pcol = 0
-      when ?\C-e.getbyte(0)
+      when ?\C-e.getbyte(0), ?$.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
         blen = @buffer.rstrip.length
           set_form_col blen
