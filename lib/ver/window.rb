@@ -310,8 +310,10 @@ module VER
     def prv_printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
       #$log.debug " inside window printstring r #{r} c #{c} #{string} "
-      att = Ncurses::A_NORMAL if att.nil?
+      att = Ncurses::A_NORMAL if att.nil? 
       case att.to_s.downcase
+      when 'normal'
+        att = Ncurses::A_NORMAL
       when 'underline'
         att = Ncurses::A_UNDERLINE
       when 'bold'
