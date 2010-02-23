@@ -1348,3 +1348,39 @@ to be taken care of in terms of sizing of child. However, hopefully will
 be simpler than `Splitpane`.
 
 * * * * * * * *
+
+Subject: scrollpane relevance in terminal apps
+----------------------------------------------
+Date: 2010-02-22 20:38
+
+Just wondering if scrollpanes have any meaning in a mouseless
+environment. The scrollbars have 3 functions:
+
+ 1. used to drag down. But for  that they have to get focus.
+ I don't make scrollbars focussable since that puts focus on too many
+ objects. I've seen demos of some curses toolkits that did, besides
+ being very low quality and buggy, focus was going to too many objects,
+ it was irritating.
+
+ 2. show how much more of a document there is.
+
+ 3. presence of scrollbars indicates to user that he can scroll
+ vertically or horizontally.
+
+In a mouseless environment, no focus to scrollbar. Keys are used to
+scroll. However, we still need to indicate to user that he can scroll.
+Also user may want to know percentage of screen.
+On a terminal, scrollpanes are taking valuable rows and cols due to
+boundary and bars.
+
+Since scrollbars result in added complexity especially wrt placement and
+cursor location, can we do away with scrollpanes as a widget and have
+them added onto other widgets.
+They would just place themselves where the object allows, on the objects
+own border. That eliminates a lot of testing.
+
+scrolling can be an option to widgets. they then include this
+capability. Needs to be thought out, since Scrollpanes result in insdie
+object creating a buffer.
+
+* * * * * * * *
