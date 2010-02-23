@@ -130,6 +130,8 @@ module RubyCurses
       return tab
     end
 
+    ## returns the index of the current / selected tab
+    ## @returns 0.. index of selected tab
     def selected_tab_index
       @tabs.index(@current_tab)
     end
