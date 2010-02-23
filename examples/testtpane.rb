@@ -20,6 +20,7 @@ require 'rbcurse'
 require 'rbcurse/rtabbedpane'
 require 'rbcurse/rtextview'
 require 'rbcurse/rtextarea'
+require 'rbcurse/rtable'
 
 class TestTabbedPane
   def initialize
@@ -96,6 +97,56 @@ class TestTabbedPane
           col 5
         end
       end
+      tab3 = @tp.add_tab "S&ongs"
+      f3 = tab3.form
+      data = [["Pathetique",3,"Tchaikovsky",3.21, true, "WIP"],
+        ["Ali Maula Ali Maula",3,"NFAK",3.47, true, "WIP"],
+        ["Tera Hijr Mera Nasib",92,"Razia Sultan",412, true, "Fin"],
+        ["Piano Concerto 4&5",4,"Beethoven",110.0, false, "Cancel"],
+        ["Toccata and Fugue",4,"J S Bach",102.72, false, "Postp"],
+        ["Symphony No. 3",4,"Henryk Gorecki",102.72, true, "Postp"],
+        ["The Great Gig in the Sky",8,"Pink Floyd",12.72, false, "Todo"],
+        ["Steppes of Central Asia",9,"Borodin",12.2, false, "WIP"],
+        ["Wish You Were Here",8,"Pink Floyd",2.7, false, "Todo"],
+        ["Habanera",nil,"Maria Callas",112.7, true, "Cancel"],
+        ["Mack the Knife",9,"Loius Armstrong",12.2, false, "Todo"],
+        ["Prince Igor",9,"Borodin",16.3, false, "WIP"],
+        ["Shahbaaz Qalandar",9,"Nusrat Fateh Ali Khan",12.2, false, "Todo"],
+        ["Raag Darbari",9,"Ustad Fateh Ali Khan",12.2, false, "Todo"],
+        ["Yaad-e-Mustafa Aisi",9,"Santoo Khan",12.2, true, "Todo"],
+        ["Chaconne",4,"Johann S Bach",12.42, true, "Postp"],
+        ["Raag Jaunpuri",9,"Ustad Fateh Ali Khan",12.2, false, "Todo"],
+        ["Dalaleragita",9,"Vaishnava",12.2, false, "Todo"],
+        ["Prasada sevaya",9,"Vaishnava",12.2, false, "Todo"],
+        ["Sri Rupamanjiri",9,"Vaishnava",12.2, false, "Todo"],
+        ["M Vlast ",9,"Smetana",12.2, false, "Todo"],
+        ["Jai Radha Madhava",163,"Jagjit Singh",5.4, false, "WIP"]]
+      colnames = %w[ Song Cat Artist Ratio Flag Status]
+      statuses = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
+
+        atable = Table.new f3 do
+          name   "mytable" 
+          row  4 
+          col  0
+          width 76
+          height 15
+          #title "A Table"
+          #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
+          cell_editing_allowed true
+          editing_policy :EDITING_AUTO
+          set_data data, colnames
+        end
+        sel_col = Variable.new 0
+        sel_col.value = 0
+        tcm = atable.get_table_column_model
+        selcolname = atable.get_column_name sel_col.value
+          tcm.column(0).width 24
+          tcm.column(1).width 3
+          tcm.column(2).width 18
+          #tcm.column(2).editable false
+          tcm.column(3).width 7
+          tcm.column(4).width 5
+          tcm.column(5).width 6
       @help = "F1 to quit. Use any key of key combination to see what's caught. #{$0} Check logger too"
             RubyCurses::Label.new @form, {'text' => @help, "row" => r+h+2, "col" => 2, "color" => "yellow"}
       @form.repaint
