@@ -1,4 +1,6 @@
 *.tgz
+*.gz
+*.zip
 *.tmp
 *.db
 bak
@@ -29,3 +31,5 @@ index.html
 serial_numbers
 report.txt
 examples/ISSUES*
+ISSUES
+*~
