@@ -199,67 +199,62 @@ module RubyCurses
       case ch
       when ?\C-n.getbyte(0), 32
         (@multiplier == 0? 1 : @multiplier).times { scroll_forward}
-        @multiplier = 0
       when ?\C-p.getbyte(0), ?u.getbyte(0)
         (@multiplier == 0? 1 : @multiplier).times {scroll_backward}
-        @multiplier = 0
       when ?\C-[.getbyte(0), ?t.getbyte(0)
         goto_start #start of buffer # cursor_start
-        @multiplier = 0
       when ?\C-].getbyte(0), ?G.getbyte(0)
         goto_end # end / bottom cursor_end
-        @multiplier = 0
       when KEY_UP, ?k.getbyte(0)
         #select_prev_row
         (@multiplier == 0? 1 : @multiplier).times {ret = up
         check_curpos
         }
-        @multiplier = 0
         #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
         #@form.row = @row + 1 + @winrow
       when KEY_DOWN, ?j.getbyte(0)
         (@multiplier == 0? 1 : @multiplier).times {ret = down
         check_curpos
         }
-        @multiplier = 0
         #@form.row = @row + 1 + @winrow
       when KEY_LEFT, ?h.getbyte(0)
         (@multiplier == 0? 1 : @multiplier).times {cursor_backward}
-        @multiplier = 0
       when KEY_RIGHT, ?l.getbyte(0)
         (@multiplier == 0? 1 : @multiplier).times {cursor_forward}
-        @multiplier = 0
       when KEY_BACKSPACE, 127, 330
         (@multiplier == 0? 1 : @multiplier).times {cursor_backward}
-        @multiplier = 0
       when ?\C-a.getbyte(0) #, ?0.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
         @pcol = 0
-        @multiplier = 0
       when ?\C-e.getbyte(0), ?$.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
         blen = @buffer.rstrip.length
           set_form_col blen
-        @multiplier = 0
         # search related 
       when @KEY_ASK_FIND
         ask_search
-        @multiplier = 0
       when @KEY_FIND_MORE
         find_more
-        @multiplier = 0
       when ?0.getbyte(0)..?9.getbyte(0)
+        if ch == ?0.getbyte(0) and @multiplier == 0
+          # copy of C-a - start of line
+          set_form_col 0
+          @pcol = 0
+          return 0
+        end
         # storing digits entered so we can multiply motion actions
         @multiplier *= 10 ; @multiplier += (ch-48)
-        $log.debug " TV numberic #{@multiplier}, #{ch} "
+        return 0
       when ?\C-c.getbyte(0)
         @multiplier = 0
+        return 0
       else
         #$log.debug("TEXTVIEW ch #{ch}")
         @multiplier = 0
         return :UNHANDLED
       end
+      @multiplier = 0 # remove from everywhere else above ?
       set_form_row
       return 0 # added 2010-01-12 22:17 else down arrow was going into next field
     end
