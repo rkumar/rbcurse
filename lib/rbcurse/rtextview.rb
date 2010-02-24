@@ -75,6 +75,7 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
       @multiplier = 0 # 2010-02-23 21:41 multiple calls to motion commands
+      bind_key([?g,?g]){ goto_start } # mapping double keys like vim
     end
     ## 
     # send in a list
@@ -194,8 +195,8 @@ module RubyCurses
         @curpos = @buffer.length
         set_form_col 
       end
-      #$log.debug "TV after loop : curpos #{@curpos} blen: #{@buffer.length}"
-      #pre_key
+      # multiplier should be checked inside methods, i've placed here just to test out
+      # We can improve later
       case ch
       when ?\C-n.getbyte(0), 32
         (@multiplier == 0? 1 : @multiplier).times { scroll_forward}
@@ -250,9 +251,11 @@ module RubyCurses
         @multiplier = 0
         return 0
       else
-        #$log.debug("TEXTVIEW ch #{ch}")
+        # check for bindings, these cannot override above keys since placed at end
+        ret = process_key ch, self
+        $log.debug "TV process_key #{ch} got ret #{ret} in #{self} "
         @multiplier = 0
-        return :UNHANDLED
+        return :UNHANDLED if ret == :UNHANDLED
       end
       @multiplier = 0 # remove from everywhere else above ?
       set_form_row
