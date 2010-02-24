@@ -1,3 +1,12 @@
+#####################################################
+# This is a sample program demonstrating a 2 pane file explorer using
+# rbcurse's widgets.
+# I have used a listbox here, perhaps a Table would be more configurable
+# than a listbox.
+#
+# Copyright rkumar 2009, 2010 under Ruby License.
+#
+####################################################
 require 'rubygems'
 require 'ncurses'
 require 'logger'
@@ -627,6 +636,26 @@ class RFe
 #    @form.bind_key(?\M-x){
 #      @current_list.mark_block
 #    }
+    # i am just testing out double key bindings
+    @form.bind_key([?\C-w,?v]){
+      @status_row.text = "got C-w, v"
+      $log.debug " Got C-w v "
+      view()
+    }
+    @form.bind_key([?\C-w,?e]){
+      @status_row.text = "got C-w, e"
+      $log.debug " Got C-w e "
+      edit()
+    }
+    # this won't work since the listbox will consume the d first
+    @form.bind_key([?d,?d]){
+      @status_row.text = "got d d "
+      $log.debug " Got d d"
+    }
+    @form.bind_key([?d,?G]){
+      @status_row.text = "got d G "
+      $log.debug " Got d G"
+    }
     @form.bind_key(?@){
       @current_list.change_dir File.expand_path("~/")
     }
