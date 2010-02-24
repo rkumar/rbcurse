@@ -81,6 +81,7 @@ module RubyCurses
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
+      @multiplier = 0 # 2010-02-24 20:23 multiply motion and other commands
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -216,7 +217,7 @@ module RubyCurses
         $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
       end
       
-      return unless @repaint_required # 2010-02-12 19:08  TRYING
+      #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print if only col move
       paint if @repaint_required
       print_foot if @print_footer && (@repaint_footer_required || @repaint_required)
       buffer_to_window # 2010-02-12 14:54 RFED16
@@ -311,11 +312,17 @@ module RubyCurses
       else
         #$log.debug(" textarea ch #{ch}")
         ret = putc ch
-        return ret if ret == :UNHANDLED
+        if ret == :UNHANDLED
+          # check for bindings, these cannot override above keys since placed at end
+          ret = process_key ch, self
+          $log.debug "TA process_key #{ch} got ret #{ret} in #{self} "
+          @multiplier = 0 
+          return :UNHANDLED if ret == :UNHANDLED
+        end
       end
-      #post_key
       set_form_row
       set_form_col  # testing 2008-12-26 19:37 
+      @multiplier = 0 # remove from everywhere else above ?
       return 0
     end
     def undo_delete
@@ -390,6 +397,7 @@ module RubyCurses
     ##
     # FIXME : if cursor at end of last line then forward takes cursor to start
     # of last line (same line), should stop there.
+    # add @multiplier TODO
     def cursor_forward num=1
       $log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
       $log.debug "next char cp ll and ci #{@list.length}, #{@current_index}"
@@ -436,6 +444,7 @@ module RubyCurses
     end
     ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
     # it was going onto border
+    # add @multiplier TODO
   def cursor_backward
       #$log.debug "back char cp ll and ci #{@list.length}, #{@current_index}"
       #$log.debug "back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
