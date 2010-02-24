@@ -403,6 +403,7 @@ module RubyCurses
     dsl_accessor :KEY_NEXT_SELECTION
     dsl_accessor :KEY_PREV_SELECTION
     dsl_accessor :valign  # 2009-01-17 18:32 
+    attr_accessor :one_key_selection # will pressing a single key select or not
 
     def initialize form, config={}, &block
       @focusable = true
@@ -423,6 +424,7 @@ module RubyCurses
       # added 2010-02-17 23:05  RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
+      @multiplier = 0 # multiply motion commands
 
 #x      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
 #x      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
@@ -448,6 +450,16 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
+      @one_key_selection ||= true
+      bind_key(?f){ ask_selection_for_char() }
+      bind_key(?\M-v){ @one_key_selection = false }
+      bind_key(?j){ next_row() }
+      bind_key(?k){ previous_row() }
+      bind_key(?G){ goto_bottom() }
+      bind_key([?g,?g]){ goto_top() }
+      bind_key(?/){ ask_search() }
+      bind_key(?n){ find_more() }
+
     end
     def install_bindings
 
@@ -605,15 +617,37 @@ module RubyCurses
           end
         end
         if ret == :UNHANDLED
-          case ch
-          when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
-            ret = set_selection_for_char ch.chr
+          if @one_key_selection
+            case ch
+            when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0), ?0.getbyte(0)..?9.getbyte(0)
+              # simple motion, key press defines motion
+              ret = set_selection_for_char ch.chr
+            else
+              ret = process_key ch, self
+              @multiplier = 0
+              return :UNHANDLED if ret == :UNHANDLED
+            end
           else
+            # no motion on single key, we can freak out like in vim, pref f <char> for set_selection
+            case ch
+            when ?0.getbyte(0)..?9.getbyte(0)
+              @multiplier *= 10 ; @multiplier += (ch-48)
+              return 0
+            end
             ret = process_key ch, self
+            @multiplier = 0
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
       end
+      @multiplier = 0
+    end
+    def ask_selection_for_char
+      ch = @graphic.getch
+      if ch < 0 || ch > 255
+        return :UNHANDLED
+      end
+      ret = set_selection_for_char ch.chr
     end
     def ask_search_forward
         regex =  get_string("Enter regex to search")
