@@ -316,6 +316,7 @@ class RFe
       end
     end
     @config ||={}
+    @stopping = false
   end
   def save_config
     @config["last_dirs"]=[@lista.current_dir(),@listb.current_dir()]
@@ -624,6 +625,9 @@ class RFe
     $log.debug " edit #{fp}"
     shell_out "/opt/local/bin/vim #{fp}"
   end
+  def stopping?
+    @stopping
+  end
   def draw_screens
     lasta = lastb = nil
     if !@config["last_dirs"].nil?
@@ -647,15 +651,15 @@ class RFe
       $log.debug " Got C-w e "
       edit()
     }
-    # this won't work since the listbox will consume the d first
+    # bind dd to delete file
+    # actually this should be in listbox, and we should listen for row delete and then call opt_file
     @form.bind_key([?d,?d]){
-      @status_row.text = "got d d "
-      $log.debug " Got d d"
+      opt_file 'd'
     }
-    @form.bind_key([?d,?G]){
-      @status_row.text = "got d G "
-      $log.debug " Got d G"
+    @form.bind_key([?q,?q]){
+      @stopping = true
     }
+    # this won't work since the listbox will consume the d first
     @form.bind_key(?@){
       @current_list.change_dir File.expand_path("~/")
     }
@@ -737,7 +741,8 @@ class RFe
     @window.wrefresh
     Ncurses::Panel.update_panels
     begin
-    while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
+      ## qq stops program, but only if M-v (vim mode)
+    while(!stopping? && (ch = @window.getchar()) != ?\C-q.getbyte(0) )
       s = keycode_tos ch
       status_row.text = "Pressed #{ch} , #{s}"
       @form.handle_key(ch)
