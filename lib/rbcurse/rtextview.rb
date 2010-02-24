@@ -171,7 +171,7 @@ module RubyCurses
         $log.debug " textview creates pad #{@screen_buffer} #{@name}"
       end
 
-      return unless @repaint_required # 2010-02-12 19:08  TRYING
+      #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
     #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && @repaint_footer_required
@@ -199,31 +199,31 @@ module RubyCurses
       # We can improve later
       case ch
       when ?\C-n.getbyte(0), 32
-        (@multiplier == 0? 1 : @multiplier).times { scroll_forward}
+        scroll_forward
       when ?\C-p.getbyte(0), ?u.getbyte(0)
-        (@multiplier == 0? 1 : @multiplier).times {scroll_backward}
+        scroll_backward
       when ?\C-[.getbyte(0), ?t.getbyte(0)
         goto_start #start of buffer # cursor_start
       when ?\C-].getbyte(0), ?G.getbyte(0)
         goto_end # end / bottom cursor_end
       when KEY_UP, ?k.getbyte(0)
         #select_prev_row
-        (@multiplier == 0? 1 : @multiplier).times {ret = up
+        ret = up
         check_curpos
-        }
+        
         #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
         #@form.row = @row + 1 + @winrow
       when KEY_DOWN, ?j.getbyte(0)
-        (@multiplier == 0? 1 : @multiplier).times {ret = down
+        ret = down
         check_curpos
-        }
+        
         #@form.row = @row + 1 + @winrow
       when KEY_LEFT, ?h.getbyte(0)
-        (@multiplier == 0? 1 : @multiplier).times {cursor_backward}
+        cursor_backward
       when KEY_RIGHT, ?l.getbyte(0)
-        (@multiplier == 0? 1 : @multiplier).times {cursor_forward}
+        cursor_forward
       when KEY_BACKSPACE, 127, 330
-        (@multiplier == 0? 1 : @multiplier).times {cursor_backward}
+        cursor_backward
       when ?\C-a.getbyte(0) #, ?0.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
         set_form_col 0
@@ -311,12 +311,14 @@ module RubyCurses
     end
     def cursor_forward
       maxlen = @maxlen || @width-2
+      (@multiplier == 0? 1 : @multiplier).times { 
       if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
         @curpos += 1
         addcol 1
       else
         @pcol += 1 if @pcol <= @buffer.length
       end
+      }
       set_form_col 
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
@@ -340,6 +342,7 @@ module RubyCurses
       end
     end
     def cursor_backward
+      (@multiplier == 0? 1 : @multiplier).times { 
       if @curpos > 0
         @curpos -= 1
         set_form_col 
@@ -347,6 +350,7 @@ module RubyCurses
       elsif @pcol > 0 
         @pcol -= 1   
       end
+      }
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
     end
