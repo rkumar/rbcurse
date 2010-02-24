@@ -1384,3 +1384,35 @@ capability. Needs to be thought out, since Scrollpanes result in insdie
 object creating a buffer.
 
 * * * * * * * *
+
+Subject: double key mapping like vim
+------------------------------------
+Date: 2010-02-24 15:17
+
+The earlier Mapper than i had written was quite good, but integrating that to
+get multiple keys into rbcurse would have meant a lot of rework, and perhaps not have
+fitted in, with control going to multiple objects and heirarchies of
+objects, whereas Mapper takes over control.
+
+So i've got a simple thing going, you can test out "gg" in any textview
+and it takes you to the start of the document.
+
+Usually, we check for bindings after going through a case statement.
+This means if i've got a binding to "gg" on a listbox but listbox moves
+focus to first element with "g", my binding is never invoked.
+
+One could do as follows:
+Make a call to process_key first, outside the case structure. If
+:UNHANDLED is returned, we go into case.
+
+If the user presses, g once, but not a second time, return :UNHANDLED.
+if getch returns a -1, return UNHANDLED, not nil.
+
+That way a double key binding can work, even with a single key binding.
+e.g. currently I have "jj" bound to ESC in Vim, but if i type any
+character other than j after a j or wait, then a j is typed.
+
+So its a thought. In anycase, if the user wishes to override a binding,
+we should evaluate bindings first.
+
+* * * * * * * *
