@@ -12,14 +12,19 @@ module ListScrollable
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
   def previous_row
     @oldrow = @current_index
-    @current_index -= 1 if @current_index > 0
+    # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
+    # on leave and on enter
+    (@multiplier == 0? 1 : @multiplier).times { 
+      @current_index -= 1 if @current_index > 0
+    }
     bounds_check
   end
   alias :up :previous_row
   def next_row
     @oldrow = @current_index
     rc = row_count
-    @current_index += 1 if @current_index < rc
+    m = @multiplier == 0? 1 : @multiplier
+    @current_index += 1*m if @current_index < rc
     bounds_check
   end
   alias :down :next_row
@@ -39,15 +44,17 @@ module ListScrollable
   def scroll_backward
     @oldrow = @current_index
     h = scrollatrow()
-    @current_index -= h 
+    m = @multiplier == 0? 1 : @multiplier
+    @current_index -= h * m
     bounds_check
   end
   def scroll_forward
     @oldrow = @current_index
     h = scrollatrow()
     rc = row_count
+    m = @multiplier == 0? 1 : @multiplier
     # more rows than box
-    if h < rc
+    if h * m < rc
       @toprow += h+1 #if @current_index+h < rc
       @current_index = @toprow
     else
