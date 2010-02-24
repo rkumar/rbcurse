@@ -23,8 +23,9 @@ TODO
 require 'rubygems'
 require 'ncurses'
 require 'logger'
-require 'rbcurse/mapper'
+#require 'rbcurse/mapper'
 require 'rbcurse/colormap'
+require 'rbcurse/orderedhash'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
@@ -498,12 +499,26 @@ module RubyCurses
     # or a field to be focussed on a key, or any other user defined action based on key
     # e.g. bind_key ?\C-x, object, block 
     # added 2009-01-06 19:13 since widgets need to handle keys properly
+    #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
     def bind_key keycode, *args, &blk
-      keycode = keycode.getbyte(0) if keycode.class==String ##    1.9 2009-10-05 19:40 
-      $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
       @key_handler ||= {}
+      case keycode
+      when String
+        $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
+        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
+        @key_handler[keycode] = blk
+      when Array
+        # for starters lets try with 2 keys only
+        a0 = keycode[0]
+        a0 = keycode[0].getbyte(0) if keycode[0].class == String
+        a1 = keycode[1]
+        a1 = keycode[1].getbyte(0) if keycode[1].class == String
+        @key_handler[a0] ||= OrderedHash.new
+        @key_handler[a0][a1] = blk
+      else
+        @key_handler[keycode] = blk
+      end
       @key_args ||= {}
-      @key_handler[keycode] = blk
       @key_args[keycode] = args
     end
     ##
@@ -521,10 +536,26 @@ module RubyCurses
     # added 2009-01-18 12:58 returns ret val of blk.call
     # so that if block does not handle, the key can still be handled
     # e.g. table last row, last col does not handle, so it will auto go to next field
+    #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
+    #  except maybe for window pointer. TODO not tested
     def process_key keycode, object
       return :UNHANDLED if @key_handler.nil?
       blk = @key_handler[keycode]
       return :UNHANDLED if blk.nil?
+      if blk.is_a? OrderedHash
+          #ch = @graphic.mvwgetch(0,0)
+          ch = @graphic.getch
+          if ch < 0 || ch > 255
+            #next
+            return nil
+          end
+          $log.debug " process_key: got #{keycode} , #{ch} "
+          yn = ch.chr
+          blk1 = blk[ch]
+          return nil if blk1.nil?
+          $log.debug " process_key: found block for #{keycode} , #{ch} "
+          blk = blk1
+      end
       $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
       return blk.call object,  *@key_args[keycode]
       #0
@@ -1296,23 +1327,54 @@ module RubyCurses
     # 1.9 if string passed then getbyte so user does not need to change much and
     # less chance of error 2009-10-04 16:08 
   def bind_key keycode, *args, &blk
-    keycode = keycode.getbyte(0) if keycode.class==String ##    1.9 2009-10-04 16:10 
-    $log.debug "called bind_key BIND #{keycode} #{keycode_tos(keycode)} "
-    @key_handler ||= {}
-    @key_args ||= {}
-    @key_handler[keycode] = blk
-    @key_args[keycode] = args
+      @key_handler ||= {}
+      case keycode
+      when String
+        $log.debug "FORM String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
+        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
+        @key_handler[keycode] = blk
+      when Array
+        # for starters lets try with 2 keys only
+        a0 = keycode[0]
+        a0 = keycode[0].getbyte(0) if keycode[0].class == String
+        a1 = keycode[1]
+        a1 = keycode[1].getbyte(0) if keycode[1].class == String
+        @key_handler[a0] ||= OrderedHash.new
+        @key_handler[a0][a1] = blk
+      else
+        @key_handler[keycode] = blk
+      end
+      @key_args ||= {}
+      @key_args[keycode] = args
   end
 
   # e.g. process_key ch, self
   # returns UNHANDLED if no block for it
   # after form handles basic keys, it gives unhandled key to current field, if current field returns
   # unhandled, then it checks this map.
+  # Please update widget with any changes here. TODO: match regexes as in mapper
   def process_key keycode, object
-    return :UNHANDLED if @key_handler.nil?
-    blk = @key_handler[keycode]
-    return :UNHANDLED if blk.nil?
-    #$log.debug "called process_key #{object.class}:: key_args: #{@key_args[keycode]}"
+      return :UNHANDLED if @key_handler.nil?
+      blk = @key_handler[keycode]
+      return :UNHANDLED if blk.nil?
+      if blk.is_a? OrderedHash
+          #ch = @window.mvwgetch(0,0)
+        # Please note that this does not wait too long, you have to press next key fast
+        # since i have set halfdelay in ncurses.rb
+          ch = @window.getch
+          if ch < 0 || ch > 255
+            #next
+            return nil
+          end
+          $log.debug " process_key: got #{keycode} , #{ch} "
+          yn = ch.chr
+          blk1 = blk[ch]
+          return nil if blk1.nil?
+          $log.debug " process_key: found block for #{keycode} , #{ch} "
+          blk = blk1
+      end
+      $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
+     # return blk.call object,  *@key_args[keycode]
     blk.call object,  *@key_args[keycode]
     0
   end
