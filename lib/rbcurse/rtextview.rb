@@ -247,6 +247,10 @@ module RubyCurses
         # storing digits entered so we can multiply motion actions
         @multiplier *= 10 ; @multiplier += (ch-48)
         return 0
+      when ?\C-u.getbyte(0)
+        # multiplier. Series is 4 16 64
+        @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+        return 0
       when ?\C-c.getbyte(0)
         @multiplier = 0
         return 0
