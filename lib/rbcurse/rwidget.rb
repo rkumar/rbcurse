@@ -220,10 +220,16 @@ module RubyCurses
       end
       ## added on 2009-01-08 00:33 
       # goes with dsl_property
-      # Need to inform listeners
+      # Need to inform listeners - done 2010-02-25 23:09 
     def fire_property_change text, oldvalue, newvalue
       #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
-      @repaint_required = true
+      if @pce.nil?
+        @pce = PropertyChangeEvent.new(self, text, oldvalue, newvalue)
+      else
+        @pce.set( self, text, oldvalue, newvalue)
+      end
+      fire_handler :PROPERTY_CHANGE, @pce
+      @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint
     end
 
     end # module eventh
@@ -1462,6 +1468,26 @@ module RubyCurses
   def to_s; @name || self; end
 
     ## ADD HERE FORM
+  end
+  ## Created and sent to all listeners whenever a property is changed
+  # @see fire_property_change
+  # @see fire_handler 
+  # @since 1.0.5 added 2010-02-25 23:06 
+  class PropertyChangeEvent
+    attr_accessor :source, :property_name, :oldvalue, :newvalue
+    def initialize source, property_name, oldvalue, newvalue
+      set source, property_name, oldvalue, newvalue
+    end
+    def set source, property_name, oldvalue, newvalue
+        @source, @property_name, @oldvalue, @newvalue =
+        source, property_name, oldvalue, newvalue
+    end
+    def to_s
+      "PROPERTY_CHANGE name: #{property_name}, oldval: #{@oldvalue}, newvalue: #{@newvalue}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
   end
 
   ##
