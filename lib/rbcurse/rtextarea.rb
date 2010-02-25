@@ -294,7 +294,6 @@ module RubyCurses
         # since textareas are editable we use a control key to increase
         # multiplier. Series is 4 16 64
         @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
-        $log.debug " TA C-u multi #{@multiplier} "
         return 0
       when ?\C-_.getbyte(0) # changed from C-u so i can use C-u for multipliers
         undo_delete
@@ -406,20 +405,18 @@ module RubyCurses
     # of last line (same line), should stop there.
     # add @multiplier TODO
     def cursor_forward num=1
-      $log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
-      $log.debug "next char cp ll and ci #{@list.length}, #{@current_index}"
+      #$log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
+      #$log.debug "next char cp ll and ci #{@list.length}, #{@current_index}"
       #if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
-    $log.debug " TA CF mult 1 #{@multiplier} "
+    #$log.debug " TA CF mult 1 #{@multiplier} "
       return if at_eol? and at_last_line?
       (@multiplier == 0? 1 : @multiplier).times { 
       if @curpos < buffer_len()
         @curpos += 1
-        $log.debug " TA CF mult 2  +1 #{@curpos}, #{@current_index} "
         addcol 1
       else # trying this out 2008-12-26 20:18 
         @curpos = 0
         down 1 # if not then multipler will trigger there too
-        $log.debug " TA CF mult 3 down #{@curpos}, #{@current_index} "
       end
       cursor_bounds_check
       }
@@ -460,33 +457,25 @@ module RubyCurses
   def cursor_backward
       #$log.debug "back char cp ll and ci #{@list.length}, #{@current_index}"
       #$log.debug "back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
-    $log.debug " TA CB mult #{@multiplier} "
       return if @curpos == 0 and @current_index == 0 # added 2009-10-04 23:02 
       (@multiplier == 0? 1 : @multiplier).times { 
     if @curpos > 0
       @curpos -= 1
       addcol -1
-      #$log.debug "22 back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
     else # trying this out 2008-12-26 20:18 
       ret = up
       cursor_eol if ret != -1
-      #$log.debug "33 back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
     end
       }
   end
   def delete_line line=@current_index
     return -1 unless @editable
-    $log.debug "called delete line"
     @delete_buffer = @list.delete_at line
     @buffer = @list[@current_index]
     if @buffer.nil?
       up
-      # 2010-01-14 19:10 
-      ### @form.row = @row + 1 #+ @winrow
-      #@form.setrowcol @row + 1, @form.col
       setrowcol @row + 1, nil # @form.col
     end
-    #fire_handler :CHANGE, self  # 2008-12-09 14:56 
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
   end
