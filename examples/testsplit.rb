@@ -33,6 +33,11 @@ if $0 == __FILE__
       @help = "q to quit. v h - + =        : #{$0}                              . Check logger too"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
 
+      $message = Variable.new
+      $message.value = "Message Comes Here"
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => ht+r+2, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
+      $message.update_command() { message_label.repaint } # why ?
+
       splitp = SplitPane.new @form do
           name   "mypane" 
           row  r 
@@ -42,6 +47,7 @@ if $0 == __FILE__
           focusable false
           #orientation :VERTICAL_SPLIT
         end
+      splitp.bind(:PROPERTY_CHANGE){|e| $message.value = e.to_s }
 
       @form.repaint
       @window.wrefresh
