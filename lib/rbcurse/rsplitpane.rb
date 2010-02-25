@@ -89,6 +89,7 @@ module RubyCurses
 
           # true means will request child to create a buffer, since cropping will be needed
           @_child_buffering = true # private, internal. not to be changed by callers.
+          @multiplier = 0
 
       end
 
@@ -717,9 +718,18 @@ module RubyCurses
           self.set_divider_location(self.divider_location+1)
         when ?\M-\=.getbyte(0)
           self.set_resize_weight(0.50)
+        when ?\C-u.getbyte(0)
+          # multiplier. Series is 4 16 64
+          @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+          return 0
+        when ?\C-c.getbyte(0)
+          @multiplier = 0
+          return 0
         else
+          @multiplier = 0
           return :UNHANDLED
         end
+        @multiplier = 0
         return 0
       end
       def paint
