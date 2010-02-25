@@ -157,6 +157,12 @@ module ListScrollable
     @pcol -= @hscrollcols if @pcol > 0
     @pcol = 0 if @pcol < 0
   end
+  ## returns cursor to last row (if moving columns in same row, won't work)
+  # Useful after a large move such as 12j, 20 C-n etc, Mapped to '' in textview
+  def goto_last_position
+    @current_index = @oldrow
+    bounds_check
+  end
   # not that saving content_rows is buggy since we add rows.
   ##
   # caution, this now uses winrow not prow
