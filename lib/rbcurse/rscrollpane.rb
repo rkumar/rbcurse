@@ -138,6 +138,7 @@ module RubyCurses
       @border_width = 2
       @screen_top = 0
       @screen_left = 0
+      @multiplier = 0
     end
     # set the component to be viewed
     def set_viewport_view ch
@@ -310,9 +311,18 @@ module RubyCurses
 #x        $log.debug " - SCRP setting col to #{@subform.col}, #{@subform.cols_panned},oo #{@col_outofbounds} fr:#{@form.col} "
       when KEY_BACKSPACE, 127
         ret = cursor_backward
+      when ?\C-u.getbyte(0)
+        # multiplier. Series is 4 16 64
+        @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+        return 0
+      when ?\C-c.getbyte(0)
+        @multiplier = 0
+        return 0
       else
+        @multiplier = 0
         return :UNHANDLED
       end
+      @multiplier = 0
       ret = :UNHANDLED if !ret
       return ret # 0 2010-02-04 18:47 returning ret else repaint is happening when UNHANDLED
     end
