@@ -586,9 +586,10 @@ module RubyCurses
       when @KEY_CLEAR_SELECTION
         clear_selection #if @select_mode == 'multiple'
         @repaint_required = true
-      when 27, ?\C-c
+      when 27, ?\C-c.getbyte(0)
         editing_canceled @current_index if @cell_editing_allowed
         cancel_block # block
+        @multiplier = 0
       when @KEY_ASK_FIND_FORWARD
       # ask_search_forward
       when @KEY_ASK_FIND_BACKWARD
@@ -603,6 +604,13 @@ module RubyCurses
         find_more
       when @KEY_BLOCK_SELECTOR
         mark_block #selection
+      when ?\C-u.getbyte(0)
+        # multiplier. Series is 4 16 64
+        @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+        return 0
+      when ?\C-c.getbyte(0)
+        @multiplier = 0
+        return 0
       else
         # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
         ret = :UNHANDLED # changed on 2009-01-27 13:14 not going into unhandled, tab not released
