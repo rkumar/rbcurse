@@ -500,6 +500,7 @@ module RubyCurses
     # e.g. bind_key ?\C-x, object, block 
     # added 2009-01-06 19:13 since widgets need to handle keys properly
     #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
+    #  TODO add symbol so easy to map from config file or mapping file
     def bind_key keycode, *args, &blk
       @key_handler ||= {}
       case keycode
