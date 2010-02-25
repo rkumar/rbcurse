@@ -48,7 +48,7 @@
  34	[ ] (D) Scrollpane, ensure redraws child only if resized, else it only pans child (2010-01-17)
  35	[ ] Scrollpane shold probably reduce when outer is reduced. (2010-01-17)
  36	[ ] should parent set scrollatrows for lb and tv and ta ? (2010-01-17)
- 37	[@] (B) test rtable in splitpane and scrollpanes  * done rtable in scrollpane (2010-01-18)
+ 37	[x] (B) test rtable in splitpane and scrollpanes  * done rtable in scrollpane (2010-01-18) (x2010-02-24)
  38	[x] (B) test various widgets inside rtabbedpane (2010-01-19) (x2010-02-22)
  39	[ ] +Scrollpane cursor issues  * cursor goes off. need to hide when off (2010-01-19)
  40	[ ] correct gemspec files for master and rb19, remove unneeded files and corrected readme etc (2010-01-22)
