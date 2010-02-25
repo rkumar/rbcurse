@@ -2,14 +2,14 @@
   * Name: SplitPane
   * $Id$
   * Description: allows user to split 2 components vertically or horizontally
+  * NOTE that VERTICAL_SPLIT means the *divider* is vertical.
   * Author: rkumar (arunachalesha)
   * file created 2009-10-27 19:20 
-TODO 
-  * Need to add events and property changed - at least for resizing partitions
-  * major change: Feb 2010, removed buffers, so some coords need to be absolute.
-  *  those methods that are overriden in Pad were okay, others like line drawing were relative
-  *  and need to be abs by adding row and col.
-  *  Also, that means checks for going out are wrong now.
+  * major change: Feb 2010, removed buffers
+Todo: 
+  * TODO remove components
+
+  * XXX Does SPLP need to listen for changes in children
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -40,6 +40,8 @@ module RubyCurses
       #dsl_accessor :second_component  # right or bottom component that is being viewed
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
       attr_reader :divider_location  # 
+      attr_reader :resize_weight
+      attr_writer :last_divider_location
       dsl_accessor :border_color
       dsl_accessor :border_attrib
 
@@ -365,6 +367,7 @@ module RubyCurses
               end
             end
           end
+          @old_divider_location = @divider_location
           @divider_location = rc
           if @first_component != nil
 
@@ -419,7 +422,7 @@ module RubyCurses
               $log.debug " #{@name} TA set C1 H W RC #{@first_component.height} #{@first_component.width} #{rc} "
               @first_component.set_buffering(:bottom => @first_component.height-1, :right => @first_component.width-1, :form => @form )
           end
-          return if @second_component == nil
+          if !@second_component.nil?
 
           ## added  2010-01-11 23:09  since some cases don't set, like splits within split.
           @second_component.height ||= 0
@@ -509,18 +512,25 @@ module RubyCurses
           $log.debug " C2 set div location, setting w #{@second_component.width} "
           $log.debug " C2 set div location, setting h #{@second_component.height} "
 
+          end
+          fire_property_change("divider_location", old_divider_location, @divider_location)
+
       end
 
       # calculate divider location based on weight
       # Weight implies weight of first component, e.g. .70 for 70% of splitpane
       # @param wt [float, :read] weight of first component
       def set_resize_weight wt
+        raise ArgumentError if wt < 0 or wt >1
           @repaint_required = true
+          oldvalue = @resize_weight
+          @resize_weight = wt
           if @orientation == :VERTICAL_SPLIT
               rc = (@width||@preferred_width) * wt
           else
               rc = (@height||@preferred_height) * wt
           end
+          fire_property_change("resize_weight", oldvalue, @resize_weight)
           rc = rc.ceil
           set_divider_location rc
       end
