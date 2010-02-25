@@ -76,6 +76,7 @@ module RubyCurses
       @win_top = 0
       @multiplier = 0 # 2010-02-23 21:41 multiple calls to motion commands
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
+      bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
     end
     ## 
     # send in a list
@@ -195,7 +196,6 @@ module RubyCurses
         @curpos = @buffer.length
         set_form_col 
       end
-      # multiplier should be checked inside methods, i've placed here just to test out
       # We can improve later
       case ch
       when ?\C-n.getbyte(0), 32
@@ -211,13 +211,9 @@ module RubyCurses
         ret = up
         check_curpos
         
-        #addrowcol -1,0 if ret != -1 or @winrow != @oldwinrow                 # positions the cursor up 
-        #@form.row = @row + 1 + @winrow
       when KEY_DOWN, ?j.getbyte(0)
         ret = down
         check_curpos
-        
-        #@form.row = @row + 1 + @winrow
       when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
       when KEY_RIGHT, ?l.getbyte(0)
@@ -257,7 +253,6 @@ module RubyCurses
       else
         # check for bindings, these cannot override above keys since placed at end
         ret = process_key ch, self
-        $log.debug "TV process_key #{ch} got ret #{ret} in #{self} "
         @multiplier = 0
         return :UNHANDLED if ret == :UNHANDLED
       end
