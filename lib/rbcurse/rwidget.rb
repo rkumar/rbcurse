@@ -1400,6 +1400,7 @@ module RubyCurses
   # by system. ) implies only numeric args were obtained. This method updates $multiplier
   def universal_argument
     $multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 4 : $multiplier *= 4)
+        $log.debug " inside UNIV MULT0: #{$multiplier} "
     # See if user enters numerics. If so discard existing varaible and take only 
     #+ entered values
     _m = 0
@@ -1412,6 +1413,43 @@ module RubyCurses
         _m *= 10 ; _m += (ch-48)
         $multiplier = _m
         $log.debug " inside UNIV MULT #{$multiplier} "
+      when ?\C-u.getbyte(0)
+        if _m == 0
+          # user is incrementally hitting C-u
+          $multiplier *= 4
+        else
+          # user is terminating some numbers so he can enter a numeric command next
+          return 0
+        end
+      else
+        $log.debug " inside UNIV MULT else got #{ch} "
+        # here is some other key that is the function key to be repeated. we must honor this
+        # and ensure it goes to the right widget
+        return ch
+        #return :UNHANDLED
+      end
+    end
+    return 0
+  end
+  def digit_argument ch
+    $multiplier = ch - ?\M-0.getbyte(0)
+    $log.debug " inside UNIV MULT 0 #{$multiplier} "
+    # See if user enters numerics. If so discard existing varaible and take only 
+    #+ entered values
+    _m = $multiplier
+    while true
+      ch = @window.getchar()
+      case ch
+      when -1
+        next 
+      when ?0.getbyte(0)..?9.getbyte(0)
+        _m *= 10 ; _m += (ch-48)
+        $multiplier = _m
+        $log.debug " inside UNIV MULT 1 #{$multiplier} "
+      when ?\M-0.getbyte(0)..?\M-9.getbyte(0)
+        _m *= 10 ; _m += (ch-?\M-0.getbyte(0))
+        $multiplier = _m
+        $log.debug " inside UNIV MULT 2 #{$multiplier} "
       else
         $log.debug " inside UNIV MULT else got #{ch} "
         # here is some other key that is the function key to be repeated. we must honor this
@@ -1432,13 +1470,19 @@ module RubyCurses
           $log.debug " FORM set MULT to #{$multiplier}, ret = #{ret}  "
           return 0 if ret == 0
           ch = ret # unhandled char
+        elsif ch >= ?\M-1.getbyte(0) && ch <= ?\M-9.getbyte(0)
+          ret = digit_argument ch
+          $log.debug " FORM set MULT DA to #{$multiplier}, ret = #{ret}  "
+          return 0 if ret == 0 # don't see this happening
+          ch = ret # unhandled char
         end
 
         case ch
         when -1
           return
         else
-          $log.debug " form HK #{ch} #{self}, #{@name} "
+          keycode = keycode_tos(ch)
+          $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}  "
           field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
