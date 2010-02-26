@@ -327,7 +327,7 @@ module RubyCurses
             return :ERROR
           end
         end
-          @repaint_required = true
+        @repaint_required = true
           old_divider_location = @divider_location || 0
           # we first check against min_sizes
           # the calculation is repeated here, and in the actual change
@@ -680,6 +680,7 @@ module RubyCurses
       ##+ Mostly passing to child, and handling child's left-overs.
       ## NOTE: How do we switch to the other outer SPL?
       def handle_key ch
+        _multiplier = (@multiplier == 0 ? 1 : @multiplier )
         @current_component ||= @first_component
         ## 2010-01-15 12:57 this helps me switch between highest level 
         ## However, i should do as follows:
@@ -722,10 +723,11 @@ module RubyCurses
           @repaint_required = true
         when ?\M-H.getbyte(0)
           self.orientation(:HORIZONTAL_SPLIT)
+          @repaint_required = true
         when ?\M--.getbyte(0)
-          self.set_divider_location(self.divider_location-1)
+          self.set_divider_location(self.divider_location-_multiplier)
         when ?\M-\+.getbyte(0)
-          self.set_divider_location(self.divider_location+1)
+          self.set_divider_location(self.divider_location+_multiplier)
         when ?\M-\=.getbyte(0)
           self.set_resize_weight(0.50)
         when ?\C-u.getbyte(0)
