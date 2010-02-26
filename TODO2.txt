@@ -64,5 +64,5 @@
  50	[ ] (A) Tabbedpane: scrolling not updating N and P  (2010-02-21)
  51	[ ] TabbedPane: add on the fly tabs in tabbedpane - what about second level (2010-02-21)
  52	[ ] Table needs multiplier for resizing cols (2010-02-24)
- 53	[ ] Splitpane needs multiplier for resizing panes (2010-02-24)
- 54	[ ] Scrollpane needs multiplier for scrolling (2010-02-24)
+ 53	[x] Splitpane needs multiplier for resizing panes (2010-02-24) (x2010-02-26)
+ 54	[x] Scrollpane needs multiplier for scrolling (2010-02-24) (x2010-02-26)
