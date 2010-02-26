@@ -20,6 +20,7 @@ Major change 2010-02-11 23:32
 require 'ncurses'
 require 'logger'
 require 'rbcurse'
+require 'rchangeevent'
 
 include Ncurses
 include RubyCurses
@@ -63,6 +64,7 @@ module RubyCurses
       $log.debug " setting viewport to h #{h} , w #{w} "
       height(h)
       width(w)
+      fire_state_changed
       #fire_handler :PROPERTY_CHANGE, self # XXX should it be an event STATE_CHANGED with details
     end
     ##
@@ -94,9 +96,12 @@ module RubyCurses
       # next call sets pminrow and pmincol 
       $log.debug " VP setting child buffer pmin to #{r} #{c} "
       @child.get_buffer().set_pad_top_left(r, c)
-      @child.fire_property_change("row", r, r) # XXX quick dirty, this should happen
+      # replaced this on 2010-02-26 11:49 HOPE IT WORKS XXX
+      #@child.fire_property_change("row", r, r) # XXX quick dirty, this should happen
+      @child.repaint_required(true)
       @repaint_required = true
       #fire_handler :PROPERTY_CHANGE, self
+      fire_state_changed
       return true
     end
     # instead of using row and col to increment, try using this, since this is what's actually incremented.
@@ -120,7 +125,6 @@ module RubyCurses
     ## most likely should just return an unhandled and not try being intelligent
     # should viewport handle keys or should parent do so directly to child
     def handle_key ch
-      # TODO
       # if this gets key it should just hand it to child
       if @child != nil
         ret = @child.handle_key ch
@@ -188,6 +192,12 @@ module RubyCurses
                   @child.width += delta
               end
           end
+      end
+      # should this be in widget ?
+      # inform listeners that state has changed
+      def fire_state_changed
+        @sce = ChangeEvent.new(self) if @sce.nil?
+        fire_handler :STATE_CHANGE, @sce
       end
   end # class viewport
 end # module
