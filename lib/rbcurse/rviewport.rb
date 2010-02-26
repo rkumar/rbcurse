@@ -20,7 +20,7 @@ Major change 2010-02-11 23:32
 require 'ncurses'
 require 'logger'
 require 'rbcurse'
-require 'rchangeevent'
+require 'rbcurse/rchangeevent'
 
 include Ncurses
 include RubyCurses
