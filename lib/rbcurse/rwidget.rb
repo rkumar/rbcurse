@@ -1393,21 +1393,52 @@ module RubyCurses
     blk.call object,  *@key_args[keycode]
     0
   end
+  # Defines how user can give numeric args to a command even in edit mode
+  # User either presses universal_argument (C-u) which generates a series of 4 16 64.
+  # Or he presses C-u and then types some numbers. Followed by the action.
+  # @returns [0, :UNHANDLED] :UNHANDLED implies that last keystroke is still to evaluated
+  # by system. ) implies only numeric args were obtained. This method updates $multiplier
+  def universal_argument
+    $multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 4 : $multiplier *= 4)
+    # See if user enters numerics. If so discard existing varaible and take only 
+    #+ entered values
+    _m = 0
+    while true
+      ch = @window.getchar()
+      case ch
+      when -1
+        next 
+      when ?0.getbyte(0)..?9.getbyte(0)
+        _m *= 10 ; _m += (ch-48)
+        $multiplier = _m
+        $log.debug " inside UNIV MULT #{$multiplier} "
+      else
+        $log.debug " inside UNIV MULT else got #{ch} "
+        # here is some other key that is the function key to be repeated. we must honor this
+        # and ensure it goes to the right widget
+        return ch
+        #return :UNHANDLED
+      end
+    end
+    return 0
+  end
   ## forms handle keys
   # mainly traps tab and backtab to navigate between widgets.
   # I know some widgets will want to use tab, e.g edit boxes for entering a tab
   #  or for completion.
   def handle_key(ch)
+        if ch ==  ?\C-u.getbyte(0)
+          ret = universal_argument
+          $log.debug " FORM set MULT to #{$multiplier}, ret = #{ret}  "
+          return 0 if ret == 0
+          ch = ret # unhandled char
+        end
+
         case ch
         when -1
           return
-        when ?\C-u.getbyte(0)
-          # setting global multiplier
-          $multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 4 : $multiplier *= 4)
-          $log.debug " FORM set MULT to #{$multiplier} "
-          return 0
         else
-       $log.debug " form HK #{ch} #{self}, #{@name} "
+          $log.debug " form HK #{ch} #{self}, #{@name} "
           field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
