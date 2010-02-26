@@ -229,7 +229,7 @@ module RubyCurses
         @pce.set( self, text, oldvalue, newvalue)
       end
       fire_handler :PROPERTY_CHANGE, @pce
-      @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint
+      @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint (viewport line 99 fire_prop
     end
 
     end # module eventh
