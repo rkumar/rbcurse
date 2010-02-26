@@ -177,6 +177,14 @@ module RubyCurses
         end
         return acolor
       end
+      ## repeats the given action based on how value of universal numerica argument
+      ##+ set using the C-u key. Or in vim-mode using numeric keys
+      def repeatm
+        _multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 1 : $multiplier )
+        _multiplier.times { yield }
+        $multiplier = 0
+      end
+ 
     end
 
     module EventHandler
@@ -1393,6 +1401,11 @@ module RubyCurses
         case ch
         when -1
           return
+        when ?\C-u.getbyte(0)
+          # setting global multiplier
+          $multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 4 : $multiplier *= 4)
+          $log.debug " FORM set MULT to #{$multiplier} "
+          return 0
         else
        $log.debug " form HK #{ch} #{self}, #{@name} "
           field =  get_current_field
@@ -1435,6 +1448,7 @@ module RubyCurses
         end
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
+       #$multiplier = 0
   end
   ##
   # test program to dump data onto log
@@ -1692,7 +1706,7 @@ module RubyCurses
       cursor_end 
     when ?\C-k.getbyte(0)
       delete_eol if @editable
-    when ?\C-u.getbyte(0)
+    when ?\C-_.getbyte(0) # changed on 2010-02-26 14:44 so C-u can be used as numeric arg
       @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
     when 32..126
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
