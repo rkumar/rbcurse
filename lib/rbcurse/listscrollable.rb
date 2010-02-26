@@ -10,7 +10,7 @@
 module ListScrollable
   attr_reader :search_found_ix, :find_offset, :find_offset1
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
-  def previous_row num=($multiplier == 0 ? 1 : $multiplier)
+  def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
     @oldrow = @current_index
     # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
     # on leave and on enter
@@ -21,7 +21,7 @@ module ListScrollable
     $multiplier = 0
   end
   alias :up :previous_row
-  def next_row num=($multiplier == 0 ? 1 : $multiplier)
+  def next_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
     @oldrow = @current_index
     rc = row_count
     @current_index += 1*num if @current_index < rc
