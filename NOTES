@@ -1416,3 +1416,20 @@ So its a thought. In anycase, if the user wishes to override a binding,
 we should evaluate bindings first.
 
 * * * * * * * *
+
+Subject: regarding multiplier in embedded components
+----------------------------------------------------
+Date: 2010-02-26 13:40
+
+When i have a textarea inside a scrollpane, and i do C-u, who gets the
+numeric argument of 4 or 16, the scrollpane or textarea. Currently,
+since the scrollpane passes the key to textarea, so textarea increments
+multiplier.
+Then i press scroll (M-n), but the scrollpanes multiplier is still
+unset.
+This means that we cannot have a multiplier at an object level -- it
+must be a global app level thing. Each object uses the global arguments
+and resets after usage.
+But where do i trap the C-u key ?? 
+
+* * * * * * * *
