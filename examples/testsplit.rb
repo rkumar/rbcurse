@@ -44,7 +44,7 @@ if $0 == __FILE__
           col  c
           width 70
           height ht
-          focusable false
+  #        focusable false
           #orientation :VERTICAL_SPLIT
         end
       splitp.bind(:PROPERTY_CHANGE){|e| $message.value = e.to_s }
@@ -70,8 +70,7 @@ if $0 == __FILE__
         end
         #splitp.get_buffer().wclear
         #splitp << "#{ch} got (#{str})"
-        splitp.repaint
-        splitp.buffer_to_screen
+        splitp.repaint # since the above keys are not being handled inside
         @form.handle_key(ch)
         @window.wrefresh
       end
