@@ -10,7 +10,7 @@
 module ListScrollable
   attr_reader :search_found_ix, :find_offset, :find_offset1
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
-  def previous_row num=(@multiplier == 0 ? 1 : @multiplier)
+  def previous_row num=($multiplier == 0 ? 1 : $multiplier)
     @oldrow = @current_index
     # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
     # on leave and on enter
@@ -18,13 +18,15 @@ module ListScrollable
       @current_index -= 1 if @current_index > 0
     }
     bounds_check
+    $multiplier = 0
   end
   alias :up :previous_row
-  def next_row num=(@multiplier == 0 ? 1 : @multiplier)
+  def next_row num=($multiplier == 0 ? 1 : $multiplier)
     @oldrow = @current_index
     rc = row_count
     @current_index += 1*num if @current_index < rc
     bounds_check
+    $multiplier = 0
   end
   alias :down :next_row
   def goto_bottom
@@ -43,15 +45,16 @@ module ListScrollable
   def scroll_backward
     @oldrow = @current_index
     h = scrollatrow()
-    m = @multiplier == 0? 1 : @multiplier
+    m = $multiplier == 0? 1 : $multiplier
     @current_index -= h * m
     bounds_check
+    $multiplier = 0
   end
   def scroll_forward
     @oldrow = @current_index
     h = scrollatrow()
     rc = row_count
-    m = @multiplier == 0? 1 : @multiplier
+    m = $multiplier == 0? 1 : $multiplier
     # more rows than box
     if h * m < rc
       @toprow += h+1 #if @current_index+h < rc
