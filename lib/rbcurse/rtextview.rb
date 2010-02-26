@@ -233,6 +233,10 @@ module RubyCurses
       when @KEY_FIND_MORE
         find_more
       when ?0.getbyte(0)..?9.getbyte(0)
+        # FIXME the assumption here was that if numbers are being entered then a 0 is a number
+        # not a beg-of-line command.
+        # However, after introducing universal_argument, we can enters numbers using C-u and then press another
+        # C-u to stop. In that case a 0 should act as a command, even though multiplier has been set
         if ch == ?0.getbyte(0) and $multiplier == 0
           # copy of C-a - start of line
           set_form_col 0
