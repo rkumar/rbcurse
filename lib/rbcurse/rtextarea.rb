@@ -81,7 +81,6 @@ module RubyCurses
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
-      @multiplier = 0 # 2010-02-24 20:23 multiply motion and other commands
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -290,11 +289,11 @@ module RubyCurses
             #fire_handler :CHANGE, self  # 2008-12-22 15:23 
           end
         end
-      when ?\C-u.getbyte(0)
-        # since textareas are editable we use a control key to increase
-        # multiplier. Series is 4 16 64
-        @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
-        return 0
+      #when ?\C-u.getbyte(0)
+        ## since textareas are editable we use a control key to increase
+        ## multiplier. Series is 4 16 64
+        #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+        #return 0
       when ?\C-_.getbyte(0) # changed from C-u so i can use C-u for multipliers
         undo_delete
       when ?\C-a.getbyte(0)
@@ -320,14 +319,13 @@ module RubyCurses
         if ret == :UNHANDLED
           # check for bindings, these cannot override above keys since placed at end
           ret = process_key ch, self
-          $log.debug "TA process_key #{ch} got ret #{ret} in #{self} "
-          @multiplier = 0 
+          $log.debug "TA process_key #{ch} got ret #{ret} in #{@name} "
           return :UNHANDLED if ret == :UNHANDLED
         end
       end
       set_form_row
       set_form_col  # testing 2008-12-26 19:37 
-      @multiplier = 0 # remove from everywhere else above ?
+      $multiplier = 0 # reset only if key handled
       return 0
     end
     def undo_delete
@@ -403,14 +401,12 @@ module RubyCurses
     ##
     # FIXME : if cursor at end of last line then forward takes cursor to start
     # of last line (same line), should stop there.
-    # add @multiplier TODO
     def cursor_forward num=1
       #$log.debug "next char cp #{@curpos}, #{@buffer.length}. wi: #{@width}"
       #$log.debug "next char cp ll and ci #{@list.length}, #{@current_index}"
       #if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
-    #$log.debug " TA CF mult 1 #{@multiplier} "
       return if at_eol? and at_last_line?
-      (@multiplier == 0? 1 : @multiplier).times { 
+      repeatm { 
       if @curpos < buffer_len()
         @curpos += 1
         addcol 1
@@ -453,19 +449,18 @@ module RubyCurses
     end
     ## 2009-10-04 23:01 taken care that you can't go back at start of textarea
     # it was going onto border
-    # add @multiplier TODO
   def cursor_backward
       #$log.debug "back char cp ll and ci #{@list.length}, #{@current_index}"
       #$log.debug "back char cb #{@curpos}, #{@buffer.length}. wi: #{@width}"
       return if @curpos == 0 and @current_index == 0 # added 2009-10-04 23:02 
-      (@multiplier == 0? 1 : @multiplier).times { 
-    if @curpos > 0
-      @curpos -= 1
-      addcol -1
-    else # trying this out 2008-12-26 20:18 
-      ret = up
-      cursor_eol if ret != -1
-    end
+      repeatm { 
+        if @curpos > 0
+          @curpos -= 1
+          addcol -1
+        else # trying this out 2008-12-26 20:18 
+          ret = up
+          cursor_eol if ret != -1
+        end
       }
   end
   def delete_line line=@current_index
@@ -479,14 +474,14 @@ module RubyCurses
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
   end
-    def delete_curr_char num=(@multiplier == 0 ? 1 : @multiplier)
+    def delete_curr_char num=($multiplier == 0 ? 1 : $multiplier)
       return -1 unless @editable
       num.times do
         delete_at
       end
       set_modified 
     end
-    def delete_prev_char num=(@multiplier == 0 ? 1 : @multiplier)
+    def delete_prev_char num=($multiplier == 0 ? 1 : $multiplier)
       return -1 if !@editable 
       num.times do
       if @curpos <= 0
