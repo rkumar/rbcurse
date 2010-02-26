@@ -6,9 +6,11 @@
     of scrollbars.
     Also contains viewport for row and columns.
   * Author: rkumar 
-TODO section:
-  - add events, property changed etc at least for scrolling
-  - scrollbars to be classes
+Todo section:
+  - add events, property changed etc at least for scrolling - DONE
+    SCrollpane normall should listen in to changes in viewport, however Scro calls those very methods
+    and what's more, other classes would listen to SCR and not to VP.
+  - scrollbars to be classes - shall we avoid over-engineering, and KISS
   - if scrollpane reduced it should also resize, as example inside splitpane.
   * file created 2009-10-27 19:20 
   * Added a call to child's set_form_col from set_form_row
@@ -19,6 +21,8 @@ Major changes 2010-02-11 19:51 to simplify version RFED16
 
   Pass handle_key to child, also repaint refer child.
   Avoid passing to viewport as this would slow down alot.
+
+  NOTE: if a caller is interested in knowing what scrolling has happened, pls bind to :STATE_CHANGE, you will receive the viewport object. If you find this cumbersome, and wish to know only about scrolling, we can put in a scrolling event and inform of row or col scrolling. Or we can fire a property change with row or col increment.
   
   
   --------
@@ -41,7 +45,6 @@ module RubyCurses
   # A scrollable box throgh which one can see portions of underlying object
   # such as textarea, table or a form, usually the underlying data is larger
   # than what can be displayed.
-  # TODO - 
   
   class ScrollPane < Widget
     # viewport
@@ -148,6 +151,8 @@ module RubyCurses
       # -1 added on 2010-02-16 23:35 since we are red 1, and bw
       @viewport.set_view_size(@height-@border_width-0, @width-@border_width-0) # XXX make it one less
       @viewport.cascade_changes = @cascade_changes # added 2010-02-04 18:19 
+      @viewport.bind :STATE_CHANGE { |e| view_state_changed(e) }
+      @viewport.bind :PROPERTY_CHANGE { |e| view_property_changed(e) }
     end
     # return underlying viewport
     # in order to run some of its methods
@@ -157,17 +162,23 @@ module RubyCurses
     # Directly set the viewport.
     # Usually it is best to use set_viewport_view instead
     def set_viewport vp
+      old = @viewport
       @viewport = vp
+      fire_property_change "viewport", old, @viewport
     end
-    # sets the component to be used as a rowheader
+    # sets the component to be used as a rowheader TODO
     def set_rowheader_view ch
+      old = @rowheader
       @rowheader = Viewport.new
       @rowheader.set_view ch
+      fire_property_change "row_header", old, @rowheader
     end
-    # sets the component to be used as a column header
+    # sets the component to be used as a column header TODO
     def set_columnheader_view ch
+      old = @columnheader
       @columnheader = Viewport.new
       @columnheader.set_view ch
+      fire_property_change "column_header", old, @columnheader
     end
     def set_view_size h,w
       # calling the property shoudl uniformally trigger fire_property_change
@@ -176,13 +187,24 @@ module RubyCurses
       #width(w)
       #fire_handler :PROPERTY_CHANGE, self # XXX should it be an event STATE_CHANGED with details
     end
+    ## seems i wrote this only so i could set repaint_required to true
+    # However, now that VP calls state changed, that will happen XXX
     def set_view_position r,c
       ret = @viewport.set_view_position r,c
-      @repaint_required = true if ret 
-      #row(r)
-      #col(c)
-      #fire_handler :PROPERTY_CHANGE, self
+      if ret
+        @repaint_required = true if ret 
+    #    fire_property_change("view_position", 
       return ret
+    end
+    # this method is registered with Viewport for changes
+    def view_state_changed ev
+      fire_handler :STATE_CHANGE, ev #???
+      @repaint_required = true
+    end
+    # this method is registered with Viewport for changes to properties
+    def view_property_changed ev
+      fire_handler :PROPERTY_CHANGE, ev #???
+      @repaint_required = true
     end
     # @return [true, false] false if r,c not changed
     def increment_view_row num
