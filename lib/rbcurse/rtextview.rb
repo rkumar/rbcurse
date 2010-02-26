@@ -74,7 +74,6 @@ module RubyCurses
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
-      @multiplier = 0 # 2010-02-23 21:41 multiple calls to motion commands
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
     end
@@ -234,29 +233,28 @@ module RubyCurses
       when @KEY_FIND_MORE
         find_more
       when ?0.getbyte(0)..?9.getbyte(0)
-        if ch == ?0.getbyte(0) and @multiplier == 0
+        if ch == ?0.getbyte(0) and $multiplier == 0
           # copy of C-a - start of line
           set_form_col 0
           @pcol = 0
           return 0
         end
         # storing digits entered so we can multiply motion actions
-        @multiplier *= 10 ; @multiplier += (ch-48)
+        $multiplier *= 10 ; $multiplier += (ch-48)
         return 0
-      when ?\C-u.getbyte(0)
-        # multiplier. Series is 4 16 64
-        @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
-        return 0
+      #when ?\C-u.getbyte(0)
+        ## multiplier. Series is 4 16 64
+        #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+        #return 0
       when ?\C-c.getbyte(0)
-        @multiplier = 0
+        $multiplier = 0
         return 0
       else
         # check for bindings, these cannot override above keys since placed at end
         ret = process_key ch, self
-        @multiplier = 0
         return :UNHANDLED if ret == :UNHANDLED
       end
-      @multiplier = 0 # remove from everywhere else above ?
+      $multiplier = 0 # you must reset if you've handled a key. if unhandled, don't reset since parent could use
       set_form_row
       return 0 # added 2010-01-12 22:17 else down arrow was going into next field
     end
@@ -310,7 +308,7 @@ module RubyCurses
     end
     def cursor_forward
       maxlen = @maxlen || @width-2
-      (@multiplier == 0? 1 : @multiplier).times { 
+      repeatm { 
       if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
         @curpos += 1
         addcol 1
@@ -341,7 +339,7 @@ module RubyCurses
       end
     end
     def cursor_backward
-      (@multiplier == 0? 1 : @multiplier).times { 
+      repeatm { 
       if @curpos > 0
         @curpos -= 1
         set_form_col 
