@@ -151,8 +151,8 @@ module RubyCurses
       # -1 added on 2010-02-16 23:35 since we are red 1, and bw
       @viewport.set_view_size(@height-@border_width-0, @width-@border_width-0) # XXX make it one less
       @viewport.cascade_changes = @cascade_changes # added 2010-02-04 18:19 
-      @viewport.bind :STATE_CHANGE { |e| view_state_changed(e) }
-      @viewport.bind :PROPERTY_CHANGE { |e| view_property_changed(e) }
+      @viewport.bind(:STATE_CHANGE) { |e| view_state_changed(e) }
+      @viewport.bind(:PROPERTY_CHANGE) { |e| view_property_changed(e) }
     end
     # return underlying viewport
     # in order to run some of its methods
@@ -194,6 +194,7 @@ module RubyCurses
       if ret
         @repaint_required = true if ret 
     #    fire_property_change("view_position", 
+      end
       return ret
     end
     # this method is registered with Viewport for changes
