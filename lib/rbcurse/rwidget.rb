@@ -2293,8 +2293,8 @@ module RubyCurses
           y=r #-@graphic.top
           x=c+uline #-@graphic.left
           if @graphic.window_type == :PAD
-            x -= @graphic.top
-            y -= @graphic.left
+            x -= @graphic.left
+            y -= @graphic.top
           end
           raise "button underline location error #{x} , #{y} " if x < 0 or c < 0
           @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
