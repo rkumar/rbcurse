@@ -287,7 +287,7 @@ module RubyCurses
             #ret = @current_form.handle_key(ch)
           else
             if !@current_tab.nil?
-            @current_form = @current_tab
+            @current_form = @current_tab.form # 2010-02-27 20:22 
             $log.debug " calling display form from handle_key NO_NEXT_FIELD"
             display_form @current_form
             @current_form.req_first_field
@@ -301,7 +301,7 @@ module RubyCurses
             @current_form.req_last_field
           else
             if !@current_tab.nil?
-            @current_form = @current_tab
+            @current_form = @current_tab.form # 2010-02-27 20:22 
             $log.debug " TPcalling display form from handle_key NO_PREV_FIELD"
             display_form @current_form
             @current_form.req_last_field
