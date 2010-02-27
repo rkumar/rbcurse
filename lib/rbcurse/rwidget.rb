@@ -185,6 +185,74 @@ module RubyCurses
         $multiplier = 0
       end
  
+    ##
+    # bind an action to a key, required if you create a button which has a hotkey
+    # or a field to be focussed on a key, or any other user defined action based on key
+    # e.g. bind_key ?\C-x, object, block 
+    # added 2009-01-06 19:13 since widgets need to handle keys properly
+    #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
+    #  TODO add symbol so easy to map from config file or mapping file
+    def bind_key keycode, *args, &blk
+      @key_handler ||= {}
+      if !block_given?
+        blk = args.pop
+        raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
+        $log.debug " #{@name} bind_key received a symbol #{blk} "
+      end
+      case keycode
+      when String
+        $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
+        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
+        @key_handler[keycode] = blk
+      when Array
+        # for starters lets try with 2 keys only
+        a0 = keycode[0]
+        a0 = keycode[0].getbyte(0) if keycode[0].class == String
+        a1 = keycode[1]
+        a1 = keycode[1].getbyte(0) if keycode[1].class == String
+        @key_handler[a0] ||= OrderedHash.new
+        @key_handler[a0][a1] = blk
+      else
+        @key_handler[keycode] = blk
+      end
+      @key_args ||= {}
+      @key_args[keycode] = args
+    end
+    # e.g. process_key ch, self
+    # returns UNHANDLED if no block for it
+    # after form handles basic keys, it gives unhandled key to current field, if current field returns
+    # unhandled, then it checks this map.
+    # added 2009-01-06 19:13 since widgets need to handle keys properly
+    # added 2009-01-18 12:58 returns ret val of blk.call
+    # so that if block does not handle, the key can still be handled
+    # e.g. table last row, last col does not handle, so it will auto go to next field
+    #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
+    #  except maybe for window pointer. TODO not tested
+    def _process_key keycode, object, window
+      return :UNHANDLED if @key_handler.nil?
+      blk = @key_handler[keycode]
+      return :UNHANDLED if blk.nil?
+      if blk.is_a? OrderedHash
+          ch = window.getch
+          if ch < 0 || ch > 255
+            #next
+            return nil
+          end
+          $log.debug " process_key: got #{keycode} , #{ch} "
+          yn = ch.chr
+          blk1 = blk[ch]
+          return nil if blk1.nil?
+          $log.debug " process_key: found block for #{keycode} , #{ch} "
+          blk = blk1
+      end
+      $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
+      if blk.is_a? Symbol
+        return send(blk, *@key_args[keycode])
+      else
+        return blk.call object,  *@key_args[keycode]
+      end
+      #0
+    end
     end
 
     module EventHandler
@@ -515,8 +583,13 @@ module RubyCurses
     # added 2009-01-06 19:13 since widgets need to handle keys properly
     #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
     #  TODO add symbol so easy to map from config file or mapping file
-    def bind_key keycode, *args, &blk
+    def OLDbind_key keycode, *args, &blk
       @key_handler ||= {}
+      if !block_given?
+        blk = args.pop
+        raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
+        $log.debug " #{@name} bind_key received a symbol #{blk} "
+      end
       case keycode
       when String
         $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
@@ -554,26 +627,7 @@ module RubyCurses
     #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
     #  except maybe for window pointer. TODO not tested
     def process_key keycode, object
-      return :UNHANDLED if @key_handler.nil?
-      blk = @key_handler[keycode]
-      return :UNHANDLED if blk.nil?
-      if blk.is_a? OrderedHash
-          #ch = @graphic.mvwgetch(0,0)
-          ch = @graphic.getch
-          if ch < 0 || ch > 255
-            #next
-            return nil
-          end
-          $log.debug " process_key: got #{keycode} , #{ch} "
-          yn = ch.chr
-          blk1 = blk[ch]
-          return nil if blk1.nil?
-          $log.debug " process_key: found block for #{keycode} , #{ch} "
-          blk = blk1
-      end
-      $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
-      return blk.call object,  *@key_args[keycode]
-      #0
+      return _process_key keycode, object, @graphic
     end
     ## 
     # to be added at end of handle_key of widgets so instlalled actions can be checked
@@ -1341,7 +1395,7 @@ module RubyCurses
   # e.g. bind_key ?\C-x, object, block
     # 1.9 if string passed then getbyte so user does not need to change much and
     # less chance of error 2009-10-04 16:08 
-  def bind_key keycode, *args, &blk
+  def OLDbind_key keycode, *args, &blk
       @key_handler ||= {}
       case keycode
       when String
@@ -1369,30 +1423,31 @@ module RubyCurses
   # unhandled, then it checks this map.
   # Please update widget with any changes here. TODO: match regexes as in mapper
   def process_key keycode, object
-      return :UNHANDLED if @key_handler.nil?
-      blk = @key_handler[keycode]
-      return :UNHANDLED if blk.nil?
-      if blk.is_a? OrderedHash
-          #ch = @window.mvwgetch(0,0)
-        # Please note that this does not wait too long, you have to press next key fast
-        # since i have set halfdelay in ncurses.rb
-          ch = @window.getch
-          if ch < 0 || ch > 255
-            #next
-            return nil
-          end
-          $log.debug " process_key: got #{keycode} , #{ch} "
-          yn = ch.chr
-          blk1 = blk[ch]
-          return nil if blk1.nil?
-          $log.debug " process_key: found block for #{keycode} , #{ch} "
-          blk = blk1
-      end
-      $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
-     # return blk.call object,  *@key_args[keycode]
-    blk.call object,  *@key_args[keycode]
-    0
+    return _process_key keycode, object, @window
   end
+      #return :UNHANDLED if @key_handler.nil?
+      #blk = @key_handler[keycode]
+      #return :UNHANDLED if blk.nil?
+      #if blk.is_a? OrderedHash
+        ## Please note that this does not wait too long, you have to press next key fast
+        ## since i have set halfdelay in ncurses.rb, test this with getchar to get more keys TODO
+          #ch = @window.getch
+          #if ch < 0 || ch > 255
+            ##next
+            #return nil
+          #end
+          #$log.debug " process_key: got #{keycode} , #{ch} "
+          #yn = ch.chr
+          #blk1 = blk[ch]
+          #return nil if blk1.nil?
+          #$log.debug " process_key: found block for #{keycode} , #{ch} "
+          #blk = blk1
+      #end
+      #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
+     ## return blk.call object,  *@key_args[keycode]
+    #blk.call object,  *@key_args[keycode]
+    #0
+  #end
   # Defines how user can give numeric args to a command even in edit mode
   # User either presses universal_argument (C-u) which generates a series of 4 16 64.
   # Or he presses C-u and then types some numbers. Followed by the action.
