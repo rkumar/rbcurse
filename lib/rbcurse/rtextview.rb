@@ -76,6 +76,8 @@ module RubyCurses
       @win_top = 0
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
+      bind_key(?/, :ask_search)
+      bind_key(?n, :find_more)
     end
     ## 
     # send in a list
