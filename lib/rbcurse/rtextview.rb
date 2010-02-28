@@ -47,7 +47,7 @@ module RubyCurses
     dsl_accessor :print_footer
     dsl_accessor :suppress_borders # added 2010-02-10 20:05 values true or false
 
-    def initialize form, config={}, &block
+    def initialize form = nil, config={}, &block
       @focusable = true
       @editable = false
       @row = 0
