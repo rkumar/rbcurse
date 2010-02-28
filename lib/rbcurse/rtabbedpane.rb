@@ -1,13 +1,20 @@
 =begin
   * Name: tabbed pane: can have multiple forms overlapping.
   * Description: 
-  * starting a new version using pads 2009-10-25 12:05 
+  * A tabbed pane, mostly based (iirc) on the Terminal Preferences in OSX PPC 10.5.x
+  * Starting a new version using pads 2009-10-25 12:05 
   * Author: rkumar
   
   --------
   * Date:  2009-10-25 12:05 
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
+
+
+  * 2010-02-28 09:47 - major cleanup and rewrite. 
+    - Allow adding of component (in addition to form)
+    - Tab should handle_key and repaint based on compo or form
+    - Ideally, even form should be created and managed itself, why should TP have to repaint it?
 
 NOTE: Line 610 in rwidget.rb copy_pad_to_win was written for tabbedpanes
 but did not let a splitpane print its comp fully if SPLP's width was increased
@@ -26,6 +33,7 @@ module RubyCurses
   # TODO :  insert_tab, remove_tab, disable/hide tab
   # Hotkeys should be defined with ampersand, too.
   # 2010-02-21 13:44 When switching tabs, cursor needs to be re-established
+  # Need to handle more tabs than can be displayed.
   # NOTE:I don't think this uses set_form_row or bothers with the cursor
   #+ since it manages highlighting etc on its own. 2009-12-29 13:30 
 
@@ -53,6 +61,8 @@ module RubyCurses
           bgcolor =  @bgcolor
           color =  @color
           attribs = Ncurses::A_BOLD
+          setrowcol r,c  # show cursor on highlighted as we tab through
+          ## but when tabbing thru selected one, then selected one doesn't show cursor
         when :SELECTED
        $log.debug("TabbedBUTTon repaint : SELECTED #{bgcolor}, #{color}")
           bgcolor =  @bgcolor
@@ -92,11 +102,11 @@ module RubyCurses
   #  include EventHandler - widget does
     #attr_reader :visible
     #dsl_accessor :row, :col
-#    dsl_accessor :height, :width # commented off 2010-01-21 20:37 
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
     attr_reader :selected_index
     attr_reader :current_tab
+    attr_reader :window
     def initialize form, aconfig={}, &block
       super
       @parent = form
@@ -114,20 +124,56 @@ module RubyCurses
       #@config.each_pair { |k,v| variable_set(k,v) }
       #instance_eval &block if block_given?
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
-      @manages_cursor = true # redundant, remove
+  #    @manages_cursor = true # redundant, remove
     end
     ##
     # This is a public, user called method for creating a new tab
     # This will be called several times for one TP.
     # when adding tabs, you may use ampersand in text to create hotkey
-    def add_tab text, aconfig={}, &block
+    def add_tab text, component = nil, aconfig={}, &block
       #create a button here and block is taken care of in button's instance
       #or push this for later creation.
-      @tabs << Tab.new(text, aconfig, &block)
+      if !component.nil?
+        #component.set_form @parent
+        component.form = @parent
+        component.rows_panned = component.cols_panned = 0
+        component.parent_component = self # added 2010-02-27  so offsets can go down ?
+        component.should_create_buffer true 
+        component.row = @row + 4
+        component.col = @col
+
+        # current_form likely to be nil XXX
+        component.set_buffering(:target_window => @target_window || @parentwin, :form => @current_form, :bottom => @height-5, :right => @width-2 )
+        scr_top = 3 # for Pad, if Pad passed as in SplitPane
+        scr_left = 1 # for Pad, if Pad passed as in SplitPane
+        scr_top = component.row+0 # for Pad, if Pad passed as in SplitPane
+        scr_left = component.col # for Pad, if Pad passed as in SplitPane
+        component.set_buffering(:screen_top => scr_top, :screen_left => scr_left)
+        #component.height ||= @height
+        #component.width ||= @width
+        component.height = @height - 4
+        component.width = @width - 0
+
+        #@form.add_rows += 2 # related to scr_top  XXX What if form not set. i cannot keep accumulating
+      end
+      @tabs << Tab.new(text, component, aconfig, &block)
       tab = @tabs.last
-      @forms << create_tab_form(tab)
-      tab.form = @forms.last
+      tab.parent_component = self
+      # just temoprarily 
+      if component.nil?
+        @forms << create_tab_form(tab)
+        tab.form = @forms.last
+      end
       return tab
+    end
+    ## return a form for use by program - if you want to put multiple items
+    # Otherwise just use add_component
+    def form tab
+      if tab.form.nil?
+        @forms << create_tab_form(tab)
+        tab.form = @forms.last
+      end
+      return tab.form
     end
 
     ## returns the index of the current / selected tab
@@ -152,6 +198,10 @@ module RubyCurses
       end
       instance_eval &block if block_given?
     end
+    ## this is a really wierd repaint method. 
+    # First time it creates the TP window/form which contains the buttons.
+    # In future calls it really doesn't do anything.
+    # Deos it have nothing to paint, no borders to redraw, no repaint_required ???
     def repaint
       $log.debug " tabbedpane repaint "
       @window || create_window
@@ -163,7 +213,7 @@ module RubyCurses
       repaint
     end
     def create_window
-      set_buffer_modified()
+      set_buffer_modified() # required still ??
       # first create the main top window with the tab buttons on it.
       $log.debug " TPane create_buff Top #{@row}, Left #{@col} H #{@height} W #{@width} "
       #$log.debug " parentwin #{@parentwin.left} #{@parentwin.top} "
@@ -200,41 +250,21 @@ module RubyCurses
         end
         col += text.length+4
         form = tab.form
-        form.set_parent_buffer(@window)
+        form.set_parent_buffer(@window) if form
 
         @buttons.last.command { 
           $log.debug " calling display form from button press"
-          display_form(form)
-          @current_form = form
+          tab.repaint
           @current_tab = tab
         }
  
       end
       @form.repaint #  This paints the outer form not inner
       @window.wrefresh ## ADDED  2009-11-02 23:29 
-      @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      @old_tab = @tabs.first
+    #  @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
     end
     ##
-    # On a tabbed button press, this will display the relevant form
-    # On why I am directyl calling copywin and not using copy_pad_to_win etc
-    #+ those require setting top and left. However, while printing a pad, top and left are reduced and so 
-    #+ must be absolute r and c. But inside TP, objects have a relative coord. So the print functions
-    #+ were failing silently, and i was wondering why nothing was printing.
-    def display_form form, flag = true
-      pad = form.window
-      form.repaint if flag #   added 2009-11-03 23:27  paint widgets in inside form
-      $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{@graphic.name}. #{form}: #{form.name}  "
-      ret = -1
-      pminr = pminc = 0
-      r = @row + 2
-      c = @col + 0
-      border_width = 0
-      maxr = @height -3
-      maxc = @width -1
-      $log.debug " ret = pad.copywin(@window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, r+ #{maxr} - border_width, c+ #{maxc} -border_width,0). W:#{@window}, #{@window.get_window} "
-      ret = pad.copywin(@window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
-      $log.debug " display form after pad copy #{ret}. #{form.name} "
-    end
     def create_tab_form tab
         mtop = 2
         mleft = 0
@@ -267,50 +297,59 @@ module RubyCurses
     end
     ##
     # added 2009-10-08 19:39 so it can be placed in a form
+    # @form is the top button form
+    # XXX stop this nonsense about current_form and current_tab
+    # TP should only be concerned with tabs. what happens inside is none of its business
     def handle_key(ch)
-        @current_form ||= @form
+      @current_tab ||= @form # first we cycle buttons
           $log.debug " handle_key in tabbed pane got : #{ch}"
-        ret = @current_form.handle_key(ch)
-          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret}"
+          # needs to go to component
+          ret = @current_tab.handle_key(ch)
+          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} "
           # this is required so each keystroke on the widgets is refreshed
           # but it causes a funny stagger effect if i press tab on the tabs.
           # Staggered effect happens when we pass @form passed
-          display_form @current_form, false unless @current_form == @form
+          #display_form @current_tab, false unless @current_tab == @form
 
-          $log.debug " ++ form.handle_key in tabbed pane got ret : #{ret}"
+          #$log.debug " ++ form.handle_key in tabbed pane got ret : #{ret}"
+
+          # components will usually return UNHANDLED for a tab or btab
+          # We need to convert it so the main form can use it
+          if ret == :UNHANDLED
+            if ch == 9
+              ret = :NO_NEXT_FIELD
+            elsif ch == 353 # btab
+              ret = :NO_PREV_FIELD
+            end
+          end
+
         case ret
         when :NO_NEXT_FIELD
-          if @current_form != @form
-            @current_form = @form
-            #@current_form.select_field -1
-            @current_form.req_first_field
-            #ret = @current_form.handle_key(ch)
+          if @current_tab != @form
+            ## if no next field on a subform go to first button of main form
+            @old_tab = @current_tab
+            @current_tab = @form
+            @form.req_first_field
           else
-            if !@current_tab.nil?
-            @current_form = @current_tab.form # 2010-02-27 20:22 
-            $log.debug " calling display form from handle_key NO_NEXT_FIELD"
-            display_form @current_form
-            @current_form.req_first_field
-     
-            end
+            # on top button panel - no more buttons, go to tabs first field
+            @current_tab = @old_tab
+            @current_tab.set_focus :FIRST
           end
         when :NO_PREV_FIELD
-          if @current_form != @form
-            $log.debug "TP 1 no prev field - going to button "
-            @current_form = @form
-            @current_form.req_last_field
+          if @current_tab != @form
+            $log.debug "TP 1 no prev field - going to last button "
+            @old_tab = @current_tab
+            @current_tab = @form
+            @form.req_last_field
           else
-            if !@current_tab.nil?
-            @current_form = @current_tab.form # 2010-02-27 20:22 
-            $log.debug " TPcalling display form from handle_key NO_PREV_FIELD"
-            display_form @current_form
-            @current_form.req_last_field
+            # on top button panel - no prev buttons, go to tabs last field
+            @current_tab = @old_tab
+            @current_tab.set_focus :LAST
             end
-          end
         when :UNHANDLED
           $log.debug " unhandled in tabbed pane #{ch}"
           ret = @form.process_key ch, self # field
-          #### XXX @form.repaint
+    
           return ret if ret == :UNHANDLED
         end
         #@current_form.window.wrefresh # calling pad refresh XXX
@@ -320,61 +359,6 @@ module RubyCurses
     end
     # this was used when we had sort of made this into a standalone popup
     # now since we want to embed inside a form, we have to use handle_key
-    def handle_keys
-
-            $log.debug " rtabbedpane: handle_keys to be deprecated "
-      begin
-      while (( ch=@window.getchar()) != 999)
-        if ch == ?\C-q
-          @selected_index = -1  # this signifies cancel by ?C-q
-          @stop = true
-          return
-        end
-        return if @stop
-        @current_form ||= @form
-        ret = @current_form.handle_key(ch)
-        case ret
-        when :NO_NEXT_FIELD
-          if @current_form != @form
-            @current_form = @form
-            #@current_form.select_field -1
-            @current_form.req_first_field
-            #ret = @current_form.handle_key(ch)
-          else
-            if !@current_tab.nil?
-            @current_form = @current_tab
-            display_form @current_form
-            @current_form.req_first_field
-            #@current_form.select_field -1
-            #ret = @current_form.handle_key(ch)
-            end
-          end
-        when :NO_PREV_FIELD
-          if @current_form != @form
-            $log.debug " 1 no prev field - going to button "
-            @current_form = @form
-            @current_form.req_last_field
-          else
-            if !@current_tab.nil?
-            @current_form = @current_tab
-            display_form @current_form
-            @current_form.req_last_field
-            end
-          end
-        when :UNHANDLED
-          $log.debug " unhandled in tabbed pane #{ch}"
-          ret = @form.process_key ch, self # field
-          @form.repaint
-          #return :UNHANDLED if ret == :UNHANDLED
-        end
-        return if @stop
-        ##### XXX @current_form.window.wrefresh
-        @window.refresh
-      end
-      ensure
-        destroy
-      end
-    end
     ##
     # ensure that the pads are being destroyed, although we've not found a way.
     def destroy
@@ -436,10 +420,13 @@ module RubyCurses
     class Tab
       attr_reader :text
       attr_reader :config
+      attr_reader :component
       attr_accessor :form
-      def initialize text, aconfig={}, &block
+      attr_accessor :parent_component
+      def initialize text, component = nil,  aconfig={}, &block
         @text = text
         @config = aconfig
+        @component = component
         @config.each_pair { |k,v| variable_set(k,v) }
         instance_eval &block if block_given?
       end
@@ -448,11 +435,89 @@ module RubyCurses
         var = "@#{var}"
         instance_variable_set(var, val) 
       end
-      def repaint
-        
-
+      # tab should handle key instead of TP.
+      # Pass to component or form
+      def handle_key ch
+        kh = @component || @form
+        ret = kh.handle_key(ch)
+        # forms seem to returning a nil when the pad has been updated. We need to copy it
+        ret ||= 0
+        if ret == 0 
+          @component.repaint if @component
+          display_form false if @form
+        end
+        # XXX i need to call repaint of compoent if updated !!
+        return ret
       end
+      def repaint
+        if @form
+          display_form
+        else
+          # we ask the component to paint its buffer only, no actual repainting
+          redraw
+        end
+      end
+      # force a redraw of a component when tabs changed
+      def redraw
+        # this kinda stuff should be inside widget or some util class
+        c = @component
+        if c.is_double_buffered?
+          c.set_buffer_modified
+          c.buffer_to_window
+        else
+          # force a repaint, if not buffered object.
+          $log.debug " TP: forcing repaint of non-buffered object #{c}  "
+          c.repaint_all
+          c.repaint
+        end
+      end
+      ## Set focus on a component or form field when a user has tabbed off the last or first button
+      def set_focus first_last
+          if !@form.nil?
+            # move to first field of existing form
+            #@current_form = @current_tab.form # 2010-02-27 20:22 
+            $log.debug " calling display form from handle_key NO_NEXT_FIELD"
+            display_form
+            first_last == :FIRST ? @form.req_first_field : @form.req_last_field
+          else 
+            # move to component
+            #@current_form = @current_tab.component # temp HACK 2010-02-27 23:24 
+            @component.set_form_row
+            @component.set_form_col
+          end
+      end
+    # On a tabbed button press, this will display the relevant form
+    # On why I am directyl calling copywin and not using copy_pad_to_win etc
+    #+ those require setting top and left. However, while printing a pad, top and left are reduced and so 
+    #+ must be absolute r and c. But inside TP, objects have a relative coord. So the print functions
+    #+ were failing silently, and i was wondering why nothing was printing.
+    # XXX move this tab in tab.repaint and let tab decide based on component or form
+    # if component then pad = component.get_buffer
+    def display_form flag = true
+      return if @form.nil? 
+      form = @form
+      if form.is_a? RubyCurses::Form  # tempo XXX since there are components
+        pad = form.window
+      else
+        return
+        pad = form.get_buffer() # component
+      end
+      pc = @parent_component
+      form.repaint if flag #   added 2009-11-03 23:27  paint widgets in inside form
+      $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{form}: #{form.name} parent: #{@parent_component} : #{pc.row} , #{pc.col}. #{pc.height} , #{pc.width}: repaint flag #{flag}   "
+      ret = -1
+      pminr = pminc = 0
+      r = pc.row + 2
+      c = pc.col + 0
+      border_width = 0
+      maxr = pc.height() - 3
+      maxc = pc.width() - 1
+      $log.debug " ret = pad.copywin(pc.window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, r+ #{maxr} - border_width, c+ #{maxc} -border_width,0). W:#{pc.window}, #{pc.window.get_window} "
+      ret = pad.copywin(pc.window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
+      $log.debug " display form after pad copy #{ret}. #{form.name} "
     end
+
+    end # class Tab
 
   end # class Tabbedpane
 
