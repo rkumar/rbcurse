@@ -103,6 +103,7 @@ module RubyCurses
     class FieldValidationException < RuntimeError
     end
     module Utils
+      $multiplier = 0
       ## 
       # wraps text given max length, puts newlines in it.
       # it does not take into account existing newlines
@@ -714,7 +715,7 @@ module RubyCurses
     # @return 0 - copy success, -1 copy failure, 1 - did nothing, usually since buffer_modified false
 
    def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
-      #raise "deprecated b2s "
+      raise "deprecated b2s "
       return 1 unless @is_double_buffered and @buffer_modified
       # screen is nil when form calls this to write to physical screen
       $log.debug " screen inside buffer_to_screen b2s :#{screen} "
@@ -966,12 +967,12 @@ module RubyCurses
               if ret == -1
                 $log.debug " copywin #{@name} h #{@height} w #{@width} "
                 if @height <= maxr-border_width
-                  $log.warn " h #{@height} is less than :bottom #{maxr} "
+                  $log.warn " h #{@height} is <= :bottom #{maxr} "
                 end
                 if @width <= maxc-border_width
-                  $log.warn " h #{@width} is less than :right #{maxc} "
+                  $log.warn " h #{@width} is <= :right #{maxc} "
                 end
-                $log.warn "ERROR !!! copywin returns -1 check " if ret == -1
+                $log.warn "ERROR !!! copywin returns -1 check Target: #{@target_window}, #{@target_window.get_window} " if ret == -1
               end
           end
           $log.debug " copywin ret --> #{ret} "
@@ -1101,7 +1102,8 @@ module RubyCurses
         # is next line used 2010-02-05 00:04 its wiping off top in scrollpane in tabbedpane
         # RFED16 - the next line should never execute now, since no outer object is buffered
         #+ only those within containers are.
-        f.buffer_to_screen(pb) if f.is_double_buffered? 
+        # Drat - this line is happeing since components inside a TP are double_buffered
+        #x f.buffer_to_screen(pb) if f.is_double_buffered? 
       end
       @window.clear_error
       @window.print_status_message $status_message unless $status_message.nil?
