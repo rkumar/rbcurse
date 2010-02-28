@@ -69,3 +69,6 @@
  55	[x] (1) keymapping: add symbols and test mapping externally (2010-02-27) (x2010-02-27)
  56	[ ] Splitpane: add oneTouchExpandable to +splitpane (2010-02-27)
  57	[ ] TabbedPane: can we directly add component (2010-02-27)
+ 58	[ ] make form = nil in widget constructors so nil not to be passed (2010-02-27)
+ 59	[ ] add a mthod form.add as an alternative to putting form in constructor (2010-02-27)
+ 60	[ ] Textview: should scroll horizontally (2010-02-28)
