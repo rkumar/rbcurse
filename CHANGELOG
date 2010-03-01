@@ -1,3 +1,14 @@
+**2010-03-01 00:00** 
+## Overhaul of tabbedpane
+
+Simplified, and it more or less completely makes sense now.
+A component may be added directly without creating a form
+which allows the TP to set row, col, and height width.
+
+At this moment, it no longer creates a form automatically, you have to call
+tp.form(tab) to get a form associated with the tab. Check code for latest on
+this. Or check samples: testtpane.rb and testtpane2.rb.
+
 **2010-02-18 22:58** 
 ## RFED16 new simplified buffering
 
