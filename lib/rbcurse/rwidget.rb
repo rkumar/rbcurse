@@ -383,7 +383,7 @@ module RubyCurses
 
     ## 2010-01-05 13:27 create buffer conditionally, if enclosing component asks. Needs to be passed down
     ##+ to further children or editor components. Default false.
-    dsl_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
+    attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
     
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
