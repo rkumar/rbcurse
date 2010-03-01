@@ -120,7 +120,7 @@ module RubyCurses
           a = 0 # =1
           @first_component.row(@row + a)  
           @first_component.col(@col + a)
-          comp.should_create_buffer @_child_buffering 
+          comp.should_create_buffer = @_child_buffering 
           # adding ext_offsets 2010-02-09 13:39 
           # setting the form is again adding top and left which are the row and col from here.
           $log.debug "SPLP exp_row #{@name}, #{comp}  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}   "
