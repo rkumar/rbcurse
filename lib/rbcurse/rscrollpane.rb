@@ -77,7 +77,7 @@ module RubyCurses
 
         ch.parent_component = self # added 2010-01-13 12:55 so offsets can go down ?
 
-        @child.should_create_buffer true 
+        @child.should_create_buffer = true 
         @form.add_rows += 2 # related to scr_top  XXX What if form not set. i cannot keep accumulating
         update_child
         # -3 since we start row +1 to get indented by 1, also we use
