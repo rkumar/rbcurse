@@ -71,7 +71,7 @@ module RubyCurses
     # In addition, A column to be editable must either have editable as nil or true
     dsl_accessor :cell_editing_allowed # 2009-01-16 22:55 
 
-    def initialize form, config={}, &block
+    def initialize form = nil, config={}, &block
       super
       init_vars
       install_list_keys
