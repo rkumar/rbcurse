@@ -52,7 +52,7 @@ module RubyCurses
     end
     def init_vars
       #@curpos = @pcol = @toprow = @current_index = 0
-      should_create_buffer true
+      should_create_buffer = true
       @border_width = 2
     end
     # set the component to be viewed
