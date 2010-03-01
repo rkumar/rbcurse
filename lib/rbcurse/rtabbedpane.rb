@@ -72,6 +72,9 @@ module RubyCurses
           bgcolor =  @bgcolor
           color =  @color
           attribs = Ncurses::A_REVERSE
+          if @state == :HIGHLIGHTED
+            setrowcol r,c  # show cursor on highlighted as we tab through
+          end
         else
        $log.debug("TabbedBUTTon repaint : ELSE #{bgcolor}, #{color}")
           bgcolor =  @bgcolor
@@ -95,6 +98,37 @@ module RubyCurses
           @graphic.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
+    # trying to give the option so as we tab through buttons, the relevant tab opens
+    # but this is getting stuck on a tab and not going on
+    # fire() is causing the problem
+    # fire takes the focus into tab area so the next TAB goes back to first button
+    # due to current_tab = tab (so next key stroke goes to tab)
+    def on_enter
+      $log.debug " overridden on_enter of tabbedbutton #{@name} "
+      super
+      $log.debug " calling fire overridden on_enter of tabbedbutton"
+      fire
+    end
+# all this messed up key down and tab in the Editors form with checkboxes
+    def handle_key ch
+      case ch
+      when KEY_LEFT #, KEY_UP
+        return :UNHANDLED
+      when  KEY_DOWN
+        return :NO_NEXT_FIELD
+        #  @form.select_prev_field
+      when KEY_RIGHT #, KEY_DOWN
+        return :UNHANDLED
+        #  @form.select_next_field
+      when KEY_ENTER, 10, 13, 32  # added space bar also
+        if respond_to? :fire
+          fire
+        end
+      else
+        return :UNHANDLED
+      end
+    end
+ 
   end
   ## 
   # extending Widget from 2009-10-08 18:45 
@@ -255,10 +289,20 @@ module RubyCurses
         form = tab.form
         form.set_parent_buffer(@window) if form
 
-        @buttons.last.command { 
-          $log.debug " calling display form from button press"
+        #@buttons.last.command { 
+        b = @buttons.last
+        bl = @buttons.length-1
+
+        b.command(b) { 
+          $log.debug " calling display form from button press #{b.name} #{b.state} "
+          # form.rep essentially sees that buttons get correct attributes
+          # when triggering M-<char>. This button should get highlighted.
+          @form.repaint unless b.state == :HIGHLIGHTED
+          #@form.active_index = bl
           tab.repaint
-          @current_tab = tab
+          # next line means next key is taken by the tab not main form
+          #@current_tab = tab
+          @old_tab = tab
         }
  
       end
@@ -308,15 +352,22 @@ module RubyCurses
           $log.debug " handle_key in tabbed pane got : #{ch}"
           # needs to go to component
           ret = @current_tab.handle_key(ch)
-          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} "
+          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} , #{ch} "
 
           # components will usually return UNHANDLED for a tab or btab
           # We need to convert it so the main form can use it
+          if @current_tab != @form
           if ret == :UNHANDLED
-            if ch == 9
+            if ch == 9 #or ch == KEY_DOWN
               ret = :NO_NEXT_FIELD
-            elsif ch == 353 # btab
+            elsif ch == 353 #or ch == KEY_UP # btab
               ret = :NO_PREV_FIELD
+            end
+          end
+          else
+            # key down pressed in top form, go to tab
+            if ch == KEY_DOWN
+              ret = :NO_NEXT_FIELD
             end
           end
 
@@ -327,6 +378,7 @@ module RubyCurses
             @old_tab = @current_tab
             @current_tab = @form
             @form.req_first_field
+            #@form.select_next_field
           else
             # on top button panel - no more buttons, go to tabs first field
             @current_tab = @old_tab
@@ -451,7 +503,7 @@ module RubyCurses
         # XXX i need to call repaint of compoent if updated !!
         return ret
       end
-      def repaint
+      def repaint # Tab
         if @form
           display_form
         elsif @component
