@@ -1580,6 +1580,7 @@ module RubyCurses
         end
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
+       #return handled # TRYNG 2010-03-01 23:30 since TP returns NO_NEXT_FIELD sometimes
        #$multiplier = 0
   end
   ##
@@ -2317,11 +2318,9 @@ module RubyCurses
     def handle_key ch
       case ch
       when KEY_LEFT, KEY_UP
-        $log.debug " from 2009-01-16 18:18 buttons return UNHANDLED on UP DOWN LEFT RIGHT"
         return :UNHANDLED
         #  @form.select_prev_field
       when KEY_RIGHT, KEY_DOWN
-        $log.debug " from 2009-01-16 18:18 buttons return UNHANDLED on UP DOWN LEFT RIGHT"
         return :UNHANDLED
         #  @form.select_next_field
       when KEY_ENTER, 10, 13, 32  # added space bar also
