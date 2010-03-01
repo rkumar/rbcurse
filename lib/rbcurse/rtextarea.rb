@@ -125,6 +125,7 @@ module RubyCurses
     # wraps line sent in if longer than _maxlen
     # Typically a line is sent in. We wrap and put a hard return at end.
     def << data
+      # if width if nil, either set it, or add this to a container that sets it before calling this method
       _maxlen = @maxlen || @width - 2
       if data.length > _maxlen
         #$log.debug "wrapped append for #{data}"
