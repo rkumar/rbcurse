@@ -102,10 +102,8 @@ module RubyCurses
   #  we should not have tried to make it standalone like messagebox.
   #  This is the main TabbedPane widget that will be slung into a form
   class TabbedPane < Widget
-  #  include DSL - widget does
-  #  include EventHandler - widget does
-    #attr_reader :visible
-    #dsl_accessor :row, :col
+    TAB_ROW_OFFSET = 2 # what row should tab start on (was 4 when printing subheader)
+    TAB_COL_OFFSET = 0 # what col should tab start on (to save space, flush on left)
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
     attr_reader :selected_index
@@ -156,25 +154,23 @@ module RubyCurses
         component.form = @parent
         component.rows_panned = component.cols_panned = 0
         component.parent_component = self # added 2010-02-27  so offsets can go down ?
-        component.should_create_buffer true 
-        component.row = @row + 4
-        component.col = @col
+        component.should_create_buffer = true 
+        component.row = @row + TAB_ROW_OFFSET # 2
+        component.col = @col + TAB_COL_OFFSET
 
         # current_form likely to be nil XXX
-        component.set_buffering(:target_window => @target_window || @parentwin, :form => @current_form, :bottom => @height-5, :right => @width-2 )
-        scr_top = 3 # for Pad, if Pad passed as in SplitPane
-        scr_left = 1 # for Pad, if Pad passed as in SplitPane
-        scr_top = component.row+0 # for Pad, if Pad passed as in SplitPane
+        scr_top = component.row # for Pad, if Pad passed as in SplitPane
         scr_left = component.col # for Pad, if Pad passed as in SplitPane
-        component.set_buffering(:screen_top => scr_top, :screen_left => scr_left)
-        #component.height ||= @height
-        #component.width ||= @width
-        component.height = @height - 4
-        component.width = @width - 0
+        ho = TAB_ROW_OFFSET + 2 # 5
+        component.set_buffering(:target_window => @target_window || @parentwin, :form => @current_form, :bottom => @height-ho, :right => @width-2, :screen_top => scr_top, :screen_left => scr_left)
+        # if left nil, then we expand the comp
+        component.height ||= @height - (ho - 1) # 1 keeps lower border inside by 1
+        component.width ||= @width - 0 # 0 keeps it flush on right border
 
-        #@form.add_rows += 2 # related to scr_top  XXX What if form not set. i cannot keep accumulating
 
     end
+    ## create a form for tab, if multiple components are to be placed inside tab.
+    #  Tabbedpane has no control over placement and width etc of what's inside a form
     def form tab
       if tab.form.nil?
         @forms << create_tab_form(tab)
@@ -219,6 +215,7 @@ module RubyCurses
     def show
       repaint
     end
+    ## This form is for the tabbed buttons on top
     def create_window
       set_buffer_modified() # required still ??
       # first create the main top window with the tab buttons on it.
@@ -226,17 +223,16 @@ module RubyCurses
       #$log.debug " parentwin #{@parentwin.left} #{@parentwin.top} "
       r = @row
       c = @col
-      @layout = { :height => @height, :width => @width, :top => r, :left => c } 
+      #@layout = { :height => @height, :width => @width, :top => r, :left => c } 
       ## We will use the parent window, and not a pad. We will write absolute coordinates.
       @window = @parentwin
-      ## seems this form is for the tabbed buttons on top XXX
       @form = RubyCurses::Form.new @window
       #@window.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
-      @current_form = @form
+      #xx @current_form = @form
       color = $datacolor
       @window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       
@@ -274,7 +270,7 @@ module RubyCurses
     end
     ##
     def create_tab_form tab
-        mtop = 2
+        mtop = 0
         mleft = 0
         bottom_offset = 0 # 0 will overwrite bottom line, 1 will make another line for inner form
       layout = { :height => @height-(mtop+bottom_offset), :width => @width, :top => mtop, :left => mleft } 
@@ -295,13 +291,11 @@ module RubyCurses
 
       # XXX TODO this wastes space we should ditch it.
       ## this prints the tab name on top left
-      window.mvprintw(1,1, tab.text.tr('&', ''))
+      window.mvprintw(1,1, tab.text.tr('&', '')) if @print_subheader
       window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
       form.name = "Form::TAB-#{tab.text}" # 2010-02-02 19:59 
-      form.add_cols=@col #-mleft # added 2010-01-26 20:25 since needs accounting by cursor
-      # reducing mtop causes a problem in cursor placement if scrollpane placed inside.
-      # in testtpane2.rb i've had to add it back, temporarily.
-      form.add_rows=@row #-mtop # added 2010-01-26 20:25 since needs accounting by cursor
+      form.add_cols=@col
+      form.add_rows=@row
       return form
     end
     ##
@@ -315,12 +309,6 @@ module RubyCurses
           # needs to go to component
           ret = @current_tab.handle_key(ch)
           $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} "
-          # this is required so each keystroke on the widgets is refreshed
-          # but it causes a funny stagger effect if i press tab on the tabs.
-          # Staggered effect happens when we pass @form passed
-          #display_form @current_tab, false unless @current_tab == @form
-
-          #$log.debug " ++ form.handle_key in tabbed pane got ret : #{ret}"
 
           # components will usually return UNHANDLED for a tab or btab
           # We need to convert it so the main form can use it
@@ -361,13 +349,7 @@ module RubyCurses
     
           return ret if ret == :UNHANDLED
         end
-        #@current_form.window.wrefresh # calling pad refresh XXX
-        #    $log.debug " calling display form from handle_key OUTSIDE LOOP commented off"
-        ##### XXX display_form(@current_form)
-        ###### XXX@window.refresh
     end
-    # this was used when we had sort of made this into a standalone popup
-    # now since we want to embed inside a form, we have to use handle_key
     ##
     # ensure that the pads are being destroyed, although we've not found a way.
     def destroy
@@ -443,6 +425,7 @@ module RubyCurses
       # Calling this a second time will overwrite the existing component
       def component=(component)
         raise "Component cannot be null" unless component
+        raise "Component already associated with a form. Do not pass form in constructor." unless component.form.nil?
         @parent_component.configure_component component
         @component = component
       end
