@@ -316,7 +316,7 @@ module RubyCurses
     def create_tab_form tab
         mtop = 0
         mleft = 0
-        bottom_offset = 0 # 0 will overwrite bottom line, 1 will make another line for inner form
+        bottom_offset = 2 # 0 will overwrite bottom line, 1 will make another line for inner form
       layout = { :height => @height-(mtop+bottom_offset), :width => @width, :top => mtop, :left => mleft } 
       # create a pad but it must behave like a window at all times 2009-10-25 12:25 
       window = VER::Pad.create_with_layout(layout)
