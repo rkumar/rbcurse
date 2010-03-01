@@ -107,24 +107,25 @@ module RubyCurses
       $log.debug " overridden on_enter of tabbedbutton #{@name} "
       super
       $log.debug " calling fire overridden on_enter of tabbedbutton"
-      fire
+      fire if @display_tab_on_traversal
     end
-# all this messed up key down and tab in the Editors form with checkboxes
+    # In order to get tab display as we traverse buttons, we need to tamper with KEY_DOWN
+    # since that's the only way of getting down to selected tab in this case.
     def handle_key ch
       case ch
-      when KEY_LEFT #, KEY_UP
-        return :UNHANDLED
       when  KEY_DOWN
+        # form will not do a next_field, it will ignore this
         return :NO_NEXT_FIELD
-        #  @form.select_prev_field
-      when KEY_RIGHT #, KEY_DOWN
-        return :UNHANDLED
-        #  @form.select_next_field
+      when KEY_RIGHT
+        @form.select_next_field
+      when KEY_LEFT
+        @form.select_prev_field
       when KEY_ENTER, 10, 13, 32  # added space bar also
         if respond_to? :fire
           fire
         end
       else
+        # all thrse will be re-evaluated by form
         return :UNHANDLED
       end
     end
@@ -289,20 +290,20 @@ module RubyCurses
         form = tab.form
         form.set_parent_buffer(@window) if form
 
-        #@buttons.last.command { 
         b = @buttons.last
-        bl = @buttons.length-1
-
         b.command(b) { 
           $log.debug " calling display form from button press #{b.name} #{b.state} "
           # form.rep essentially sees that buttons get correct attributes
           # when triggering M-<char>. This button should get highlighted.
           @form.repaint unless b.state == :HIGHLIGHTED
-          #@form.active_index = bl
           tab.repaint
-          # next line means next key is taken by the tab not main form
-          #@current_tab = tab
-          @old_tab = tab
+          if @display_tab_on_traversal
+            # set as old tab so ONLY on going down this becomes current_tab
+            @old_tab = tab
+          else
+            # next line means next key is IMMED  taken by the tab not main form
+            @current_tab = tab
+          end
         }
  
       end
@@ -310,7 +311,6 @@ module RubyCurses
       @window.wrefresh ## ADDED  2009-11-02 23:29 
       @old_tab = @tabs.first
       @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
-      # TODO get the cursor there too.
     end
     ##
     def create_tab_form tab
