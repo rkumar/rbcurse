@@ -16,9 +16,9 @@
     - Tab should handle_key and repaint based on compo or form
     - Ideally, even form should be created and managed itself, why should TP have to repaint it?
 
-NOTE: Line 610 in rwidget.rb copy_pad_to_win was written for tabbedpanes
-but did not let a splitpane print its comp fully if SPLP's width was increased
-I've commented out that line, if you face an error in printing, check that line.
+NOTE: 
+    Tp now does not create a form by default, since awefun you may want to just put in one component.
+    Pls use tp.form(tab) to get a form associated with the tab.
 =end
 require 'rubygems'
 require 'ncurses'
@@ -36,6 +36,10 @@ module RubyCurses
   # Need to handle more tabs than can be displayed.
   # NOTE:I don't think this uses set_form_row or bothers with the cursor
   #+ since it manages highlighting etc on its own. 2009-12-29 13:30 
+  #
+  # TODO Option for highlighted tab shoud be displayed
+  # TODO can down arrow from buttons take us into form
+  # TODO up arrow from first field take us into buttons
 
   # Multiple independent overlapping forms using the tabbed metaphor.
   class TabbedButton < RubyCurses::RadioButton
@@ -133,8 +137,22 @@ module RubyCurses
     def add_tab text, component = nil, aconfig={}, &block
       #create a button here and block is taken care of in button's instance
       #or push this for later creation.
-      if !component.nil?
-        #component.set_form @parent
+      @tabs << Tab.new(text, self, aconfig, &block)
+      tab = @tabs.last
+      tab.component = component unless component.nil?
+      #tab.parent_component = self
+      # just temoprarily 
+      #if component.nil?
+        #@forms << create_tab_form(tab)
+        #tab.form = @forms.last
+      #end
+      return tab
+    end
+    ## return a form for use by program - if you want to put multiple items
+    # Otherwise just use add_component
+    # private - can't use externally
+    def configure_component component
+        #component.set_form @parent <<--- definitely NOT
         component.form = @parent
         component.rows_panned = component.cols_panned = 0
         component.parent_component = self # added 2010-02-27  so offsets can go down ?
@@ -155,19 +173,8 @@ module RubyCurses
         component.width = @width - 0
 
         #@form.add_rows += 2 # related to scr_top  XXX What if form not set. i cannot keep accumulating
-      end
-      @tabs << Tab.new(text, component, aconfig, &block)
-      tab = @tabs.last
-      tab.parent_component = self
-      # just temoprarily 
-      if component.nil?
-        @forms << create_tab_form(tab)
-        tab.form = @forms.last
-      end
-      return tab
+
     end
-    ## return a form for use by program - if you want to put multiple items
-    # Otherwise just use add_component
     def form tab
       if tab.form.nil?
         @forms << create_tab_form(tab)
@@ -262,7 +269,8 @@ module RubyCurses
       @form.repaint #  This paints the outer form not inner
       @window.wrefresh ## ADDED  2009-11-02 23:29 
       @old_tab = @tabs.first
-    #  @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      # TODO get the cursor there too.
     end
     ##
     def create_tab_form tab
@@ -285,6 +293,7 @@ module RubyCurses
       window.mvwaddch(0, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
       window.mvwaddch(0, @width-1, Ncurses::ACS_RTEE)
 
+      # XXX TODO this wastes space we should ditch it.
       ## this prints the tab name on top left
       window.mvprintw(1,1, tab.text.tr('&', ''))
       window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
@@ -423,12 +432,22 @@ module RubyCurses
       attr_reader :component
       attr_accessor :form
       attr_accessor :parent_component
-      def initialize text, component = nil,  aconfig={}, &block
+      def initialize text, parent_component,  aconfig={}, &block
         @text = text
         @config = aconfig
-        @component = component
+        @parent_component = parent_component
         @config.each_pair { |k,v| variable_set(k,v) }
         instance_eval &block if block_given?
+      end
+      ## add a single component to the tab
+      # Calling this a second time will overwrite the existing component
+      def component=(component)
+        raise "Component cannot be null" unless component
+        @parent_component.configure_component component
+        @component = component
+      end
+      def remove_component
+        @component = nil
       end
       # private
       def variable_set var, val
@@ -452,9 +471,15 @@ module RubyCurses
       def repaint
         if @form
           display_form
-        else
+        elsif @component
           # we ask the component to paint its buffer only, no actual repainting
           redraw
+        else
+          # pls use tp.form(tab) to get form explicity.
+          # It could come here if tab precreated and user is yet to assign a component.
+          # or has removed component and not yet set a new one.
+          $log.error "Got neither component nor form."
+          $log.error "Programmer error. A change in Tabbedpane requires you to create form explicitly using form = tpane.form(tab) syntax"
         end
       end
       # force a redraw of a component when tabs changed
