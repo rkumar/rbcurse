@@ -44,7 +44,7 @@ module RubyCurses
     dsl_accessor :editable          # allow editing
     dsl_accessor :suppress_borders # added 2010-02-12 12:21 values true or false
 
-    def initialize form, config={}, &block
+    def initialize form = nil, config={}, &block
       @focusable = true
       @editable = true
       @row = 0
