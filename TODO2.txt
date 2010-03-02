@@ -73,4 +73,4 @@
  59	[ ] add a mthod form.add as an alternative to putting form in constructor (2010-02-27)
  60	[ ] Textview: should scroll horizontally (2010-02-28)
  61	[ ] how to map/bind : bind w, 12j (to another key binding) (2010-03-01)
- 62	[ ] (A) TabbedPane: remove subheading, wastes space (2010-03-01)
+ 62	[x] (A) TabbedPane: remove subheading, wastes space (2010-03-01) (x2010-03-02)
