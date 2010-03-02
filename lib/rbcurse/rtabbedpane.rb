@@ -478,6 +478,7 @@ module RubyCurses
       def component=(component)
         raise "Component cannot be null" unless component
         raise "Component already associated with a form. Do not pass form in constructor." unless component.form.nil?
+        $log.debug " calling configure component "
         @parent_component.configure_component component
         @component = component
       end
@@ -525,7 +526,7 @@ module RubyCurses
           c.set_buffer_modified
           c.buffer_to_window
         else
-          # force a repaint, if not buffered object.
+          # force a repaint, if not buffered object e.g scrollpane.
           $log.debug " TP: forcing repaint of non-buffered object #{c}  "
           c.repaint_all
           c.repaint
