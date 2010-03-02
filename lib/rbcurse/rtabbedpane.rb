@@ -326,7 +326,7 @@ module RubyCurses
       $log.debug " pad created in TP create_tab_form: #{window.name} , form #{form.name}  "
       $log.debug " hwtl: #{layout[:height]} #{layout[:width]} #{layout[:top]} #{layout[:left]} "
       ## added 2010-01-21 15:46 to pass cursor up
-      form.parent_form = @parent  ## TRYING OUT BUFFERED CURSOR PLACEMENT
+      form.parent_form = @parent
       form.navigation_policy = :NON_CYCLICAL
       window.bkgd(Ncurses.COLOR_PAIR($datacolor));
       window.box( 0, 0);
@@ -536,9 +536,9 @@ module RubyCurses
           if !@form.nil?
             # move to first field of existing form
             #@current_form = @current_tab.form # 2010-02-27 20:22 
-            $log.debug " calling display form from handle_key NO_NEXT_FIELD"
-            display_form
+            $log.debug " calling display form from handle_key NO_NEXT_FIELD: #{first_last} "
             first_last == :FIRST ? @form.req_first_field : @form.req_last_field
+            display_form
           else 
             # move to component
             #@current_form = @current_tab.component # temp HACK 2010-02-27 23:24 
