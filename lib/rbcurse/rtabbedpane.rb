@@ -313,6 +313,10 @@ module RubyCurses
       @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
     end
     ##
+    # This creates a form for the tab, in case we wish to put many components in it.
+    # Else just pass single components in add_tab.
+    # @params tab tab just created for which a form is required
+    # @return form - a pad based form
     def create_tab_form tab
         mtop = 0
         mleft = 0
@@ -321,8 +325,7 @@ module RubyCurses
       # create a pad but it must behave like a window at all times 2009-10-25 12:25 
       window = VER::Pad.create_with_layout(layout)
 
-      # needed to be at tab level, but that's not a widget
-      form = RubyCurses::Form.new window # we now pass a pad and hope for best
+      form = RubyCurses::Form.new window
       $log.debug " pad created in TP create_tab_form: #{window.name} , form #{form.name}  "
       $log.debug " hwtl: #{layout[:height]} #{layout[:width]} #{layout[:top]} #{layout[:left]} "
       ## added 2010-01-21 15:46 to pass cursor up
