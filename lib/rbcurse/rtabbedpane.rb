@@ -605,6 +605,75 @@ module RubyCurses
     end # class Tab
 
   end # class Tabbedpane
+  class ScrollForm < RubyCurses::Form
+    attr_accessor :pmincol # advance / scroll columns
+    attr_accessor :pminrow # advance / scroll rows (vertically)
+    attr_accessor :display_w
+    attr_accessor :display_h
+    attr_accessor :scroll_ctr
+    attr_reader :orig_top, :orig_left
+    attr_reader :window
+    attr_accessor :name
+    def initialize win, &block
+      @target_window = win
+      super
+      @pminrow = @pmincol = 0
+      @scroll_ctr = 4
+    end
+    def set_layout(h, w, t, l)
+      @pad_h = h
+      @pad_w = w
+      @top = @orig_top = t
+      @left = @orig_left = l
+    end
+    def create_pad
+      r = @top
+      c = @left
+      layout = { :height => @pad_h, :width => @pad_w, :top => r, :left => c } 
+      @window = VER::Pad.create_with_layout(layout)
+      #@window = @parentwin
+      #@form = RubyCurses::Form.new @buttonpad
+      @window.name = "Pad::ScrollPad" # 2010-02-02 20:01 
+      @name = "Form::ScrollForm"
+    end
+    def handle_key ch
+      # do the scrolling thing here top left prow and pcol of pad to be done
+      case ch
+      when ?\M-l.getbyte(0)
+        @pmincol += @scroll_ctr # some check is required or we'll crash
+      when ?\M-h.getbyte(0)
+        @pmincol -= @scroll_ctr # some check is required or we'll crash
+      when ?\M-n.getbyte(0)
+        @pminrow += @scroll_ctr # some check is required or we'll crash
+      when ?\M-p.getbyte(0)
+        @pminrow -= @scroll_ctr # some check is required or we'll crash
+      end
+
+      super
+    end
+    def repaint
+      super
+      ## reduce so we don't go off in top+h and top+w
+      if @pminrow + @display_h >= @orig_top + @pad_h
+        return -1
+      end
+      if @pmincol + @display_w >= @orig_left + @pad_w
+        return -1
+      end
+      # actually if there is a change in the screen, we may still need to allow update
+      # but ensure that size does not exceed
+      if @top + @display_h >= @orig_top + @pad_h
+        return -1
+      end
+      if @left + @display_w >= @orig_left + @pad_w
+        return -1
+      end
+      # maybe we should use copywin to copy onto @target_window
+      ret = @buttonpad.prefresh(@pminrow, @pmincol, @top, @left, @top + @display_h, @left + @display_w)
+
+      # need to refresh the form after repaint over
+    end
+  end
 
 
 end # module
