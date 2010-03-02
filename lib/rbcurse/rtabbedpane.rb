@@ -86,15 +86,19 @@ module RubyCurses
           color = ColorMap.get_color(color, bgcolor)
         end
         value = getvalue_for_paint
-       $log.debug("button repaint : r:#{r} #{@graphic.top}  c:#{c} #{@graphic.left} col:#{color} bg #{bgcolor} v: #{value} ")
+       $log.debug("button repaint : r:#{r} #{@graphic.top}  c:#{c} #{@graphic.left} color:#{color} bg #{bgcolor} v: #{value}, g: #{@graphic} ")
         len = @display_length || value.length
         # paint the tabs name in approp place with attribs
         #@form.window.printstring r, c, "%-*s" % [len, value], color, attribs
-        @graphic.printstring r+@graphic.top, c+@graphic.left, "%-*s" % [len, value], color, attribs
+        #@graphic.printstring r+@graphic.top, c+@graphic.left, "%-*s" % [len, value], color, attribs
+        #@graphic.printstring r-@graphic.top, c-@graphic.left, "%-*s" % [len, value], color, attribs
+        @graphic.printstring r, c, "%-*s" % [len, value], color, attribs
+        @graphic.modified = true
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
          # underline for the top tab buttons.
         if @underline != nil
-          # changed +1 to +0 on 2008-12-15 21:23 pls check.
+          r -= @graphic.top # because of pad, remove if we go back to windows
+          c -= @graphic.left # because of pad, remove if we go back to windows
           @graphic.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
@@ -137,7 +141,7 @@ module RubyCurses
   #  we should not have tried to make it standalone like messagebox.
   #  This is the main TabbedPane widget that will be slung into a form
   class TabbedPane < Widget
-    TAB_ROW_OFFSET = 2 # what row should tab start on (was 4 when printing subheader)
+    TAB_ROW_OFFSET = 3 # what row should tab start on (was 4 when printing subheader)
     TAB_COL_OFFSET = 0 # what col should tab start on (to save space, flush on left)
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
@@ -258,18 +262,22 @@ module RubyCurses
       #$log.debug " parentwin #{@parentwin.left} #{@parentwin.top} "
       r = @row
       c = @col
+      layout = { :height => 3, :width => @width, :top => r, :left => c } 
+      @buttonpad = VER::Pad.create_with_layout(layout)
       #@layout = { :height => @height, :width => @width, :top => r, :left => c } 
       ## We will use the parent window, and not a pad. We will write absolute coordinates.
       @window = @parentwin
-      @form = RubyCurses::Form.new @window
-      #@window.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
+      #@form = RubyCurses::Form.new @window
+      @form = RubyCurses::Form.new @buttonpad
+      @buttonpad.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
       #xx @current_form = @form
       color = $datacolor
-      @window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
+ #xx     @window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
+      @buttonpad.box(0,0)
       
       Ncurses::Panel.update_panels
       col = @col + 1
@@ -295,8 +303,8 @@ module RubyCurses
           $log.debug " calling display form from button press #{b.name} #{b.state} "
           # form.rep essentially sees that buttons get correct attributes
           # when triggering M-<char>. This button should get highlighted.
-          @form.repaint unless b.state == :HIGHLIGHTED
           tab.repaint
+          button_form_repaint #( b.state == :HIGHLIGHTED )
           if @display_tab_on_traversal
             # set as old tab so ONLY on going down this becomes current_tab
             @old_tab = tab
@@ -307,10 +315,20 @@ module RubyCurses
         }
  
       end
-      @form.repaint #  This paints the outer form not inner
+      button_form_repaint true
       @window.wrefresh ## ADDED  2009-11-02 23:29 
       @old_tab = @tabs.first
       @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+    end
+    def button_form_repaint flag = true
+      if flag
+        @form.repaint if flag  #  This paints the outer form not inner
+        @buttonpad.mvwaddch(2, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
+        @buttonpad.mvwaddch(2, @width-1, Ncurses::ACS_RTEE)
+      end
+      ret = @buttonpad.prefresh(0,0, @row+0, @col+0, @row+@height, @col+@width)
+      $log.debug " prefresh error buttonpad 2 " if ret < 0
+      @buttonpad.modified = false
     end
     ##
     # This creates a form for the tab, in case we wish to put many components in it.
@@ -397,12 +415,15 @@ module RubyCurses
             # on top button panel - no prev buttons, go to tabs last field
             @current_tab = @old_tab
             @current_tab.set_focus :LAST
-            end
+          end
         when :UNHANDLED
           $log.debug " unhandled in tabbed pane #{ch}"
           ret = @form.process_key ch, self # field
     
           return ret if ret == :UNHANDLED
+        end
+        if @buttonpad.modified
+          button_form_repaint
         end
     end
     ##
