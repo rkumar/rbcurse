@@ -1105,7 +1105,7 @@ module RubyCurses
         # Drat - this line is happeing since components inside a TP are double_buffered
         #x f.buffer_to_screen(pb) if f.is_double_buffered? 
       end
-      @window.clear_error
+      #x @window.clear_error # suddenly throwing up on a small pad 2010-03-02 15:22 TPNEW
       @window.print_status_message $status_message unless $status_message.nil?
       @window.print_error_message $error_message unless $error_message.nil?
       $error_message = $status_message = nil
