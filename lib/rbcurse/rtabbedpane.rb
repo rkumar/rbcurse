@@ -260,15 +260,23 @@ module RubyCurses
       # first create the main top window with the tab buttons on it.
       $log.debug " TPane create_buff Top #{@row}, Left #{@col} H #{@height} W #{@width} "
       #$log.debug " parentwin #{@parentwin.left} #{@parentwin.top} "
+
       r = @row
       c = @col
-      layout = { :height => 3, :width => @width, :top => r, :left => c } 
-      @buttonpad = VER::Pad.create_with_layout(layout)
+      ##layout = { :height => 3, :width => @width, :top => r, :left => c } 
+      ##@buttonpad = VER::Pad.create_with_layout(layout)
+      ##@form = RubyCurses::Form.new @buttonpad
+      @form = ScrollForm.new(@parentwin)
+      @form.set_layout(3, @width, @row, @col)
+      @form.display_h = 3
+      @form.display_w = @width
+      @buttonpad = @form.create_pad
+
+
       #@layout = { :height => @height, :width => @width, :top => r, :left => c } 
       ## We will use the parent window, and not a pad. We will write absolute coordinates.
       @window = @parentwin
       #@form = RubyCurses::Form.new @window
-      @form = RubyCurses::Form.new @buttonpad
       @buttonpad.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
@@ -321,14 +329,19 @@ module RubyCurses
       @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
     end
     def button_form_repaint flag = true
+      #if flag
+        #@form.repaint if flag  #  This paints the outer form not inner
+        #@buttonpad.mvwaddch(2, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
+        #@buttonpad.mvwaddch(2, @width-1, Ncurses::ACS_RTEE)
+      #end
+      #ret = @buttonpad.prefresh(0,0, @row+0, @col+0, @row+@height, @col+@width)
+      #$log.debug " prefresh error buttonpad 2 " if ret < 0
+      #@buttonpad.modified = false
       if flag
-        @form.repaint if flag  #  This paints the outer form not inner
-        @buttonpad.mvwaddch(2, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
-        @buttonpad.mvwaddch(2, @width-1, Ncurses::ACS_RTEE)
+        @form.repaint
+      else
+        @form.prefresh
       end
-      ret = @buttonpad.prefresh(0,0, @row+0, @col+0, @row+@height, @col+@width)
-      $log.debug " prefresh error buttonpad 2 " if ret < 0
-      @buttonpad.modified = false
     end
     ##
     # This creates a form for the tab, in case we wish to put many components in it.
@@ -635,6 +648,7 @@ module RubyCurses
       #@form = RubyCurses::Form.new @buttonpad
       @window.name = "Pad::ScrollPad" # 2010-02-02 20:01 
       @name = "Form::ScrollForm"
+      return @window
     end
     def handle_key ch
       # do the scrolling thing here top left prow and pcol of pad to be done
@@ -653,24 +667,38 @@ module RubyCurses
     end
     def repaint
       super
+      prefresh
+      @window.modified = false
+    end
+    def prefresh
       ## reduce so we don't go off in top+h and top+w
-      if @pminrow + @display_h >= @orig_top + @pad_h
-        return -1
+      $log.debug "  start ret = @buttonpad.prefresh( #{@pminrow} , #{@pmincol} , #{@top} , #{@left} , top + #{@display_h} left + #{@display_w} ) "
+      if @pminrow + @display_h > @orig_top + @pad_h
+        $log.debug " if #{@pminrow} + #{@display_h} > #{@orig_top} +#{@pad_h} "
+        $log.debug " ERROR 1 "
+        #return -1
       end
       if @pmincol + @display_w >= @orig_left + @pad_w
+        $log.debug " ERROR 2 "
         return -1
       end
       # actually if there is a change in the screen, we may still need to allow update
       # but ensure that size does not exceed
-      if @top + @display_h >= @orig_top + @pad_h
+      if @top + @display_h > @orig_top + @pad_h
+      $log.debug " if #{@top} + #{@display_h} > #{@orig_top} +#{@pad_h} "
+        $log.debug " ERROR 3 "
         return -1
       end
-      if @left + @display_w >= @orig_left + @pad_w
+      if @left + @display_w > @orig_left + @pad_w
+      $log.debug " if #{@left} + #{@display_w} > #{@orig_left} +#{@pad_w} "
+        $log.debug " ERROR 4 "
         return -1
       end
       # maybe we should use copywin to copy onto @target_window
-      ret = @buttonpad.prefresh(@pminrow, @pmincol, @top, @left, @top + @display_h, @left + @display_w)
+      $log.debug "   ret = @buttonpad.prefresh( #{@pminrow} , #{@pmincol} , #{@top} , #{@left} , #{@top} + #{@display_h}, #{@left} + #{@display_w} ) "
+      ret = @window.prefresh(@pminrow, @pmincol, @top, @left, @top + @display_h, @left + @display_w)
 
+      $log.debug " ret = #{ret} "
       # need to refresh the form after repaint over
     end
   end
