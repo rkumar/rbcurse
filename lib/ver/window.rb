@@ -6,6 +6,7 @@ module VER
     attr_reader   :panel   # reader requires so he can del it in end
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
+    attr_accessor :modified # has it been modified and may need a refresh
 
     def initialize(layout)
       @visible = true
@@ -23,6 +24,7 @@ module VER
       Ncurses::keypad(@window, true)
       @stack = []
       @name ||="#{self}"
+      @modified = true
     end
     ##
     # this is an alternative constructor
@@ -309,7 +311,7 @@ module VER
     ## name changed from printstring to prv_prinstring
     def prv_printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
-      #$log.debug " inside window printstring r #{r} c #{c} #{string} "
+      #$log.debug " #{@name} inside window printstring r #{r} c #{c} #{string} "
       att = Ncurses::A_NORMAL if att.nil? 
       case att.to_s.downcase
       when 'normal'
@@ -647,6 +649,7 @@ module VER
       # so we have to add top and less one since we are zero based
       ret = @window.prefresh(@pminrow, @pmincol, @top, @left, smaxrow(), smaxcol())
       $log.warn " WREFRESH returns -1 ERROR - width or height must be exceeding " if ret == -1
+      @modified = false
       return ret
     end
     ##
@@ -725,6 +728,7 @@ module VER
         # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
         # exceed padheight
       #end
+      @modified = false
       return ret
     end
     def copy_win_to_pad
@@ -734,6 +738,7 @@ module VER
       end
       $log.debug " copy_win_to_pad #{@otherwin.name}, #{@window.name}, pminr:#{@pminrow} pminc:#{@pmincol} top:#{@top} left:#{@left} smr:#{smr} "
       ret = @otherwin.copywin(@window.get_window,@pminrow,@pmincol, @top, @left, smr, smaxcol(), 1)
+      @modified = false
       return ret
     end
     ## 
