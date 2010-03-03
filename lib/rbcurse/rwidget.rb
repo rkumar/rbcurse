@@ -349,11 +349,6 @@ module RubyCurses
     include ConfigSetup
     include RubyCurses::Utils
     dsl_property :text
-    #dsl_accessor :text_variable
-    #dsl_accessor :underline                        # offset of text to underline DEPRECATED
-    #   width and height needed in a method for double buffer check
-  #  dsl_property :width                # desired width of text
-    #dsl_accessor :wrap_length                      # wrap length of text, if applic UNUSED
 
     # next 3 to be checked if used or not. Copied from TK.
     dsl_property :select_foreground, :select_background  # color init_pair
@@ -391,7 +386,7 @@ module RubyCurses
     # tired of getting the cursor wrong and guessing, i am now going to try to get absolute
     # coordinates - 2010-02-07 20:17 this should be updated by parent.
     attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
-    attr_accessor :manages_cursor # does this widget manage cursor, or should form handle it 2010-02-07 20:54 
+    #attr_accessor :manages_cursor # does this widget manage cursor, or should form handle it 2010-02-07 20:54 
     attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
     attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
@@ -414,7 +409,7 @@ module RubyCurses
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
       @buffer_modified = false 
-      @manages_cursor = false # form should manage it, I will pass row and col to it. XXX ?
+      #@manages_cursor = false # form should manage it, I will pass row and col to it. XXX ?
     end
 
     # modified
@@ -891,10 +886,6 @@ module RubyCurses
         if @form
           @form.setrowcol r, c
         else
-          # ouch, parent will add ext_row !!!
-          #@parent.setrowcol r, c
-          ## what if parent too has no form
-          #@parent_component.form.setrowcol r, c
           @parent_component.setrowcol r, c
         end
         #setformrowcol r,c 
