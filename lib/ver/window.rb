@@ -48,8 +48,10 @@ module VER
     end
 
     def resize_with(layout)
+      $log.debug " DARN ! This awready duz a resize!! if h or w or even top or left changed!!! XXX"
       reset_layout(layout)
       @window.wresize(height, width)
+      # this is dicey since we often change top and left in pads only for panning !! XXX
       @window.mvwin(top, left)
     end
 
