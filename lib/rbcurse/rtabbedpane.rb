@@ -276,6 +276,7 @@ module RubyCurses
       # we may also need to truncate text to fit
 
       @buttonpad.wclear
+      #@buttonpad.box(0,0) # this is around pad which can exceed display h and w.
       ## create a button for each tab
       $tabradio = Variable.new # 2010-03-03 19:12 why all linked to one global ? XXX 
       @tabs.each do |tab|
@@ -326,15 +327,20 @@ module RubyCurses
       ##@buttonpad = VER::Pad.create_with_layout(layout)
       ##@form = RubyCurses::Form.new @buttonpad
       @form = ScrollForm.new(@parentwin)
-      @form.set_layout(3, @width, @row, @col)
-      @form.display_h = 3
-      @form.display_w = @width
+      @form.set_layout(1, @width, @row+1, @col+1)
+      @form.display_h = 1
+      #@form.set_layout(3, @width, @row, @col)
+      #@form.display_h = 3
+      @form.display_w = @width-3
       @buttonpad = @form.create_pad
 
 
       #@layout = { :height => @height, :width => @width, :top => r, :left => c } 
       ## We will use the parent window, and not a pad. We will write absolute coordinates.
       @window = @parentwin
+      color = $datacolor
+      # border around button bar. should this not be in scrollform as a border ? XXX
+      @window.print_border @row, @col, 2, @width, color #, Ncurses::A_REVERSE
       #@form = RubyCurses::Form.new @window
       @buttonpad.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
@@ -342,9 +348,8 @@ module RubyCurses
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
       #xx @current_form = @form
-      color = $datacolor
+ #xx     color = $datacolor
  #xx     @window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
-      @buttonpad.box(0,0)
       
       Ncurses::Panel.update_panels
       _recreate_buttons
@@ -364,8 +369,10 @@ module RubyCurses
       #$log.debug " prefresh error buttonpad 2 " if ret < 0
       #@buttonpad.modified = false
       if flag
+        # repaint form and refresh pad
         @form.repaint
       else
+        # only refresh pad
         @form.prefresh
       end
     end
@@ -678,6 +685,7 @@ module RubyCurses
       @name = "Form::ScrollForm"
       return @window
     end
+    ## ScrollForm handle key, scrolling
     def handle_key ch
       $log.debug " inside ScrollForm handlekey #{ch} "
       # do the scrolling thing here top left prow and pcol of pad to be done
@@ -744,7 +752,9 @@ module RubyCurses
       end
       # maybe we should use copywin to copy onto @target_window
       $log.debug "   ret = @buttonpad.prefresh( #{@pminrow} , #{@pmincol} , #{@top} , #{@left} , #{@top} + #{@display_h}, #{@left} + #{@display_w} ) "
-      ret = @window.prefresh(@pminrow, @pmincol, @top, @left, @top + @display_h, @left + @display_w)
+      omit = 0
+      # this works but if want to avoid copying border
+      ret = @window.prefresh(@pminrow, @pmincol, @top, @left, @top + @display_h , @left + @display_w)
 
       $log.debug " ret = #{ret} "
       # need to refresh the form after repaint over
@@ -767,7 +777,21 @@ module RubyCurses
       end
       return true
     end
+    # when tabbing through buttons, we need to account for all that panning/scrolling goin' on
     def setrowcol r, c
+      # aha ! here's where i can check whether the cursor is falling off the viewable area
+      # and thus pan the portion back into view. XXX
+      # Nope, if i pan then user can't scroll off. this is pretty good. the cursor just gets stuck in last place it was if i scroll off. its in NO_NEXT_FIELD that we must wither scroll or jump to visible field..
+      if c+@cols_panned < @orig_left
+        $log.debug " setrowcol OVERRIDE #{c} #{@cols_panned} < #{@orig_left} "
+        $log.debug " aborting settrow col for now"
+        return
+      end
+      if c+@cols_panned > @orig_left + @display_w
+        $log.debug " setrowcol OVERRIDE #{c} #{@cols_panned} > #{@orig_left} + #{@display_w} "
+        $log.debug " aborting settrow col for now"
+        return
+      end
       super r+@rows_panned, c+@cols_panned
     end
     def add_widget w
