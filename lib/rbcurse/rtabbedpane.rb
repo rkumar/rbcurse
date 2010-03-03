@@ -166,11 +166,13 @@ module RubyCurses
       #instance_eval &block if block_given?
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
   #    @manages_cursor = true # redundant, remove
+      @recreate_buttons = true
     end
     ##
     # This is a public, user called method for creating a new tab
     # This will be called several times for one TP.
     # when adding tabs, you may use ampersand in text to create hotkey
+    # XXX adding a tab later does not influence buttons array,
     def add_tab text, component = nil, aconfig={}, &block
       #create a button here and block is taken care of in button's instance
       #or push this for later creation.
@@ -183,6 +185,7 @@ module RubyCurses
         #@forms << create_tab_form(tab)
         #tab.form = @forms.last
       #end
+      @recreate_buttons = true
       return tab
     end
     ## return a form for use by program - if you want to put multiple items
@@ -247,12 +250,68 @@ module RubyCurses
     def repaint
       $log.debug " tabbedpane repaint "
       @window || create_window
+      _recreate_buttons if @recreate_buttons
       $log.debug " tabbedpane repaint #{@window.name} "
       @window.show
       #x set_buffer_modified()
     end
     def show
       repaint
+    end
+    ## recreate all buttons
+    # We call this if even one is added : adv is we can space out accordinagly if the numbers increase
+    # We could also expand the pad here.
+    # Test it out with removing tabs to.
+    # XXX have to remove buttons from the form
+    def _recreate_buttons
+      r = @row
+      col = @col + 1
+      @buttons ||= []
+      if !@buttons.empty?
+        @buttons.each {|e| @form.remove_widget(e) }
+      end
+      button_gap = 4
+      # the next line necessitates a clear on the pad
+    #  button_gap = 1 if @tabs.size > 6 # quick dirty fix, we need something that checks fit
+      # we may also need to truncate text to fit
+
+      @buttonpad.wclear
+      ## create a button for each tab
+      $tabradio = Variable.new # 2010-03-03 19:12 why all linked to one global ? XXX 
+      @tabs.each do |tab|
+        text = tab.text
+        @buttons << RubyCurses::TabbedButton.new(@form) do
+          variable $tabradio
+          text text
+          name text
+          value text
+          row r + 1
+          col col
+        end
+        col += text.length + button_gap
+        # if col exceeds pad_w then we need to expand pad
+        # but here we don't know that a pad is being used
+        $log.debug " button col #{col} " 
+        form = tab.form
+        form.set_parent_buffer(@window) if form
+
+        b = @buttons.last
+        b.command(b) { 
+          $log.debug " calling display form from button press #{b.name} #{b.state} "
+          # form.rep essentially sees that buttons get correct attributes
+          # when triggering M-<char>. This button should get highlighted.
+          tab.repaint
+          button_form_repaint #( b.state == :HIGHLIGHTED )
+          if @display_tab_on_traversal
+            # set as old tab so ONLY on going down this becomes current_tab
+            @old_tab = tab
+          else
+            # next line means next key is IMMED  taken by the tab not main form
+            @current_tab = tab
+          end
+        }
+        @recreate_buttons = false
+      end
     end
     ## This form is for the tabbed buttons on top
     def create_window
@@ -288,41 +347,8 @@ module RubyCurses
       @buttonpad.box(0,0)
       
       Ncurses::Panel.update_panels
-      col = @col + 1
-      @buttons = []
-      ## create a button for each tab
-      $tabradio = Variable.new
-      @tabs.each do |tab|
-        text = tab.text
-        @buttons << RubyCurses::TabbedButton.new(@form) do
-          variable $tabradio
-          text text
-          name text
-          value text
-          row r + 1
-          col col
-        end
-        col += text.length+4
-        form = tab.form
-        form.set_parent_buffer(@window) if form
-
-        b = @buttons.last
-        b.command(b) { 
-          $log.debug " calling display form from button press #{b.name} #{b.state} "
-          # form.rep essentially sees that buttons get correct attributes
-          # when triggering M-<char>. This button should get highlighted.
-          tab.repaint
-          button_form_repaint #( b.state == :HIGHLIGHTED )
-          if @display_tab_on_traversal
-            # set as old tab so ONLY on going down this becomes current_tab
-            @old_tab = tab
-          else
-            # next line means next key is IMMED  taken by the tab not main form
-            @current_tab = tab
-          end
-        }
+      _recreate_buttons
  
-      end
       button_form_repaint true
       @window.wrefresh ## ADDED  2009-11-02 23:29 
       @old_tab = @tabs.first
@@ -627,11 +653,13 @@ module RubyCurses
     attr_reader :orig_top, :orig_left
     attr_reader :window
     attr_accessor :name
+    attr_reader :cols_panned, :rows_panned
     def initialize win, &block
       @target_window = win
       super
       @pminrow = @pmincol = 0
-      @scroll_ctr = 4
+      @scroll_ctr = 2
+      @cols_panned = @rows_panned = 0
     end
     def set_layout(h, w, t, l)
       @pad_h = h
@@ -651,21 +679,40 @@ module RubyCurses
       return @window
     end
     def handle_key ch
+      $log.debug " inside ScrollForm handlekey #{ch} "
       # do the scrolling thing here top left prow and pcol of pad to be done
+      # # XXX TODO check whether we can scroll before incrementing esp cols_panned etc
       case ch
       when ?\M-l.getbyte(0)
+        return false if !validate_scroll_col(@pmincol + @scroll_ctr)
         @pmincol += @scroll_ctr # some check is required or we'll crash
+        @cols_panned -= @scroll_ctr
+        $log.debug " handled ch M-l in ScrollForm"
+        @window.modified = true
+        return 0
       when ?\M-h.getbyte(0)
+        return false if !validate_scroll_col(@pmincol - @scroll_ctr)
         @pmincol -= @scroll_ctr # some check is required or we'll crash
+        @cols_panned += @scroll_ctr
+        $log.debug " handled ch M-h in ScrollForm"
+        @window.modified = true
+        return 0
       when ?\M-n.getbyte(0)
+        return false if !validate_scroll_row(@pminrow + @scroll_ctr)
         @pminrow += @scroll_ctr # some check is required or we'll crash
+        @rows_panned += @scroll_ctr
+        return 0
       when ?\M-p.getbyte(0)
+        return false if !validate_scroll_row(@pminrow - @scroll_ctr)
         @pminrow -= @scroll_ctr # some check is required or we'll crash
+        @rows_panned -= @scroll_ctr
+        return 0
       end
 
       super
     end
     def repaint
+      $log.debug " scrollForm repaint calling parent"
       super
       prefresh
       @window.modified = false
@@ -678,7 +725,8 @@ module RubyCurses
         $log.debug " ERROR 1 "
         #return -1
       end
-      if @pmincol + @display_w >= @orig_left + @pad_w
+      if @pmincol + @display_w > @orig_left + @pad_w
+      $log.debug " if #{@pmincol} + #{@display_w} > #{@orig_left} +#{@pad_w} "
         $log.debug " ERROR 2 "
         return -1
       end
@@ -700,6 +748,35 @@ module RubyCurses
 
       $log.debug " ret = #{ret} "
       # need to refresh the form after repaint over
+    end
+    def validate_scroll_row minrow
+       return false if minrow < 0
+      if minrow + @display_h > @orig_top + @pad_h
+        $log.debug " if #{minrow} + #{@display_h} > #{@orig_top} +#{@pad_h} "
+        $log.debug " ERROR 1 "
+        return false
+      end
+      return true
+    end
+    def validate_scroll_col mincol
+      return false if mincol < 0
+      if mincol + @display_w > @orig_left + @pad_w
+      $log.debug " if #{mincol} + #{@display_w} > #{@orig_left} +#{@pad_w} "
+        $log.debug " ERROR 2 "
+        return false
+      end
+      return true
+    end
+    def setrowcol r, c
+      super r+@rows_panned, c+@cols_panned
+    end
+    def add_widget w
+      super
+      $log.debug " inside add_widget #{w.name}  pad w #{@pad_w} #{w.col} "
+      if w.col >= @pad_w
+        @pad_w += 10 # XXX currently just a guess value, we need length and maybe some extra
+        @window.wresize(@pad_h, @pad_w)
+      end
     end
   end
 
