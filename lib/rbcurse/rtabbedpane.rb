@@ -29,6 +29,7 @@ include RubyCurses
 module RubyCurses
   extend self
 
+  Event = Struct.new( :tab, :index, :event)
   # TODO :  insert_tab, remove_tab, disable/hide tab
   # Hotkeys should be defined with ampersand, too.
   # 2010-02-21 13:44 When switching tabs, cursor needs to be re-established
@@ -195,6 +196,7 @@ module RubyCurses
       tab = @tabs[index]
       tab.component = component unless component.nil?
       tab.index = index # so i can undelete !!!
+      fire_event tab, index, :INSERT
       @recreate_buttons = true
       return tab
     end
@@ -206,6 +208,8 @@ module RubyCurses
       @recreate_buttons = true
       $log.debug " inside remove_tab with #{index}, #{@tabs.size} "
       @deleted_tab = @tabs.delete_at(index) unless @tabs.size < index
+      # note this is the index it was at. 
+      fire_event @deleted_tab, index, :DELETE
     end
     # If tab deleted accidentally, undelete it
     # Okay, i just can stop myself from having a little fun
@@ -213,6 +217,7 @@ module RubyCurses
       return unless @deleted_tab
       @recreate_buttons = true
       @tabs.insert(@deleted_tab.index, @deleted_tab)
+      fire_event @deleted_tab, @deleted_tab.index, :INSERT
       @deleted_tab = nil
       $log.debug " undelete over #{@tabs.size} "
     end
@@ -223,6 +228,7 @@ module RubyCurses
       @recreate_buttons = true
       @deleted_tab.index = ix + pos
       @tabs.insert(@deleted_tab.index, @deleted_tab)
+      fire_event @deleted_tab, @deleted_tab.index, :INSERT
       @deleted_tab = nil
       $log.debug " paste over #{@tabs.size} #{ix} + #{pos} "
     end
@@ -370,6 +376,7 @@ module RubyCurses
             # next line means next key is IMMED  taken by the tab not main form
             @current_tab = tab
           end
+          fire_event tab, tab.index, :OPEN
         }
       end
       @recreate_buttons = false
@@ -585,6 +592,16 @@ module RubyCurses
     def center_column textlen
       width = @layout[:width]
       return (width-textlen)/2
+    end
+    def fire_event tab, index, event
+      # experimenting with structs, earlier we've used classes
+      if @tabbedpane_event.nil?
+        @tabbedpane_event = Event.new
+      end
+      @tabbedpane_event.tab = tab
+      @tabbedpane_event.index = index
+      @tabbedpane_event.event = event
+      fire_handler event, @tabbedpane_event
     end
 
     ##
