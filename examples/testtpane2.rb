@@ -42,26 +42,21 @@ class TestTabbedPane
         col c #8
         #button_type :ok
       end
-      $log.debug "  before adding tab to TP "
-      @tab1 = @tp.add_tab "&TextView" 
-      f1 = @tab1.form
-      $log.debug "scrollpane ( textview ) tp form #{f1} "
-
       sr = 4 
       sc = 2
-        @scroll = ScrollPane.new f1 do
+        @scroll = ScrollPane.new nil do
           name   "myScroller" 
-          row 4 #+ht+1
-          col 0
-          width w-1
-          height h-4
+         # row 4 #+ht+1
+         # col 0
+         # width w-1
+         # height h-4
         end
-        textview = TextView.new nil do
+        textview = TextView.new do
           name   "myView" 
           row 0 #sr+1 # 4
           col 0 #sc+1 # 2 
           width w-0
-          height h+10
+         # height h+10
           title "README.mrku"
           title_attrib 'bold'
           print_footer true
@@ -70,25 +65,28 @@ class TestTabbedPane
         content = File.open("../README.markdown","r").readlines
         textview.set_content content #, :WRAP_WORD
         #textview.show_caret = true
-        @scroll.child(textview)
-
+      $log.debug "  before adding tab to TP "
+      @tab1 = @tp.add_tab "&TextView", @scroll
+      @scroll.child(textview)
 
 
       @tab2 = @tp.add_tab "&Settings"
-      f2 = @tab2.form
-      $log.debug " textarea tp form #{f2} "
+
+      #f2 = @tab2.form
+      #$log.debug " textarea tp form #{f2} "
       r = 4
-        texta = TextArea.new f2 do
+        texta = TextArea.new do
           name   "myText" 
-          row r
-          col 1 
-          width w-5
-          height h-5
+          #row r
+          #col 1 
+          #width w-5
+          #height h-5
           title "EditMe.txt"
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
         end
+        @tab2.component = texta
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
         texta << " "
@@ -97,8 +95,10 @@ class TestTabbedPane
         texta << "Love all creatures for they are none but yourself."
         #texta.show_caret = true # since the cursor is not showing correctly, show internal one.
 
+        # This uses the old style, we get a padded form and then add objects to it.
       @tab3 = @tp.add_tab "&Editors"
-      f3 = @tab3.form
+      #f3 = @tab3.form
+      f3 = @tp.form @tab3 # this replaces previous line, since we don't create form by default
       butts = %w[ &Vim E&macs &Jed E&lvis ]
       bcodes = %w[ VIM EMACS JED ELVIS]
       row = 4
