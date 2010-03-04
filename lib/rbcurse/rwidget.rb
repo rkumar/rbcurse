@@ -103,7 +103,14 @@ module RubyCurses
     class FieldValidationException < RuntimeError
     end
     module Utils
+      ## this is the numeric argument used to repeat and action by repeatm()
       $multiplier = 0
+
+      # 2010-03-04 18:01 
+      ## this may come in handy for methods to know whether they are inside a batch action or not
+      # e.g. a single call of foo() may set a var, a repeated call of foo() may append to var
+      $inside_multiplier_action = true
+
       ## 
       # wraps text given max length, puts newlines in it.
       # it does not take into account existing newlines
@@ -181,9 +188,11 @@ module RubyCurses
       ## repeats the given action based on how value of universal numerica argument
       ##+ set using the C-u key. Or in vim-mode using numeric keys
       def repeatm
+        $inside_multiplier_action = true
         _multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 1 : $multiplier )
         _multiplier.times { yield }
         $multiplier = 0
+        $inside_multiplier_action = false
       end
  
     ##
