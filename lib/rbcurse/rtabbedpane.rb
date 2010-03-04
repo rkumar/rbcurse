@@ -10,15 +10,14 @@
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-
   * 2010-02-28 09:47 - major cleanup and rewrite. 
     - Allow adding of component (in addition to form)
-    - Tab should handle_key and repaint based on compo or form
     - Ideally, even form should be created and managed itself, why should TP have to repaint it?
 
 NOTE: 
     Tp now does not create a form by default, since awefun you may want to just put in one component.
     Pls use tp.form(tab) to get a form associated with the tab.
+    You may add as many tabs as you wish. To scroll tabs, traverse into the tab form and use the usual scroll keys M-l and M-h to scroll left and right.
 =end
 require 'rubygems'
 require 'ncurses'
@@ -780,14 +779,14 @@ module RubyCurses
     # when tabbing through buttons, we need to account for all that panning/scrolling goin' on
     def setrowcol r, c
       # aha ! here's where i can check whether the cursor is falling off the viewable area
-      # and thus pan the portion back into view. XXX
-      # Nope, if i pan then user can't scroll off. this is pretty good. the cursor just gets stuck in last place it was if i scroll off. its in NO_NEXT_FIELD that we must wither scroll or jump to visible field..
       if c+@cols_panned < @orig_left
+        # this essentially means this widget (button) is not in view, its off to the left
         $log.debug " setrowcol OVERRIDE #{c} #{@cols_panned} < #{@orig_left} "
         $log.debug " aborting settrow col for now"
         return
       end
       if c+@cols_panned > @orig_left + @display_w
+        # this essentially means this button is not in view, its off to the right
         $log.debug " setrowcol OVERRIDE #{c} #{@cols_panned} > #{@orig_left} + #{@display_w} "
         $log.debug " aborting settrow col for now"
         return
@@ -796,13 +795,52 @@ module RubyCurses
     end
     def add_widget w
       super
-      $log.debug " inside add_widget #{w.name}  pad w #{@pad_w} #{w.col} "
+      #$log.debug " inside add_widget #{w.name}  pad w #{@pad_w} #{w.col} "
       if w.col >= @pad_w
         @pad_w += 10 # XXX currently just a guess value, we need length and maybe some extra
         @window.wresize(@pad_h, @pad_w)
       end
     end
-  end
+    ## Is a component visible, typically used to prevent traversal into the field
+    # @returns [true, false] false if components has scrolled off
+    def visible? component
+      r, c = component.rowcol
+      return false if c+@cols_panned < @orig_left
+      return false if c+@cols_panned > @orig_left + @display_w
+      # XXX TODO for rows UNTESTED for rows
+      return false if r + @rows_panned < @orig_top
+      return false if r + @rows_panned > @orig_top + @display_h
+
+      return true
+    end
+    # returns index of first visible component. Currently using column index
+    # I am doing this for horizontal scrolling presently
+    # @return [index, -1] -1 if none visible, else index/offset
+    def first_visible_component_index
+      @widgets.each_with_index do |w, ix|
+        return ix if visible?(w)
+      end
+      return -1
+    end
+    def last_visible_component_index
+      ret = -1
+      @widgets.each_with_index do |w, ix|
+        $log.debug " reverse last vis #{ix} , #{w} : #{visible?(w)} "
+        ret = ix if visible?(w)
+      end
+      return ret
+    end
+    def req_first_field
+      select_field(first_visible_component_index)
+    end
+    def req_last_field
+      select_field(last_visible_component_index)
+    end
+    def focusable?(w)
+      w.focusable and visible?(w)
+    end
+
+  end # class ScrollF
 
 
 end # module
