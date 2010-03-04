@@ -45,6 +45,9 @@ module RubyCurses
     def getvalue_for_paint
       @text
     end
+    def selected?
+        @variable.value == @value 
+    end
     ## 
     # highlight abd selected colors and attribs should perhaps be in a
     # structure, so user can override easily
@@ -166,27 +169,85 @@ module RubyCurses
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
   #    @manages_cursor = true # redundant, remove
       @recreate_buttons = true
+      install_keys
+    end
+    def install_keys
+      @form.bind_key ([?d, ?d]) { ix = highlighted_tab_index; repeatm { remove_tab(ix) } }
+      @form.bind_key (?u) { undelete_tab; }
+      @form.bind_key (?p) { paste_tab 0; } # paste before or at position
+      @form.bind_key (?P) { paste_tab 1; } # paste deleted tab after this one
     end
     ##
-    # This is a public, user called method for creating a new tab
+    # This is a public, user called method for appending a new tab
     # This will be called several times for one TP.
     # when adding tabs, you may use ampersand in text to create hotkey
     # XXX adding a tab later does not influence buttons array,
     def add_tab text, component = nil, aconfig={}, &block
-      #create a button here and block is taken care of in button's instance
-      #or push this for later creation.
-      @tabs << Tab.new(text, self, aconfig, &block)
-      tab = @tabs.last
+      index = @tabs.size
+      tab = insert_tab text, component, index, aconfig, &block
+      return tab
+    end
+    alias :add :add_tab
+    ## insert a component at given index
+    # index cannnot be greater than size of tab count
+    def insert_tab text, component, index, aconfig={}, &block
+      @tabs[index] = Tab.new(text, self, aconfig, &block)
+      tab = @tabs[index]
       tab.component = component unless component.nil?
-      #tab.parent_component = self
-      # just temoprarily 
-      #if component.nil?
-        #@forms << create_tab_form(tab)
-        #tab.form = @forms.last
-      #end
+      tab.index = index # so i can undelete !!!
       @recreate_buttons = true
       return tab
     end
+    ## remove given tab based on index
+    # This does not unbind the key mapping, FIXME
+    # Currently, can be invoked by 'dd' over highlighted button
+    # XXX can append to deleted_tabs, then on insert or paste insert with splat.
+    def remove_tab index
+      @recreate_buttons = true
+      $log.debug " inside remove_tab with #{index}, #{@tabs.size} "
+      @deleted_tab = @tabs.delete_at(index) unless @tabs.size < index
+    end
+    # If tab deleted accidentally, undelete it
+    # Okay, i just can stop myself from having a little fun
+    def undelete_tab
+      return unless @deleted_tab
+      @recreate_buttons = true
+      @tabs.insert(@deleted_tab.index, @deleted_tab)
+      @deleted_tab = nil
+      $log.debug " undelete over #{@tabs.size} "
+    end
+    def paste_tab pos
+      return unless @deleted_tab
+      ix = highlighted_tab_index
+      return if ix == -1
+      @recreate_buttons = true
+      @deleted_tab.index = ix + pos
+      @tabs.insert(@deleted_tab.index, @deleted_tab)
+      @deleted_tab = nil
+      $log.debug " paste over #{@tabs.size} #{ix} + #{pos} "
+    end
+    def highlighted_tab_index
+      @form.widgets.each_with_index{ |w, ix| 
+        return ix if w.state == :HIGHLIGHTED
+      }
+      return -1
+    end
+    def selected_tab_index
+      @form.widgets.each_with_index{ |w, ix| 
+        return ix if w.selected?
+      }
+      return -1
+    end
+    ## remove all tabs
+    def remove_all
+      if !@buttons.empty?
+        @buttons.each {|e| @form.remove_widget(e) }
+      end
+      @buttons = []
+      @tabs = []
+      @recreate_buttons = true
+    end
+
     ## return a form for use by program - if you want to put multiple items
     # Otherwise just use add_component
     # private - can't use externally
@@ -263,6 +324,7 @@ module RubyCurses
     # Test it out with removing tabs to.
     # XXX have to remove buttons from the form
     def _recreate_buttons
+      $log.debug " inside recreate_buttons: #{@tabs.size} "
       r = @row
       col = @col + 1
       @buttons ||= []
@@ -275,7 +337,6 @@ module RubyCurses
       # we may also need to truncate text to fit
 
       @buttonpad.wclear
-      #@buttonpad.box(0,0) # this is around pad which can exceed display h and w.
       ## create a button for each tab
       $tabradio = Variable.new # 2010-03-03 19:12 why all linked to one global ? XXX 
       @tabs.each do |tab|
@@ -310,8 +371,8 @@ module RubyCurses
             @current_tab = tab
           end
         }
-        @recreate_buttons = false
       end
+      @recreate_buttons = false
     end
     ## This form is for the tabbed buttons on top
     def create_window
@@ -535,6 +596,7 @@ module RubyCurses
       attr_reader :component
       attr_accessor :form
       attr_accessor :parent_component
+      attr_accessor :index
       def initialize text, parent_component,  aconfig={}, &block
         @text = text
         @config = aconfig
