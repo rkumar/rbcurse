@@ -25,6 +25,7 @@ require 'rbcurse/rtable'
 class TestTabbedPane
   def initialize
     acolor = $reversecolor
+    @tctr = 0
   end
   def run
     $config_hash ||= Variable.new Hash.new
@@ -41,15 +42,13 @@ class TestTabbedPane
         col 8
         #button_type :ok
       end
-      @tab1 = @tp.add_tab "&TextView" 
-      f1 = @tab1.form
 
-        textview = TextView.new f1 do
+        textview = TextView.new do
           name   "myView" 
           row 4
           col 0 
-          width w-0
-          height h-4
+          #width w-0
+          #height h-4
           title "README.mrku"
           title_attrib 'bold'
           print_footer true
@@ -59,22 +58,27 @@ class TestTabbedPane
         textview.set_content content #, :WRAP_WORD
         #textview.show_caret = true
 
+      @tab1 = @tp.add_tab "&TextView", textview
+      #@tabl.add_component textview
+      #f1 = @tab1.form
+        
 
 
-      @tab2 = @tp.add_tab "&Settings"
-      f2 = @tab2.form
+      #f2 = @tab2.form
       r = 4
-        texta = TextArea.new f2 do
+        texta = TextArea.new do
           name   "myText" 
-          row r
-          col 2 
-          width w-5
-          height h-5
+          #row r
+          #col 2 
+          #width w-5
+          #height h-5
           title "EditMe.txt"
           title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
         end
+        @tab2 = @tp.add_tab "&Settings", texta
+
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
         texta << " "
@@ -84,10 +88,11 @@ class TestTabbedPane
         #texta.show_caret = true # since the cursor is not showing correctly, show internal one.
 
       @tab3 = @tp.add_tab "&Editors"
-      f3 = @tab3.form
+      #f3 = @tab3.form
+      f3 = @tp.form @tab3
       butts = %w[ &Vim E&macs &Jed E&lvis ]
       bcodes = %w[ VIM EMACS JED ELVIS]
-      row = 4
+      row = 2
       butts.each_with_index do |name, i|
         RubyCurses::CheckBox.new f3 do
           text name
@@ -98,7 +103,8 @@ class TestTabbedPane
         end
       end
       tab3 = @tp.add_tab "S&ongs"
-      f3 = tab3.form
+      #f3 = tab3.form
+      #f3 = @tp.form tab3
       data = [["Pathetique",3,"Tchaikovsky",3.21, true, "WIP"],
         ["Ali Maula Ali Maula",3,"NFAK",3.47, true, "WIP"],
         ["Tera Hijr Mera Nasib",92,"Razia Sultan",412, true, "Fin"],
@@ -124,18 +130,22 @@ class TestTabbedPane
       colnames = %w[ Song Cat Artist Ratio Flag Status]
       statuses = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
 
-        atable = Table.new f3 do
+      row = 1
+      # when adding as a component it is best not to specify row and col
+      # We can skip sizing too for large components, so comp will fill the TP.
+        atable = Table.new do
           name   "mytable" 
-          row  4 
-          col  0
-          width 76
-          height 15
+          #row  row 
+          #col  0
+          #width 76
+          #height h - 4
           #title "A Table"
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
           cell_editing_allowed true
           editing_policy :EDITING_AUTO
           set_data data, colnames
         end
+        tab3.component = atable
         sel_col = Variable.new 0
         sel_col.value = 0
         tcm = atable.get_table_column_model
@@ -147,8 +157,14 @@ class TestTabbedPane
           tcm.column(3).width 7
           tcm.column(4).width 5
           tcm.column(5).width 6
-      @help = "F1 to quit. Use any key of key combination to see what's caught. #{$0} Check logger too"
+      @help = "F1 to quit. M-s M-t M-e M-o, TAB  #{$0} Check logger too"
             RubyCurses::Label.new @form, {'text' => @help, "row" => r+h+2, "col" => 2, "color" => "yellow"}
+            @form.bind_key(?\M-x) {
+              textv = TextView.new 
+              t = @tp.add_tab "Text#{@tctr}", textv
+              textv.set_content content
+              @tctr += 1
+            }
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
