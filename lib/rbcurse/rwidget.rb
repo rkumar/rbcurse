@@ -1184,14 +1184,20 @@ module RubyCurses
       f.on_enter if f.respond_to? :on_enter
       fire_handler :ENTER, f 
     end
+    ## is a field focusable
+    # Added a method here, so forms can extend this to avoid focussing on off-screen components
+    def focusable?(f)
+      return f.focusable
+    end
     ##
     # puts focus on the given field/widget index
     # XXX if called externally will not run a on_leave of previous field
     def select_field ix0
-      return if @widgets.nil? or @widgets.empty? or !@widgets[ix0].focusable
+      #return if @widgets.nil? or @widgets.empty? or !@widgets[ix0].focusable
+      return if @widgets.nil? or @widgets.empty? or !focusable?(@widgets[ix0])
 #     $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
       f = @widgets[ix0]
-      if f.focusable
+      if focusable?(f)
         @active_index = ix0
         @row, @col = f.rowcol
 #       $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
@@ -1244,7 +1250,7 @@ module RubyCurses
       index.upto(@widgets.length-1) do |i|
         f = @widgets[i]
         $log.debug "insdie sele nxt field :  i #{i}  #{index} WL:#{@widgets.length}, field #{f}" 
-        if f.focusable
+        if focusable?(f)
           select_field i
           return
         end
@@ -1258,7 +1264,7 @@ module RubyCurses
         #select_next_field
         0.upto(index-1) do |i|
           f = @widgets[i]
-          if f.focusable
+          if focusable?(f)
             select_field i
             return
           end
@@ -1290,7 +1296,7 @@ module RubyCurses
       index = @active_index - 1
       (index).downto(0) do |i|
         f = @widgets[i]
-        if f.focusable
+        if focusable?(f)
           select_field i
           return
         end
@@ -1304,7 +1310,7 @@ module RubyCurses
         total = @widgets.length-1
         total.downto(index-1) do |i|
           f = @widgets[i]
-          if f.focusable
+          if focusable?(f)
             select_field i
             return
           end
