@@ -11,6 +11,9 @@
 #*******************************************************#
 
 # this is a test program, tests out tabbed panes. type F1 to exit
+# position cursor in button form and press M-x to add a few tabs
+# M-l in button form will scroll. M-h to scroll left.
+# dd to kill a tab, u to undo kill, or p/P to paste deleted tab
 #
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
@@ -157,8 +160,10 @@ class TestTabbedPane
           tcm.column(3).width 7
           tcm.column(4).width 5
           tcm.column(5).width 6
-      @help = "F1 to quit. M-s M-t M-e M-o, TAB  #{$0} Check logger too"
+      @help = "F1 to quit. M-s M-t M-e M-o, TAB, M-x to add tab  #{$0} Check logger too"
             RubyCurses::Label.new @form, {'text' => @help, "row" => r+h+2, "col" => 2, "color" => "yellow"}
+
+            # M-x when inside the buttons form will create a new tab
             @form.bind_key(?\M-x) {
               textv = TextView.new 
               t = @tp.add_tab "Text#{@tctr}", textv
