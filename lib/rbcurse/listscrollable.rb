@@ -151,12 +151,12 @@ module ListScrollable
       @buffer_modified = true
   end
   def right
-    @hscrollcols ||= @cols/2
-    @pcol += @hscrollcols if @pcol + @hscrollcols < @padcols
-    #   window_erase @win XXX
+    @hscrollcols ||= @width/2
+    blen = @buffer.rstrip.length
+    @pcol += @hscrollcols if @pcol + @width < blen 
   end
   def left
-    @hscrollcols ||= @cols/2
+    @hscrollcols ||= @width/2
     @pcol -= @hscrollcols if @pcol > 0
     @pcol = 0 if @pcol < 0
   end
