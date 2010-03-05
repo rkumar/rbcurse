@@ -183,7 +183,6 @@ module RubyCurses
       @list
     end
     # textview
-    # [ ] scroll left right DONE
     def handle_key ch
       @buffer = @list[@current_index]
       if @buffer.nil? and row_count == 0
@@ -223,12 +222,15 @@ module RubyCurses
         cursor_backward
       when ?\C-a.getbyte(0) #, ?0.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start
+        @repaint_required = true if @pcol > 0 # tried other things but did not work
         set_form_col 0
         @pcol = 0
       when ?\C-e.getbyte(0), ?$.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
+        # This use to actually pan the screen to actual end of line, but now somewhere
+        # it only goes to end of visible screen, set_form probably does a sanity check
         blen = @buffer.rstrip.length
-          set_form_col blen
+        set_form_col blen
         # search related 
       when @KEY_ASK_FIND
         ask_search
@@ -241,6 +243,7 @@ module RubyCurses
         # C-u to stop. In that case a 0 should act as a command, even though multiplier has been set
         if ch == ?0.getbyte(0) and $multiplier == 0
           # copy of C-a - start of line
+          @repaint_required = true if @pcol > 0 # tried other things but did not work
           set_form_col 0
           @pcol = 0
           return 0
@@ -252,6 +255,12 @@ module RubyCurses
         ## multiplier. Series is 4 16 64
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
+      when ?\M-l.getbyte(0) # just added 2010-03-05 not perfect
+        right # scroll data horizontally 
+        @repaint_required = true
+      when ?\M-h.getbyte(0)
+        left
+        @repaint_required = true
       when ?\C-c.getbyte(0)
         $multiplier = 0
         return 0
@@ -294,22 +303,16 @@ module RubyCurses
       if @curpos > maxlen
         @pcol = @curpos - maxlen
         @curpos = maxlen - 1
+        @repaint_required = true # this is required so C-e can pan screen
       else
         @pcol = 0
       end
-      ## changed on 2010-01-12 18:46 so carried upto topmost form
-      #@form.col = @orig_col + @col_offset + @curpos
-      #win_col=@form.window.left
+      # the rest only determines cursor placement
       win_col = 0 # 2010-02-07 23:19 new cursor stuff
-      #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
-      ## 2010-01-13 18:19 trying col instead of orig, so that can work in splitpanes
-      ##+ impact has to be seen elsewhere too !!! XXX
       col2 = win_col + @col + @col_offset + @curpos + @cols_panned + @pad_offset
       $log.debug "TV SFC #{@name} setting c to #{col2} #{win_col} #{@col} #{@col_offset} #{@curpos} "
       #@form.setrowcol @form.row, col
       setrowcol nil, col2
-      # XXX 
-      #@repaint_required = true
       @repaint_footer_required = true
     end
     def cursor_forward
