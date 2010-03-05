@@ -78,6 +78,8 @@ module RubyCurses
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
       bind_key(?n, :find_more)
+      bind_key([?\C-x, ?>], :scroll_right)
+      bind_key([?\C-x, ?<], :scroll_left)
     end
     ## 
     # send in a list
@@ -256,11 +258,9 @@ module RubyCurses
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
       when ?\M-l.getbyte(0) # just added 2010-03-05 not perfect
-        right # scroll data horizontally 
-        @repaint_required = true
+        scroll_right # scroll data horizontally 
       when ?\M-h.getbyte(0)
-        left
-        @repaint_required = true
+        scroll_left
       when ?\C-c.getbyte(0)
         $multiplier = 0
         return 0
