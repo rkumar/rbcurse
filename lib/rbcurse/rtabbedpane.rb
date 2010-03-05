@@ -18,6 +18,8 @@ NOTE:
     Tp now does not create a form by default, since awefun you may want to just put in one component.
     Pls use tp.form(tab) to get a form associated with the tab.
     You may add as many tabs as you wish. To scroll tabs, traverse into the tab form and use the usual scroll keys M-l and M-h to scroll left and right.
+  #
+  # TODO :  disable/hide tab ???
 =end
 require 'rubygems'
 require 'ncurses'
@@ -30,16 +32,6 @@ module RubyCurses
   extend self
 
   Event = Struct.new( :tab, :index, :event)
-  # TODO :  insert_tab, remove_tab, disable/hide tab
-  # Hotkeys should be defined with ampersand, too.
-  # 2010-02-21 13:44 When switching tabs, cursor needs to be re-established
-  # Need to handle more tabs than can be displayed.
-  # NOTE:I don't think this uses set_form_row or bothers with the cursor
-  #+ since it manages highlighting etc on its own. 2009-12-29 13:30 
-  #
-  # TODO Option for highlighted tab shoud be displayed
-  # TODO can down arrow from buttons take us into form
-  # TODO up arrow from first field take us into buttons
 
   # Multiple independent overlapping forms using the tabbed metaphor.
   class TabbedButton < RubyCurses::RadioButton
