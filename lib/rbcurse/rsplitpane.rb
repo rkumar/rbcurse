@@ -44,6 +44,7 @@ module RubyCurses
       attr_writer :last_divider_location
       dsl_accessor :border_color
       dsl_accessor :border_attrib
+      attr_accessor :one_touch_expandable # boolean, default true 
 
       def initialize form, config={}, &block
           @focusable = true
@@ -91,6 +92,13 @@ module RubyCurses
 
           # true means will request child to create a buffer, since cropping will be needed
           @_child_buffering = true # private, internal. not to be changed by callers.
+          @one_touch_expandable = true
+          @is_expanding = false
+
+          bind_key([?\C-w, ?o], :expand)
+          bind_key([?\C-w, ?1], :expand)
+          bind_key([?\C-w, ?2], :unexpand)
+          bind_key([?\C-w, ?x], :exchange)
 
       end
 
@@ -109,12 +117,6 @@ module RubyCurses
           screen_row = 1 # offset for copying pad 2010-02-09 19:02 
           @first_component      = comp;
           @first_component.parent_component = self ## added 2010-01-13 12:54 
-#XXX          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
-#XXX          subpad.name           = "#{@name}-SPLITPAD1"
-#XXX          @subform1             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
-#XXX          @subform1.name = "#{@name}-SPLITFORM1"
-#XXX          comp.set_form(@subform1) # added 2010 BUFFERED
-#XXX          @subform1.parent_form = @form # added 2010 for cursor stuff BUFFERED
           ## These setting are quite critical, otherwise on startup
           ##+ it can create 2 tiled buffers.
           a = 0 # =1
@@ -140,10 +142,7 @@ module RubyCurses
              @first_component.height ||= @first_component.preferred_height || @height - a
              @first_component.width ||= @first_component.preferred_width || @width/2 -1
           end
-          layout = { :height => @height-1, :width => @width-1, :top => @row, :left => @col }
-          #_graphic = @graphic._subwin(layout)
-          #raise "graphic nil for comp 1 SPLP" unless _graphic
-          #comp.set_buffering(:target_window => _graphic || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          #layout = { :height => @height-1, :width => @width-1, :top => @row, :left => @col }
           comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
           comp.set_buffering(:screen_top => @row, :screen_left => @col)
           @first_component.min_height ||= 5
@@ -317,12 +316,13 @@ module RubyCurses
       def set_divider_location rc
         $log.debug " SPLP #{@name} setting divider to #{rc} "
         # add a check for out of bounds since no buffering
+          v = 1 # earlier 2
         if @orientation == :HORIZONTAL_SPLIT
-          if rc < 2 || rc > @height-2
+          if rc < v || rc > @height - v
             return :ERROR
           end
         else
-          if rc < 2 || rc > @width -2
+          if rc < v || rc > @width - v
             return :ERROR
           end
         end
@@ -331,6 +331,7 @@ module RubyCurses
           # we first check against min_sizes
           # the calculation is repeated here, and in the actual change
           # so if modifying, be sure to do in both places.
+          if !@is_expanding # if expanding then i can't check against min_width
           if rc > old_divider_location
             if @second_component != nil
               if @orientation == :VERTICAL_SPLIT
@@ -366,6 +367,8 @@ module RubyCurses
               end
             end
           end
+          end # expanding
+          @is_expanding = false
           @old_divider_location = @divider_location
           @divider_location = rc
           if @first_component != nil
@@ -672,6 +675,11 @@ module RubyCurses
               @current_component = @first_component
             end
             set_form_row
+          else
+            # this happens in one_tab_expand
+            @current_component = @second_component if @first_component.nil?
+            @current_component = @first_component if @second_component.nil?
+            set_form_row
           end
       end
       ## Handles key for splitpanes
@@ -711,10 +719,14 @@ module RubyCurses
             end
             set_form_row
           else
-
+           _switch_component
+           return 0
+            # if i've expanded bottom pane, tabbed to opposite higher level, tabbing back
+            # brings me to null first pane and i can't go to second, so switch
             # this was added for a non-realistic test program with embedded splitpanes
             #+ but no component inside them. At least one can go from one outer to another.
             #+ In real life, this should not come.
+
             return :UNHANDLED
           end
         when ?\M-V.getbyte(0)
@@ -737,7 +749,9 @@ module RubyCurses
           $multiplier = 0
           return 0
         else
-          return :UNHANDLED
+          # check for bindings, these cannot override above keys since placed at end
+          ret = process_key ch, self
+          return :UNHANDLED if ret == :UNHANDLED
         end
         $multiplier = 0
         return 0
@@ -765,6 +779,60 @@ module RubyCurses
             $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
             @current_component.set_form_col 
          end
+      end
+      private
+      #def _other_component
+        #if @current_component == @first_component
+          #return @second_component
+        #end
+        #return @first_component
+      #end
+      ## expand a split to maximum. This is the one_touch_expandable feature
+      # Currently mapped to C-w 1 (mnemonic for one touch), or C-w o (vim's only)
+      # To revert, you have to unexpand
+      # Note: basically, i nil the component that we don't want to see
+      def expand
+        @is_expanding = true # this is required so i don't check for min_width later
+        $log.debug " callign expand "
+        if @current_component == @first_component
+          @saved_component = @second_component
+          @second_component = nil
+          if @orientation == :VERTICAL_SPLIT
+            set_divider_location @width - 1
+          else
+            set_divider_location @height - 1
+          end
+          $log.debug " callign expand 2 nil #{@divider_location}, h:#{@height} w: #{@width}  "
+        else
+          @saved_component = @first_component
+          @first_component = nil
+          set_divider_location 1
+          $log.debug " callign expand 1 nil #{@divider_location}, h:#{@height} w: #{@width}  "
+        end
+        @repaint_required = true
+      end
+      # after expanding one split, revert to original  - actually i reset, rather than revert
+      # This only works after expand has been done
+      def unexpand
+        $log.debug " inside unexpand "
+        return unless @saved_component
+        if @first_component.nil?
+          @first_component = @saved_component
+        else
+          @second_component = @saved_component
+        end
+        @saved_component = nil
+        @repaint_required = true
+        reset_to_preferred_sizes
+      end
+
+      # exchange 2 splits, bound to C-w x
+      def exchange
+        tmp = @first_component
+        @first_component = @second_component
+        @second_component = tmp
+        @repaint_required = true
+        reset_to_preferred_sizes
       end
   end # class SplitPane
 end # module
