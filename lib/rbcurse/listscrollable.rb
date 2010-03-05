@@ -150,15 +150,18 @@ module ListScrollable
       @graphic.mvchgat(y=yy, x=xx, 1, Ncurses::A_NORMAL, $reversecolor, nil)
       @buffer_modified = true
   end
-  def right
-    @hscrollcols ||= @width/2
+  def scroll_right
+    hscrollcols = $multiplier > 0 ? $multiplier : @width/2
+    $log.debug " scroll_right  m:#{$multiplier} ,  #{hscrollcols} "
     blen = @buffer.rstrip.length
-    @pcol += @hscrollcols if @pcol + @width < blen 
+    @pcol += hscrollcols if @pcol + @width < blen 
+    @repaint_required = true
   end
-  def left
-    @hscrollcols ||= @width/2
-    @pcol -= @hscrollcols if @pcol > 0
+  def scroll_left
+    hscrollcols = $multiplier > 0 ? $multiplier : @width/2
+    @pcol -= hscrollcols if @pcol > 0
     @pcol = 0 if @pcol < 0
+    @repaint_required = true
   end
   ## returns cursor to last row (if moving columns in same row, won't work)
   # Useful after a large move such as 12j, 20 C-n etc, Mapped to '' in textview
