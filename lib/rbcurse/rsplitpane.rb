@@ -181,7 +181,7 @@ module RubyCurses
 #XXX          @subform2.parent_form = @form # added 2010 for cursor stuff BUFFERED
           # adding ext_offsets 2010-02-09 13:39 
 #XXX          $log.debug "SPLP exp_row #{@name} 2  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}  "
-          comp.should_create_buffer @_child_buffering 
+          comp.should_create_buffer = @_child_buffering 
           ## jeez, we;ve postponed create of buffer XX
           ## trying out 2010-01-16 12:11 so component does not have to set size
           # The suggestd heights really depend on orientation.
