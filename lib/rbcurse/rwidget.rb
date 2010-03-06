@@ -26,6 +26,7 @@ require 'logger'
 #require 'rbcurse/mapper'
 require 'rbcurse/colormap'
 require 'rbcurse/orderedhash'
+require 'rbcurse/io'
 
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
@@ -357,6 +358,7 @@ module RubyCurses
     include EventHandler
     include ConfigSetup
     include RubyCurses::Utils
+    include Io # added 2010-03-06 13:05 
     dsl_property :text
 
     # next 3 to be checked if used or not. Copied from TK.
