@@ -3,6 +3,9 @@
 # at some point
 # Arunachalesha                       
 #  2010-03-06 12:10 
+#  Some are outdated.
+#  Current are:
+#    * rbgetstr (and those it calls)
 #*******************************************************#
 module Io
 
