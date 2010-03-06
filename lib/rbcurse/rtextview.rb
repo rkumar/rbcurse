@@ -80,6 +80,7 @@ module RubyCurses
       bind_key(?n, :find_more)
       bind_key([?\C-x, ?>], :scroll_right)
       bind_key([?\C-x, ?<], :scroll_left)
+      bind_key(?r, :getstr)
     end
     ## 
     # send in a list
@@ -434,6 +435,12 @@ module RubyCurses
       @repaint_all = false # added 2010-01-08 18:56 for redrawing everything
 
       # 2010-02-10 22:08 RFED16
+    end
+    def getstr
+      $log.debug " inside getstr before call "
+      #ret, str = rbgetstr(@graphic, @row+@height-1, @col+1, "Enter search", 9)
+      ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, "Enter search", 9)
+      $log.debug " rbgetstr returned #{ret} , #{str} "
     end
   end # class textview
 end # modul
