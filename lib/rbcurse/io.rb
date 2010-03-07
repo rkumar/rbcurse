@@ -36,15 +36,19 @@ module Io
 
     # clear the area of len+maxlen
     color = $datacolor
+    str=default
     clear_this win, r, c, color, len+maxlen+1
-    print_this(win, prompt, color, r, c)
+    print_this(win, prompt+str, color, r, c)
+    len = prompt.length + str.length
     #x mylabels=["^G~Help  ", "^C~Cancel"]
     #x mylabels += labels if !labels.nil?
     begin
     #x print_key_labels( 0, 0, mylabels)
 #x    Ncurses.echo();
-    str=""
-    curpos = 0
+    #curpos = 0
+    curpos = str.length
+    prevchar = 0
+    entries = nil
     #win.mvwgetnstr(LINEONE-3,askstr.length,yn,maxlen)
     while true
       #ch=win.mvwgetch(r, len) # get to right of prompt - WHY  NOT WORKING ??? 
@@ -83,9 +87,23 @@ module Io
           win.wmove r, c+len # since getchar is not going back on del and bs
         end
         next
-      when ?\M-i.getbyte(0) , 233
-        ins_mode = true
+      when ?\M-i.getbyte(0) 
+        ins_mode = !ins_mode
         next
+      when 9 # TAB
+        if config
+          if prevchar == 9
+            if !entries.nil? and !entries.empty?
+              str = entries.delete_at(0)
+            end
+          else
+            tabc = config[:tab_completion] unless tabc
+            next unless tabc
+            entries = tabc.call(str)
+            $log.debug " tab got #{entries} "
+            str = entries.delete_at(0) unless entries.nil? or entries.empty?
+          end
+        end
       else
         #if validints.include?ch
           #print_status("Found in validints")
@@ -113,7 +131,8 @@ module Io
         break if str.length > maxlen
       end
       print_this(win, prompt+str, color, r, c)
-        win.wmove r, c+len # more for arrow keys, curpos may not be end
+      win.wmove r, c+len # more for arrow keys, curpos may not be end
+      prevchar = ch
     end
     str = default if str == ""
     ensure
