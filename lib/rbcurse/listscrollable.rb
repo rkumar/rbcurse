@@ -151,6 +151,7 @@ module ListScrollable
       @buffer_modified = true
   end
   def scroll_right
+    $log.debug " inside scroll_right "
     hscrollcols = $multiplier > 0 ? $multiplier : @width/2
     $log.debug " scroll_right  m:#{$multiplier} ,  #{hscrollcols} "
     blen = @buffer.rstrip.length
@@ -166,6 +167,7 @@ module ListScrollable
   ## returns cursor to last row (if moving columns in same row, won't work)
   # Useful after a large move such as 12j, 20 C-n etc, Mapped to '' in textview
   def goto_last_position
+    return unless @oldrow
     @current_index = @oldrow
     bounds_check
   end
