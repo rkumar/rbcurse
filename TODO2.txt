@@ -83,3 +83,6 @@
  69	[ ] (E) SplitPane: binding so that next command acts on higher level splitpane ? (2010-03-05)
  70	[ ] (E) rbgetstr: tab completion, as in filename completion etc (2010-03-06)
  71	[ ] (D) Demo: using scrollform (2010-03-07)
+ 72	[ ] TextView: keymaps. p 699 (2010-03-07)
+ 73	[ ] TextView: freezing an area horiz vertically (2010-03-07)
+ 74	[ ] General: move key bindings to bind_key so user can see what's bound (2010-03-07)
