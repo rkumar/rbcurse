@@ -157,8 +157,6 @@ module RubyCurses
           return "F"+ (keycode-264).to_s
         when 330
           return "delete"
-        when 233
-          return "insert"
         when 127
           return "bs"
         when 353
