@@ -440,27 +440,16 @@ module RubyCurses
     ## this is just a test of prompting user for a string
     #+ as an alternative to the dialog.
     def getstr prompt, maxlen=10
+      tabc = Proc.new {|str| Dir.glob(str +"*") }
+      config={}; config[:tab_completion] = tabc
+      config[:default] = "defaulT"
       $log.debug " inside getstr before call "
-      ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen)
+      ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen, config)
       $log.debug " rbgetstr returned #{ret} , #{str} "
       return "" if ret != 0
       return str
     end
     # this is just a test of the simple "most" menu
-    def old_disp_menu
-      menu = []
-      menu << create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} )
-      menu << create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right )
-      menu << create_mitem( 'l', "scroll left", "I have scrolled ", :scroll_left )
-      item = create_mitem( 'm', "submenu", "submenu options" )
-      menu1 = []
-      menu1 << create_mitem( 's', "CASE sensitive", "Ignoring Case in search" )
-      menu1 << create_mitem( 't', "goto last position", "moved to previous position", Proc.new { goto_last_position} )
-      item.action = menu1
-      menu << item
-      # how do i know what's available. the application or window should know where to place
-      display_cmenu @form.window, 23, 1, $datacolor, menu
-    end
     def disp_menu
       menu = PromptMenu.new self 
       menu.add( menu.create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} ))
