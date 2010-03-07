@@ -80,7 +80,8 @@ module RubyCurses
       bind_key(?n, :find_more)
       bind_key([?\C-x, ?>], :scroll_right)
       bind_key([?\C-x, ?<], :scroll_left)
-      bind_key(?r, :getstr)
+      bind_key(?r) { getstr("Enter a word") }
+      bind_key(?m, :disp_menu)
     end
     ## 
     # send in a list
@@ -436,11 +437,29 @@ module RubyCurses
 
       # 2010-02-10 22:08 RFED16
     end
-    def getstr
+    ## this is just a test of prompting user for a string
+    #+ as an alternative to the dialog.
+    def getstr prompt, maxlen=10
       $log.debug " inside getstr before call "
-      #ret, str = rbgetstr(@graphic, @row+@height-1, @col+1, "Enter search", 9)
-      ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, "Enter search", 9)
+      ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen)
       $log.debug " rbgetstr returned #{ret} , #{str} "
+      return "" if ret != 0
+      return str
+    end
+    # this is just a test of the simple "most" menu
+    def disp_menu
+      menu = []
+      menu << create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} )
+      menu << create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right )
+      menu << create_mitem( 'l', "scroll left", "I have scrolled ", :scroll_left )
+      item = create_mitem( 'm', "submenu", "submenu options" )
+      menu1 = []
+      menu1 << create_mitem( 's', "CASE sensitive", "Ignoring Case in search" )
+      menu1 << create_mitem( 't', "goto last position", "moved to previous position", Proc.new { goto_last_position} )
+      item.action = menu1
+      menu << item
+      # how do i know what's available. the application or window should know where to place
+      display_cmenu @form.window, 23, 1, $datacolor, menu
     end
   end # class textview
 end # modul
