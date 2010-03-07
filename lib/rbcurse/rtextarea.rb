@@ -296,7 +296,13 @@ module RubyCurses
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
       when ?\C-_.getbyte(0) # changed from C-u so i can use C-u for multipliers
-        undo_delete
+        #undo_delete
+        return unless @undo_handler
+        @undo_handler.undo
+      when ?\C-r.getbyte(0) # changed from C-u so i can use C-u for multipliers
+        #undo_delete
+        return unless @undo_handler
+        @undo_handler.redo
       when ?\C-a.getbyte(0)
         cursor_bol
       when ?\C-e.getbyte(0)
@@ -821,6 +827,9 @@ module RubyCurses
           set_focus_on(ix)
           set_form_col @find_offset
         end
+    end
+    def undo_handler(uh)
+      @undo_handler = uh
     end
     ## trying out for tabbedpanes 2010-01-21 19:48 
     #def on_enter
