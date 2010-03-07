@@ -72,7 +72,7 @@
  58	[ ] make form = nil in widget constructors so nil not to be passed (2010-02-27)
  59	[ ] add a mthod form.add as an alternative to putting form in constructor (2010-02-27)
  60	[x] (A) Textview: should scroll horizontally (2010-02-28) (x2010-03-05)
- 61	[ ] (F) how to map : bind w, 12j (to another key binding) (2010-03-01)
+ 61	[ ] (F) how to map : bind w, 12j (to another key binding)  * if recogn as keys, then call handle_key on self with each key in array (2010-03-01)
  62	[x] (A) TabbedPane: remove subheading, wastes space (2010-03-01) (x2010-03-02)
  63	[x] (E) some means of editing a string at a location wiht option of C-c or Esc and default, take from commons1.rb (2010-03-05) (x2010-03-06)
  64	[ ] (F) TextArea and TextView Field Table etc: yanking and pasting globally (2010-03-05)
