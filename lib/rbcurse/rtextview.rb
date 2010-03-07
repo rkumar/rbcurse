@@ -447,7 +447,7 @@ module RubyCurses
       return str
     end
     # this is just a test of the simple "most" menu
-    def disp_menu
+    def old_disp_menu
       menu = []
       menu << create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} )
       menu << create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right )
@@ -460,6 +460,20 @@ module RubyCurses
       menu << item
       # how do i know what's available. the application or window should know where to place
       display_cmenu @form.window, 23, 1, $datacolor, menu
+    end
+    def disp_menu
+      menu = PromptMenu.new self 
+      menu.add( menu.create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} ))
+      menu.add(menu.create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right ))
+      menu.add(menu.create_mitem( 'l', "scroll left", "I have scrolled ", :scroll_left ))
+      item = menu.create_mitem( 'm', "submenu", "submenu options" )
+      menu1 = PromptMenu.new( self, "Submenu Options")
+      menu1.add(menu1.create_mitem( 's', "CASE sensitive", "Ignoring Case in search" ))
+      menu1.add(menu1.create_mitem( 't', "goto last position", "moved to previous position", Proc.new { goto_last_position} ))
+      item.action = menu1
+      menu.add(item)
+      # how do i know what's available. the application or window should know where to place
+      menu.display @form.window, 23, 1, $datacolor #, menu
     end
   end # class textview
 end # modul
