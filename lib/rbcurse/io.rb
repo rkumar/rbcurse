@@ -23,7 +23,6 @@ module Io
   # TODO We should put a field there, make it visible and mv it to after the prompt
   # and handle all editing events on it.
   # @return status_code, string (0 if okay, 7 if help asked for, -1 for abort
-  # XXX when a default is given, edit the default, INS MODE ?
   #def rbgetstr(win, r, c, prompt, maxlen, default, labels, validints=[], helptext="")
   def rbgetstr(win, r, c, prompt, maxlen, config={})
     #win ||= @target_window
