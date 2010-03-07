@@ -6,6 +6,7 @@
 #  Some are outdated.
 #  Current are:
 #    * rbgetstr (and those it calls)
+#    * display_cmenu and create_mitem
 #*******************************************************#
 module Io
 
@@ -15,12 +16,14 @@ module Io
   MAIN_WINDOW_COLOR_PAIR = 5
   ERROR_COLOR_PAIR = 7
                                  
+
 # complex version of get_string that allows for trappng of control character
 # such as C-c and C-h and TAB for completion
 # validints contains int codes not chars.
   # TODO We should put a field there, make it visible and mv it to after the prompt
   # and handle all editing events on it.
   # @return status_code, string (0 if okay, 7 if help asked for, -1 for abort
+  # XXX when a default is given, edit the default, INS MODE ?
   #def rbgetstr(win, r, c, prompt, maxlen, default, labels, validints=[], helptext="")
   def rbgetstr(win, r, c, prompt, maxlen, config={})
     #win ||= @target_window
@@ -44,7 +47,6 @@ module Io
     #win.mvwgetnstr(LINEONE-3,askstr.length,yn,maxlen)
     while true
       #ch=win.mvwgetch(r, len) # get to right of prompt - WHY  NOT WORKING ??? 
-      #win.wmove r, c+len # since getchar is not going back on del and bs
       ch=win.getchar()
       $log.debug " rbgetstr got ch:#{ch}, str:#{str}. "
       ch = 127 if ch == 330 # so del is not bypassed
@@ -510,5 +512,88 @@ module Io
 
     return yn == 'y' 
   end
+
+  #def add_item hotkey, label, desc,action
+  #
+  ## A *simple* way of creating menus that will appear in a single row.
+  # This copies the menu at the bottom of "most" upon pressing ":".
+  # hotkey is the key to invoke an item (a single digit letter)
+  #
+  # label is an action name
+  #
+  # desc is a description displayed after an item is chosen. Usually, its like:
+  #+ "Folding has been enabled" or "Searches will now be case sensitive"
+  #
+  # action may be a Proc or a symbol which will be called if item selected
+  #+ action may be another menu, so recursive menus can be built, but each
+  #+ should fit in a line, its a simple system.
+
+  CMenuItem = Struct.new( :hotkey, :label, :desc, :action )
+
+  ## creates a menu item and returns it. 
+  # This is supposed to be appended to an array of menu items and passed to display_cmenu
+  def create_mitem *args
+    item = CMenuItem.new(*args.flatten)
+  end
+
+  ## Display and prompt given menu
+  # @return retvalue of last call or send, or 0
+  # @param win window
+  # @param r, c row and col to display on
+  # @param color text color (use $datacolor if in doubt)
+  # @param menu array of CMenuItem structs
+  def display_cmenu win, r, c, color, menu
+    $log.debug " DISP MENU "
+    ret = 0
+    str = "Choose: "
+    while true
+      h = {}
+      valid = []
+      menu.each{ |item|
+        str << "(%c) %s " % [ item.hotkey, item.label ]
+        h[item.hotkey] = item
+        valid << item.hotkey
+      }
+      #$log.debug " valid are #{valid} "
+      color = $datacolor
+      print_this(win, str, color, r, c)
+      ch=win.getchar()
+      #$log.debug " got ch #{ch} "
+      next if ch < 0 or ch > 255
+      ch = ch.chr
+      index = valid.index ch
+      if index.nil?
+        clear_this win, r, c, color, str.length
+        print_this(win, "Not valid. Valid are #{valid}", color, r,c)
+        sleep 1
+        next
+      end
+      #$log.debug " index is #{index} "
+      item = h[ch]
+      desc = item.desc
+      #desc ||= "Could not find desc for #{ch} "
+      desc ||= ""
+      clear_this win, r, c, color, str.length
+      print_this(win, desc, color, r,c)
+      action = item.action
+      case action
+      when Array
+        # submenu
+        menu = action
+        str = "%s: " % desc # hack, we use description of menu as prompt for next
+      when Proc
+        ret = action.call
+        break
+      when Symbol
+        ret = send(action)
+        break
+      else 
+        break
+      end
+    end # while
+    return ret # ret val of last send or call
+  end
+
   ### ADD HERE ###  
-end
+
+end # module
