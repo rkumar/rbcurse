@@ -29,6 +29,7 @@ module Io
     #win ||= @target_window
     $log.debug " inside rbgetstr #{win} r:#{r} c:#{c} p:#{prompt} m:#{maxlen} "
     raise "rbgetstr got no window. io.rb" if win.nil?
+    ins_mode = false
     default = config[:default] || ""
     prompt = "#{prompt} [#{default}]: "
     len = prompt.length
@@ -49,18 +50,22 @@ module Io
       #ch=win.mvwgetch(r, len) # get to right of prompt - WHY  NOT WORKING ??? 
       ch=win.getchar()
       $log.debug " rbgetstr got ch:#{ch}, str:#{str}. "
-      ch = 127 if ch == 330 # so del is not bypassed
       case ch
       when 3 # -1 # C-c
         return -1, nil
       when 10, 13
         break
-      when ?\C-h.getbyte(0), ?\C-?.getbyte(0), 127
+      when ?\C-h.getbyte(0), ?\C-?.getbyte(0), 127 # delete previous character/backspace
         len -= 1 if len > prompt.length
         curpos -= 1 if curpos > 0
-        str.chop!
+        str.slice!(curpos)
         clear_this win, r, c, color, len+maxlen+1
         #print_this(win, prompt+str, color, r, c)
+      when 330 # delete character on cursor
+        #len -= 1 if len > prompt.length
+        #curpos -= 1 if curpos > 0
+        str.slice!(curpos) #rescue next
+        clear_this win, r, c, color, len+maxlen+1
       when ?\C-g.getbyte(0)
         #x print_footer_help(helptext)
         helptext = config[:helptext] || "No help provided"
@@ -77,6 +82,9 @@ module Io
           len += 1 
           win.wmove r, c+len # since getchar is not going back on del and bs
         end
+        next
+      when ?\M-i.getbyte(0) , 233
+        ins_mode = true
         next
       else
         #if validints.include?ch
@@ -95,8 +103,12 @@ module Io
         # we need to trap KEY_LEFT and RIGHT and what of UP for history ?
         #end
         #str << ch.chr
-        str.insert(curpos, ch.chr)
-        len += 1
+          if ins_mode
+            str[curpos] = ch.chr
+          else
+            str.insert(curpos, ch.chr)
+          end
+          len += 1
         curpos += 1
         break if str.length > maxlen
       end
@@ -430,6 +442,7 @@ module Io
       }
   end
 
+  @deprecated
   def print_headers(form_hash)
     header = form_hash["header"]
     header_top_left = form_hash["header_top_left"] || ""
@@ -448,6 +461,7 @@ module Io
 
   #   2008-10-09 18:27 askyesno and ask_string can be passed some text
   #   to be popped up when a user enters ?
+  @deprecated
   def print_footer_help(helptext)
     print_this(@footer_win, "%-*s" % [Ncurses.COLS," "], 6, LINEONE+1, 0)
     print_this(@footer_win, "%-*s" % [Ncurses.COLS," "], 6, LINEONE+2, 0)
@@ -470,6 +484,7 @@ module Io
   ## 
   # user may pass in actions for each key along with other config values in config hash.
   # config can contain default, helptext, labels and 'y', 'n'
+  @deprecated
   def newaskyesno(win, askstr, config = {})
     win ||= @footer_win
     default = config.fetch("default", "N")
@@ -530,69 +545,6 @@ module Io
 
   CMenuItem = Struct.new( :hotkey, :label, :desc, :action )
 
-  ## creates a menu item and returns it. 
-  # This is supposed to be appended to an array of menu items and passed to display_cmenu
-  def create_mitem *args
-    item = CMenuItem.new(*args.flatten)
-  end
-
-  ## Display and prompt given menu
-  # @return retvalue of last call or send, or 0
-  # @param win window
-  # @param r, c row and col to display on
-  # @param color text color (use $datacolor if in doubt)
-  # @param menu array of CMenuItem structs
-  def display_cmenu win, r, c, color, menu
-    $log.debug " DISP MENU "
-    ret = 0
-    str = "Choose: "
-    while true
-      h = {}
-      valid = []
-      menu.each{ |item|
-        str << "(%c) %s " % [ item.hotkey, item.label ]
-        h[item.hotkey] = item
-        valid << item.hotkey
-      }
-      #$log.debug " valid are #{valid} "
-      color = $datacolor
-      print_this(win, str, color, r, c)
-      ch=win.getchar()
-      #$log.debug " got ch #{ch} "
-      next if ch < 0 or ch > 255
-      ch = ch.chr
-      index = valid.index ch
-      if index.nil?
-        clear_this win, r, c, color, str.length
-        print_this(win, "Not valid. Valid are #{valid}", color, r,c)
-        sleep 1
-        next
-      end
-      #$log.debug " index is #{index} "
-      item = h[ch]
-      desc = item.desc
-      #desc ||= "Could not find desc for #{ch} "
-      desc ||= ""
-      clear_this win, r, c, color, str.length
-      print_this(win, desc, color, r,c)
-      action = item.action
-      case action
-      when Array
-        # submenu
-        menu = action
-        str = "%s: " % desc # hack, we use description of menu as prompt for next
-      when Proc
-        ret = action.call
-        break
-      when Symbol
-        ret = send(action)
-        break
-      else 
-        break
-      end
-    end # while
-    return ret # ret val of last send or call
-  end
 
   ## An encapsulated form of yesterday's Most Menu
   # It keeps the internals away from the user.
@@ -621,61 +573,67 @@ module Io
     def create_mitem *args
       item = CMenuItem.new(*args.flatten)
     end
-  def display win, r, c, color
-    menu = @options
-    $log.debug " DISP MENU "
-    ret = 0
-    str = @text
-    while true
-      h = {}
-      valid = []
-      menu.each{ |item|
-        str << "(%c) %s " % [ item.hotkey, item.label ]
-        h[item.hotkey] = item
-        valid << item.hotkey
-      }
-      #$log.debug " valid are #{valid} "
-      color = $datacolor
-      print_this(win, str, color, r, c)
-      ch=win.getchar()
-      #$log.debug " got ch #{ch} "
-      next if ch < 0 or ch > 255
-      ch = ch.chr
-      index = valid.index ch
-      if index.nil?
+    # Display the top level menu and accept user input
+    # Calls actions or symbols upon selection, or traverses submenus
+    # @return retvalue of last call or send, or 0
+    # @param win window
+    # @param r, c row and col to display on
+    # @param color text color (use $datacolor if in doubt)
+    # @param menu array of CMenuItem structs
+    def display win, r, c, color
+      menu = @options
+      $log.debug " DISP MENU "
+      ret = 0
+      str = @text
+      while true
+        h = {}
+        valid = []
+        menu.each{ |item|
+          str << "(%c) %s " % [ item.hotkey, item.label ]
+          h[item.hotkey] = item
+          valid << item.hotkey
+        }
+        #$log.debug " valid are #{valid} "
+        color = $datacolor
+        print_this(win, str, color, r, c)
+        ch=win.getchar()
+        #$log.debug " got ch #{ch} "
+        next if ch < 0 or ch > 255
+        ch = ch.chr
+        index = valid.index ch
+        if index.nil?
+          clear_this win, r, c, color, str.length
+          print_this(win, "Not valid. Valid are #{valid}", color, r,c)
+          sleep 1
+          next
+        end
+        #$log.debug " index is #{index} "
+        item = h[ch]
+        desc = item.desc
+        #desc ||= "Could not find desc for #{ch} "
+        desc ||= ""
         clear_this win, r, c, color, str.length
-        print_this(win, "Not valid. Valid are #{valid}", color, r,c)
-        sleep 1
-        next
-      end
-      #$log.debug " index is #{index} "
-      item = h[ch]
-      desc = item.desc
-      #desc ||= "Could not find desc for #{ch} "
-      desc ||= ""
-      clear_this win, r, c, color, str.length
-      print_this(win, desc, color, r,c)
-      action = item.action
-      case action
-      #when Array
-      when PromptMenu
-        # submenu
-        menu = action.options
-        #str = "%s: " % desc # hack, we use description of menu as prompt for next
-        str = "%s: " % action.text # hack, we use description of menu as prompt for next
-      when Proc
-        ret = action.call
-        break
-      when Symbol
-        ret = @caller.send(action)
-        break
-      else 
-        $log.debug " Unidentified flying class #{action.class} "
-        break
-      end
-    end # while
-    return ret # ret val of last send or call
-  end
+        print_this(win, desc, color, r,c)
+        action = item.action
+        case action
+          #when Array
+        when PromptMenu
+          # submenu
+          menu = action.options
+          str = "%s: " % action.text 
+        when Proc
+          ret = action.call
+          break
+        when Symbol
+          ret = @caller.send(action)
+          break
+        else 
+          $log.debug " Unidentified flying class #{action.class} "
+          break
+        end
+      end # while
+      return ret # ret val of last send or call
+    end
   end # class PromptMenu
 
   ### ADD HERE ###  
