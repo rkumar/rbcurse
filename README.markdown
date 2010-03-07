@@ -4,7 +4,7 @@
 
 This branch - RFED19 - contains major rework on the buffering approach. It only affect
 programs that have used buffers such as splitpanes, scrollpanes and tabbedpanes.
-As of this moment, tabbedpanes are broken. Tables have been fixed. Now starting on tabbedpanes.
+All are fixed.
 
 Check downloads at <http://github.com/rkumar/rbcurse/downloads>
 
