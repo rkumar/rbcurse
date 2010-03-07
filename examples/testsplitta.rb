@@ -16,6 +16,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
 require 'rbcurse/rtextarea'
+require 'rbcurse/undomanager'
 
 ## This sample creates a single scrollpane, 
 ##+ and embeds a textarea inside it
@@ -60,7 +61,7 @@ if $0 == __FILE__
 
       ## typically height should be ht or at least more than ht/2, but i've kept it at
       ## ht/2-1 to see the footer, and because it was crashing with this.
-        t1 = TextArea.new nil do
+        t1 = TextArea.new do
           name   "myView" 
           #row 0
           #col  0 
@@ -72,7 +73,7 @@ if $0 == __FILE__
           footer_attrib 'bold'
         end
 
-        t2 = TextArea.new nil do
+        t2 = TextArea.new do
           name   "myView2" 
           #row 0
           #col  0 
@@ -109,6 +110,8 @@ if $0 == __FILE__
               t2 << line.chomp
            end
         end
+        undom = SimpleUndo.new t1
+        undo2 = SimpleUndo.new t2
 
       @form.repaint
       @window.wrefresh
