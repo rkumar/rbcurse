@@ -594,6 +594,90 @@ module Io
     return ret # ret val of last send or call
   end
 
+  ## An encapsulated form of yesterday's Most Menu
+  # It keeps the internals away from the user.
+  # Its not really OOP in the sense that the PromptMenu is not a MenuItem. That's how it is in
+  # our Menu system, and that led to a lot of painful coding (at least for me). This is quite
+  # simple. A submenu contains a PromptMenu in its action object and is evaluated in a switch.
+  # A recursive loop handles submenus.
+  #
+  # Prompting of menu options with suboptions etc.
+  # A block of code or symbol or proc is executed for any leaf node
+  # This allows us to define different menus for different objects on the screen, and not have to map 
+  # all kinds of control keys for operations, and have the user remember them. Only one key invokes the menu
+  # and the rest are ordinary characters.
+  class PromptMenu
+    include Io
+    attr_reader :text
+    attr_reader :options
+    def initialize caller,  text="Choose:"
+      @caller = caller
+      @text = text
+      @options = []
+    end
+    def add menuitem
+      @options << menuitem
+    end
+    def create_mitem *args
+      item = CMenuItem.new(*args.flatten)
+    end
+  def display win, r, c, color
+    menu = @options
+    $log.debug " DISP MENU "
+    ret = 0
+    str = @text
+    while true
+      h = {}
+      valid = []
+      menu.each{ |item|
+        str << "(%c) %s " % [ item.hotkey, item.label ]
+        h[item.hotkey] = item
+        valid << item.hotkey
+      }
+      #$log.debug " valid are #{valid} "
+      color = $datacolor
+      print_this(win, str, color, r, c)
+      ch=win.getchar()
+      #$log.debug " got ch #{ch} "
+      next if ch < 0 or ch > 255
+      ch = ch.chr
+      index = valid.index ch
+      if index.nil?
+        clear_this win, r, c, color, str.length
+        print_this(win, "Not valid. Valid are #{valid}", color, r,c)
+        sleep 1
+        next
+      end
+      #$log.debug " index is #{index} "
+      item = h[ch]
+      desc = item.desc
+      #desc ||= "Could not find desc for #{ch} "
+      desc ||= ""
+      clear_this win, r, c, color, str.length
+      print_this(win, desc, color, r,c)
+      action = item.action
+      case action
+      #when Array
+      when PromptMenu
+        # submenu
+        menu = action.options
+        #str = "%s: " % desc # hack, we use description of menu as prompt for next
+        str = "%s: " % action.text # hack, we use description of menu as prompt for next
+      when Proc
+        ret = action.call
+        break
+      when Symbol
+        ret = @caller.send(action)
+        break
+      else 
+        $log.debug " Unidentified flying class #{action.class} "
+        break
+      end
+    end # while
+    return ret # ret val of last send or call
+  end
+  end # class PromptMenu
+
   ### ADD HERE ###  
 
 end # module
