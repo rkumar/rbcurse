@@ -1433,3 +1433,85 @@ and resets after usage.
 But where do i trap the C-u key ?? 
 
 * * * * * * * *
+
+Subject: Undo in text widgets
+-----------------------------
+Date: 2010-03-06 10:09
+
+1. trap insert and delete events
+2. keep a list of 
+  * row
+  * curpos
+  * string/char added or deleted
+  * action: ADD or DEL
+
+  @current_position in list
+
+3. Undo() - moves up the list and does the opposite
+4. Redo() - moves down the list and does the same action
+
+* * * * * * * *
+
+Subject: entry of string
+------------------------
+Date: 2010-03-06 20:57
+
+I've brought back entry of a string inside an application.
+Until now if one wanted to adhoc ask the user for a string (such as a
+search string), one used the dialogs. However, if one wishes to keep the
+"gui" to a minimum, `rbgetstr` (from module Io, io.rb) does the job.
+
+It allows user to abort using `C-c`, or get specific help using `C-g`. Or
+use the arrow keys or backtab. However, i need to work in
+tab-completion, as well as perhaps history. 
+
+The main issue is coordinates to prompt. The widget often will not know
+where on the screen it should prompt. Dialog boxes solve this by opening
+their own window and then erasing it. Here to keep things simple, i just
+write on the form.window. The app should define the coordinates perhaps.
+
+In the test, textview writes on its own lower border.
+
+Perhaps, I'll bring back askyesno etc == for which currently the dialog
+box options exist.
+
+* * * * * * * *
+
+Subject: "most"-like menus
+--------------------------
+Date: 2010-03-06 21:03
+
+For menu's we already have 2 ways:
+
+1. a menu bar just like the **Links** browser with sub options, hotkeys, actions etc.
+   To see this press F2 in test2.rb.
+
+2. Popup-menus - Similar to the above, popup over a component to show
+   its options. to see this, iirc the todo app example, if it still
+   works.
+
+3. "Pine"-like option labels at the bottom of the screen. Absolutely
+   identical -- check the rfe.rb example. This is usually for options
+   that stay around forever. One can always superimpose another set when
+   one wants, as moving into a component. This menu shows what's
+   available, so usually in a data entry app, only control and alt-keys
+   would be shown.
+   This is only a display, and does not take over control or focus. It's
+   like having a cheat-sheet of key-bindings at the bottom of the
+   screen.
+
+4.  I recently have been using most as a pager. It has a simple menu
+    system available on pressing ":". I've copied it shamefully, so one
+    can quickly set up multi-level menus with actions (procs or symbols)
+    attached. The API may need work on. Since the location of this menu
+    needs to be provided by application and not a widget. Currently,
+    textview provides a location at 23,0. 
+    Unlike the pine-like labels, this prompts and takes control, so any
+    letter can be defined per level.
+    To see this, try any example with a textview and press "m" for menu.
+    Try testsplit3.rb. I may change the mapping "m" shortly ?
+
+So depending on the kind of application we have, we can choose the kind
+of menu system we want.
+
+* * * * * * * *
