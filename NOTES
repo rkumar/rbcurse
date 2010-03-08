@@ -1515,3 +1515,22 @@ So depending on the kind of application we have, we can choose the kind
 of menu system we want.
 
 * * * * * * * *
+
+Subject: undo facility - more on it
+-----------------------------------
+Date: 2010-03-08 18:09
+
+currently the undo is independent of the textarea and uses the event
+object. however, it hardcodes access to the data structures of textarea.
+
+Textarea should make an undo object and pass that. this object would
+have an undo and redo method which it has implemented. Also the object
+will maintain state of whether it can undo or redo. the undo object may
+have an array not just one value.
+
+this way undo's can be clubbed. perhaps a block delete using a number
+can create an array of actions rather than separate actions. Hopefully,
+typing several chars can also be clubbed into one object to reduce
+memory.
+
+* * * * * * * *
