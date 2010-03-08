@@ -391,19 +391,43 @@ module RubyCurses
       yield @list[@current_index]
       @buffer = @list[@current_index]
     end
+    # current behav is a mix of vim's D and C-k from alpine, i don;t know how i screwed it up like this
+    # Should be:
+    # 1. do not take cursor back by 1 (this is vims D behavior)
+    # 2. retain EOL, we need to evaluate at undo
+    # 3. if nothing coming in delete buffer then join next line here
+    # 4. if line is blank, it will go to delete line (i think).
+    # end
     def delete_eol
       return -1 unless @editable
-      pos = @curpos-1
+      pos = @curpos -1 # retain from 0 till prev char
       @delete_buffer = @buffer[@curpos..-1]
+      # currently eol is there in delete_buff often. Should i maintain it ? 2010-03-08 18:29 UNDO
+      #@delete_buffer.chomp! # new 2010-03-08 18:29 UNDO - this worked but hope does not have othe impact
+
       # if pos is 0, pos-1 becomes -1, end of line!
       @list[@current_index] = pos == -1 ? "" : @buffer[0..pos]
       $log.debug "delete EOL :pos=#{pos}, #{@delete_buffer}: row: #{@list[@current_index]}:"
       @buffer = @list[@current_index]
-      cursor_backward if @curpos > 0 # now cursor back goes up to prev line
+      if @delete_buffer == ""
+        $log.debug " TA: DELETE going to join next "
+        join_next_line # pull next line in
+      end
+      oldcur = @curpos
+      #x cursor_backward if @curpos > 0 #  this was vims behavior -- knoecked off
       #fire_handler :CHANGE, self  # 2008-12-09 14:56 
-      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
+      fire_handler :CHANGE, InputDataEvent.new(oldcur,oldcur+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
       set_modified 
       return @delete_buffer
+    end
+    def join_next_line
+      # return if last line  TODO
+      buff = @list.delete_at(@current_index + 1)
+      if buff
+        $log.debug " TA: DELETE inside to join next #{buff}  "
+        fire_handler :CHANGE, InputDataEvent.new(0,0+buff.length, self, :DELETE, @current_index+1, buff)  
+        @buffer << buff
+      end
     end
     ##
     # FIXME : if cursor at end of last line then forward takes cursor to start
