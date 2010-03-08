@@ -275,7 +275,7 @@ module RubyCurses
           delete_prev_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
-      when 330, ?\C-d # delete char
+      when 330, ?\C-d.getbyte(0) # delete char
         if @editable
           delete_curr_char 
           #fire_handler :CHANGE, self  # 2008-12-22 15:23 
@@ -296,10 +296,12 @@ module RubyCurses
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
       when ?\C-_.getbyte(0) # changed from C-u so i can use C-u for multipliers
-        #undo_delete
-        return unless @undo_handler
-        @undo_handler.undo
-      when ?\C-r.getbyte(0) # changed from C-u so i can use C-u for multipliers
+        if @undo_handler
+          @undo_handler.undo
+        else
+          undo_delete
+        end
+      when ?\C-r.getbyte(0) # redo if UndoHandler installed
         #undo_delete
         return unless @undo_handler
         @undo_handler.redo
@@ -507,27 +509,31 @@ module RubyCurses
   end
     def delete_curr_char num=($multiplier == 0 ? 1 : $multiplier)
       return -1 unless @editable
-      num.times do
-        delete_at
-      end
+      delete_at @curpos, num # changed so only one event, and one undo
       set_modified 
     end
+    # 
+    # 2010-03-08 23:30 does not seem to be working well when backspacing at first char of line
+    # FIXME join with prev line
     def delete_prev_char num=($multiplier == 0 ? 1 : $multiplier)
       return -1 if !@editable 
       num.times do
-      if @curpos <= 0
-        join_to_prev_line
-        return
-      end
-      @curpos -= 1 if @curpos > 0
-      delete_at
-      set_modified 
-      addcol -1
+        if @curpos <= 0
+          join_to_prev_line
+          return
+        end
+        @curpos -= 1 if @curpos > 0
+        delete_at
+        set_modified 
+        addcol -1
       end
     end
     # private
     # when backspace pressed in position zero if the previous line is filled we may have to bring 
     # down the last word and join, rather than go up
+    # FIXME : make logic simple. Append entire line to above line. Then go to maxlen if not a space,
+    # reverse to find last space. Lop off all after space and replace this line with that balance.
+    # UNDO and REDO has to work in this case too. FIXME bare in mind handlers when doing this
     def join_to_prev_line
       return -1 unless @editable
       return if @current_index == 0
@@ -700,10 +706,10 @@ module RubyCurses
       return :UNHANDLED
     end
     # DELETE func
-    def delete_at index=@curpos
+    def delete_at index=@curpos, howmany=1
       return -1 if !@editable 
       $log.debug "dele : #{@current_index} #{@buffer} #{index}"
-      char = @buffer.slice!(@curpos,1)  # changed added ,1 and take char for event
+      char = @buffer.slice!(@curpos,howmany)  # changed added ,1 and take char for event
       # if no newline at end of this then bring up prev character/s till maxlen
       # NO WE DON'T DO THIS ANYLONGER 2008-12-26 21:09 lets see
 =begin
@@ -714,10 +720,8 @@ module RubyCurses
         end
       end
 =end
-      #@modified = true 2008-12-22 15:31 
       set_modified true
-      #fire_handler :CHANGE, self  # 2008-12-09 14:56 
-      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, @current_index, char)     #  2008-12-24 18:34 
+      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+howmany, self, :DELETE, @current_index, char)     #  2008-12-24 18:34 
     end
     # move up one char from next row to current, used when deleting in a line
     # should not be called if line ends in "\r"
