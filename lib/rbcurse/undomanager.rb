@@ -4,10 +4,11 @@
   * Author: rkumar (arunachalesha)
 
 ISSUES 
-  undo and redo should not store more events, or else there'll be no end.
+
   We need a mapping of what method to call for undo and redo events such as 
-putc or delete_at. However, these will again fire events, so we have too many
-items in our queue.
+putc or delete_at. 
+Currently, i am directly manipulating the structure, since row is also included here,
+whereas putc etc already use current_index.
   
   --------
   * Date:  2010-03-07 19:42 
@@ -46,7 +47,7 @@ module RubyCurses
       source(_source) #if _source
       @pointer = 0
       @actions = []
-      $log.debug " INSIDE UNDO CONSTR #{@source}, #{_source}  "
+      $log.debug " INSIDE UNDO CONSTR "
     end
     def source(_source)
       $log.debug " calling source= "
@@ -54,10 +55,10 @@ module RubyCurses
       @source = _source
       @source.bind(:CHANGE){|eve| handle(eve) }
       @source.undo_handler(self)
-      $log.debug " I am listening to change events on #{@source} "
+      $log.debug " I am listening to change events on #{@source.name} "
     end
     def handle event
-      $log.debug " UNDO GOT #{event} : #{event.type}, rej: #{@reject_update}  "
+      $log.debug " UNDO GOT #{event} : #{event.type}, (#{event.text}), rej: #{@reject_update}  "
       return if @reject_update
       if @pointer < @actions.length
         $log.debug " removing some actions since #{@pointer} < #{@actions.length} "
@@ -82,9 +83,12 @@ module RubyCurses
         @source.list[row].slice!(col,1)
         @source.repaint_required true
       when :DELETE
+        # this works fine for single chars but not for a C-k - perhaps Ck moves cursor back, and may delete CR etc
+        # i think a CR or newline is coming in here and gets printed as screen border is erased on left
         row = act.row
         col = act.index0
-        @source.list[row].insert(col, act.text)
+      $log.debug " UNDO processing DELETE #{col}, (#{act.text})  "
+        @source.list[row].insert(col, act.text.chomp)
         @source.repaint_required true
       end
       @reject_update = false
