@@ -58,7 +58,7 @@ module RubyCurses
       $log.debug " I am listening to change events on #{@source.name} "
     end
     def handle event
-      $log.debug " UNDO GOT #{event} : #{event.type}, (#{event.text}), rej: #{@reject_update}  "
+      $log.debug " UNDO GOT #{event}: #{event.type}, (#{event.text}), rej: #{@reject_update}  "
       return if @reject_update
       if @pointer < @actions.length
         $log.debug " removing some actions since #{@pointer} < #{@actions.length} "
@@ -80,26 +80,31 @@ module RubyCurses
       when :INSERT
         row = act.row
         col = act.index0
-        @source.list[row].slice!(col,1)
+        howmany = act.index1 - col
+        @source.list[row].slice!(col,howmany)
         @source.repaint_required true
       when :DELETE
         # this works fine for single chars but not for a C-k - perhaps Ck moves cursor back, and may delete CR etc
         # i think a CR or newline is coming in here and gets printed as screen border is erased on left
         row = act.row
         col = act.index0
-      $log.debug " UNDO processing DELETE #{col}, (#{act.text})  "
-        @source.list[row].insert(col, act.text.chomp)
+        $log.debug " UNDO processing DELETE #{col}, (#{act.text})  "
+        if act.index0 == 0 and act.index1 == 0
+          @source.list.insert(row, "") # insert a blank line, since one was deleted
+        else
+          @source.list[row].insert(col, act.text.chomp)
+        end
         @source.repaint_required true
       end
       @reject_update = false
     end
     # this has to be bound in source
     def redo
-      $log.debug "UNDO got REDO call #{@pointer}, #{@actions.size}  "
+      $log.debug "UNDO GOT REDO call #{@pointer}, #{@actions.size}  "
       return if @pointer >= @actions.size
       @reject_update = true
       act = @actions[@pointer]
-      $log.debug " processing #{act} "
+      $log.debug " REDO processing #{act} "
       case act.type
       when :INSERT
         row = act.row
@@ -109,7 +114,12 @@ module RubyCurses
       when :DELETE
         row = act.row
         col = act.index0
-        @source.list[row].slice!(col,1)
+        howmany = act.index1 - col
+        if howmany == 0
+          @source.list.delete_at row
+        else
+          @source.list[row].slice!(col,howmany)
+        end
         @source.repaint_required true
       end
       @pointer +=1 #if @pointer > 0
