@@ -82,27 +82,23 @@ module RubyCurses
       @reject_update = true
       @pointer -=1 #if @pointer > 0
       act = @actions[@pointer]
+      row = act.row
+      col = act.index0
       $log.debug " processing #{act} "
       case act.type
       when :INSERT
-        row = act.row
-        col = act.index0
         howmany = act.index1 - col
         @source.list[row].slice!(col,howmany)
-        @source.repaint_required true
       when :DELETE
-        # this works fine for single chars but not for a C-k - perhaps Ck moves cursor back, and may delete CR etc
-        # i think a CR or newline is coming in here and gets printed as screen border is erased on left
-        row = act.row
-        col = act.index0
         $log.debug " UNDO processing DELETE #{col}, (#{act.text})  "
-        if (act.index0 == 0 and act.index1 == 0) or act.text.chomp == ""
-          @source.list.insert(row, act.text) # insert a blank line, since one was deleted
-        else
           @source.list[row].insert(col, act.text.chomp)
-        end
-        @source.repaint_required true
+      when :DELETE_LINE
+        $log.debug " UNDO inside delete-line #{row} "
+        @source.list.insert(row, act.text) # insert a blank line, since one was deleted
+      else
+        $log.warn "unhandled change type #{act.type} "
       end
+      @source.repaint_required true
       @reject_update = false
     end
     # this has to be bound in source
@@ -111,24 +107,24 @@ module RubyCurses
       return if @pointer >= @actions.size
       @reject_update = true
       act = @actions[@pointer]
+      row = act.row
+      col = act.index0
       $log.debug " REDO processing #{act} "
       case act.type
       when :INSERT
-        row = act.row
-        col = act.index0
         @source.list[row].insert(col, act.text)
-        @source.repaint_required true
       when :DELETE
         row = act.row
         col = act.index0
         howmany = act.index1 - col
-        if howmany == 0
+        @source.list[row].slice!(col,howmany)
+      when :DELETE_LINE
+        #$log.debug " UNDO redo got deleteline #{row} "
           @source.list.delete_at row
-        else
-          @source.list[row].slice!(col,howmany)
-        end
-        @source.repaint_required true
+      else
+        $log.warn "unhandled change type #{act.type} "
       end
+      @source.repaint_required true
       @pointer +=1 #if @pointer > 0
       @reject_update = false
     end
