@@ -89,3 +89,6 @@
  75	[ ] (A) Do a round of tests and release a new version (2010-03-08)
  76	[ ] a Box class = would that help? (2010-03-08)
  77	[ ] (O) Make event objects only if some listener exists (2010-03-08)
+ 78	[ ] (A) Undo: refactor undomanager and undohandler (2010-03-08)
+ 79	[ ] (A) Demo: get sqlc.rb demo running  (2010-03-09)
+ 80	[ ] firehandler: can we combine consecutive ones into one, passing an array? (2010-03-09)
