@@ -270,7 +270,7 @@ module RubyCurses
       ##
       # bind an event to a block, optional args will also be passed when calling
       def bind event, *xargs, &blk
-       $log.debug "#{self.name} called EventHandler BIND #{event}, args:#{xargs} "
+       #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
         @handler ||= {}
         @event_args ||= {}
         #@handler[event] = blk
@@ -299,7 +299,7 @@ module RubyCurses
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
               #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
-              $log.debug "#{self.name} called EventHandler firehander #{@name}, #{event}"
+              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
               blk.call object,  *aeve[ix]
             end
           end # if
@@ -1038,6 +1038,8 @@ module RubyCurses
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
       @firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
       @name ||= ""
+      $kill_ring ||= [] # 2010-03-09 22:42 so textarea and others can copy and paste
+      $kill_ring_pointer = 0 # needs to be incremented with each append, moved with yank-pop
     end
     ##
     # set this menubar as the form's menu bar.
