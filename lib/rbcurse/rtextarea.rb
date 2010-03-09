@@ -81,6 +81,9 @@ module RubyCurses
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
+      bind_key(?\M-w, :kill_ring_save)
+      bind_key(?\C-y, :yank)
+      bind_key(?\M-y, :yank_pop)
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -937,6 +940,88 @@ module RubyCurses
     end
     def undo_handler(uh)
       @undo_handler = uh
+    end
+    # saves current or n lines into kill ring, appending to earlier contents
+    # Use yank (paste) or yank-pop to retrieve
+    def kill_ring_save
+      pointer = @current_index
+      list = []
+      repeatm {
+        line =  @list[pointer] 
+        list << line unless line.nil?
+        pointer += 1
+      }
+      # directly referenceing kill_ring.  We need to OO it a bit, so we can change internals w'o breaking all.
+      # FIXME
+      if $append_next_kill
+        # user requested this kill to be appened to last kill, so it can be yanked as one
+        $kill_ring.last << list
+      else
+        $kill_ring << list
+      end
+      #$kill_ring_pointer += 1
+      $kill_ring_pointer = $kill_ring.size
+      $append_next_kill = false
+    end
+    # pastes recent (last) entry of kill_ring.
+    # This can be one or more lines. Please note that for us vimmer's yank means copy
+    # but for emacsers it seems to mean paste. Aargh!!
+    def yank
+      return if $kill_ring.empty?
+      row = $kill_ring.last
+      case row
+      when Array
+        index = @current_index
+        row.each{ |r|
+          @list.insert index, r
+          index += 1
+        }
+      when String
+        @list[@current_index].insert row
+      else
+        raise "textarea yank got uncertain datatype from kill_ring  #{row.class} "
+      end
+      $kill_ring_pointer = $kill_ring.size - 1
+      $kill_ring_index = @current_index # pops will replace data in this row, never an insert
+      @repaint_required = true
+    end
+    # paste previous entries from kill ring
+    # I am not totally clear on this, not being an emacs user. but seems you have to do C-y
+    # once (yank) before you can do a yank pop. So yank moves the pointer back one. I use that
+    # to check if i can pop
+    # TODO use multiplier
+    # TODO when cycling, check size of previous yank and remove those lines and insert this.
+    def yank_pop
+      return if $kill_ring.empty?
+      # checking that user has done a yank on this row. We only replace on the given row, never
+      # insert. But what if user edited after yank, Sheesh ! XXX
+      if $kill_ring_index != @current_index
+        Ncurses.beep
+        return # error message required that user must yank first
+      end
+      row = $kill_ring[$kill_ring_pointer-$multiplier]
+      case row
+      when Array
+        index = @current_index
+        row.each{ |r|
+          @list[index] = r
+          index += 1
+        }
+      when String
+        @list[@current_index] = row
+      else
+        raise "textarea yank_pop got uncertain datatype from kill_ring  #{row.class} "
+      end
+
+      $kill_ring_pointer -= 1
+      if $kill_ring_pointer < 0
+        # should be size, but that'll give an error. need to find a way!
+        $kill_ring_pointer = $kill_ring.size - 1
+      end
+      @repaint_required = true
+    end
+    def append_next_kill
+      $append_next_kill = true
     end
     ## trying out for tabbedpanes 2010-01-21 19:48 
     #def on_enter
