@@ -504,7 +504,7 @@ module RubyCurses
       up
       setrowcol @row + 1, nil # @form.col
     end
-    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
+    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, line, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
   end
     def delete_curr_char num=($multiplier == 0 ? 1 : $multiplier)
@@ -535,6 +535,82 @@ module RubyCurses
     # reverse to find last space. Lop off all after space and replace this line with that balance.
     # UNDO and REDO has to work in this case too. FIXME bare in mind handlers when doing this
     def join_to_prev_line
+      return -1 unless @editable
+      return if @current_index == 0
+      oldcurpos = @curpos
+      oldprow = @current_index
+      prev = @list[@current_index-1].chomp
+      prevlen = prev.length
+      # 2008-12-26 21:37 delete previous line if nothing there. This moves entire buffer up.
+      if prevlen == 0
+        delete_line @current_index-1
+        up
+        return
+      end
+      _maxlen = @maxlen || @width - 2
+      space_left = _maxlen - prevlen
+      # prev line is full exit
+      return if space_left == 0
+
+      # get last space, if none, return
+      blank_found = @buffer.rindex(' ', space_left)
+      return unless blank_found # no word in the space i can carry up.
+      # get string for carrying up
+      carry_up = @buffer[0..blank_found]
+      result = @list[@current_index-1].chomp! # this has to be undone too.
+      @list[@current_index-1] << carry_up
+      #$log.debug "carry up: #{carry_up} prevrow:#{@list[@current_index -1]}"
+      # remove from curr line
+      @list[@current_index].slice!(0..carry_up.length-1)
+      $log.debug "carry up: #{carry_up} currrow:#{@list[@current_index]}"
+      #@list[@current_index] ||= ""
+      up
+      addrowcol -1,0
+      @curpos = prevlen
+      # if result not nil, then we need that to be recorded FIXME
+      fire_handler :CHANGE, InputDataEvent.new(oldcurpos,oldcurpos+carry_up.length, self, :DELETE, oldprow, carry_up)
+      fire_handler :CHANGE, InputDataEvent.new(prevlen,prevlen+carry_up.length, self, :INSERT, oldprow-1, carry_up)
+
+      ## BUG. carry full words up, or if no space then bring down last word of prev lien and join with first
+      #carry_up = words_in_length @buffer, space_left #@buffer[0..space_left] # XXX
+      #if carry_up.nil?
+        ## carry down last word
+        #prev_wd = remove_last_word @current_index-1
+        ## 2010-01-14 18:26 check added else crashing if C-h pressed with no data in line
+        #if !prev_wd.nil?
+           #@buffer.insert 0, prev_wd
+           #@curpos = prev_wd.length
+           #$log.debug " carry up nil! prev_wd (#{prev_wd}) len:#{prev_wd.length}"
+           #fire_handler :CHANGE, InputDataEvent.new(0,prev_wd.length, self, :INSERT, oldprow, prev_wd)     #  2008-12-26 23:07 
+        #end
+      #else
+        #$log.debug " carrying up #{carry_up.length} #{carry_up}, space: #{space_left}"
+        #@list[@current_index-1]=prev + carry_up
+        #space_left2 = @buffer[(carry_up.length+1)..-1]
+        #@list[@current_index]=space_left2 #if !space_left2.nil?
+        #@list[@current_index] ||= ""
+        #up
+        #addrowcol -1,0
+        #@curpos = prevlen
+        #fire_handler :CHANGE, InputDataEvent.new(oldcurpos,carry_up.length, self, :DELETE, oldprow, carry_up)     #  2008-12-24 18:34 
+        #fire_handler :CHANGE, InputDataEvent.new(prevlen,carry_up.length, self, :INSERT, oldprow-1, carry_up)     #  2008-12-24 18:34 
+      #end
+      ## FIXME -- can;t have a naked for reference here.
+      ##@form.col = @orig_col + @col_offset + @curpos
+      col1 = @orig_col + @col_offset + @curpos
+      setrowcol nil, col1 # 2010-02-12 13:09  RFED16
+
+#     $log.debug "carry up: nil" if carry_up.nil?
+#     $log.debug "listrow nil " if @list[@current_index].nil?
+#     $log.debug "carry up: #{carry_up} prow:#{@list[@current_index]}"
+    end
+    # private
+    # when backspace pressed in position zero if the previous line is filled we may have to bring 
+    # down the last word and join, rather than go up
+    # FIXME : make logic simple. Append entire line to above line. Then go to maxlen if not a space,
+    # reverse to find last space. Lop off all after space and replace this line with that balance.
+    # UNDO and REDO has to work in this case too. FIXME bare in mind handlers when doing this
+    def old_join_to_prev_line
       return -1 unless @editable
       return if @current_index == 0
       oldcurpos = @curpos
