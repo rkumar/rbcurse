@@ -282,7 +282,8 @@ module RubyCurses
         end
       when ?\C-k.getbyte(0) # delete till eol
         if @editable
-          if @buffer == ""
+          #if @buffer == ""
+          if @buffer.chomp == ""
             delete_line 
             #fire_handler :CHANGE, self  # 2008-12-22 15:23 
           else
@@ -427,7 +428,7 @@ module RubyCurses
       buff = @list.delete_at(@current_index + 1)
       if buff
         $log.debug " TA: DELETE inside to join next #{buff}  "
-        fire_handler :CHANGE, InputDataEvent.new(0,0+buff.length, self, :DELETE, @current_index+1, buff)  
+        fire_handler :CHANGE, InputDataEvent.new(0,0+buff.length, self, :DELETE_LINE, @current_index+1, buff)  
         @buffer << buff
       end
     end
@@ -496,6 +497,8 @@ module RubyCurses
         end
       }
   end
+  # deletes given line or current
+  # now fires DELETE_LINE so no guessing by undo manager
   def delete_line line=@current_index
     return -1 unless @editable
     @delete_buffer = @list.delete_at line
@@ -504,7 +507,7 @@ module RubyCurses
       up
       setrowcol @row + 1, nil # @form.col
     end
-    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, line, @delete_buffer)     #  2008-12-24 18:34 
+    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE_LINE, line, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
   end
     def delete_curr_char num=($multiplier == 0 ? 1 : $multiplier)
