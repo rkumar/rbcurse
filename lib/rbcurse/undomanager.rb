@@ -9,6 +9,13 @@ ISSUES
 putc or delete_at. 
 Currently, i am directly manipulating the structure, since row is also included here,
 whereas putc etc already use current_index.
+
+Todo:
+
+refactor both these.
+Undo and redo should remain part of SimpleUndo, however, the UndoManager should handle the pointer
+and decide which action object it should call undo and redo for. That way implementing classes only have to 
+implement undo and redo and not action list maintenance and traversal.
   
   --------
   * Date:  2010-03-07 19:42 
@@ -89,8 +96,8 @@ module RubyCurses
         row = act.row
         col = act.index0
         $log.debug " UNDO processing DELETE #{col}, (#{act.text})  "
-        if act.index0 == 0 and act.index1 == 0
-          @source.list.insert(row, "") # insert a blank line, since one was deleted
+        if (act.index0 == 0 and act.index1 == 0) or act.text.chomp == ""
+          @source.list.insert(row, act.text) # insert a blank line, since one was deleted
         else
           @source.list[row].insert(col, act.text.chomp)
         end
