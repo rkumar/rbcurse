@@ -1040,6 +1040,9 @@ module RubyCurses
       @name ||= ""
       $kill_ring ||= [] # 2010-03-09 22:42 so textarea and others can copy and paste
       $kill_ring_pointer = 0 # needs to be incremented with each append, moved with yank-pop
+      $append_next_kill = false
+      $kill_last_pop_size = 0 # size of last pop which has to be cleared
+
     end
     ##
     # set this menubar as the form's menu bar.
