@@ -165,6 +165,8 @@ module RubyCurses
           return "M-S-tab"
         when 393..402
           return "M-F"+ (keycode-392).to_s
+        when 0
+          return "C-space" # i hope this is correct, just guessing
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->,?\M-?,?\M-/]
           others.collect! {|x| x.getbyte(0)  }  ## added 2009-10-04 14:25 for 1.9
