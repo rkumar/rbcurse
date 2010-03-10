@@ -50,7 +50,7 @@ module RubyCurses
     # method as a listener to the source.
     def add_edit event
       # this debug is very specific. it should be removed later. We do not know about the object
-      #$log.debug " UNDO GOT #{event}: #{event.type}, (#{event.text}), rej: #{@reject_update}  "
+      $log.debug " UNDO GOT #{event}: #{event.type}, (#{event.text}), rej: #{@reject_update}  "
       return if @reject_update
       if @pointer < @actions.length
         $log.debug " removing some actions since #{@pointer} < #{@actions.length} "
@@ -65,7 +65,7 @@ module RubyCurses
     # this method figures out the correct undo object to be sent
     # to the implementor
     def undo
-      $log.debug " got UNDO call #{@pointer} "
+      $log.debug " got UNDO call #{@pointer}, sz:#{@actions.size}  "
       return if @pointer == 0
       @reject_update = true
       @pointer -=1 #if @pointer > 0
@@ -127,7 +127,22 @@ module RubyCurses
         @source.list[row].insert(col, act.text.chomp)
       when :DELETE_LINE
         $log.debug " UNDO inside delete-line #{row} "
-        @source.list.insert(row, act.text) # insert a blank line, since one was deleted
+        #@source.list.insert(row, act.text) # insert a blank line, since one was deleted
+        case act.text
+        when Array
+          index = row
+          act.text.each_with_index{|r,i| @source.list.insert index+i, r}
+        when String
+          @source.list.insert row, act.text
+        end
+      when :INSERT_LINE
+        $log.debug " UNDO inside insert-line #{row} "
+        case act.text
+        when Array
+          act.text.size.times { @source.list.delete_at row }
+        when String
+          @source.list.delete_at row
+        end
       else
         $log.warn "unhandled change type #{act.type} "
       end
@@ -149,7 +164,15 @@ module RubyCurses
         @source.list[row].slice!(col,howmany)
       when :DELETE_LINE
         #$log.debug " UNDO redo got deleteline #{row} "
-          @source.list.delete_at row
+        @source.list.delete_at row
+      when :INSERT_LINE
+        case act.text
+        when Array
+          index = row
+          act.text.each_with_index{|r,i| @source.list.insert index+i, r}
+        when String
+          @source.list.insert row, act.text
+        end
       else
         $log.warn "unhandled change type #{act.type} "
       end
