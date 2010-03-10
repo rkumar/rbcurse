@@ -84,6 +84,7 @@ module RubyCurses
       bind_key(?\M-w, :kill_ring_save)
       bind_key(?\C-y, :yank)
       bind_key(?\M-y, :yank_pop)
+      bind_key(?\M-\C-w, :append_next_kill)
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -231,6 +232,7 @@ module RubyCurses
     # textarea
     
     def handle_key ch
+      @current_key = ch # I need some funcs to know what key they were mapped to
       @buffer = @list[@current_index]
       if @buffer.nil? and @list.length == 0
         ## 2009-10-04 22:39 
@@ -276,22 +278,20 @@ module RubyCurses
       when KEY_BACKSPACE, 127
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
-          #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
       when 330, ?\C-d.getbyte(0) # delete char
         if @editable
           delete_curr_char 
-          #fire_handler :CHANGE, self  # 2008-12-22 15:23 
         end
       when ?\C-k.getbyte(0) # delete till eol
+        # i'ved added curpos == 0 since emacs deletes a line if cursor is at 0
+        # Earlier behavior was based on alpine which leaves a blank line
         if @editable
           #if @buffer == ""
-          if @buffer.chomp == ""
-            delete_line 
-            #fire_handler :CHANGE, self  # 2008-12-22 15:23 
+          if @buffer.chomp == "" or @curpos == 0
+            delete_line
           else
             delete_eol 
-            #fire_handler :CHANGE, self  # 2008-12-22 15:23 
           end
         end
       #when ?\C-u.getbyte(0)
@@ -341,10 +341,20 @@ module RubyCurses
       $multiplier = 0 # reset only if key handled
       return 0
     end
+    # this is broken, delete_buffer could be a line or a string or array of lines
     def undo_delete
         # added 2008-11-27 12:43  paste delete buffer into insertion point
         return if @delete_buffer.nil?
-        @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
+        $log.warn "undo_delete is broken! perhaps cannot be used . textarea 347 "
+        # FIXME - can be an array
+        case @delete_buffer
+        when Array
+          # we need to unroll array, and it could be lines not just a string
+          str = @delete_buffer.first
+        else
+          str = @delete_buffer
+        end
+        @buffer.insert @curpos, str 
         set_modified 
         fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     end
@@ -362,7 +372,7 @@ module RubyCurses
       col = @orig_col + @col_offset
       setrowcol @row+1, col
       # FIXME maybe this should be insert line since line inserted, not just data, undo will delete it
-      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @current_index, @delete_buffer)     #  2008-12-24 18:34 
+      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT_LINE, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     end
     # set cursor on correct column
     def set_form_col col1=@curpos
@@ -399,7 +409,8 @@ module RubyCurses
     # 2. retain EOL, we need to evaluate at undo
     # 3. if nothing coming in delete buffer then join next line here
     # 4. if line is blank, it will go to delete line (i think).
-    # end
+    # Earlier, a C-k at pos 0 would blank the line and not delete it (copied from alpine).
+    # The next C-k would delete. emacs deletes if C-k at pos 0.
     def delete_eol
       return -1 unless @editable
       pos = @curpos -1 # retain from 0 till prev char
@@ -500,12 +511,18 @@ module RubyCurses
   # now fires DELETE_LINE so no guessing by undo manager
   def delete_line line=@current_index
     return -1 unless @editable
-    @delete_buffer = @list.delete_at line
+    if !$multiplier or $multiplier == 0 
+      @delete_buffer = @list.delete_at line
+    else
+      @delete_buffer = @list.slice!(line, $multiplier)
+    end
+    add_to_kill_ring @delete_buffer
     @buffer = @list[@current_index]
     if @buffer.nil?
       up
       setrowcol @row + 1, nil # @form.col
     end
+    # warning: delete buffer can now be an array
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE_LINE, line, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
   end
@@ -785,10 +802,10 @@ module RubyCurses
       end
       return :UNHANDLED
     end
-    # DELETE func
+    # delete character/s on current line
     def delete_at index=@curpos, howmany=1
       return -1 if !@editable 
-      $log.debug "dele : #{@current_index} #{@buffer} #{index}"
+      $log.debug "delete_at (characters) : #{@current_index} #{@buffer} #{index}"
       char = @buffer.slice!(@curpos,howmany)  # changed added ,1 and take char for event
       # if no newline at end of this then bring up prev character/s till maxlen
       # NO WE DON'T DO THIS ANYLONGER 2008-12-26 21:09 lets see
@@ -950,18 +967,30 @@ module RubyCurses
         list << line unless line.nil?
         pointer += 1
       }
+      add_to_kill_ring list
+    end
+    # add given line or lines to kill_ring
+    def add_to_kill_ring list
       # directly referenceing kill_ring.  We need to OO it a bit, so we can change internals w'o breaking all.
       # FIXME
       if $append_next_kill
         # user requested this kill to be appened to last kill, so it can be yanked as one
-        $kill_ring.last << list
+        #$kill_ring.last << list
+        last = $kill_ring.pop 
+        case list
+        when Array
+          list.insert 0, last
+          $kill_ring << list
+        when String
+          $kill_ring << [last, list]
+        end
       else
         $kill_ring << list
       end
-      #$kill_ring_pointer += 1
       $kill_ring_pointer = $kill_ring.size
       $append_next_kill = false
     end
+
     # pastes recent (last) entry of kill_ring.
     # This can be one or more lines. Please note that for us vimmer's yank means copy
     # but for emacsers it seems to mean paste. Aargh!!
@@ -978,7 +1007,8 @@ module RubyCurses
         }
         $kill_last_pop_size = row.size
       when String
-        @list[@current_index].insert row.dup
+        #@list[@current_index].insert row.dup
+        @list.insert @current_index, row.dup
         $kill_last_pop_size = 1
       else
         raise "textarea yank got uncertain datatype from kill_ring  #{row.class} "
@@ -986,49 +1016,70 @@ module RubyCurses
       $kill_ring_pointer = $kill_ring.size - 1
       $kill_ring_index = @current_index # pops will replace data in this row, never an insert
       @repaint_required = true
+      # XXX not firing anything here, so i can't undo. yet, i don't know whether a yank will
+      # be followed by a yank-pop, in which case it will not be undone.
+      # object row can be string or array - time to use INSERT_LINE so we are clear
+      # row.length can be array's size or string length - beware
+      fire_handler :CHANGE, InputDataEvent.new(0,row.length, self, :INSERT_LINE, @current_index, row)
     end
+
     # paste previous entries from kill ring
     # I am not totally clear on this, not being an emacs user. but seems you have to do C-y
-    # once (yank) before you can do a yank pop. So yank moves the pointer back one. I use that
-    # to check if i can pop
-    # TODO use multiplier
-    # TODO when cycling, check size of previous yank and remove those lines and insert this.
+    # once (yank) before you can do a yank pop. 
     def yank_pop
       return -1 if !@editable 
       return if $kill_ring.empty?
+      mapped_key = @current_key # we are mapped to this
       # checking that user has done a yank on this row. We only replace on the given row, never
       # insert. But what if user edited after yank, Sheesh ! XXX
       if $kill_ring_index != @current_index
         Ncurses.beep
         return # error message required that user must yank first
       end
-      # remove lines from last replace, then insert
-      index = @current_index
-      $kill_last_pop_size.times {
-        del = @list.delete_at index
-      }
-      row = $kill_ring[$kill_ring_pointer-$multiplier]
-      index = @current_index
-      case row
-      when Array
-        row.each{ |r|
-          @list.insert index, r.dup
-          index += 1
+      # the real reason i put this into a loop is so that i can properly undo the
+      # action later if required. I only need to store the final selection.
+      # This also ensures the user doesn't wander off in between and come back.
+      row = nil
+      while true
+        # remove lines from last replace, then insert
+        index = @current_index
+        $kill_last_pop_size.times {
+          del = @list.delete_at index
         }
-        $kill_last_pop_size = row.size
-      when String
-        @list.insert index, row.dup
-        $kill_last_pop_size = 1
-      else
-        raise "textarea yank_pop got uncertain datatype from kill_ring  #{row.class} "
-      end
+        row = $kill_ring[$kill_ring_pointer-$multiplier]
+        index = @current_index
+        case row
+        when Array
+          row.each{ |r|
+            @list.insert index, r.dup
+            index += 1
+          }
+          $kill_last_pop_size = row.size
+        when String
+          @list.insert index, row.dup
+          $kill_last_pop_size = 1
+        else
+          raise "textarea yank_pop got uncertain datatype from kill_ring  #{row.class} "
+        end
 
-      $kill_ring_pointer -= 1
-      if $kill_ring_pointer < 0
-        # should be size, but that'll give an error. need to find a way!
-        $kill_ring_pointer = $kill_ring.size - 1
+        $kill_ring_pointer -= 1
+        if $kill_ring_pointer < 0
+          # should be size, but that'll give an error. need to find a way!
+          $kill_ring_pointer = $kill_ring.size - 1
+        end
+        @repaint_required = true
+        my_win = @form || @parent_component.form # 2010-02-12 12:51 
+        my_win.repaint
+        ch = @graphic.getchar
+        if ch != mapped_key
+          @graphic.ungetch ch # seems to work fine
+          return ch # XXX to be picked up by handle_key loop and processed
+        end
       end
-      @repaint_required = true
+      # object row can be string or array - time to use INSERT_LINE so we are clear
+      # row.length can be array's size or string length - beware
+      fire_handler :CHANGE, InputDataEvent.new(0,row.length, self, :INSERT_LINE, @current_index, row)
+      return 0
     end
     def append_next_kill
       $append_next_kill = true
