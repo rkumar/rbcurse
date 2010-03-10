@@ -145,6 +145,10 @@ module VER
       @window.mvchgat(y, x, max, Ncurses::A_NORMAL, color, nil)
     end
 
+    def ungetch(ch)
+      Ncurses.ungetch(ch)
+    end
+
     def getch
       @window.getch
     rescue Interrupt => ex
