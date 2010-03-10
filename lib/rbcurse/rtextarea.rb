@@ -348,6 +348,7 @@ module RubyCurses
         set_modified 
         fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     end
+    # FIXME - fire event not correct, not undo'ing correctly, check row and also slash r append
     def insert_break
       return -1 unless @editable
       # insert a blank row and append rest of this line to cursor
@@ -358,14 +359,9 @@ module RubyCurses
       @list.insert @current_index+1, @delete_buffer 
       @curpos = 0
       down
-      # 2010-01-14 19:08 making change to setrowcol
-      ### @form.col = @orig_col + @col_offset
       col = @orig_col + @col_offset
-      #addrowcol 1,0
-      ### @form.row = @row + 1 #+ @winrow
-      #@form.setrowcol @row+1, col
       setrowcol @row+1, col
-      #fire_handler :CHANGE, self  # 2008-12-09 14:56 
+      # FIXME maybe this should be insert line since line inserted, not just data, undo will delete it
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, @current_index, @delete_buffer)     #  2008-12-24 18:34 
     end
     # set cursor on correct column
@@ -756,6 +752,8 @@ module RubyCurses
       @repaint_required = true
       0
     end
+    # open a new line and add chars to it.
+    # FIXME does not fire handler, thus won't undo
     def append_row lineno=@current_index, chars=""
         $log.debug "append row sapce:#{chars}."
       @list.insert lineno+1, chars
@@ -849,7 +847,8 @@ module RubyCurses
     def cursor_bol
       set_form_col 0
     end
-    def to_s
+    #def to_s this was just annoying in debugs
+    def get_text
       l = getvalue
       str = ""
       old = " "
@@ -864,7 +863,7 @@ module RubyCurses
       end
       str
     end
-    alias :get_text :to_s
+    #alias :get_text :to_s
     ## ---- for listscrollable ---- ##
     def scrollatrow
       @height-3 # 2010-01-02 19:28 BUFFERED 
@@ -967,17 +966,20 @@ module RubyCurses
     # This can be one or more lines. Please note that for us vimmer's yank means copy
     # but for emacsers it seems to mean paste. Aargh!!
     def yank
+      return -1 if !@editable 
       return if $kill_ring.empty?
       row = $kill_ring.last
       case row
       when Array
         index = @current_index
         row.each{ |r|
-          @list.insert index, r
+          @list.insert index, r.dup
           index += 1
         }
+        $kill_last_pop_size = row.size
       when String
-        @list[@current_index].insert row
+        @list[@current_index].insert row.dup
+        $kill_last_pop_size = 1
       else
         raise "textarea yank got uncertain datatype from kill_ring  #{row.class} "
       end
@@ -992,6 +994,7 @@ module RubyCurses
     # TODO use multiplier
     # TODO when cycling, check size of previous yank and remove those lines and insert this.
     def yank_pop
+      return -1 if !@editable 
       return if $kill_ring.empty?
       # checking that user has done a yank on this row. We only replace on the given row, never
       # insert. But what if user edited after yank, Sheesh ! XXX
@@ -999,16 +1002,23 @@ module RubyCurses
         Ncurses.beep
         return # error message required that user must yank first
       end
+      # remove lines from last replace, then insert
+      index = @current_index
+      $kill_last_pop_size.times {
+        del = @list.delete_at index
+      }
       row = $kill_ring[$kill_ring_pointer-$multiplier]
+      index = @current_index
       case row
       when Array
-        index = @current_index
         row.each{ |r|
-          @list[index] = r
+          @list.insert index, r.dup
           index += 1
         }
+        $kill_last_pop_size = row.size
       when String
-        @list[@current_index] = row
+        @list.insert index, row.dup
+        $kill_last_pop_size = 1
       else
         raise "textarea yank_pop got uncertain datatype from kill_ring  #{row.class} "
       end
