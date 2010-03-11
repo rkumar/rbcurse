@@ -74,6 +74,8 @@ module RubyCurses
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
+      $error_message_row ||= 23
+      $error_message_col ||= 1
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
@@ -268,7 +270,12 @@ module RubyCurses
         return 0
       else
         # check for bindings, these cannot override above keys since placed at end
-        ret = process_key ch, self
+        begin
+          ret = process_key ch, self
+        rescue => err
+          $error_message = err
+          @form.window.print_error_message
+        end
         return :UNHANDLED if ret == :UNHANDLED
       end
       $multiplier = 0 # you must reset if you've handled a key. if unhandled, don't reset since parent could use
@@ -384,8 +391,8 @@ module RubyCurses
       end
       @graphic = my_win unless @graphic
       #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
-      raise " #{@name} neither form, nor target window given TV paint " unless my_win
-      raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
+      #raise " #{@name} neither form, nor target window given TV paint " unless my_win
+      #raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
 
@@ -462,7 +469,8 @@ module RubyCurses
       item.action = menu1
       menu.add(item)
       # how do i know what's available. the application or window should know where to place
-      menu.display @form.window, 23, 1, $datacolor #, menu
+      #menu.display @form.window, 23, 1, $datacolor #, menu
+      menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
     end
   end # class textview
 end # modul
