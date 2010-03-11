@@ -31,7 +31,7 @@ module RubyCurses
   # Intention is to be able to change content dynamically - the entire list.
   # Use set_content to set content, or just update the list attrib
   # TODO - 
-  #      - searching, goto line - DONE
+  #      - goto line - DONE
   class TextView < Widget
     include ListScrollable
     #dsl_accessor :height  # height of viewport cmmented on 2010-01-09 19:29 since widget has method
