@@ -52,10 +52,11 @@ if $0 == __FILE__
         end
         #@textview.should_create_buffer true # can be moved to scrollpane
         #@textview.set_buffering(:target_window => @form.window, :bottom => @scroll.height-1, :right => @scroll.width-1 )
-        content = File.open("../README.markdown","r").readlines
-        @textview.set_content content #, :WRAP_WORD
+        #content = File.open("../README.markdown","r").readlines
+        #@textview.set_content content #, :WRAP_WORD
+        @textview.add "../README.markdown", "Readme"
         @scroll.child(@textview)
-        @textview.show_caret=true
+        #@textview.show_caret=true
 
       @help = "F1 to quit. #{$0} This is a test of TextView inside a scrollpane. M-n M-p M-h M-l M-< M-> "
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r+1, "col" => 2, "color" => "yellow"}
