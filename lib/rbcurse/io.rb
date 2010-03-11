@@ -42,8 +42,8 @@ module Io
     #x mylabels=["^G~Help  ", "^C~Cancel"]
     #x mylabels += labels if !labels.nil?
     begin
+      Ncurses.echo();
     #x print_key_labels( 0, 0, mylabels)
-#x    Ncurses.echo();
     #curpos = 0
     curpos = str.length
     prevchar = 0
@@ -205,7 +205,6 @@ module Io
     labels=["N~No    ", "Y~Yes   ","C~Cancel"," ~    "]
     print_key_labels( 0, 0, labels)
     win.refresh
-    #Ncurses.echo();
     yn=''
     #win.mvwgetnstr(LINEONE,askstr.length,yn,maxlen)
     while true
@@ -216,7 +215,6 @@ module Io
       break if yn =~/[ync]/
       Ncurses.beep
     end
-    #Ncurses.noecho();
     restore_application_key_labels # must be done after using print_key_labels
     return yn
   end
@@ -239,7 +237,6 @@ module Io
     print_this(win, askstr, 4, LINEONE, 0)
     #labels=["N~No    ", "Y~Yes   ","C~Cancel"," ~    "]
     print_key_labels( 0, 0, labels)
-    #Ncurses.echo();
     yn=''
     validchars.downcase!
     #win.mvwgetnstr(LINEONE-3,askstr.length,yn,maxlen)
@@ -257,7 +254,6 @@ module Io
       break if validchars.include?yn
       Ncurses.beep
     end
-    #Ncurses.noecho();
     restore_application_key_labels # must be done after using print_key_labels
     return yn
   end
@@ -294,6 +290,7 @@ module Io
     if(win == nil)
       raise "win nil in printthis"
     end
+    $log.debug " printthis #{win} , #{text} , #{x} , #{y} "
     color=Ncurses.COLOR_PAIR(color);
     win.attron(color);
     #win.mvprintw(x, y, "%-40s" % text);
@@ -515,7 +512,6 @@ module Io
     labels=config.fetch("labels", ["?~Help  "," ~      ", "N~No    ", "Y~Yes   "])
     print_key_labels( 0, 0, labels)
     win.refresh
-    #Ncurses.echo();
     yn=''
     #win.mvwgetnstr(Ncurses.LINES-3,askstr.length,yn,maxlen)
     while true
@@ -534,7 +530,6 @@ module Io
       end
       Ncurses.beep
     end # while
-    #Ncurses.noecho();
 
     begin
       config[yn].call if config.include? yn 
