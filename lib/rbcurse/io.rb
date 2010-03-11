@@ -30,12 +30,12 @@ module Io
     raise "rbgetstr got no window. io.rb" if win.nil?
     ins_mode = false
     default = config[:default] || ""
-    prompt = "#{prompt} [#{default}]: "
+    prompt = "#{prompt} [#{default}]: " unless default
     len = prompt.length
 
     # clear the area of len+maxlen
     color = $datacolor
-    str=default
+    str = default
     clear_this win, r, c, color, len+maxlen+1
     print_this(win, prompt+str, color, r, c)
     len = prompt.length + str.length
@@ -286,11 +286,20 @@ module Io
   end
 
 
+    ##
+    # prints given text to window, in color at x and y coordinates
+    # @param [Window] window to write to
+    # @param [String] text to print
+    # @param [int] color such as $datacolor or $promptcolor
+    # @param [int] x 
+    # @param [int] y 
+    # @see Window#printstring
+    # Consider using Window#printstring
   def print_this(win, text, color, x, y)
     if(win == nil)
       raise "win nil in printthis"
     end
-    $log.debug " printthis #{win} , #{text} , #{x} , #{y} "
+    #$log.debug " printthis #{win} , #{text} , #{x} , #{y} "
     color=Ncurses.COLOR_PAIR(color);
     win.attron(color);
     #win.mvprintw(x, y, "%-40s" % text);
@@ -597,8 +606,8 @@ module Io
       menu = @options
       $log.debug " DISP MENU "
       ret = 0
-      str = @text
       while true
+        str = @text.dup
         h = {}
         valid = []
         menu.each{ |item|
