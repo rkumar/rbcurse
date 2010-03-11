@@ -4,8 +4,8 @@ require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'rbcurse'
-#require 'rbcurse/rtestwidget'
-require 'rbcurse/rtextview'
+#require 'rbcurse/rtextview'
+require 'rbcurse/rmultitextview'
 require 'rbcurse/rscrollpane'
 if $0 == __FILE__
   include RubyCurses
@@ -37,7 +37,8 @@ if $0 == __FILE__
           width w
           height ht
         end
-        @textview = TextView.new nil do
+        @textview = MultiTextView.new do
+        #@textview = TextView.new do
           name   "myView" 
           row 0
           col  0 
