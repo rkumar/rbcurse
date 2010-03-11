@@ -39,6 +39,11 @@ module RubyCurses
       super
       bind_key(?:, :buffer_menu)
       bind_key(?e, :file_edit)
+      bind_key([?\C-x, ?f], :file_edit)
+      bind_key([?\C-x, ?k], :buffer_delete)
+      bind_key([?\C-x, ?\C-b], :buffers_list)
+      # easily cycle using p. n is used for next search.
+      bind_key(?p, :buffer_previous)
     end
     ## returns current buffer
     # @return  [RBuffer] current buffer
@@ -49,11 +54,10 @@ module RubyCurses
     # send in a list
     # e.g.         set_content File.open("README.txt","r").readlines
     # set wrap at time of passing :WRAP_NONE :WRAP_WORD
+    # @see add (add takes a title too which is required here)
     def set_content list, wrap = :WRAP_NONE
       ret = super
-      @bmanager.add_content @list
-      # set in current buffer in bm, if none, then in 0
-      # get this as current one XXX
+    #  buff = @bmanager.add_content @list
       return ret
     end
     # multi-textview
@@ -72,9 +76,9 @@ module RubyCurses
       tabc = Proc.new {|str| Dir.glob(str +"*") }
       config={}; config[:tab_completion] = tabc
       #config[:default] = "defaulT"
-      $log.debug " inside getstr before call #{@row} +  #{@height}  "
+      $log.debug " inside getstr before call #{$error_message_row} +  #{$error_message_col}  "
       #ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen, config)
-      ret, str = rbgetstr(@form.window, 24, 15, prompt, maxlen, config)
+      ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col, prompt, maxlen, config)
       $log.debug " rbgetstr returned #{ret} , #{str} "
       return "" if ret != 0
       return str
@@ -88,14 +92,15 @@ module RubyCurses
       menu.add(menu.create_mitem( 'l', "list buffers", "list buffers ", :buffers_list ))
       item = menu.create_mitem( 'b', "Buffer Options", "Buffer Options" )
       menu1 = PromptMenu.new( self, "Buffer Options")
-      menu1.add(menu1.create_mitem( 'n', "Next", "Switched to Next Buffer", :buffer_next ))
-      menu1.add(menu1.create_mitem( 'p', "Prev", "Switched to Next Buffer", :buffer_previous ))
-      menu1.add(menu1.create_mitem( 'f', "First", "Switched to First Buffer", :buffer_first ))
-      menu1.add(menu1.create_mitem( 'l', "Last", "Switched to Last Buffer", :buffer_last ))
+      menu1.add(menu1.create_mitem( 'n', "Next", "Switched to next buffer", :buffer_next ))
+      menu1.add(menu1.create_mitem( 'p', "Prev", "Switched to previous buffer", :buffer_previous ))
+      menu1.add(menu1.create_mitem( 'f', "First", "Switched to first buffer", :buffer_first ))
+      menu1.add(menu1.create_mitem( 'l', "Last", "Switched to last buffer", :buffer_last ))
+      menu1.add(menu1.create_mitem( 'd', "Delete", "Deleted buffer", :buffer_delete ))
       item.action = menu1
       menu.add(item)
       # how do i know what's available. the application or window should know where to place
-      menu.display @form.window, 23, 1, $datacolor #, menu
+      menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
     end
 
     %w[next previous first last].each do |pos|
@@ -108,10 +113,14 @@ module RubyCurses
     end
 
     def buffer_next
+      perror "No other buffer" and return if @bmanager.size < 2
+
       @current_buffer = @bmanager.next
       set_current_buffer
     end
     def buffer_previous
+      perror "No other buffer" and return if @bmanager.size < 2
+
       @current_buffer = @bmanager.previous
       $log.debug " buffer_prev got #{@current_buffer} "
       set_current_buffer
@@ -126,22 +135,50 @@ module RubyCurses
       $log.debug " buffer_last got #{@current_buffer} "
       set_current_buffer
     end
+    def buffer_delete
+      if @bmanager.size > 1
+        @bmanager.delete_at
+        @current_buffer = @bmanager.previous
+        set_current_buffer
+      else
+        perror "Only one buffer. Cannot delete."
+      end
+    end
     def buffers_list
       $log.debug " TODO buffers_list: #{@bmanager.size}  "
     end
+    # prompts user for filename and opens in buffer
+    # Like vim's :e
     def file_edit
       file = getfilename()
       $log.debug " got file_edit: #{file} "
       return if file == ""
-      @current_buffer = @bmanager.add file, file
-      $log.debug " file edit got cb : #{@current_buffer} "
-      set_current_buffer
+      add file, file
+    end
+    # load a file into the textview.
+    # This is the preferred method since it lets us add a title too
+    # Shucks, this misses wrap_style which the other one has
+    # @param [String] filename
+    def add file, title
+      begin
+        @current_buffer = @bmanager.add file, title
+        $log.debug " file edit got cb : #{@current_buffer} "
+        set_current_buffer
+      rescue => err
+        $error_message = "Error: #{err} "
+        @form.window.print_error_message
+        Ncurses.beep
+        return -1
+      end
     end
     def set_current_buffer
       @current_index = @current_buffer.current_index
       @curpos = @current_buffer.curpos
       @title = @current_buffer.title
       @list = @current_buffer.list
+    end
+    def perror errmess=$error_message
+      @form.window.print_error_message errmess
     end
   end # class multitextview
   ##
@@ -175,7 +212,7 @@ module RubyCurses
     # @return [RBuffer] previous buffer/file
     ##
     def previous
-      $log.debug " previous bs: #{@buffers.size} "
+      $log.debug " previous bs: #{@buffers.size}, #{@counter}  "
       @counter -= 1
       return last() if @counter < 0
       $log.debug " previous ctr  #{@counter} "
@@ -205,12 +242,13 @@ module RubyCurses
       anew = RBuffer.new(list, 0, 0, filename, title)
       #@buffers << anew
       @buffers.insert position, anew
+      @counter = position
       return anew
     end
     def add filename, title=nil
       insert filename, @buffers.size, title
     end
-    def insert_content str, position,  title="Untitled"
+    def insert_content str, position,  title="UNTitled"
       case str
       when String
         # put str into list
@@ -222,10 +260,11 @@ module RubyCurses
       anew = RBuffer.new(list, 0, 0, "", title)
       #@buffers << anew
       @buffers.insert position, anew
+      @counter = position
       return anew
     end
     # add content (array or str) to buffer list as a new buffer
-    def add_content str, title="Untitled"
+    def add_content str, title="UNtitled"
       $log.debug " inside BUFFER MANAGER "
       insert_content str,  @buffers.size, title
     end
@@ -233,6 +272,9 @@ module RubyCurses
       @buffers.size
     end
     alias :count :size
+    def index buff
+      return @buffers.index
+    end
   end
   RBuffer = Struct.new(:list, :current_index, :curpos, :filename, :title) do
     def xxx
