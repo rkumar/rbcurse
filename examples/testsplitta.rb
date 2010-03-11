@@ -16,6 +16,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
 require 'rbcurse/rtextarea'
+require 'rbcurse/rmultitextview'
 require 'rbcurse/undomanager'
 
 ## This sample creates a single scrollpane, 
