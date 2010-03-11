@@ -343,12 +343,17 @@ module VER
       attroff(Ncurses.COLOR_PAIR(color) | att)
     end
     # added by rk 2008-11-29 19:01 
+    # Since these methods write directly to window they are not advised
+    # since clearing previous message we don't know how much to clear.
+    # Best to map error_message to a label.
     def print_error_message text=$error_message
       r = $error_message_row || Ncurses.LINES-1
+      c = $error_message_col || (Ncurses.COLS-text.length)/2 
+
       $log.debug "got ERROR MEASSAGE #{text} row #{r} "
       clear_error r, $datacolor
       # print it in centre
-      printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
+      printstring r, c, text, color = $promptcolor
     end
     # added by rk 2008-11-29 19:01 
     def print_status_message text=$status_message
@@ -359,7 +364,9 @@ module VER
     end
     # added by rk 2008-11-29 19:01 
     def clear_error r = $error_message_row, color = $datacolor
-      printstring(r, 0, "%-*s" % [Ncurses.COLS," "], color)
+      c = $error_message_col || (Ncurses.COLS-text.length)/2 
+      sz = $error_message_size || Ncurses.COLS
+      printstring(r, c, "%-*s" % [sz, " "], color)
     end
     ##
     # CAUTION : FOR MESSAGEBOXES ONLY !!!! XXX
