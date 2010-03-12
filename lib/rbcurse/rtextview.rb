@@ -206,7 +206,7 @@ module RubyCurses
       case ch
       when ?\C-n.getbyte(0), 32
         scroll_forward
-      when ?\C-p.getbyte(0), ?u.getbyte(0)
+      when ?\C-p.getbyte(0)
         scroll_backward
       when ?\C-[.getbyte(0), ?t.getbyte(0)
         goto_start #start of buffer # cursor_start
@@ -472,5 +472,15 @@ module RubyCurses
       #menu.display @form.window, 23, 1, $datacolor #, menu
       menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
     end
+    ##
+    # dynamically load a module and execute init method.
+    # Hopefully, we can get behavior like this such as vieditable or multibuffers
+    def load_module requirename, includename
+      require "rbcurse/#{requirename}"
+      extend Object.const_get("#{includename}")
+      send("#{requirename}_init") #if respond_to? "#{includename}_init"
+    end
+
   end # class textview
+
 end # modul
