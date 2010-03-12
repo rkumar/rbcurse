@@ -2,11 +2,13 @@
   * Name: TextArea
   * Description   Editable text area
   * Author: rkumar (arunachalesha)
-TODO: 
    2009-12-26 14:43 buffered version of rtextarea.rb. See BUFFERED
   * major change: 2010-02-12 13:34  simplifying the buffer stuff.
   * see FIXME of textview for some common issues to look at.
   * removed many edit functions to listeditable - 2010-03-12 10:16 
+  
+Todo: 
+  * shoud we store path, so a save can be done
   --------
   * Date: 2008-11-14 23:43 
   * License:
@@ -88,6 +90,8 @@ module RubyCurses
       bind_key(?\C-y, :yank)
       bind_key(?\M-y, :yank_pop)
       bind_key(?\M-\C-w, :append_next_kill)
+      bind_key(?\M-d, :delete_word)
+      bind_key(?\M-f, :forward_word)
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
