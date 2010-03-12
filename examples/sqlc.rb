@@ -1,6 +1,8 @@
-## rahul kumar, 2009
+## rkumar, 2009
 # to demonstrate usage of rbcurse
 # Use C-q to quit
+# This demo uses a tabbedpane so we can have the results of many sql statements and not
+# need to keep reissuing.
 #
 require 'rubygems'
 require 'ncurses'
@@ -431,7 +433,7 @@ class Sqlc
       #set_data data, colnames
       #cell_editing_allowed true
       #editing_policy :EDITING_AUTO
-      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize"
+      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize, C-q quit"
     end
     return atable
   end
@@ -445,7 +447,7 @@ class Sqlc
       end
       #@tab1 = @tp.add_tab "Tab&1" 
       #f1 = @tab1.form
-      form.add_widget(tp)
+      #form.add_widget(tp)
       return tp
   end
 end
