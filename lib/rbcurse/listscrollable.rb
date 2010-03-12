@@ -422,5 +422,72 @@ module ListScrollable
       end
       return nil
     end
+    ##
+    # goes to start of next word (or n words) - vi's w
+    #
+    def forward_word
+      $multiplier = 1 if !$multiplier or $multiplier == 0
+      line = @current_index
+      buff = @list[line]
+      pos = @curpos
+      $multiplier.times {
+        found = buff.index(/[[:punct:][:space:]]/, pos)
+        if !found
+          # if not found, we've lost a counter
+          line += 1 # unless eof
+          buff = @list[line]
+          pos = 0
+        else
+          pos = found + 1
+        end
+        $log.debug " forward_word: pos #{pos} line #{line} buff: #{buff}"
+      }
+      @current_index = line
+      @curpos = pos
+      @buffer = @list[@current_index]
+      set_form_row
+      set_form_col pos
+      @repaint_required = true
+    end
+    ##
+    # goes to  next occurence of <char> (or nth occurence)
+    # Actually, we can club this with forward_word so no duplication
+    # Or call one from the other
+    #
+    def forward_char char=nil
+      if char.nil?
+        $log.debug " XXX acceptng char"
+        ch = @graphic.getchar
+        return -1 if ch < 0 or ch > 255 # or 127 ???
+        char = ch.chr
+      end
+      $log.debug " forward_char char:#{char}:"
+      $multiplier = 1 if !$multiplier or $multiplier == 0
+      line = @current_index
+      buff = @list[line]
+      pos = @curpos
+      $multiplier.times {
+        found = false
+        while !found
+          found = buff.index(char, pos)
+          if !found
+            line += 1 # unless eof
+            buff = @list[line]
+            pos = 0
+          else
+            pos = found + 1
+          end
+          break if line >= @list.size
+          $log.debug " #{found} forward_word: pos #{pos} line #{line} buff: #{buff}"
+        end
+      }
+      @current_index = line
+      @curpos = pos
+      @buffer = @list[@current_index]
+      set_form_row
+      set_form_col pos
+      @repaint_required = true
+    end
+     
 
 end
