@@ -7,6 +7,7 @@ require 'rbcurse'
 #require 'rbcurse/rtextview'
 require 'rbcurse/rmultitextview'
 require 'rbcurse/rscrollpane'
+require 'rbcurse/undomanager'
 if $0 == __FILE__
   include RubyCurses
   include RubyCurses::Utils
@@ -55,7 +56,10 @@ if $0 == __FILE__
         #content = File.open("../README.markdown","r").readlines
         #@textview.set_content content #, :WRAP_WORD
         @textview.add "../README.markdown", "Readme"
+       
+        @textview.load_module "vieditable", "ViEditable"
         @scroll.child(@textview)
+        undom = SimpleUndo.new @textview
         #@textview.show_caret=true
 
       @help = "F1 to quit. #{$0} This is a test of TextView inside a scrollpane. M-n M-p M-h M-l M-< M-> "
