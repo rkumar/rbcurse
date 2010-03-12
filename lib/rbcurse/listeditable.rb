@@ -273,6 +273,10 @@ module ListEditable
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, line, @delete_buffer)     #  2008-12-24 18:34 
       set_modified 
     end
+    ##
+    # deletes forward till the occurence of a character
+    # it gets the char from the user
+    # Should we pass in the character (and accept it as a separate func) ???
     def delete_forward
       return -1 unless @editable
       ch = @graphic.getchar
