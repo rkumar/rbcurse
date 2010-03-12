@@ -33,6 +33,8 @@ module ViEditable
     bind_key( [?y, ?y] , :kill_ring_save ) 
     bind_key( ?p, :yank ) # paste after this line
     bind_key( ?P ) { yank(@current_index - 1) } # should be before this line
+    bind_key(?\w, :forward_word)
+    bind_key(?f, :forward_char)
 
   end
 
