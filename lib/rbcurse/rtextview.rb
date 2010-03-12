@@ -275,6 +275,8 @@ module RubyCurses
         rescue => err
           $error_message = err
           @form.window.print_error_message
+          $log.error " TEXTVIEW ERROR #{err} "
+          $log.debug(err.backtrace.join("\n"))
         end
         return :UNHANDLED if ret == :UNHANDLED
       end
