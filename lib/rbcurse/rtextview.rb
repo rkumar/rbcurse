@@ -76,6 +76,10 @@ module RubyCurses
       @win_top = 0
       $error_message_row ||= 23
       $error_message_col ||= 1
+      # currently i scroll right only if  current line is longer than display width, i should use 
+      # longest line on screen.
+      @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
+
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
@@ -407,6 +411,7 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow() 
       r,c = rowcol
+      @longest_line = @width #maxlen
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
@@ -417,6 +422,7 @@ module RubyCurses
             content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
             if !content.nil? 
               if content.length > maxlen # only show maxlen
+                @longest_line = content.length if content.length > @longest_line
                 content = content[@pcol..@pcol+maxlen-1] 
               else
                 content = content[@pcol..-1]
