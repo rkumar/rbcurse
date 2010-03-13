@@ -86,6 +86,7 @@ module RubyCurses
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
+      @longest_line = 0
       bind_key(?\M-w, :kill_ring_save)
       bind_key(?\C-y, :yank)
       bind_key(?\M-y, :yank_pop)
@@ -801,6 +802,7 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
+      @longest_line = @width # _maxlen scroll uses width not maxlen
       $log.debug " TA:::: #{tr} , #{h}, r #{r} c #{c} "
       0.upto(h) do |hh|
         crow = tr+hh
@@ -812,6 +814,7 @@ module RubyCurses
             content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
             if !content.nil? 
               if content.length > _maxlen # only show _maxlen
+                @longest_line = content.length if content.length > @longest_line
                 content = content[@pcol..@pcol+_maxlen-1] 
               else
                 content = content[@pcol..-1]
