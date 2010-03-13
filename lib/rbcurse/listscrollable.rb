@@ -153,8 +153,9 @@ module ListScrollable
   def scroll_right
     $log.debug " inside scroll_right "
     hscrollcols = $multiplier > 0 ? $multiplier : @width/2
-    $log.debug " scroll_right  mult:#{$multiplier} , hscrollcols  #{hscrollcols} "
-    blen = @buffer.rstrip.length
+    $log.debug " scroll_right  mult:#{$multiplier} , hscrollcols  #{hscrollcols}, w: #{@width} ll:#{@longest_line} "
+    #blen = @buffer.rstrip.length
+    blen = @longest_line
     @pcol += hscrollcols if @pcol + @width < blen 
     @repaint_required = true
   end
