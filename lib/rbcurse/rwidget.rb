@@ -258,7 +258,7 @@ module RubyCurses
           $log.debug " process_key: found block for #{keycode} , #{ch} "
           blk = blk1
       end
-      $log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
+      #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
       if blk.is_a? Symbol
         return send(blk, *@key_args[keycode])
       else
@@ -293,7 +293,7 @@ module RubyCurses
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
       def fire_handler event, object
-        $log.debug " def fire_handler evt:#{event}, o: #{object}, hdnler:#{@handler}"
+        $log.debug " def fire_handler evt:#{event}, o: #{object.class}, hdnler:#{@handler}"
         if !@handler.nil?
         #blk = @handler[event]
           ablk = @handler[event]
@@ -1020,6 +1020,7 @@ module RubyCurses
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :name # for debugging 2010-02-02 20:12 
     attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
+#    attr_accessor :allow_alt_digits # catch Alt-1-9 as digit_argument
     def initialize win, &block
       @window = win
       @widgets = []
@@ -1045,6 +1046,8 @@ module RubyCurses
       $append_next_kill = false
       $kill_last_pop_size = 0 # size of last pop which has to be cleared
 
+      #@allow_alt_digits = true ; # capture Alt-1-9 as digit_args. Set to false if you wish to map
+                                 # Alt-1-9 to buttons of tabs 
     end
     ##
     # set this menubar as the form's menu bar.
@@ -1543,10 +1546,12 @@ module RubyCurses
           return 0 if ret == 0
           ch = ret # unhandled char
         elsif ch >= ?\M-1.getbyte(0) && ch <= ?\M-9.getbyte(0)
-          ret = digit_argument ch
-          $log.debug " FORM set MULT DA to #{$multiplier}, ret = #{ret}  "
-          return 0 if ret == 0 # don't see this happening
-          ch = ret # unhandled char
+          if $catch_alt_digits
+            ret = digit_argument ch
+            $log.debug " FORM set MULT DA to #{$multiplier}, ret = #{ret}  "
+            return 0 if ret == 0 # don't see this happening
+            ch = ret # unhandled char
+          end
         end
 
         case ch
@@ -2200,7 +2205,6 @@ module RubyCurses
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
-      #@command_block = nil
       @handler={} # event handler
       @event_args ||= {}
       super
@@ -2208,8 +2212,6 @@ module RubyCurses
       @color ||= $datacolor 
       @surround_chars ||= ['[ ', ' ]'] 
       @col_offset = @surround_chars[0].length 
-      #@text = @name if @text.nil?
-      #bind_hotkey # 2008-12-23 22:41 remarked
     end
     ##
     # set button based on Action
@@ -2237,6 +2239,8 @@ module RubyCurses
     end
     ## 
     # FIXME this will not work in messageboxes since no form available
+    # if already set mnemonic, then unbind_key, ??
+
     def mnemonic char
       $log.error " #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
       return if @form.nil?
