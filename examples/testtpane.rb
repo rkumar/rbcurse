@@ -171,6 +171,7 @@ class TestTabbedPane
               @tctr += 1
             }
       @form.repaint
+      $catch_alt_digits = false # we want to use Alt-1, 2 for tabs.
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
