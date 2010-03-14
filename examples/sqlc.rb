@@ -140,6 +140,7 @@ end
 class Sqlc
   def initialize
     @window = VER::Window.root_window
+    $catch_alt_digits = false # we want to use Alt-1, 2 for tabs.
     @form = Form.new @window
     @tab_ctr = 0
 
@@ -211,13 +212,12 @@ class Sqlc
 
     @tp = create_tabbed_pane @form, buttrow, t_width, c
     @tp.show
-    @tab_ctr += 1
-    atable = create_table @tp, @tab_ctr,  buttrow, t_width, c
-    @atable = atable
+    #atable = create_table @tp, @tab_ctr,  buttrow, t_width, c
+    #@atable = atable
     @data = data
     #atable.table_model.data = data
 
-    tcm = atable.get_table_column_model
+    #tcm = atable.get_table_column_model
     b_run.command { 
       query =  sqlarea.get_text
       run_query query
@@ -226,48 +226,47 @@ class Sqlc
     ## key bindings fo atable
     # column widths 
     app = self
-    atable.configure() do
-      #bind_key(330) { atable.remove_column(tcm.column(atable.focussed_col)) rescue ""  }
-      bind_key(?+) {
-        acolumn = atable.column atable.focussed_col()
-        w = acolumn.width + 1
-        acolumn.width w
-        #atable.table_structure_changed
-      }
-      bind_key(?-) {
-        acolumn = atable.column atable.focussed_col()
-        w = acolumn.width - 1
-        if w > 3
-          acolumn.width w
-          #atable.table_structure_changed
-        end
-      }
-      # added new method on 2009-10-08 00:47 
-      bind_key(?=) {
-        atable.size_columns_to_fit
-      }
-      bind_key(?>) {
-        tcm = atable.get_table_column_model
-        colcount = tcm.column_count-1
-        #atable.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
-        col = atable.focussed_col
-        atable.move_column col, col+1 unless col == colcount
-      }
-      bind_key(?<) {
-        col = atable.focussed_col
-        atable.move_column col, col-1 unless col == 0
-        #atable.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
-      }
-      # TODO popup and key labels
-      bind_key(?\M-h, app) {|tab,td| $log.debug " BIND... #{tab.class}, #{td.class}"; app.make_popup atable}
-    end
+    #atable.configure() do
+      ##bind_key(330) { atable.remove_column(tcm.column(atable.focussed_col)) rescue ""  }
+      #bind_key(?+) {
+        #acolumn = atable.column atable.focussed_col()
+        #w = acolumn.width + 1
+        #acolumn.width w
+        ##atable.table_structure_changed
+      #}
+      #bind_key(?-) {
+        #acolumn = atable.column atable.focussed_col()
+        #w = acolumn.width - 1
+        #if w > 3
+          #acolumn.width w
+          ##atable.table_structure_changed
+        #end
+      #}
+      ## added new method on 2009-10-08 00:47 
+      #bind_key(?=) {
+        #atable.size_columns_to_fit
+      #}
+      #bind_key(?>) {
+        #tcm = atable.get_table_column_model
+        #colcount = tcm.column_count-1
+        ##atable.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
+        #col = atable.focussed_col
+        #atable.move_column col, col+1 unless col == colcount
+      #}
+      #bind_key(?<) {
+        #col = atable.focussed_col
+        #atable.move_column col, col-1 unless col == 0
+        ##atable.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
+      #}
+      ## TODO popup and key labels
+      #bind_key(?\M-h, app) {|tab,td| $log.debug " BIND... #{tab.class}, #{td.class}"; app.make_popup atable}
+    #end
     #keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+table_ht+3, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
     #eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+table_ht+6, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
 
     # report some events
     #atable.table_model.bind(:TABLE_MODEL_EVENT){|e| #eventlabel.text = "Event: #{e}"}
     #atable.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
-    atable.bind(:TABLE_TRAVERSAL_EVENT){|e| @header.text_right "Row #{e.newrow+1} of #{atable.row_count}" }
 
     tablist_ht = 6
     mylist = @db.get_data "select name from sqlite_master"
@@ -370,15 +369,17 @@ class Sqlc
         return
       end
       #cw = @db.estimate_column_widths @atable.width, @db.columns
-      @atable.set_data @content, @db.columns
-      cw = @atable.estimate_column_widths @db.columns, @db.datatypes
-      @atable.set_column_widths cw
+      atable = create_table @tp, @tab_ctr #,  buttrow, t_width, c
+      atable.set_data @content, @db.columns
+      cw = atable.estimate_column_widths @db.columns, @db.datatypes
+      atable.set_column_widths cw
       rescue => exc
+        $log.debug(exc.backtrace.join("\n"))
         alert exc.to_s
         return
       end
       @status_row.text = "#{@content.size} rows retrieved"
-      @atable.repaint
+      atable.repaint
   end
   def create_table_actions atable, todo, data, categ
     #@new_act = Action.new("New Row", "mnemonic"=>"N") { 
@@ -418,36 +419,28 @@ class Sqlc
     }
 
   end
-  def create_table tp, counter, buttrow, t_width, c
-    tab1 = tp.add_tab "Tab&#{counter}" 
-    f1 = tab1.form
+  def create_table tp, counter #, buttrow, t_width, c
     table_ht = 15
-    atable = Table.new tp do
-      name   "sqltable" 
-      row  4
-      col  2
-      width t_width
-      height table_ht
-      #title "A Table"
-      #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
-      #set_data data, colnames
+    atable = Table.new do
+      name   "sqltable#{counter}" 
       #cell_editing_allowed true
       #editing_policy :EDITING_AUTO
-      help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize, C-q quit"
+      #help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize, C-q quit"
+      help_text "M-Tab for next field, C-q quit"
     end
+    atable.bind(:TABLE_TRAVERSAL_EVENT){|e| @header.text_right "Row #{e.newrow+1} of #{atable.row_count}" }
+    @tab_ctr += 1
+    tab1 = tp.add_tab "Tab&#{@tab_ctr}" , atable
     return atable
   end
   def create_tabbed_pane form,  buttrow, t_width, c
-      tp = RubyCurses::TabbedPane.new form  do
+      tp = RubyCurses::TabbedPane.new form do
         height 16
         width  t_width
         row buttrow +1
         col c
         button_type :ok
       end
-      #@tab1 = @tp.add_tab "Tab&1" 
-      #f1 = @tab1.form
-      #form.add_widget(tp)
       return tp
   end
 end
