@@ -24,14 +24,14 @@ Some of the samples mentioned below may **not** work. test2.rb works - i always 
   * test2.rb (exit with F1, Or Cancel button/Alt-C) contains various
     widgets. F2 for menubar toggling
 
-  * rfe.rb is a ruby file explorer
+  * rfe.rb is a ruby file explorer demo.
 
-  * sqlc.rb is a ruby sql client demo (using testd.db at
+  * sqlc.rb is a ruby sql client _demo_ (using testd.db at
      <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
     Demos horizontal and vertical scrolling of data.
-    (If this doesn't work, try _sqlc.rb. I was integrating tabbedpanes
-    into sqlc.rb and left off somewhere).
+    (If this doesn't work, try _sqlc.rb. I have integrated tabbedpanes
+    into sqlc.rb - each query opens a new tab).
 
   * testtodo.rb is a test TODO application (now using fastercsv)
 
