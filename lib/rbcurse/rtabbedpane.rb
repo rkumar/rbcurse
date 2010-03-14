@@ -54,7 +54,7 @@ module RubyCurses
         _state = :SELECTED if @variable.value == @value 
         case _state
         when :HIGHLIGHTED
-       $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}")
+       $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}, v: #{@value}" )
           bgcolor = @highlight_background
           color = @highlight_foreground
           bgcolor =  @bgcolor
@@ -151,24 +151,21 @@ module RubyCurses
       @focusable= true
       @tabs ||= []
       @forms ||= []
-      #@bgcolor ||=  "black" # 0
-      #@color ||= "white" # $datacolor
       @attr = nil
       @current_form = nil
       @current_tab = nil
       @config = aconfig
-      #@config.each_pair { |k,v| variable_set(k,v) }
-      #instance_eval &block if block_given?
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
-  #    @manages_cursor = true # redundant, remove
       @recreate_buttons = true
       install_keys
     end
     def install_keys
-      @form.bind_key ([?d, ?d]) { ix = highlighted_tab_index; repeatm { remove_tab(ix) } }
-      @form.bind_key (?u) { undelete_tab; }
-      @form.bind_key (?p) { paste_tab 0; } # paste before or at position
-      @form.bind_key (?P) { paste_tab 1; } # paste deleted tab after this one
+      @form.bind_key([?d, ?d]) { ix = highlighted_tab_index; repeatm { remove_tab(ix) } }
+      @form.bind_key(?u) { undelete_tab; }
+      @form.bind_key(?p) { paste_tab 0; } # paste before or at position
+      @form.bind_key(?P) { paste_tab 1; } # paste deleted tab after this one
+      @form.bind_key([?c, ?w]) { change_label }
+      @form.bind_key(?C) { change_label }
     end
     ##
     # This is a public, user called method for appending a new tab
@@ -184,6 +181,7 @@ module RubyCurses
     ## insert a component at given index
     # index cannnot be greater than size of tab count
     def insert_tab text, component, index, aconfig={}, &block
+      $log.debug " TAB insert #{text} at #{index} "
       @tabs[index] = Tab.new(text, self, aconfig, &block)
       tab = @tabs[index]
       tab.component = component unless component.nil?
@@ -224,6 +222,29 @@ module RubyCurses
       @deleted_tab = nil
       $log.debug " paste over #{@tabs.size} #{ix} + #{pos} "
     end
+
+    ##
+    # prompts for a new label for a tab - taking care of mnemonics if ampersand present
+    # Currently, mapped to 'C' and 'cw' when cursor is on a label
+    #
+    def change_label
+      ix = highlighted_tab_index
+      return if ix < 0
+      prompt = "Enter new label: "
+      label = @buttons[ix].text
+      config = {}
+      config[:default] = label.dup
+      maxlen = 10
+      ret, str = rbgetstr(@graphic, $error_message_row, $error_message_col, prompt, maxlen, config)
+      if ret == 0 and str != "" and str != label
+        @tabs[ix].text = str
+        @buttons[ix].text(str)
+        @recreate_buttons = true
+      end
+    end
+    ##
+    # returns the index of the tab cursor is on (not the one that is selected)
+    # @return [0..] index, or -1 if some error
     def highlighted_tab_index
       @form.widgets.each_with_index{ |w, ix| 
         return ix if w.state == :HIGHLIGHTED
@@ -329,16 +350,18 @@ module RubyCurses
       if !@buttons.empty?
         @buttons.each {|e| @form.remove_widget(e) }
       end
+      @buttons = []
       button_gap = 4
       # the next line necessitates a clear on the pad
-    #  button_gap = 1 if @tabs.size > 6 # quick dirty fix, we need something that checks fit
+      #  button_gap = 1 if @tabs.size > 6 # quick dirty fix, we need something that checks fit
       # we may also need to truncate text to fit
 
       @buttonpad.wclear
       ## create a button for each tab
-      $tabradio = Variable.new # 2010-03-03 19:12 why all linked to one global ? XXX 
+      $tabradio = Variable.new # so we know which is highlighted
       @tabs.each do |tab|
         text = tab.text
+        $log.debug " TABS EACH #{text} "
         @buttons << RubyCurses::TabbedButton.new(@form) do
           variable $tabradio
           text text
@@ -372,6 +395,8 @@ module RubyCurses
         }
       end
       @recreate_buttons = false
+      # make the buttons visible now, not after next handle_key
+      @form.repaint
     end
     ## This form is for the tabbed buttons on top
     def create_window
@@ -382,25 +407,18 @@ module RubyCurses
 
       r = @row
       c = @col
-      ##layout = { :height => 3, :width => @width, :top => r, :left => c } 
-      ##@buttonpad = VER::Pad.create_with_layout(layout)
-      ##@form = RubyCurses::Form.new @buttonpad
       @form = ScrollForm.new(@parentwin)
       @form.set_layout(1, @width, @row+1, @col+1)
       @form.display_h = 1
-      #@form.set_layout(3, @width, @row, @col)
-      #@form.display_h = 3
       @form.display_w = @width-3
       @buttonpad = @form.create_pad
 
 
-      #@layout = { :height => @height, :width => @width, :top => r, :left => c } 
       ## We will use the parent window, and not a pad. We will write absolute coordinates.
       @window = @parentwin
       color = $datacolor
       # border around button bar. should this not be in scrollform as a border ? XXX
       @window.print_border @row, @col, 2, @width, color #, Ncurses::A_REVERSE
-      #@form = RubyCurses::Form.new @window
       @buttonpad.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
@@ -419,6 +437,7 @@ module RubyCurses
       @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
     end
     def button_form_repaint flag = true
+      $log.debug " INSIDE button_form_repaint #{flag} "
       #if flag
         #@form.repaint if flag  #  This paints the outer form not inner
         #@buttonpad.mvwaddch(2, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
@@ -507,8 +526,10 @@ module RubyCurses
             #@form.select_next_field
           else
             # on top button panel - no more buttons, go to tabs first field
-            @current_tab = @old_tab
-            @current_tab.set_focus :FIRST
+            if @old_tab # in case of empty tabbed pane old_tab was nil
+              @current_tab = @old_tab
+              @current_tab.set_focus :FIRST
+            end
           end
         when :NO_PREV_FIELD
           if @current_tab != @form
@@ -518,8 +539,10 @@ module RubyCurses
             @form.req_last_field
           else
             # on top button panel - no prev buttons, go to tabs last field
-            @current_tab = @old_tab
-            @current_tab.set_focus :LAST
+            if @old_tab # in case of one tab
+              @current_tab = @old_tab
+              @current_tab.set_focus :LAST
+            end
           end
         when :UNHANDLED
           $log.debug " unhandled in tabbed pane #{ch}"
@@ -600,7 +623,7 @@ module RubyCurses
     # nested class tab
     # A user created tab, with its own form
     class Tab
-      attr_reader :text
+      attr_accessor :text
       attr_reader :config
       attr_reader :component
       attr_accessor :form
