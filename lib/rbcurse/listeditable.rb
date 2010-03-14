@@ -163,10 +163,10 @@ module ListEditable
       return -1 if !@editable 
       return if $kill_ring.empty?
       row = $kill_ring.last
+      index = where
       case row
       when Array
         #index = @current_index
-        index = where
         row.each{ |r|
           @list.insert index, r.dup
           index += 1
