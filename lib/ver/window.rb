@@ -16,7 +16,10 @@ module VER
       @panel = Ncurses::Panel.new_panel(@window)
       init_vars
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
-      $error_message_row = $status_message_row = Ncurses.LINES-1
+      #$error_message_row = $status_message_row = Ncurses.LINES-1
+      $error_message_row ||= 23
+      $error_message_col ||= 1
+
 
     end
     def init_vars
@@ -25,6 +28,7 @@ module VER
       @stack = []
       @name ||="#{self}"
       @modified = true
+      $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
     end
     ##
     # this is an alternative constructor
