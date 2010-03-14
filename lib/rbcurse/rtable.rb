@@ -555,6 +555,7 @@ module RubyCurses
         ret = process_key ch, self
         return :UNHANDLED if ret == :UNHANDLED
       end
+      return 0 # added 2010-03-14 13:27 
     end
     def editing_canceled
       return unless @cell_editing_allowed
