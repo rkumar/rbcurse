@@ -201,6 +201,8 @@ module RubyCurses
       # note this is the index it was at. 
       fire_event @deleted_tab, index, :DELETE
     end
+    ## 
+    # Move this fun stuff to a util class. TODO
     # If tab deleted accidentally, undelete it
     # Okay, i just can stop myself from having a little fun
     def undelete_tab
@@ -226,6 +228,7 @@ module RubyCurses
     ##
     # prompts for a new label for a tab - taking care of mnemonics if ampersand present
     # Currently, mapped to 'C' and 'cw' when cursor is on a label
+    # Perhaps some of this kind of utility stuff needs to go into a util class.
     #
     def change_label
       ix = highlighted_tab_index
