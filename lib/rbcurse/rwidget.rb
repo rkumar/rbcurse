@@ -214,8 +214,8 @@ module RubyCurses
       end
       case keycode
       when String
-        $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
         keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
+        $log.debug " #{name} Widg String called bind_key BIND #{keycode}, #{keycode_tos(keycode)}  "
         @key_handler[keycode] = blk
       when Array
         # for starters lets try with 2 keys only
