@@ -30,10 +30,10 @@ module RubyCurses
     include ListScrollable
 
     def initialize form = nil, config={}, &block
-      #@list = []
+
       super
       @bmanager = BufferManager.new self
-      #@content_rows = @list.length
+
     end
     def init_vars
       super
