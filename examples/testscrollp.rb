@@ -62,7 +62,7 @@ if $0 == __FILE__
         undom = SimpleUndo.new @textview
         #@textview.show_caret=true
 
-      @help = "F1 to quit. #{$0} This is a test of TextView inside a scrollpane. M-n M-p M-h M-l M-< M-> "
+      @help = "F1 to quit. #{$0} TextView inside scrollpane. M-n M-p M-h M-l M-< M->, e to open file, : for menu""
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r+1, "col" => 2, "color" => "yellow"}
 
       @form.repaint
