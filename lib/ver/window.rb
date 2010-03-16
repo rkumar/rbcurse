@@ -46,7 +46,7 @@ module VER
     # this is an alternative constructor
     # created if you don't want to create a hash first
     def self.create_window(h=0, w=0, t=0, l=0)
-      layout = { :height => 0, :width => 0, :top => 0, :left => 0 }
+      layout = { :height => h, :width => w, :top => t, :left => l }
       @window = Window.new(layout)
       return @window
     end
