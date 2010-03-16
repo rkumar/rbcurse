@@ -15,6 +15,8 @@
 NOTE: 
     There are going to be tricky cases we have to deal with such as objects that start in the viewable
 area but finish outside, or vice versa.
+
+    What if we wish some static text to be displayed at top or bottom of ScrollForm
 =end
 require 'rubygems'
 require 'ncurses'
@@ -26,11 +28,14 @@ include RubyCurses
 module RubyCurses
   extend self
   class ScrollForm < RubyCurses::Form
+    # the pad prints from this col to window
     attr_accessor :pmincol # advance / scroll columns
+    # the pad prints from this row to window, usually 0
     attr_accessor :pminrow # advance / scroll rows (vertically)
     attr_accessor :display_w # width of screen display
     attr_accessor :display_h # ht of screen display
-    attr_accessor :scroll_unit
+    attr_accessor :row_offset, :col_offset
+    attr_accessor :scroll_unit # by how much should be scroll
     attr_reader :orig_top, :orig_left
     attr_reader :window
     attr_accessor :name
@@ -39,16 +44,51 @@ module RubyCurses
       @target_window = win
       super
       @pminrow = @pmincol = 0
+      @row_offset = @col_offset = 0
       @scroll_unit = 3
       @cols_panned = @rows_panned = 0
+      @repaint_all = true
+
+      # take display dimensions from window. It is safe to override immediately after form creation
+      @display_h = win.height
+      @display_w = win.width
+      @display_h = (Ncurses.LINES - win.top - 2) if @display_h == 0
+      @display_w = (Ncurses.COLS - win.left - 2) if @display_w == 0
+      
+      init_vars
     end
-    def set_layout(h, w, t, l)
+    def init_vars
+      bind_key(?\M-h, :scroll_left)
+      bind_key(?\M-l, :scroll_right)
+      bind_key(?\M-n, :scroll_down)
+      bind_key(?\M-p, :scroll_up)
+    end
+    def should_print_border flag=true
+      @print_border_flag = flag
+      @row_offset = @col_offset = 1
+    end
+    # This is how we set size of pad and where it prints on screen
+    # This is all that's needed after constructor.
+    # @param [Fixnum] t top (row on screen to print pad on)
+    # @param [Fixnum] l left (col on screen to print)
+    # @param [Fixnum] h height (how many lines in Pad, usually more that screens actual height)
+    # @param [Fixnum] w width (how many cols in Pad, often more than screens width)
+    #
+    def set_pad_dimensions(t, l, h, w )
       @pad_h = h
       @pad_w = w
       @top = @orig_top = t
       @left = @orig_left = l
+      create_pad
     end
+    ## 
+    # create a pad to work on. 
+    # XXX We reuse window, which is already the main window
+    # So if we try creating pad later, then old external window is used.
+    # However, many methods in superclass operate on window so we needed to overwrite. What do i do ?
+    private
     def create_pad
+      raise "Pad already created" if @pad
       r = @top
       c = @left
       layout = { :height => @pad_h, :width => @pad_w, :top => r, :left => c } 
@@ -56,57 +96,78 @@ module RubyCurses
   
       @window.name = "Pad::ScrollPad" # 2010-02-02 20:01 
       @name = "Form::ScrollForm"
+      @pad = @window
       return @window
+    end
+    public
+    def scroll_right
+      s = @scroll_unit + $multiplier; $multiplier = 0
+      return false if !validate_scroll_col(@pmincol + s)
+      @pmincol += @scroll_unit # some check is required or we'll crash
+      @cols_panned -= s
+      $log.debug " handled ch M-l in ScrollForm"
+      @window.modified = true
+      return 0
+    end
+    def scroll_left
+      s = @scroll_unit + $multiplier; $multiplier = 0
+      return false if !validate_scroll_col(@pmincol - s)
+      @pmincol -= @scroll_unit # some check is required or we'll crash
+      @cols_panned += s
+      @window.modified = true
+      return 0
+    end
+    def scroll_down
+      s = @scroll_unit + $multiplier; $multiplier = 0
+      return false if !validate_scroll_row(@pminrow + s)
+      @pminrow += @scroll_unit # some check is required or we'll crash
+      @rows_panned -= s
+      @window.modified = true
+      #@repaint_all = true
+      return 0
+    end
+    def scroll_up
+      s = @scroll_unit + $multiplier; $multiplier = 0
+      return false if !validate_scroll_row(@pminrow - s)
+      @pminrow -= @scroll_unit # some check is required or we'll crash
+      @rows_panned += s
+      @window.modified = true
+      #@repaint_all = true
+      return 0
     end
     ## ScrollForm handle key, scrolling
     def handle_key ch
-      $log.debug " inside ScrollForm handlekey #{ch} "
-      # do the scrolling thing here top left prow and pcol of pad to be done
-      # # XXX TODO check whether we can scroll before incrementing esp cols_panned etc
-      case ch
-      when ?\M-l.getbyte(0)
-        return false if !validate_scroll_col(@pmincol + @scroll_unit)
-        @pmincol += @scroll_unit # some check is required or we'll crash
-        @cols_panned -= @scroll_unit
-        $log.debug " handled ch M-l in ScrollForm"
-        @window.modified = true
-        return 0
-      when ?\M-h.getbyte(0)
-        return false if !validate_scroll_col(@pmincol - @scroll_unit)
-        @pmincol -= @scroll_unit # some check is required or we'll crash
-        @cols_panned += @scroll_unit
-        $log.debug " handled ch M-h in ScrollForm"
-        @window.modified = true
-        return 0
-      when ?\M-n.getbyte(0)
-        return false if !validate_scroll_row(@pminrow + @scroll_unit)
-        @pminrow += @scroll_unit # some check is required or we'll crash
-        @rows_panned -= @scroll_unit
-        @window.modified = true
-        $log.debug " M-n #{pminrow}  #{rows_panned} "
-        #repaint
-        return 0
-      when ?\M-p.getbyte(0)
-        return false if !validate_scroll_row(@pminrow - @scroll_unit)
-        @pminrow -= @scroll_unit # some check is required or we'll crash
-        @rows_panned += @scroll_unit
-        @window.modified = true
-        #repaint
-        return 0
-      end
+      $log.debug " inside ScrollForm handle_key #{ch} "
+      ret = process_key ch, self # field
+      # some methods return 0 or false.
+      return ret unless ret == :UNHANDLED
 
       super
     end
+    # print a border on the main window, just for kicks
+    def print_border
+      $log.debug " SCROLL print_border ..."
+      #@window.print_border_only(@top-@rows_panned, @left+@cols_panned, @display_h, @display_w, $datacolor)
+      @target_window.print_border_only(@top, @left, @display_h, @display_w+1, $datacolor)
+    end
+    # XXX what if we want a static area at bottom ?
     # maybe we should rename targetwindow to window
     #  and window to pad
     #  super may need target window
     def repaint
+      #unless @pad
+        #create_pad
+      #end
+      print_border if @repaint_all and @print_border_flag
       $log.debug " scrollForm repaint calling parent #{@row} #{@col} "
       super
       prefresh
-      @target_window.wmove @row+@rows_panned, @col+@cols_panned
+      @target_window.wmove @row+@rows_panned+@row_offset, @col+@cols_panned+@col_offset
       @window.modified = false
+      @repaint_all = false
     end
+    ## refresh pad onto window
+    # I am now copying onto main window, else prefresh has funny effects
     def prefresh
       ## reduce so we don't go off in top+h and top+w
       $log.debug "  start ret = @buttonpad.prefresh( #{@pminrow} , #{@pmincol} , #{@top} , #{@left} , top + #{@display_h} left + #{@display_w} ) "
@@ -136,11 +197,16 @@ module RubyCurses
       $log.debug "   ret = @window.prefresh( #{@pminrow} , #{@pmincol} , #{@top} , #{@left} , #{@top} + #{@display_h}, #{@left} + #{@display_w} ) "
       omit = 0
       # this works but if want to avoid copying border
-      ret = @window.prefresh(@pminrow, @pmincol, @top, @left, @top + @display_h , @left + @display_w)
+      #ret = @window.prefresh(@pminrow, @pmincol, @top+@row_offset, @left+@col_offset, @top + @display_h - @row_offset , @left + @display_w - @col_offset)
+      #
+      ## Haha , we are back to the old notorious copywin which has given mankind
+      # so much grief that it should be removed in the next round of creation.
+      ret = @window.copywin(@target_window.get_window, @pminrow, @pmincol, @top+@row_offset, @left+@col_offset, 
+            @top + @display_h - @row_offset , @left + @display_w - @col_offset,  0)
 
-      $log.debug " ret = #{ret} "
-      # need to refresh the form after repaint over
+      $log.debug " copywin ret = #{ret} "
     end
+    private
     def validate_scroll_row minrow
        return false if minrow < 0
       if minrow + @display_h > @orig_top + @pad_h
@@ -186,12 +252,18 @@ module RubyCurses
       end
       super rr, cc
     end
+    public
     def add_widget w
       super
-      #$log.debug " inside add_widget #{w.name}  pad w #{@pad_w} #{w.col} "
+      $log.debug " inside add_widget #{w.name}  pad w #{@pad_w} #{w.col}, #{@pad_h}  "
       if w.col >= @pad_w
         @pad_w += 10 # XXX currently just a guess value, we need length and maybe some extra
-        @window.wresize(@pad_h, @pad_w)
+        @window.wresize(@pad_h, @pad_w) if @pad
+      end
+      if w.row >= @pad_h
+        @pad_h += 10 # XXX currently just a guess value, we need length and maybe some extra
+        $log.debug " SCROLL add_widget ..."
+        @window.wresize(@pad_h, @pad_w) if @pad
       end
     end
     ## Is a component visible, typically used to prevent traversal into the field
