@@ -1221,7 +1221,7 @@ module RubyCurses
       if focusable?(f)
         @active_index = ix0
         @row, @col = f.rowcol
-#       $log.debug "insdie sele nxt field : ROW #{@row} COL #{@col} " 
+       #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
         @window.wmove @row, @col
         on_enter f
         f.curpos = 0
