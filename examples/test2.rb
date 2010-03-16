@@ -5,10 +5,8 @@ require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rwidget'
-#require 'rbcurse/oldrtextarea'
 require 'rbcurse/rtextarea'
 require 'rbcurse/rtextview'
-#require 'rbcurse/rtestwidget'
 require 'rbcurse/rmenu'
 require 'rbcurse/rcombo'
 require 'rbcurse/listcellrenderer'
@@ -16,7 +14,6 @@ require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
 require 'qdfilechooser'
-#require 'rbcurse/oldrlistbox'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rmessagebox'
 if $0 == __FILE__
@@ -25,7 +22,8 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("v#{$0}.log")
+    #$log = Logger.new("v#{$0}.log")
+    $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window
@@ -35,7 +33,7 @@ if $0 == __FILE__
 
     catch(:close) do
       colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors  --------- #{@window} "
+      $log.debug "START #{colors} colors test2.rb --------- #{@window} "
       @form = Form.new @window
       @form.window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
       r = 1; fc = 12;
