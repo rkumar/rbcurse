@@ -1090,7 +1090,9 @@ module RubyCurses
         end
       end
       return @widgets.length-1
-   end
+    end
+    alias :add :add_widget
+
     # remove a widget
     #  added 2008-12-09 12:18 
    def remove_widget widget
