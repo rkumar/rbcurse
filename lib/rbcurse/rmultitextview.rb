@@ -1,6 +1,9 @@
 =begin
   * Name: MultiTextView 
   * Description   View text in this widget for multiple files
+  * This differs from multicontainer in that since all components are textviews, so they
+  * are all gauranteed to be non-editable and thus we can map many more keys.
+  * MultiContainer can only map Ctrl and Alt (Meta) keys.
   * Author: rkumar (arunachalesha)
   * file created 2010-03-11 08:05 
   --------
@@ -145,7 +148,14 @@ module RubyCurses
       end
     end
     def buffers_list
-      $log.debug " TODO buffers_list: #{@bmanager.size}  "
+      menu = PromptMenu.new self 
+      @bmanager.each_with_index{ |b, ix|
+        aproc = Proc.new { buffer_at(ix) }
+        name = b.title
+        num = ix + 1
+        menu.add(menu.create_mitem( num.to_s, name, "Switched to buffer #{ix}", aproc ))
+      }
+      menu.display @form.window, $error_message_row, $error_message_col, $datacolor
     end
     # prompts user for filename and opens in buffer
     # Like vim's :e
@@ -171,6 +181,11 @@ module RubyCurses
         return -1
       end
     end
+    def buffer_at index
+      @current_buffer = @bmanager.element_at index
+      $log.debug " buffer_last got #{@current_buffer} "
+      set_current_buffer
+    end
     def set_current_buffer
       @current_index = @current_buffer.current_index
       @curpos = @current_buffer.curpos
@@ -186,11 +201,18 @@ module RubyCurses
   # Instantiated at startup of MultiTextView
   #
   class BufferManager
+    include Enumerable
     def initialize source
       @source = source
       @buffers = [] # contains RBuffer
       @counter = 0
       # for each buffer i need to store data, current_index (row), curpos (col offset) and title (filename).
+    end
+    def element_at index
+      @buffers[index]
+    end
+    def each
+      @buffers.each {|k| yield(k)}
     end
     ##
     # @return [RBuffer] current buffer/file
