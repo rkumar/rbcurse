@@ -46,7 +46,7 @@ if $0 == __FILE__
         texta << "Hello World"
         ctr += 1
       end
-      @help = "q to quit. M-a to open new component. M-: for menu  #{$0} "
+      @help = "F1 to quit. M-a to open new component. M-: for menu  #{$0} "
       RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
 
       @form.repaint
