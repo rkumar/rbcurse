@@ -747,6 +747,10 @@ module RubyCurses
     end # class Tab
 
   end # class Tabbedpane
+
+  ## An extension of Form that only displays and focuses on visible widgets
+  #  This is minimal, and is being expanded upon as a separate class in rscrollform.rb
+  #
   class ScrollForm < RubyCurses::Form
     attr_accessor :pmincol # advance / scroll columns
     attr_accessor :pminrow # advance / scroll rows (vertically)
@@ -804,12 +808,14 @@ module RubyCurses
       when ?\M-n.getbyte(0)
         return false if !validate_scroll_row(@pminrow + @scroll_ctr)
         @pminrow += @scroll_ctr # some check is required or we'll crash
-        @rows_panned += @scroll_ctr
+        @rows_panned -= @scroll_ctr
+        @window.modified = true
         return 0
       when ?\M-p.getbyte(0)
         return false if !validate_scroll_row(@pminrow - @scroll_ctr)
         @pminrow -= @scroll_ctr # some check is required or we'll crash
-        @rows_panned -= @scroll_ctr
+        @rows_panned += @scroll_ctr
+        @window.modified = true
         return 0
       end
 
