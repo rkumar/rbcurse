@@ -69,14 +69,27 @@ applications.
   vertical scrolling
 * Scrollpanes which can contain textviews, textareas, listboxes.
 * Splitpanes which can contain scrollpanes, textviews/areas, listboxes *or splitpanes* ...
+* MultiContainer = add any number of objects to it (such as tables or text objects) and cycle through them
+  (saves screen estate)
+* MultiTextView - have multiple files open for viewing in one component. Since these are readonly files, one can map a lot of single-keys as in vim for operating and cycling through buffers.
+* Textview - editable option using vim like keys.
+* PromptMenu - A simple interactive menu like the `most` application. Saves on allocating keybindings and memorizing them.
+* multiple key bindings for Procs, block and symbols (as in vim and emacs: `C-x C-f` or `15dd`)
+* Kill-ring concept of emacs for cut-paste operations
+* Unlimited undo and redo in TextArea (needs to be switched on at present on instance basis)
+* Numeric arguments. (vim: 25dd etc. Or in an editable box, emacs's C-u or Alt-1..9)
 * Various others, too
 
 Above may be created using DSL like syntax, or hashes, and modified at
-will/runtime. Very flexible unlike ncurses forms and fields.
+runtime. Very flexible unlike ncurses forms and fields.
 
 ## Current work
 
-After a major rewrite and simplification of internal buffering, I still need to make relevant changes to TabbedPane and Table classes. Then testing all samples, making a new sql client app.
+I've just added vi and emacs key bindings to some classes, multiple object containers such as MultiContainer
+and MultiTextView. Emacs like kill-ring in TextArea and TextView. Tabbedpane can have unlimited tabs, we can scroll the tabs. Bunch of other stuff. Multiple keys can be bound to a Proc or symbol as in emacs and vim (dd or C-x C-f).
+
+2010-03-16 09:32 : Probably now will make a demo using ScrollForm - a form that takes more fields/objects that 
+ can be viewed at a go. Then onto testing what's there, before making a stable release.
 
 ## Sample programs:
 
