@@ -39,16 +39,16 @@ if $0 == __FILE__
       # pad coordinates - the virtual area larger than screen
       h = 50
       w = 150 
-      row = 0
-      col = 0
-      @form.set_layout(h, w, row, col)
+      row = 1
+      col = 1
+      @form.set_pad_dimensions(row, col, h, w)
       # dimensions of screen area onto which pad will paint
-      @form.display_h = 20
-      @form.display_w = 100
-      @buttonpad = @form.create_pad
+      @form.should_print_border(true)
+      #@buttonpad = @form.create_pad
 
-      @form.window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
-      r = row+2; fc = 12;
+      #@window.print_border_only 0, 0, 20+2, 100+2, $datacolor
+      @window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
+      r = row + 0; fc = 12;
       #mnemonics = %w[ n l r p]
       %w[ name line regex password street city country zip hobbies homepage facebook twitter buzz gmail ].each_with_index do |w,i|
         field = Field.new @form do
@@ -100,6 +100,7 @@ if $0 == __FILE__
         @form.handle_key(ch)
         @form.repaint
         @window.wrefresh
+        Ncurses::Panel.update_panels
       end
     end
   rescue => ex
