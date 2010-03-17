@@ -664,16 +664,20 @@ module RubyCurses
     def putch char
        _maxlen = @maxlen || @width - 2
       @buffer ||= @list[@current_index]
-        return -1 if !@editable #or @buffer.length >= _maxlen
-      if @chars_allowed != nil
-        return if char.match(@chars_allowed).nil?
-      end
+      return -1 if !@editable #or @buffer.length >= _maxlen
+      #if @chars_allowed != nil # remove useless functionality
+        #return if char.match(@chars_allowed).nil?
+      #end
       raise "putch expects only one char" if char.length != 1
       oldcurpos = @curpos
-      $log.debug "putch : pr:#{@current_index}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
-      @buffer.insert(@curpos, char)
+      #$log.debug "putch : pr:#{@current_index}, cp:#{@curpos}, char:#{char}, lc:#{@buffer[-1]}, buf:(#{@buffer})"
+      if @overwrite_mode
+        @buffer[@curpos] = char
+      else
+        @buffer.insert(@curpos, char)
+      end
       @curpos += 1 
-      $log.debug "putch INS: cp:#{@curpos}, max:#{_maxlen}, buf:(#{@buffer.length})"
+      #$log.debug "putch INS: cp:#{@curpos}, max:#{_maxlen}, buf:(#{@buffer.length})"
       if @curpos-1 > _maxlen or @buffer.length()-1 > _maxlen
         lastchars, lastspace = push_last_word @current_index
         #$log.debug "last sapce #{lastspace}, lastchars:#{lastchars},lc:#{lastchars[-1]}, #{@list[@current_index]} "
