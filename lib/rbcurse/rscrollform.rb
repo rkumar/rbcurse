@@ -159,9 +159,11 @@ module RubyCurses
         #create_pad
       #end
       print_border if @repaint_all and @print_border_flag
-      $log.debug " scrollForm repaint calling parent #{@row} #{@col} "
+      $log.debug " scrollForm repaint calling parent #{@row} #{@col}+ #{@cols_panned} #{@col_offset} "
+      _col = @orig_left
       super
       prefresh
+      $log.debug " @target_window.wmove #{@row+@rows_panned+@row_offset}, #{@col+@cols_panned+@col_offset}  "
       @target_window.wmove @row+@rows_panned+@row_offset, @col+@cols_panned+@col_offset
       @window.modified = false
       @repaint_all = false
@@ -228,12 +230,12 @@ module RubyCurses
     # when tabbing through buttons, we need to account for all that panning/scrolling goin' on
     # this is typically called by putchar or putc in editable components like field.
     def setrowcol r, c
-      $log.debug " SCROLL setrowcol #{r},  #{c} "
+      $log.debug " SCROLL setrowcol #{r},  #{c} + #{@cols_panned}"
       # aha ! here's where i can check whether the cursor is falling off the viewable area
       cc = nil
       rr = nil
       if c
-        cc = c + @cols_panned
+        cc = c #+ @cols_panned
         if c+@cols_panned < @orig_left
           # this essentially means this widget (button) is not in view, its off to the left
           $log.debug " setrowcol OVERRIDE #{c} #{@cols_panned} < #{@orig_left} "
