@@ -42,12 +42,13 @@ module RubyCurses
     dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :footer_attrib   # bold, reverse, normal added 2009-12-26 18:25 was this missing or delib
     dsl_accessor :list    # the array of data to be sent by user
-    dsl_accessor :maxlen    # the array of data to be sent by user
+    dsl_accessor :maxlen    # max display length of a row/line 
     attr_reader :toprow
     dsl_accessor :auto_scroll # boolean, keeps view at end as data is inserted.
     dsl_accessor :print_footer
     dsl_accessor :editable          # allow editing
     dsl_accessor :suppress_borders # added 2010-02-12 12:21 values true or false
+    attr_accessor :overwrite_mode # boolean: insert or overwrite, default false.
 
     def initialize form = nil, config={}, &block
       @focusable = true
@@ -152,7 +153,7 @@ module RubyCurses
         @list << data
       end
       set_modified  # added 2009-03-07 18:29 
-      goto_end if @auto_scroll # to test out.
+      goto_end if @auto_scroll 
       self
     end
     def wrap_para line=@current_index
