@@ -1688,6 +1688,7 @@ module RubyCurses
     #attr_reader :curpos              # cursor position in buffer current, in WIDGET 
     attr_accessor :datatype              # crrently set during set_buffer
     attr_reader :original_value              # value on entering field
+    attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
 
     def initialize form, config={}, &block
       @form = form
@@ -1732,11 +1733,17 @@ module RubyCurses
       end
     end
     def putch char
-      return -1 if !@editable or @buffer.length >= @maxlen
+      return -1 if !@editable 
+      return -1 if !@overwrite_mode and @buffer.length >= @maxlen
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
       end
-      @buffer.insert(@curpos, char)
+      # added insert or overwrite mode 2010-03-17 20:11 
+      if @overwrite_mode
+        @buffer[@curpos] = char
+      else
+        @buffer.insert(@curpos, char)
+      end
       @curpos += 1 if @curpos < @maxlen
       @modified = true
       $log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
