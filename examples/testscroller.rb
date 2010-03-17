@@ -47,15 +47,16 @@ if $0 == __FILE__
       #@buttonpad = @form.create_pad
 
       #@window.print_border_only 0, 0, 20+2, 100+2, $datacolor
-      @window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
+      @window.printstring 0, 30, "Demo of ScrollForm ", $normalcolor, 'reverse'
       r = row + 0; fc = 12;
       #mnemonics = %w[ n l r p]
-      %w[ name line regex password street city country zip hobbies homepage facebook twitter buzz gmail ].each_with_index do |w,i|
+      %w[ name detail descr password street city country zip hobbies homepage facebook twitter buzz gmail ].each_with_index do |w,i|
         field = Field.new @form do
           name   w 
           row  r 
           col  fc 
           display_length  30
+          maxlen  30
           #set_buffer "abcd " 
           #set_label Label.new @form, {'text' => w, 'color'=>'cyan','mnemonic'=> mnemonics[i]}
           set_label Label.new @form, {'text' => w, 'color'=>'cyan'}
@@ -71,12 +72,14 @@ if $0 == __FILE__
           row  r 
           col  fc 
           display_length  30
+          maxlen  30
           bgcolor 'white'
           color 'black'
           #set_buffer "abcd " 
           #set_label Label.new @form, {'text' => w, 'color'=>'cyan','mnemonic'=> mnemonics[i]}
           set_label Label.new @form, {'text' => w, 'color'=>'cyan'}
         end
+        field.overwrite_mode = true
         r += 3
       end
 
@@ -90,7 +93,8 @@ if $0 == __FILE__
       #@form.by_name["line"].display_length = 3
       #@form.by_name["line"].maxlen = 3
       #@form.by_name["line"].set_buffer  "24"
-      #@form.by_name["name"].set_buffer  "Not focusable"
+      @form.by_name["detail"].set_buffer  "This form has more components"
+      @form.by_name["descr"].set_buffer  "Use M-l/h and M-n/p for scrolling"
       #@form.by_name["name"].set_focusable(false)
       #@form.by_name["line"].chars_allowed = /\d/
       ##@form.by_name["regex"].type(:ALPHA)
