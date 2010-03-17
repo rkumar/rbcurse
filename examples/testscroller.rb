@@ -62,6 +62,23 @@ if $0 == __FILE__
         end
         r += 3
       end
+        r = row
+        fc = 120
+        # XXX while typing in a field, cursor goes off in this case
+      %w[ operating_system version application build release shell band instrument guitarist drummer ].each_with_index do |w,i|
+        field = Field.new @form do
+          name   w 
+          row  r 
+          col  fc 
+          display_length  30
+          bgcolor 'white'
+          color 'black'
+          #set_buffer "abcd " 
+          #set_label Label.new @form, {'text' => w, 'color'=>'cyan','mnemonic'=> mnemonics[i]}
+          set_label Label.new @form, {'text' => w, 'color'=>'cyan'}
+        end
+        r += 3
+      end
 
       $message = Variable.new
       $message.value = "Message Comes Here"
