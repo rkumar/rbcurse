@@ -101,26 +101,38 @@ module RubyCurses
     end
     public
     def scroll_right
-      s = @scroll_unit + $multiplier; $multiplier = 0
+      s = @scroll_unit + $multiplier
+      $log.debug " scroll_right #{s} m: #{$multiplier} "
+      $multiplier = 0
       return false if !validate_scroll_col(@pmincol + s)
-      @pmincol += @scroll_unit # some check is required or we'll crash
+      @pmincol += s # some check is required or we'll crash
       @cols_panned -= s
       $log.debug " handled ch M-l in ScrollForm"
       @window.modified = true
       return 0
     end
+    ## 
+    # validate fails once unit + mult > 1. Then it won't go further
+    # unit should be one by default.
     def scroll_left
-      s = @scroll_unit + $multiplier; $multiplier = 0
-      return false if !validate_scroll_col(@pmincol - s)
-      @pmincol -= @scroll_unit # some check is required or we'll crash
-      @cols_panned += s
+      s = @scroll_unit + $multiplier
+      $log.debug " scroll_left #{s} m: #{$multiplier} "
+      $multiplier = 0
+      #return false if !validate_scroll_col(@pmincol - s)
+      if !validate_scroll_col(@pmincol - s)
+        @pmincol = 0
+        @cols_panned  = 0 
+      else
+        @pmincol -= s # some check is required or we'll crash
+        @cols_panned += s
+      end
       @window.modified = true
       return 0
     end
     def scroll_down
       s = @scroll_unit + $multiplier; $multiplier = 0
       return false if !validate_scroll_row(@pminrow + s)
-      @pminrow += @scroll_unit # some check is required or we'll crash
+      @pminrow += s # some check is required or we'll crash
       @rows_panned -= s
       @window.modified = true
       #@repaint_all = true
@@ -128,15 +140,24 @@ module RubyCurses
     end
     def scroll_up
       s = @scroll_unit + $multiplier; $multiplier = 0
-      return false if !validate_scroll_row(@pminrow - s)
-      @pminrow -= @scroll_unit # some check is required or we'll crash
-      @rows_panned += s
+      $log.debug " scroll_up #{s} "
+      #return false if !validate_scroll_row(@pminrow - s)
+      if !validate_scroll_row(@pminrow - s)
+        @pminrow = 0
+        @rows_panned = 0
+        $log.debug " !valid #{@pminrow} "
+      else
+        @pminrow -= s # some check is required or we'll crash
+        @rows_panned += s
+        $log.debug " valid #{@pminrow} "
+      end
       @window.modified = true
       #@repaint_all = true
       return 0
     end
     ## ScrollForm handle key, scrolling
-    def handle_key ch
+    # since we call super later so we miss digit arguments
+    def OLDhandle_key ch
       $log.debug " inside ScrollForm handle_key #{ch} "
       ret = process_key ch, self # field
       # some methods return 0 or false.
@@ -150,6 +171,10 @@ module RubyCurses
       #@window.print_border_only(@top-@rows_panned, @left+@cols_panned, @display_h, @display_w, $datacolor)
       @target_window.print_border_only(@top, @left, @display_h, @display_w+1, $datacolor)
     end
+    def print_footer
+      footer = "Lines %d-%d (%d)  Cols %d-%d (%d) " % [ @pminrow, @pminrow + @display_h, @orig_top + @pad_h, @pmincol, @pmincol + @display_w, @orig_left + @pad_w ] 
+      @target_window.printstring(@top +@display_h, @left + 1, footer, $datacolor)
+    end
     # XXX what if we want a static area at bottom ?
     # maybe we should rename targetwindow to window
     #  and window to pad
@@ -159,6 +184,7 @@ module RubyCurses
         #create_pad
       #end
       print_border if @repaint_all and @print_border_flag
+      print_footer
       $log.debug " scrollForm repaint calling parent #{@row} #{@col}+ #{@cols_panned} #{@col_offset} "
       _col = @orig_left
       super
@@ -229,7 +255,8 @@ module RubyCurses
     end
     # when tabbing through buttons, we need to account for all that panning/scrolling goin' on
     # this is typically called by putchar or putc in editable components like field.
-    def setrowcol r, c
+    # XXX DELETE THIS IS SUPPOSE
+    def OLDsetrowcol r, c
       $log.debug " SCROLL setrowcol #{r},  #{c} + #{@cols_panned}"
       # aha ! here's where i can check whether the cursor is falling off the viewable area
       cc = nil
