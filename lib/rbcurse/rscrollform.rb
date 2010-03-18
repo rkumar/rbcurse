@@ -155,16 +155,6 @@ module RubyCurses
       #@repaint_all = true
       return 0
     end
-    ## ScrollForm handle key, scrolling
-    # since we call super later so we miss digit arguments
-    def OLDhandle_key ch
-      $log.debug " inside ScrollForm handle_key #{ch} "
-      ret = process_key ch, self # field
-      # some methods return 0 or false.
-      return ret unless ret == :UNHANDLED
-
-      super
-    end
     # print a border on the main window, just for kicks
     def print_border
       $log.debug " SCROLL print_border ..."
@@ -173,23 +163,21 @@ module RubyCurses
     end
     def print_footer
       footer = "Lines %d-%d (%d)  Cols %d-%d (%d) " % [ @pminrow, @pminrow + @display_h, @orig_top + @pad_h, @pmincol, @pmincol + @display_w, @orig_left + @pad_w ] 
-      @target_window.printstring(@top +@display_h, @left + 1, footer, $datacolor)
+      @target_window.printstring(@top +@display_h, @left + 3, footer, $datacolor)
     end
     # XXX what if we want a static area at bottom ?
     # maybe we should rename targetwindow to window
     #  and window to pad
     #  super may need target window
     def repaint
-      #unless @pad
-        #create_pad
-      #end
       print_border if @repaint_all and @print_border_flag
       print_footer
       $log.debug " scrollForm repaint calling parent #{@row} #{@col}+ #{@cols_panned} #{@col_offset} "
-      _col = @orig_left
       super
       prefresh
-      $log.debug " @target_window.wmove #{@row+@rows_panned+@row_offset}, #{@col+@cols_panned+@col_offset}  "
+      _print_more_data_marker true
+      _print_more_columns_marker true
+      #$log.debug " @target_window.wmove #{@row+@rows_panned+@row_offset}, #{@col+@cols_panned+@col_offset}  "
       @target_window.wmove @row+@rows_panned+@row_offset, @col+@cols_panned+@col_offset
       @window.modified = false
       @repaint_all = false
@@ -312,20 +300,21 @@ module RubyCurses
     # @return [index, -1] -1 if none visible, else index/offset
     def first_visible_component_index
       @widgets.each_with_index do |w, ix|
-        return ix if visible?(w)
+        return ix if visible?(w) and focusable?(w)
       end
       return -1
     end
     def last_visible_component_index
       ret = -1
       @widgets.each_with_index do |w, ix|
-        $log.debug " reverse last vis #{ix} , #{w} : #{visible?(w)} "
-        ret = ix if visible?(w)
+        ret = ix if visible?(w) and focusable?(w)
       end
       return ret
     end
     def req_first_field
-      select_field(first_visible_component_index)
+      index = first_visible_component_index
+      ret = select_field(index)
+      return ret
     end
     def req_last_field
       select_field(last_visible_component_index)
@@ -334,6 +323,42 @@ module RubyCurses
       w.focusable and visible?(w)
     end
 
+    # XXX needs to be called from repaint and print_border
+    # @param [boolean] should marker be printed or not
+    def _print_more_data_marker tf
+      tf = false
+      # the bottom marker meaning there's more data below
+      if @pminrow + @display_h < @pad_h
+        tf = true
+      end
+      marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
+      h = @display_h; w = @display_w
+      r = @orig_top
+      c = @orig_left
+      $log.debug " more data #{r+h-1}, #{c+w-1} : row #{r} h #{h} w #{w} col #{c} "
+      @target_window.mvwaddch r+h-1, c+w-0, marker
+      # the top marker to show that there is data above
+      marker = @pminrow > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
+      @target_window.mvwaddch r+1, c+w-0, marker
+    end
+
+    # XXX needs to be called from repaint and print_border
+    # @param [boolean] should marker be printed or not
+    def _print_more_columns_marker tf
+      tf = false
+      if @pmincol + @display_w < @pad_w
+        tf = true
+      end
+      marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
+      h = @display_h; w = @display_w
+      r = @orig_top
+      c = @orig_left
+      @target_window.mvwaddch r+h, c+w-2, marker
+      #
+      # show if columns to left or not
+      marker = @pmincol > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
+      @target_window.mvwaddch r+h, c+1, marker
+    end                                                                                                            
   end # class ScrollF
 
   # the return of the prodigals
