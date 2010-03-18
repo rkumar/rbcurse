@@ -1218,7 +1218,7 @@ module RubyCurses
     def select_field ix0
       #return if @widgets.nil? or @widgets.empty? or !@widgets[ix0].focusable
       return if @widgets.nil? or @widgets.empty? or !focusable?(@widgets[ix0])
-#     $log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
+     #$log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
       f = @widgets[ix0]
       if focusable?(f)
         @active_index = ix0
@@ -1811,7 +1811,7 @@ module RubyCurses
   ##+ currently I've not implemented events with these widgets. 2010-01-03 15:00 
 
   def repaint
-    $log.debug("repaint FIELD: #{id}, #{focusable}")
+    $log.debug("repaint FIELD: #{id}, #{name},  #{focusable}")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
     @display_length = 1 if display_length == 0
@@ -1836,7 +1836,6 @@ module RubyCurses
   end
   def set_focusable(tf)
     @focusable = tf
- #   @form.regenerate_focusables
   end
 
   # field
