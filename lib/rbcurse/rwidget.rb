@@ -1105,7 +1105,7 @@ module RubyCurses
    # form repaint
    # to be called at some interval, such as after each keypress.
     def repaint
-       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} "
+      $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} "
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
@@ -1119,7 +1119,7 @@ module RubyCurses
         # Drat - this line is happeing since components inside a TP are double_buffered
         #x f.buffer_to_screen(pb) if f.is_double_buffered? 
       end
-      #x @window.clear_error # suddenly throwing up on a small pad 2010-03-02 15:22 TPNEW
+      @window.clear_error # suddenly throwing up on a small pad 2010-03-02 15:22 TPNEW
       @window.print_status_message $status_message unless $status_message.nil?
       @window.print_error_message $error_message unless $error_message.nil?
       $error_message = $status_message = nil
