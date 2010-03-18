@@ -76,7 +76,7 @@ begin
   #my_pad.prefresh(0,0, 0,0, Ncurses.LINES,Ncurses.COLS-1);
   #my_form_win.wrefresh();
   @prow = 0; @pcol = 0;
-  my_pad.prefresh(0,0, @startrow ,0, @screenrows,Ncurses.COLS-1);
+  #my_pad.prefresh(0,0, @startrow ,0, @screenrows,Ncurses.COLS-1);
   # trying out overwrite since copywin retuns ERR -1
   #ret = Ncurses.copywin(my_pad, my_form_win, 0,0,@startrow,0, @screenrows, Ncurses.COLS-1, 0)
   ### ret = Ncurses.overwrite(my_pad, my_form_win) # worked
@@ -90,15 +90,17 @@ begin
   while((ch = my_pad.getch()) != KEY_F1 )
     case ch
     when ?j.getbyte(0)
+     @prow += 1 
       #next
       # disallow
       if @prow > textary.count
+        @prow = textary.count
         Ncurses.beep
         next
       end
-     @prow += 1 
     #when KEY_UP
     when ?k.getbyte(0)
+     @prow -= 1 
       #next
       # disallow
       if @prow <= 0
@@ -106,14 +108,13 @@ begin
         @prow = 0
         next
       end
-     @prow -= 1 
     when 32
+      @prow += @screenrows
       if @prow > textary.count
         @prow = textary.count
         Ncurses.beep
         next
       end
-     @prow += @screenrows
     when ?-.getbyte(0)
       if @prow <= 0
         Ncurses.beep
@@ -121,22 +122,27 @@ begin
         next
       end
      @prow -= @screenrows
+    when ?t.getbyte(0)
+        @pcol = @prow = 0
     when ?h.getbyte(0)
       @pcol += 1
     when ?l.getbyte(0)
       @pcol -= 1
+    when ?r.getbyte(0)
+      my_form_win.wclear # 2009-10-10 17:46 
     when KEY_ENTER, 10
       # selection
     when ?q.getbyte(0), ?\,
       break
     end
+    @pcol = 0 if @pcol < 0
     # clear is required but in 1.9.1 there is no prefresh after a clear. screen blanks out totally
-    my_form_win.wclear # 2009-10-10 17:46 
-    my_form_win.werase # 2009-10-10 17:46 
+    #my_form_win.wclear # 2009-10-10 17:46 
+    #my_form_win.werase # 2009-10-10 17:46 
   #  my_pad.prefresh(@prow,@pcol, @startrow,0, @screenrows,Ncurses.COLS-1);
   #ret = Ncurses.copywin(my_pad, my_form_win, @prow,@pcol,@startrow,0, @screenrows, Ncurses.COLS-1, 0)
   #ret = my_pad.copywin( my_form_win, @prow,@pcol,@startrow,0, @screenrows, Ncurses.COLS-1, 0)
-  ret = my_pad.copywin( my_form_win, @prow,@pcol,0,0, @screenrows, screencols, 1)
+  ret = my_pad.copywin( my_form_win, @prow,@pcol,0,0, @screenrows, screencols, 0)
   $log.debug("copywin #{ret} : cols:#{screencols}")
    my_form_win.wrefresh # if i don't put this then upon return the other screen is still shown
                          # till i press a key
