@@ -17,7 +17,7 @@ module VER
       init_vars
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
-      $error_message_row ||= 23
+      $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1
 
 
@@ -354,10 +354,10 @@ module VER
       r = $error_message_row || Ncurses.LINES-1
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
 
-      $log.debug "got ERROR MEASSAGE #{text} row #{r} "
+      $log.debug "got ERROR MESSAGE #{text} row #{r} "
       clear_error r, $datacolor
-      # print it in centre
       printstring r, c, text, color = $promptcolor
+      $error_message_clear_pending = true
     end
     # added by rk 2008-11-29 19:01 
     def print_status_message text=$status_message
@@ -366,11 +366,16 @@ module VER
       # print it in centre
       printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
     end
-    # added by rk 2008-11-29 19:01 
+    # Clear error message printed
+    # I am not only clearing if something was printed. This is since
+    # certain small forms like TabbedForm top form throw an error on printstring.
+    # 
     def clear_error r = $error_message_row, color = $datacolor
+      return unless $error_message_clear_pending
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
       sz = $error_message_size || Ncurses.COLS
       printstring(r, c, "%-*s" % [sz, " "], color)
+      $error_message_clear_pending = false
     end
     ##
     # CAUTION : FOR MESSAGEBOXES ONLY !!!! XXX
