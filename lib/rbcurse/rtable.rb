@@ -132,7 +132,8 @@ module RubyCurses
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def scrollatrow
-      @height -3
+      #@height -3
+      @height -4 # we forgot to remove 1 from height in border.
     end
 
     # 
@@ -162,17 +163,17 @@ module RubyCurses
       create_table_header
     end
     def set_model tm, tcm=nil, lsm=nil
-        table_model tm
-        if tcm.nil?
-          create_default_table_column_model
-        else
-          table_column_model tcm
-        end
-        if lsm.nil?
-          create_default_list_selection_model
-        else
-          list_selection_model lsm
-        end
+      table_model tm
+      if tcm.nil?
+        create_default_table_column_model
+      else
+        table_column_model tcm
+      end
+      if lsm.nil?
+        create_default_list_selection_model
+      else
+        list_selection_model lsm
+      end
       create_table_header
     end
 
@@ -861,24 +862,17 @@ module RubyCurses
             #acolumn = tcm.column(colix)
             #model_index = acolumn.model_index
             content = get_value_at(crow, colix)  # tables
-            #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = get_cell_renderer(crow, colix)
             if renderer.nil?
               renderer = get_default_cell_renderer_for_class(content.class.to_s) if renderer.nil?
               renderer.display_length acolumn.width unless acolumn.nil?
             end
             width = renderer.display_length + @inter_column_spacing
-            #renderer.repaint @graphic, r+hh, c+(colix*11), content, focussed, selected
             acolumn.column_offset = offset
             # trying to ensure that no overprinting
-            #  $log.debug "  c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
-            #  $log.debug "  #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
             if c+offset+width > @col+@width
               _column_scrolling = true
               @_last_column_print = colix
-              #$log.debug " TABLE BREAKING SINCE "
-              #$log.debug " if c+offset+width > @col+@width #{c+offset+width} > #{@col}+#{@width}"
-              #$log.debug " if #{c}+#{offset}+#{width} > @col+@width #{c+offset+width} > #{@col}+#{@width}"
               # experimental to print subset of last
               space_left = (@width-3)-(offset) # 3 due to boundaries
               space_left = 0 if space_left < 0
@@ -946,7 +940,7 @@ module RubyCurses
     end
     def print_border g
       return unless @table_changed
-      g.print_border @row, @col, @height, @width, $datacolor
+      g.print_border @row, @col, @height-1, @width, $datacolor
       return if @table_model.nil?
       rc = @table_model.row_count
       h = scrollatrow()
@@ -955,16 +949,16 @@ module RubyCurses
     # private
     def _print_more_data_marker tf
       marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
-      @graphic.mvwaddch @row+@height-1, @col+@width-1, marker
+      @graphic.mvwaddch @row+@height-2, @col+@width-1, marker
       marker = @toprow > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_VLINE
       @graphic.mvwaddch @row+1, @col+@width-1, marker
     end
     def _print_more_columns_marker tf
       marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
-      @graphic.mvwaddch @row+@height, @col+@width-2, marker
+      @graphic.mvwaddch @row+@height-1, @col+@width-2, marker
       # show if columns to left or not
       marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
-      @graphic.mvwaddch @row+@height, @col+@_first_column_print+1, marker
+      @graphic.mvwaddch @row+@height-1, @col+@_first_column_print+1, marker
     end
     def print_header
       return unless @table_changed
