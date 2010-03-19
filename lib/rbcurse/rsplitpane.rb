@@ -172,14 +172,6 @@ module RubyCurses
       def second_component(comp)
           @second_component = comp;
           @second_component.parent_component = self ## added 2010-01-13 12:54 
-#XXX          subpad                = create_buffer # added 2010-01-06 21:22  BUFFERED  (moved from repaint)
-#XXX           subpad.name           = "#{@name}-SPLITPAD2"
-#XXX          @subform2             = RubyCurses::Form.new subpad # added  2010-01-06 21:22 BUFFERED  (moved from repaint)
-#XXX          @subform2.name = "#{@name}-SPLITFORM2"
-#XXX          comp.set_form(@subform2) # added 2010 BUFFERED
-#XXX          @subform2.parent_form = @form # added 2010 for cursor stuff BUFFERED
-          # adding ext_offsets 2010-02-09 13:39 
-#XXX          $log.debug "SPLP exp_row #{@name} 2  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}  "
           comp.should_create_buffer = @_child_buffering 
           ## jeez, we;ve postponed create of buffer XX
           ## trying out 2010-01-16 12:11 so component does not have to set size
@@ -200,20 +192,10 @@ module RubyCurses
           $log.debug "SPLP exp_col #{@name} 2 #{comp}:  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}  "
           comp.ext_col_offset += @ext_col_offset + @col 
           layout = { :height => @height-1, :width => @width-1, :top => comp.row, :left => comp.col }
-          #_graphic = @graphic._subwin(layout)
-          #raise "graphic nil for comp 2 SPLP" unless _graphic
-          #comp.set_buffering(:target_window => _graphic || @form.window, :bottom => comp.height-1, 
-                             #:right => comp.width-1, :form => @form )
           comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
                              :right => comp.width-1, :form => @form )
-          ## XXX second comps row and col not yet set.
-          # Also since extoffset is accumulated, i can't keep updating it as widths change!
-          #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
-          #                   :right => comp.width-1, :form => @form )
-            #comp.set_buffering(:screen_top => @row, :screen_left => @col)
-            #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
           $log.debug " setting c2 screen_top n left to #{@row} #{@col} "
-            @second_component.set_buffering(:screen_top => @row, :screen_left => @col)
+          @second_component.set_buffering(:screen_top => @row, :screen_left => @col)
           @second_component.min_height ||= 5 # added 2010-01-16 12:37 
           @second_component.min_width ||= 5 # added 2010-01-16 12:37 
       end # second_component
