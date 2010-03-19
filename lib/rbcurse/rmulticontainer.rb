@@ -29,6 +29,7 @@ module RubyCurses
 
     def initialize form = nil, config={}, &block
       @focusable = true
+      @row_offset = @col_offset = 1
       super
       @bmanager = BufferManager.new self
       init_vars
@@ -202,8 +203,8 @@ module RubyCurses
     # @param [Widget] component
     # @param [String] title
     def add component, title
-      component.row = @row+1
-      component.col = @col+1
+      component.row = @row+@row_offset+1
+      component.col = @col+@col_offset+1
       component.width = @width-2
       component.height = @height-2
       component.form = @form
@@ -230,6 +231,18 @@ module RubyCurses
         menu.add(menu.create_mitem( num.to_s, name, "Switched to buffer #{ix}", aproc ))
       }
       menu.display @form.window, $error_message_row, $error_message_col, $datacolor
+    end
+    # required otherwise some components may not get correct cursor position on entry
+    # e.g. table
+    def on_enter
+      set_form_row
+    end
+    def set_form_row
+      if !@current_component.nil?
+        $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
+        @current_component.set_form_row 
+        @current_component.set_form_col 
+      end
     end
   end # class multitextview
   ##
@@ -299,6 +312,7 @@ module RubyCurses
       return anew
     end
     def add component, title=nil
+      $log.debug " ADD H: #{component.height} C: #{component.width} "
       insert component, @buffers.size, title
     end
     def size
