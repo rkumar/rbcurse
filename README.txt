@@ -1,7 +1,7 @@
 = rbcurse
 
-(Currently development is happening on rbcurse19 branch with new widgets
-like scrollpane, splitpane, and reworked tabbedpane.)
+(I have ditched branch rbcurse19 and and working on rfed16. A lot has
+been added there.)
 
 * rbcurse on rubyforge: http://rbcurse.rubyforge.org/
 
