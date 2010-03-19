@@ -34,6 +34,7 @@ Some of the samples mentioned below may **not** work. test2.rb works - i always 
     into sqlc.rb - each query opens a new tab).
 
   * testtodo.rb is a test TODO application (now using fastercsv)
+    (needs retesting - may not work at all)
 
 * Screenshots on 
   <http://www.benegal.org/files/screen/?M=D>   (new)
