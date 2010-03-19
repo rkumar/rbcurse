@@ -29,9 +29,8 @@ Some of the samples mentioned below may **not** work. test2.rb works - i always 
   * sqlc.rb is a ruby sql client _demo_ (using testd.db at
      <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
-    Demos horizontal and vertical scrolling of data.
-    (If this doesn't work, try _sqlc.rb. I have integrated tabbedpanes
-    into sqlc.rb - each query opens a new tab).
+    sqlc.rb: uses tabbedpanes - each query opens a new tab
+    sqlm.rb: uses a multi-container - each query opens a new table in the multicontainer
 
   * testtodo.rb is a test TODO application (now using fastercsv)
     (needs retesting - may not work at all)
@@ -89,8 +88,10 @@ runtime. Very flexible unlike ncurses forms and fields.
 I've just added vi and emacs key bindings to some classes, multiple object containers such as MultiContainer
 and MultiTextView. Emacs like kill-ring in TextArea and TextView. Tabbedpane can have unlimited tabs, we can scroll the tabs. Bunch of other stuff. Multiple keys can be bound to a Proc or symbol as in emacs and vim (dd or C-x C-f).
 
-2010-03-16 09:32 : Probably now will make a demo using ScrollForm - a form that takes more fields/objects that 
- can be viewed at a go. Then onto testing what's there, before making a stable release.
+I've made a demo using ScrollForm (testscroller.rb)- a form that takes more fields/objects than
+can be viewed at a go. Meta keys scroll the form.
+Then onto testing what's there, before making a stable
+release.
 
 ## Sample programs:
 
