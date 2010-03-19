@@ -1,5 +1,9 @@
 # rbcurse (for ruby 1.9.1)
 
+* **This branch has been abandoned** -- please go to rfed16 branch.
+  Master is the classic branch with a few basic widgets. 
+  rfed16 has a lot more, more samples, etc.
+
 * Version to work with ruby 1.9 (backward compatible with 1.8.7)
 
 * <http://totalrecall.wordpress.com>   
