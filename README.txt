@@ -1,7 +1,20 @@
 = rbcurse
 
-(I have ditched branch rbcurse19 and and working on rfed16. A lot has
-been added there.)
+classic18 is the old branch which works with 1.8.6 and 1.8.7. This
+contains fewer widgets and old code.
+
+Please go to rfed16 for latest code. I am trying to merge rfed16 back
+into master. If not then master19. Phew! the merge failed, i renamed
+many branches, the deleted ones are still here on github !!
+
+I renamed rfed16 to master19.
+I renamed master to classic18.
+Tried merging master19 into master but failed on rtable, and manually
+merged it, no idea what the merge is!
+So i don't know what code actually got merged into master. Hopefully,
+master19 still has good code.
+
+Hope to resolve the confusion fast.
 
 * rbcurse on rubyforge: http://rbcurse.rubyforge.org/
 
