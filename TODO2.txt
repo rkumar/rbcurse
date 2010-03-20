@@ -112,3 +112,4 @@
  98	[x] (A) SCrollFOrm: cursor not on first field to start with (2010-03-17) (x2010-03-18)
  99	[ ] (A) scrollform demo: add larger objects like textview and test (2010-03-18)
 100	[x] (A) sqlm.rb finish this with multicontainer and table (2010-03-19) (x2010-03-19)
+101	[ ] Menu: simpler rewrite ?? (2010-03-20)
