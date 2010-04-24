@@ -395,7 +395,26 @@ STEP 2.
     ruby test2.rb
 
 
-Note: if you are downloading the git repo, you may find that the Manifest.txt does not contain some files, or README.txt has changed to README.markdown. I have not been creating a 1.9 gem while testing changes, so the Manifest can be outdated. I'll try to keep it updated.
+Note: Please use gem version 1.1.1 or higher. I have just created this gem, so let me know if there are missing files.
+
+### Installing ncurses on Mac OS X Snow Leopard
+
+STEP 1.
+
+ncurses-ruby 1.2.4 is not installing, errors in `make`. I have not found a working solution. Finally, I used ncurses-0.9.1 and made some changes and it is working. Needs to be tested out. I am not sure how I got ncurses-0.9.1 in my gems folder, possible I had done a `sudo port install ncurses`.
+
+http://trickyco.de/tag/ncurses has a similar procedure. I made the changes based on my working copy of 1.2.4 from my OS X PPC Machine. Will upload the gem and code.
+
+trickyco's procedure is as follows:
+
+    gem fetch ncurses
+    gem unpack ncurses-0.9.1.gem 
+    ruby extconf.rb 
+    patch -p1 < ~/ncurses_ruby_1.9.patch
+    make
+    sudo make install
+
+See the patch file from http://trickyco.de/tag/ncurses . See other steps as above. 
 
 ## LICENSE:
 

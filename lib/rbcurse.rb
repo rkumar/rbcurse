@@ -3,5 +3,5 @@ require 'ver/window'
 require 'rbcurse/rwidget'
 require 'rbcurse/rdialogs'
 class Rbcurse
-  VERSION = '0.1.3'
+  VERSION = '1.1.1'
 end
