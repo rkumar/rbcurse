@@ -1,14 +1,14 @@
 # rbcurse (for ruby 1.9.1)
 
-* Version to work with ruby 1.9 (backward compatible with 1.8.7)
+* Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
-This branch - RFED19 - contains major rework on the buffering approach. It only affect
+This branch - master19 - contains major rework on the buffering approach. It only affect
 programs that have used buffers such as splitpanes, scrollpanes and tabbedpanes.
-All are fixed.
+All are fixed. This is the branch that should be used.
 
 Check downloads at <http://github.com/rkumar/rbcurse/downloads>
 
-Some of the samples mentioned below may **not** work. test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.
+test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.
 
 * <http://totalrecall.wordpress.com>  - always has some status posted.
 
@@ -403,7 +403,7 @@ STEP 1.
 
 ncurses-ruby 1.2.4 is not installing, errors in `make`. I have not found a working solution. Finally, I used ncurses-0.9.1 and made some changes and it is working. Needs to be tested out. I am not sure how I got ncurses-0.9.1 in my gems folder, possible I had done a `sudo port install ncurses`.
 
-http://trickyco.de/tag/ncurses has a similar procedure. I made the changes based on my working copy of 1.2.4 from my OS X PPC Machine. Will upload the gem and code.
+<http://trickyco.de/tag/ncurses has a similar procedure>. I made the changes based on my working copy of 1.2.4 from my OS X PPC Machine. Will upload the gem and code.
 
 trickyco's procedure is as follows:
 
@@ -414,10 +414,10 @@ trickyco's procedure is as follows:
     make
     sudo make install
 
-See the patch file from http://trickyco.de/tag/ncurses . See other steps as above. 
+See the patch file from [here](http://trickyco.de/tag/ncurses) . See other steps as above. 
 
 If all fails, try this and let me know if it works, or fails. 
-I have uploaded a modified ncurses gem here http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.1.gem .
+I have uploaded a modified ncurses gem [here](http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.1.gem) .
 Download this and then run:
 
     sudo gem install --local ncurses-0.9.1.gem
