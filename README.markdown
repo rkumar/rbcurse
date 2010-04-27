@@ -361,7 +361,7 @@ THE following samples are only demonstrative of how widgets are built. See sampl
 
 STEP 1.
 
-   `sudo gem install ncurses-ruby`
+   `sudo gem install ncurses`
 
 If the above fails, then do as follows:
 
@@ -395,9 +395,9 @@ STEP 2.
     ruby test2.rb
 
 
-Note: Please use gem version 1.1.1 or higher. I have just created this gem, so let me know if there are missing files.
+Note: Please use rbcurse gem version 1.1.1 or higher. I have just created this gem, so let me know if there are missing files.
 
-### Installing ncurses on Mac OS X Snow Leopard
+### Installing ruby ncurses on Mac OS X Snow Leopard
 
 STEP 1.
 
@@ -415,6 +415,12 @@ trickyco's procedure is as follows:
     sudo make install
 
 See the patch file from http://trickyco.de/tag/ncurses . See other steps as above. 
+
+If all fails, try this and let me know if it works, or fails. 
+I have uploaded a modified ncurses gem here http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.1.gem .
+Download this and then run:
+
+    sudo gem install --local ncurses-0.9.1.gem
 
 ## LICENSE:
 
