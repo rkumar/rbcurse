@@ -21,18 +21,18 @@ test2.rb works - i always give it a quick run after making changes. All the test
 
 * Many working demos in examples folder, such as:
 
-  * test2.rb (exit with F1, Or Cancel button/Alt-C) contains various
+   * test2.rb (exit with F1, Or Cancel button/Alt-C) contains various
     widgets. F2 for menubar toggling
 
-  * rfe.rb is a ruby file explorer demo.
+   * rfe.rb is a ruby file explorer demo.
 
-  * sqlc.rb is a ruby sql client _demo_ (using testd.db at
+   * sqlc.rb is a ruby sql client _demo_ (using testd.db at
      <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
     sqlc.rb: uses tabbedpanes - each query opens a new tab
     sqlm.rb: uses a multi-container - each query opens a new table in the multicontainer
 
-  * testtodo.rb is a test TODO application (now using fastercsv)
+   * testtodo.rb is a test TODO application (now using fastercsv)
     (needs retesting - may not work at all)
 
 * Screenshots on 
@@ -45,8 +45,8 @@ test2.rb works - i always give it a quick run after making changes. All the test
 
   See [TODO2.txt](http://github.com/rkumar/rbcurse/blob/rbcurse19/TODO2.txt) (created and maintained by [todoapp.sh](http://github.com/rkumar/todoapp), also hosted here)
 
-* Next Major Release:
- <http://rubyforge.org/pm/task.php?group_project_id=13813&group_id=7775&func=browse>
+* rbcurse tutorial (WIP - please review and give feedback)
+ <http://rbcurse.rubyforge.org/tut0.html>
 
 ## DESCRIPTION:
 
