@@ -1544,7 +1544,7 @@ module RubyCurses
   def handle_key(ch)
         if ch ==  ?\C-u.getbyte(0)
           ret = universal_argument
-          $log.debug " FORM set MULT to #{$multiplier}, ret = #{ret}  "
+          $log.debug "C-u FORM set MULT to #{$multiplier}, ret = #{ret}  "
           return 0 if ret == 0
           ch = ret # unhandled char
         elsif ch >= ?\M-1.getbyte(0) && ch <= ?\M-9.getbyte(0)
@@ -2020,6 +2020,11 @@ module RubyCurses
       @value = value
       @klass = value.class.to_s
     end
+    ## 
+    # This is to ensure that change handlers for all dependent objects are called
+    # so they are updated. This is called from text_variable property of some widgets. If you 
+    # use one text_variable across objects, all will be updated auto. User does not need to call.
+    # @ private
     def add_dependent obj
       $log.debug " ADDING DEPENDE #{obj}"
       @dependents ||= []
@@ -2027,6 +2032,7 @@ module RubyCurses
     end
     ##
     # install trigger to call whenever a value is updated
+    # @public called by user components
     def update_command *args, &block
       $log.debug "Variable: update command set " # #{args}"
       @update_command << block
