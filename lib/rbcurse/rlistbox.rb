@@ -424,7 +424,6 @@ module RubyCurses
       # added 2010-02-17 23:05  RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
-      @multiplier = 0 # multiply motion commands
 
 #x      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
 #x      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
@@ -589,7 +588,7 @@ module RubyCurses
       when 27, ?\C-c.getbyte(0)
         editing_canceled @current_index if @cell_editing_allowed
         cancel_block # block
-        @multiplier = 0
+        $multiplier = 0
       when @KEY_ASK_FIND_FORWARD
       # ask_search_forward
       when @KEY_ASK_FIND_BACKWARD
@@ -604,10 +603,10 @@ module RubyCurses
         find_more
       when @KEY_BLOCK_SELECTOR
         mark_block #selection
-      when ?\C-u.getbyte(0)
+      #when ?\C-u.getbyte(0)
         # multiplier. Series is 4 16 64
-        @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
-        return 0
+        # TESTING @multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
+      #  return 0
       when ?\C-c.getbyte(0)
         @multiplier = 0
         return 0
@@ -639,16 +638,17 @@ module RubyCurses
             # no motion on single key, we can freak out like in vim, pref f <char> for set_selection
             case ch
             when ?0.getbyte(0)..?9.getbyte(0)
-              @multiplier *= 10 ; @multiplier += (ch-48)
+              $multiplier *= 10 ; $multiplier += (ch-48)
+              #$log.debug " setting mult to #{$multiplier} in list "
               return 0
             end
             ret = process_key ch, self
-            @multiplier = 0
+            $multiplier = 0
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
       end
-      @multiplier = 0
+      $multiplier = 0
     end
     def ask_selection_for_char
       ch = @graphic.getch
