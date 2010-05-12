@@ -2,6 +2,19 @@
 README
 ------
 
+### IMPORTANT 
+
+1. If you are trying out the examples from a folder that does not have
+write access (e.g. /opt/local/lib...), then you may have to run the
+examples, with "sudo", since a log file is created. Or else, you could
+copy the examples elsewhere, or change to location of the log file
+(view.log) before running.
+
+    sudo ruby test2.rb
+
+2. Please change directory to the examples folder before executing, since
+some data files, or local programs may be loaded.
+
 ## sqlc.rb
 
 A sql client using tabbedpanes.
@@ -25,6 +38,8 @@ resultsets instead of a tabbedpane.
 * * * * *
 
 Please check the examples  with  test*.rb - since they are updated. 
+At the time of writing, viewtodo.rb may not be functional since I
+changed to structure of the yaml file.
 
 ## vim:tw=72:ai:formatoptions=tcqln:nocindent:
 

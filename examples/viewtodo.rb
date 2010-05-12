@@ -8,9 +8,11 @@ require 'rbcurse/rtable'
 require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
-require 'yaml'   # 1.9 2009-10-05 13:11 
+require 'sqlite3' # changing to sqlite3 since yml, csv a pain for updating
+#require 'yaml'   # 1.9 2009-10-05 13:11 
 ###############################
-## THIS WONT WORK SINCE I've changed to format of yaml file to array from hash
+## This uses todo.db, if not in gem, please take from github
+## Please look at testtodo.rb
 ##############################
 
 class TodoList
@@ -18,19 +20,42 @@ class TodoList
     @file = file
   end
   def load 
-    @todomap = YAML::load(File.open(@file));
-    @records = convert_to_text
+    #@todomap = YAML::load(File.open(@file));
+    @db = SQLite3::Database.new(@file)
+    #@records = convert_to_text
+  end
+  # get columns and datatypes, prefetch - copied from sqlc.rb
+  def get_data command
+    @columns, *rows = @db.execute2(command)
+    @content = rows
+    return nil if @content.nil? or @content[0].nil?
+    @datatypes = @content[0].types #if @datatypes.nil?
+    @command = command
+    return @content
   end
   def get_statuses
-    @todomap['__STATUSES']
+    #@todomap['__STATUSES']
+    ## temporary due to structure change
+    #['TODO', 'TOTEST', 'TESTED'] 
+    c = get_data "select * from status"
+    c.flatten
   end
   def get_modules
-    @todomap['__MODULES'].sort
+    #@todomap['__MODULES'].sort
+    ## temporary due to structure change
+    ['GEN', 'FIELD', 'FORM', 'TABLE']
+    #get_data "select * from status"
   end
   def get_categories
-    @todomap.keys.delete_if {|k| k.match(/^__/) }
+    #@todomap.keys.delete_if {|k| k.match(/^__/) }
+    ## temporary due to structure change
+    #['TODO', 'FIXME','DONE']# earlier i used to keep todo items in a text file in these sections
+    c = get_data "select * from categ"
+    c.flatten
   end
   def get_tasks_for_category categ
+    get_data "select * from todo where categ = '#{categ}' "
+=begin
     c = @todomap[categ]
     d = []
     c.each_pair {|k,v|
@@ -43,12 +68,16 @@ class TodoList
       end
     }
     return d
+=end
   end
+  # today i really don't know how this differs from previous one (records vs tasks)
   def get_records_for_category categ
     if categ.nil? or categ == ""
-      return @records
+      #return @records
+      get_data "select * from todo"
     else
-      return @records.select { |row| row[0] == categ }
+      #return @records.select { |row| row[0] == categ }
+      get_data "select * from todo where categ = '#{categ}' "
     end
   end
   def sort categ, column, descending=false
@@ -130,8 +159,8 @@ def get_key_labels
 end
 def get_key_labels_table
   key_labels = [
-    ['M-n','NewRow'], ['M-d','DelRow'],
-    ['C-x','Select'], nil,
+    #['M-n','NewRow'], ['M-d','DelRow'],
+    ['C-x','Select'], ['M-h', 'Popup'],
     ['M-0', 'Top'], ['M-9', 'End'],
     ['C-p', 'PgUp'], ['C-n', 'PgDn'],
     ['M-Tab','Nxt Fld'], ['Tab','Nxt Col'],
@@ -145,7 +174,8 @@ class TodoApp
     @form = Form.new @window
     @sort_dir = true
 
-    @todo = TodoList.new "todo.yml"
+    #@todo = TodoList.new "todo.yml"
+    @todo = TodoList.new "todo.db"
     @todo.load
   end
   def run
@@ -173,7 +203,7 @@ class TodoApp
       list_config 'height' => 4
       help_text "Select a category and <TAB> out. KEY_UP, KEY_DOWN, M-Down" 
     end
-    colnames = %w[ Categ Module Prior Task Status Date]
+    colnames = %w[Sno Categ Module Prior Task Status Date]
 
     colnames_cbl = colnames.dup
     colnames_cbl.insert 0, ""
@@ -198,7 +228,8 @@ class TodoApp
       set_label Label.new @form, {'text' => "Pattern:", 'color'=>'cyan',:bgcolor => 'black',"mnemonic"=>"P"}
       help_text "Pattern/Regex to filter on"
     end
-    data = todo.get_records_for_category 'TODO'
+    # prepopulate screen, else error in table
+    data = todo.get_records_for_category 'TODO' # earlier TODO
     @data = data
     b_filter = Button.new @form do
       text "Fi&lter"
@@ -242,12 +273,20 @@ class TodoApp
     #
     ## key bindings fo atable
     # column widths 
-    tcm.column(0).width 8
-    tcm.column(1).width 8
-    tcm.column(2).width 5
-    tcm.column(3).width 50
-    tcm.column(4).width 8
-    tcm.column(5).width 16
+    x = 0
+    tcm.column(x).width 2 # RK 2010-05-11 19:59 added serial number for updating
+    x += 1
+    tcm.column(x).width 8
+    x += 1
+    tcm.column(x).width 8
+    x += 1
+    tcm.column(x).width 5
+    x += 1
+    tcm.column(x).width 50
+    x += 1
+    tcm.column(x).width 8
+    x += 1
+    tcm.column(x).width 16
     app = self
     atable.configure() do
       #bind_key(330) { atable.remove_column(tcm.column(atable.focussed_col)) rescue ""  }
@@ -394,19 +433,20 @@ class TodoApp
     @window.destroy if !@window.nil?
     end
   end
+  # Adding was done in testtodo.rb. this is view only
   def create_table_actions atable, todo, data, categ
     #@new_act = Action.new("New Row", "mnemonic"=>"N") { 
     @new_act = Action.new("&New Row") { 
       cc = atable.get_table_column_model.column_count
       if atable.row_count < 1
-        mod = nil
+        categ = nil
         frow = 0
       else
         frow = atable.focussed_row
+        categ = atable.get_value_at(frow,1)
         frow += 1
-        mod = atable.get_value_at(frow,0)
       end
-      tmp = [mod, 5, "", "TODO", Time.now]
+      tmp = [nil, categ, "",  5, "", "TODO", Time.now]
       tm = atable.table_model
       tm.insert frow, tmp
       atable.set_focus_on frow
