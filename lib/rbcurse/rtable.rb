@@ -113,6 +113,16 @@ module RubyCurses
       bind_key(@KEY_ASK_FIND_BACKWARD) { ask_search_backward }
       bind_key(@KEY_FIND_NEXT) { find_next }
       bind_key(@KEY_FIND_PREV) { find_prev }
+      # added 2010-05-12 21:41 for vim keys, will work if cell editing allowed is false
+      # user should be able to switch to editable and off so he can use keys TODO
+      # TODO vim_editable mode: C dd etc . to repeat change, how about range commands like vim
+      # TODO use numeric to widen, so we can distribute spacing
+      bind_key(?j){ next_row() }
+      bind_key(?k){ previous_row() }
+      bind_key(?G){ goto_bottom() }
+      bind_key([?g,?g]){ goto_top() }
+      bind_key(?l) { next_column }
+      bind_key(?h) { previous_column }
     end
 
     def focussed_row
@@ -538,7 +548,7 @@ module RubyCurses
       when ?\C-p.getbyte(0)
         editing_stopped if @is_editing # 2009-01-16 16:06 
         scroll_backward
-      when 48, @KEY_GOTO_TOP
+      when @KEY_GOTO_TOP # removed 48 (0) from here so we can trap numbers
         # please note that C-[ gives 27, same as esc so will respond after ages
         editing_stopped if @is_editing # 2009-01-16 16:06 
         goto_top
@@ -551,9 +561,14 @@ module RubyCurses
       when @KEY_SCROLL_LEFT
         editing_stopped if @is_editing # dts 2009-02-17 00:35 
         scroll_left
+      when ?0.getbyte(0)..?9.getbyte(0)
+        $multiplier *= 10 ; $multiplier += (ch-48)
+        #$log.debug " setting mult to #{$multiplier} in list "
+        return 0
       else
         # there could be a case of editing here too!
         ret = process_key ch, self
+        $multiplier = 0 
         return :UNHANDLED if ret == :UNHANDLED
       end
       return 0 # added 2010-03-14 13:27 
@@ -607,26 +622,40 @@ module RubyCurses
       cancel_editor
     end
     ##
-    def previous_row
+    #def previous_row
+    def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @oldrow = @current_index
-      @current_index -= 1 if @current_index > 0
+    #  @current_index -= 1 if @current_index > 0
+      num.times { 
+        @current_index -= 1 if @current_index > 0
+      }
+      $multiplier = 0
       bounds_check
     end
-    def next_row
+    #def next_row
+    # goto next row
+    # added multipler 2010-05-12 20:51 
+    def next_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       rc = row_count
       @oldrow = @current_index
       # don't go on if rc 2009-01-16 19:55  XXX
       if @current_index < rc
-        @current_index += 1 
+        #@current_index += 1 
+        @current_index += 1*num if @current_index < rc
         bounds_check
       end
+      $multiplier = 0
     end
     # move focus to next column
     #  2009-10-07 12:47 behavior change. earlier this would move to next row
     #  if focus was on last visible field. Now it scrolls so that first invisible
     #  field becomes the first column. 
-    def next_column
-      v =  @current_column+1 
+    #  # 2010-05-13 12:42 added multiplier
+    #def next_column
+    def next_column num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
+      $multiplier = 0 # so not used again in next row
+      #v =  @current_column+1 
+      v =  @current_column + num
       # normal situation, there is a next column go to
       if v < @table_column_model.column_count 
         if v <= @_last_column_print
@@ -647,7 +676,7 @@ module RubyCurses
           @current_column = 0
           #@current_column = @_first_column_print # added 2009-02-17 00:01 
           @_first_column_print = 0 # added 2009-10-07 11:25 
-          next_row
+          next_row 1
           set_form_col
           @repaint_required = true
           @table_changed = true    # so columns are modified by print_header
@@ -659,8 +688,9 @@ module RubyCurses
     # move focus to previous column
     # if you are on first column, check if scrolling required, else move up to
     # last *visible* column of prev row
-    def previous_column
-      v =  @current_column-1 
+    #def previous_column
+    def previous_column num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
+      v =  @current_column - num # 2010-05-13 12:44 1 to num
       # returning unhandled so focus can go to prev field auto
       if v < @_first_column_print and @current_index <= 0
         return :UNHANDLED
@@ -674,7 +704,7 @@ module RubyCurses
           @current_column = @_last_column_print # added 2009-02-17 00:01 
           $log.debug " XXXXXX prev col #{@current_column}, las #{@_last_column_print}, fi: #{@_first_column_print}"
           set_form_col
-          previous_row
+          previous_row 1
         end
       else
         current_column v
