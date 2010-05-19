@@ -5,6 +5,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rcombo'
 require 'rbcurse/rtable'
+require 'rbcurse/tableextended'
 require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
@@ -15,6 +16,10 @@ require 'sqlite3' # changing to sqlite3 since yml, csv a pain for updating
 ## Please look at testtodo.rb
 ##############################
 
+class Table
+  # so we can increase and decrease column width using keys
+  include TableExtended
+end
 class TodoList
   def initialize file
     @file = file
@@ -290,20 +295,33 @@ class TodoApp
     app = self
     atable.configure() do
       #bind_key(330) { atable.remove_column(tcm.column(atable.focussed_col)) rescue ""  }
+      #bind_key(?+) {
+        #acolumn = atable.column atable.focussed_col()
+        ##num = $multiplier || 1
+        #num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
+        #$multiplier = 0
+        #w = acolumn.width + num
+        #acolumn.width w
+        ##atable.table_structure_changed
+      #}
       bind_key(?+) {
-        acolumn = atable.column atable.focussed_col()
-        w = acolumn.width + 1
-        acolumn.width w
-        #atable.table_structure_changed
+        # this automatically takes care of numeric arguments such as 12+ 22+ etc
+        atable.increase_column
       }
       bind_key(?-) {
-        acolumn = atable.column atable.focussed_col()
-        w = acolumn.width - 1
-        if w > 3
-          acolumn.width w
-          #atable.table_structure_changed
-        end
+        # this automatically takes care of numeric arguments such as 12- 22- etc
+        atable.decrease_column
       }
+      #bind_key(?-) {
+        #acolumn = atable.column atable.focussed_col()
+        #num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
+        #w = acolumn.width - num
+        #$multiplier = 0
+        #if w > 3
+          #acolumn.width w
+          ##atable.table_structure_changed
+        #end
+      #}
       bind_key(?>) {
         colcount = tcm.column_count-1
         #atable.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
