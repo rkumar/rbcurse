@@ -14,7 +14,7 @@ test2.rb works - i always give it a quick run after making changes. All the test
 
 * Notes on rbcurse - very frequent updates <http://rbcurse.tumblr.com/>
 
-* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/> - Not updated.
+* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/> - Occassionally updated.
 
 * See changes on (not updated often)
  <http://github.com/rkumar/rbcurse/tree/master/CHANGELOG>
@@ -33,7 +33,9 @@ test2.rb works - i always give it a quick run after making changes. All the test
     sqlm.rb: uses a multi-container - each query opens a new table in the multicontainer
 
    * testtodo.rb is a test TODO application (now using fastercsv)
-    (needs retesting - may not work at all)
+    (needs retesting - is working)
+
+   * viewtodo.rb is a test TODO viewing application (now using sqlite3). The table is readonly, some vim keys are available.
 
 * Screenshots on 
   <http://www.benegal.org/files/screen/?M=D>   (new)

@@ -1,3 +1,14 @@
+**2010-05-19 00:00** 
+## Table - added tableextended.rb for extended functions on tables
+
+Currently, increase or decrease column width using numeric args. 
+You will have to bind the method to a key in your app.
+
+**2010-05-13 00:00** 
+## Table - adding vim keys for navigation
+
+If table is not editable, then j k l h gg G etc may be used for navigation.
+
 **2010-03-01 00:00** 
 ## Overhaul of tabbedpane
 
