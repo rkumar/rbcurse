@@ -164,7 +164,14 @@ module RubyCurses
         @source.list[row].slice!(col,howmany)
       when :DELETE_LINE
         #$log.debug " UNDO redo got deleteline #{row} "
-        @source.list.delete_at row
+        #@source.list.delete_at row
+        # changed on 2010-05-23 12:21 since was not handling mult delete
+        case act.text
+        when Array
+          act.text.size.times { @source.list.delete_at row }
+        when String
+          @source.list.delete_at row
+        end
       when :INSERT_LINE
         case act.text
         when Array
