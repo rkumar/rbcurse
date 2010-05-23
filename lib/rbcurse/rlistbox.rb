@@ -163,6 +163,14 @@ module RubyCurses
       return nil
       #return find_match @last_regex, start, @search_end_ix
     end
+    ##
+    # added 2010-05-23 12:10 for listeditable
+    def slice!(line, howmany)
+      ret = @list.slice!(line, howmany)
+      lde = ListDataEvent.new(line, line+howmany-1, self, :INTERVAL_REMOVED)
+      fire_handler :LIST_DATA_EVENT, lde
+      return ret
+    end
 
     alias :to_array :values
   end # class ListDataModel
