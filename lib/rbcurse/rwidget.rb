@@ -1041,7 +1041,7 @@ module RubyCurses
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
       @firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
       @name ||= ""
-      $kill_ring ||= [] # 2010-03-09 22:42 so textarea and others can copy and paste
+      $kill_ring ||= [] # 2010-03-09 22:42 so textarea and others can copy and paste emacs EMACS
       $kill_ring_pointer = 0 # needs to be incremented with each append, moved with yank-pop
       $append_next_kill = false
       $kill_last_pop_size = 0 # size of last pop which has to be cleared
@@ -1548,7 +1548,7 @@ module RubyCurses
           return 0 if ret == 0
           ch = ret # unhandled char
         elsif ch >= ?\M-1.getbyte(0) && ch <= ?\M-9.getbyte(0)
-          if $catch_alt_digits
+          if $catch_alt_digits # emacs EMACS
             ret = digit_argument ch
             $log.debug " FORM set MULT DA to #{$multiplier}, ret = #{ret}  "
             return 0 if ret == 0 # don't see this happening
