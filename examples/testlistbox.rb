@@ -33,13 +33,13 @@ if $0 == __FILE__
 
     catch(:close) do
       colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors test2.rb --------- #{@window} "
+      $log.debug "START #{colors} colors testlistbox.rb --------- #{@window} "
       @form = Form.new @window
       @form.window.printstring 0, 30, "Demo of Listbox - rbcurse", $normalcolor, 'reverse'
       r = 1; fc = 1;
 
       $results = Variable.new
-      $results.value = "A list with vim-like key bindings. Try j k o O C dd u (undo) C-r (redo) f<char> w yy p P. Also try emacs's kill-ring save/yank/cycle using M-w C-y M-y. Also, C-u and M1..9 numeric arguments."
+      $results.value = "A list with vim-like key bindings. Try j k gg G o O C dd u (undo) C-r (redo) f<char> w yy p P. Also try emacs's kill-ring save/yank/cycle using M-w C-y M-y. Also, C-u and M1..9 numeric arguments."
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r+12, "col" => fc, "display_length" => 80, "height" => 5}
       r += 1
       mylist = []
