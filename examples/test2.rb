@@ -13,7 +13,7 @@ require 'rbcurse/listcellrenderer'
 require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
-require 'qdfilechooser'
+require './qdfilechooser'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rmessagebox'
 if $0 == __FILE__
