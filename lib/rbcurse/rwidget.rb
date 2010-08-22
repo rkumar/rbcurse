@@ -348,7 +348,12 @@ module RubyCurses
        # this bypasses our methods and sets directly !
       def config_setup aconfig
         @config = aconfig
-        @config.each_pair { |k,v| variable_set(k,v) }
+        # this creates a problem in 1.9.2 since variable_set sets @config 2010-08-22 19:05 RK
+        #@config.each_pair { |k,v| variable_set(k,v) }
+        keys = @config.keys
+        keys.each do |e| 
+          variable_set(e, @config[e])
+        end
       end
     end # module config
     ##
