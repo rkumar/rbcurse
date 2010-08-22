@@ -1120,8 +1120,12 @@ module RubyCurses
         end
       end
       total = 0
-      colwidths.each_pair do |k,v|
+      # crashing in 1.9.2 due to hash key no insert in iteration 2010-08-22 20:09 
+      #colwidths.each_pair do |k,v|
+      tkeys = colwidths.keys
+      tkeys.each do |k|
         name = columns[k.to_i]
+        v = colwidths[k]
         colwidths[name] = v
         total += v
       end
