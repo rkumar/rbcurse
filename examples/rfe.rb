@@ -13,7 +13,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rcombo'
 require 'rbcurse/rlistbox'
-require 'rfe_renderer'
+require './rfe_renderer'
 #require 'lib/rbcurse/table/tablecellrenderer'
 require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
@@ -197,7 +197,16 @@ class FileExplorer
   end
   alias :current_dir :cur_dir
   def draw_screen dir=nil
-    cd dir unless dir.nil?
+    # I get an error here if dir in yaml file is non-existent, like deleted or copied from another machine
+    #  2010-08-22 19:25 
+    if dir
+      if File.exists?(dir) && File.directory?(dir)
+        cd dir unless dir.nil?
+      else
+        dir = nil
+      end
+    end
+
     wdir = FileUtils.pwd
     @prev_dirs << wdir
     @dir = Dir.new(Dir.getwd)
