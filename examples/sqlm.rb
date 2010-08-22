@@ -49,6 +49,7 @@ class Datasource
     instance_eval(&block) if block_given?
   end
   def connect dbname
+    raise " #{dbname} does not exist. Please fetch from http://www.benegal.org/files/screen/testd.db" if !File.exists?(dbname)
    @db = SQLite3::Database.new(dbname)
   end
   # get columns and datatypes, prefetch
@@ -264,6 +265,7 @@ class Sqlc
     tablist_ht = 6
     mylist = @db.get_data "select name from sqlite_master"
     # mylist is an Array of SQLite3::ResultSet::ArrayWithTypesAndFields
+    raise "Database contains no tables! I need some tables" unless mylist
     mylist.collect!{|x| x[0] }  ## 1.9 hack, but will it run on 1.8 ??
     $listdata = Variable.new mylist
         tablelist = Listbox.new @form do
@@ -372,6 +374,7 @@ class Sqlc
       atable.set_column_widths cw
       rescue => exc
         $log.debug(exc.backtrace.join("\n"))
+        raise exc.to_s
         alert exc.to_s
         return
       end
