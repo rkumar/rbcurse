@@ -26,6 +26,7 @@ require 'rbcurse/rtabbedpane'
 # pls get testd.db from
 # http://www.benegal.org/files/screen/testd.db
 # or put some other sqlite3 db name there.
+# or create using sqlite3 testd.db < data.txt
 
 ## must give me @content, @columns, @datatypes (opt)
 class Datasource
@@ -414,7 +415,9 @@ if $0 == __FILE__
   begin
     # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("view.log")
+    #$log = Logger.new("view.log")
+    $log = Logger.new(ENV['LOGDIR'] || "" + "view.log")
+
     $log.level = Logger::DEBUG
 
     colors = Ncurses.COLORS
