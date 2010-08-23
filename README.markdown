@@ -1,6 +1,11 @@
-# rbcurse (for ruby 1.9.1)
+# rbcurse (for ruby 1.9.x)
 
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
+
+* Corrections due to 1.9.2:
+  - hash_update: rwidget.rb and rtable.rb
+    Please report any more errors due to this
+  - $: does not contain "." (affects some examples only)
 
 This branch - master19 - contains major rework on the buffering approach. It only affect
 programs that have used buffers such as splitpanes, scrollpanes and tabbedpanes.
