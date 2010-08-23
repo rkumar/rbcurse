@@ -1,3 +1,14 @@
+**2010-08-23 11:50**
+## ruby 1.9.2 related changes
+
+ Changes in 1.9.2 require the following changes:
+  - $: no longer includes ".". 
+    Fixed 2 examples.
+  - hash_update: cannot update hash during iteration
+    Modified rwidget.rb and rtable.rb
+
+    (Ref http://svn.ruby-lang.org/repos/ruby/tags/v1_9_2_0/ChangeLog)
+
 **2010-05-19 00:00** 
 ## Table - added tableextended.rb for extended functions on tables
 
