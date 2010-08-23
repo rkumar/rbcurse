@@ -74,6 +74,7 @@ Gem::Specification.new do |s|
      "examples/viewtodo.rb",
      "examples/todo.db",
      "examples/testd.db",
+     "examples/data.txt",
      "lib/rbcurse.rb",
      "lib/rbcurse/action.rb",
      "lib/rbcurse/applicationheader.rb",
@@ -123,6 +124,7 @@ Gem::Specification.new do |s|
      "lib/ver/ncurses.rb",
      "lib/ver/window.rb",
      "rbcurse.gemspec",
+     "lib/rbcurse/extras/tableextended.rb",
      "test/test_rbcurse.rb"
   ]
   s.homepage = %q{http://rbcurse.rubyforge.org/}
