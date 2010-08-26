@@ -7,17 +7,13 @@
     Please report any more errors due to this
   - $: does not contain "." (affects some examples only)
 
-This branch - master19 - contains major rework on the buffering approach. It only affect
-programs that have used buffers such as splitpanes, scrollpanes and tabbedpanes.
-All are fixed. This is the branch that should be used.
-
 Check downloads at <http://github.com/rkumar/rbcurse/downloads>
 
-test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.
+test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.  If using ruby1.9.2, you might say: `ruby -I. test2.rb`.
 
 * <http://totalrecall.wordpress.com>  - always has some status posted.
 
-* Notes on rbcurse - very frequent updates <http://rbcurse.tumblr.com/>
+* Notes on rbcurse - <http://rbcurse.tumblr.com/>
 
 * rbcurse on rubyforge: <http://rbcurse.rubyforge.org/> - Occassionally updated.
 
@@ -145,7 +141,7 @@ The following are issues with terminals (or with ncurses-ruby in some cases) not
   This is okay under "screen" and "xterm-color" but not under "xterm". You will notice
   this in the message box samples.
 
-I am developing and testing under "screen" under OS X Leopard 10.5.8 PPC.
+I am developing and testing under "screen" under OS X Leopard 10.5.8 PPC (now 10.6.x Snow Leopard).
 
 ## SYNOPSIS:
 
@@ -357,7 +353,7 @@ THE following samples are only demonstrative of how widgets are built. See sampl
 
 ## REQUIREMENTS:
 
-* ruby 1.9.1 (I believe it is working on 1.8.7 as well).
+* ruby 1.9.1, 1.9.2 (I believe it is working on 1.8.7, 1.8.6 as well).
 
 * ncurses-ruby (1.2.4)
 
@@ -367,67 +363,45 @@ THE following samples are only demonstrative of how widgets are built. See sampl
 ## INSTALL:
 
 STEP 1.
+(In following commands, use `sudo` if installing gems in readonly are such as /opt/local/).
 
-   `sudo gem install ncurses`
+   `gem install ncurses`
 
-If the above fails, then do as follows:
+Often this gives compilation errors, or runtime errors when you run the examples.
+If so, please download [ncurses-1.2.4.gem](http://github.com/downloads/rkumar/rbcurse/ncurses-1.2.4.gem) from http://github.com/rkumar/rbcurse/downloads and do a 
+`gem install --local ncurses-1.2.4.gem`.
 
-Somehow at the time of writing the above installs a version that does
-not work with 1.9. So you have to download ncurses-ruby (1.2.4) tgz from
-<http://ncurses-ruby.berlios.de/> as follows:
+This should have installed an ncurses.rb and ncurses_bin.bundle in the site directory.
+Goto examples directory and run some examples:
 
-1. Download <http://prdownload.berlios.de/ncurses-ruby/ncurses-ruby-1.2.4.tar.bz2>
-2. unzip the file, cd into dir
-2. run install commands as per README (`ruby extconf.rb && make`)
-3. Create a gemspec ... use this file <http://gist.github.com/201877>
-   Save it as ncurses.gemspec 
-4. `sudo gem build ncurses.gemspec`
-5. `sudo gem install --local ncurses-1.2.4.gem`
-6. **uninstall** any previous ncurses or ncurses-ruby version otherwise
-errors will persist at runtime.
-7. check with `gem list --local` and you should see ncurses (1.2.4). The
- examples in the ncurses-ruby/examples folder should work. (Check the
-first line regarding interpreter first).
-8. As a last resort, I've put up a copy of the gem [here](http://www.benegal.org/files/ncurses-1.2.4.gem).
-
-(edit: I am told that step 2 installs ncurses-ruby locally, so you don't need to create a gem)
+    ruby rain.rb
+    ruby examples.rb
 
 STEP 2.
 
-   `sudo gem install rbcurse`
+   `gem install rbcurse`
 
- Now go to the the `examples` folder and execute some examples.
+ Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named view.log. If the examples folder is readonly, you will have to set LOGDIR to a writable folder as below.
 
     cd examples 
     ruby test2.rb
+    LOGDIR=~/tmp ruby test1.rb
 
 
-Note: Please use rbcurse gem version 1.1.1 or higher. I have just created this gem, so let me know if there are missing files.
+Note: Please use rbcurse gem version 1.1.3 or higher. I have just created this gem, so let me know if there are missing files.
 
-### Installing ruby ncurses on Mac OS X Snow Leopard
+### Installing ncurses-ruby on Mac OS X Snow Leopard
 
-STEP 1.
+ncurses-ruby has been failing on OSX Snow Leopard. Please get 1.2.4 or 0.9.2 from http://github.com/downloads/rkumar/rbcurse/. Ensure that the examples are working before trying rbcurse. 
 
-ncurses-ruby 1.2.4 is not installing, errors in `make`. I have not found a working solution. Finally, I used ncurses-0.9.1 and made some changes and it is working. Needs to be tested out. I am not sure how I got ncurses-0.9.1 in my gems folder, possible I had done a `sudo port install ncurses`.
-
-<http://trickyco.de/tag/ncurses has a similar procedure>. I made the changes based on my working copy of 1.2.4 from my OS X PPC Machine. Will upload the gem and code.
-
-trickyco's procedure is as follows:
-
-    gem fetch ncurses
-    gem unpack ncurses-0.9.1.gem 
-    ruby extconf.rb 
-    patch -p1 < ~/ncurses_ruby_1.9.patch
-    make
-    sudo make install
-
-See the patch file from [here](http://trickyco.de/tag/ncurses) . See other steps as above. 
-
-If all fails, try this and let me know if it works, or fails. 
-I have uploaded a modified ncurses gem [here](http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.1.gem) .
+I have uploaded a modified ncurses gem [here](http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.2.gem) .
 Download this and then run:
 
-    sudo gem install --local ncurses-0.9.1.gem
+    gem install --local ncurses-1.2.4.gem
+    OR
+    gem install --local ncurses-0.9.2.gem
+
+    Thanks to Ralf Papenkordt for providing me with a working tar.bz2 file (see download folder).
 
 ## LICENSE:
 
