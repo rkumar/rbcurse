@@ -20,8 +20,7 @@ copy the examples elsewhere, or change to location of the log file
 
     sudo ruby test2.rb
 
-Update: in some examples, test1 test2 sqlm sqlc testkeypress i check
-for LOGDIR. So you may do:
+Update: Added an environment variable named LOGDIR. So you may do:
 
     LOGDIR=~/ ruby test2.rb
 
