@@ -2,6 +2,8 @@
 
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
+* rbcurse 1.1.4 works with 1.9.2 and also contains some files that got missed out in gemspec.
+
 * Corrections due to 1.9.2:
   - hash_update: rwidget.rb and rtable.rb
     Please report any more errors due to this
@@ -368,10 +370,11 @@ STEP 1.
    `gem install ncurses`
 
 Often this gives compilation errors, or runtime errors when you run the examples.
-If so, please download [ncurses-1.2.4.gem](http://github.com/downloads/rkumar/rbcurse/ncurses-1.2.4.gem) from http://github.com/rkumar/rbcurse/downloads and do a 
+If so, please download [ncurses-1.2.4.gem](http://github.com/downloads/rkumar/rbcurse/ncurses-1.2.4.gem) from <http://github.com/rkumar/rbcurse/downloads> and do a:
+
 `gem install --local ncurses-1.2.4.gem`.
 
-This should have installed an ncurses.rb and ncurses_bin.bundle in the site directory.
+This should have installed an `ncurses.rb` and `ncurses_bin.bundle` in the site directory.
 Goto examples directory and run some examples:
 
     ruby rain.rb
@@ -381,7 +384,7 @@ STEP 2.
 
    `gem install rbcurse`
 
- Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named view.log. If the examples folder is readonly, you will have to set LOGDIR to a writable folder as below.
+ Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named view.log. If the examples folder is readonly, you will have to set `LOGDIR` to a writable folder as below.
 
     cd examples 
     ruby test2.rb
@@ -392,16 +395,20 @@ Note: Please use rbcurse gem version 1.1.3 or higher. I have just created this g
 
 ### Installing ncurses-ruby on Mac OS X Snow Leopard
 
-ncurses-ruby has been failing on OSX Snow Leopard. Please get 1.2.4 or 0.9.2 from http://github.com/downloads/rkumar/rbcurse/. Ensure that the examples are working before trying rbcurse. 
+ncurses-ruby has been failing on OSX Snow Leopard. Please get 1.2.4 or 0.9.2 from <http://github.com/downloads/rkumar/rbcurse/>. Ensure that the examples are working before trying rbcurse. 
 
 I have uploaded a modified ncurses gem [here](http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.2.gem) .
 Download this and then run:
 
     gem install --local ncurses-1.2.4.gem
-    OR
+OR
     gem install --local ncurses-0.9.2.gem
 
-    Thanks to Ralf Papenkordt for providing me with a working tar.bz2 file (see download folder).
+Thanks to Ralf Papenkordt for providing me with a working tar.bz2 file (see download folder).
+
+**Update**: I've uploaded a gem for Snow Leopard onto [rubygems.org](http://rubygems.org/gems/snowleopard-ncurses).
+
+    gem install snowleopard-ncurses
 
 ## LICENSE:
 

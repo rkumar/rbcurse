@@ -1534,3 +1534,107 @@ typing several chars can also be clubbed into one object to reduce
 memory.
 
 * * * * * * * *
+
+Subject: making rbcurse friendlier
+----------------------------------
+Date: 2010-08-26 19:45
+
+I am wondering whether creating rbcurse widgets or apps requires too
+much boiler plate code.
+
+Can I make it simpler. The problem i faced (coming from Java) was
+inability to have multiple constructors. So the user, and even I, don't
+know for sure what all a widget requires to run.
+
+Can widget creation be made simpler.
+
+I have an idea also for generating widgets and an app through a command
+line interface. Later i can also write a ncurses app in rbcurse that can
+generate apps. User can select and place widgets, he can see them as he
+creates them. He can move them around etc. Finally, he can generate the
+code for the widgets on screen.
+
+* * * * * * * *
+
+Subject: other screen patterns
+------------------------------
+Date: 2010-08-27 21:39
+
+List entry view: Show a simple entry form directly above the total list of items
+http://welie.com/patterns/showPattern.php?patternID=list-entry-view
+
+View: much like Hotmail.
+http://welie.com/patterns/showPattern.php?patternID=list-entry-view
+
+Product Comparison: Sort of pivot table like, perhaps color columns
+http://welie.com/patterns/showPattern.php?patternID=comparison
+
+Directory Navigation
+http://welie.com/patterns/showPattern.php?patternID=directory
+
+http://welie.com/patterns/showPattern.php?patternID=doormat
+http://welie.com/patterns/showPattern.php?patternID=paging
+
+* * * * * * * *
+
+Subject: some fresh ideas for widgets
+-------------------------------------
+Date: 2010-08-27 21:45
+
+I was glancing at this
+[article](http://designingwebinterfaces.com/designing-web-interfaces-12-screen-patterns)
+from reddit about Screen Patterns, and the 3 list widget was mentioned
+as Column Browse. Also Master Detail. 
+
+## Column Browse
+
+So I think why not create widgets out of this so that users don't have
+to mess around with multiple SplitPanes to do this. (Note that the
+problem in multiple embedded SplitPanes is that the user does not know
+how to traverse to a specific one. In an environment with a mouse, user
+can click on some area. Here, if there's no mouse this becomes a
+problem.
+
+If I create a widget with 2/3 lists, it will be easier to
+programmatically refer to them, and to traverse them.
+
+## Spreadsheet widget
+
+Someone also wrote to me about needing to write a Spreadsheet using
+ncurses. And the Table widget is close to that. It can be configured (or
+extended) to give quite a bit of functionality of a SS. However,
+everytime someone wishes to reuse a SS, he would have to copy the code
+-- if he has it.
+
+So why not create a separate Spreadsheet class with just code for SS.
+
+* * * * * * * *
+
+Subject: another take on Vimsplit widget
+----------------------------------------
+Date: 2010-08-27 23:23
+
+Remember the vimsplit widget. Lets do another take in which we keep one
+level of components only. Perhaps i can tile them in one orientation,
+and allow user to expand/contract -- should be easy since only one
+level. We can find some way to have multiple orientations.
+This will be easy to code for user, and also to modify
+programmatically at run time.
+
+One can even take the MultiContainer and put a tiling feature in it.
+**Convert to tiles**.
+
+Which makes me wonder, if i can use Multicontainer to rewrite
+TabbedPane ? Tabbedpane had become very complex. But oh wait, TabbedPane
+can have forms in it, which MC cannot have. That's where the complexity
+came in.
+
+So in the new vimsplit, splitting while sitting on a split, will not
+create a child split, but only an outer split, but half the size of the
+current split, or share out the sizes. Traversal will be easy.
+
+If we allow splits to be defined with abso coords then we can have
+complex splits. Or perhaps a way of giving preferred size, so it can
+expand fully in one direction.
+
+* * * * * * * *
