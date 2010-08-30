@@ -1,3 +1,12 @@
+
+**2010-08-30 11:59**
+## 1.1.4
+
+ - Some missing files such as tableextended.rb and vieditable
+   These got missed out in the gemspec.
+ - Added slice! to listdatamodel
+ - Also see ruby 1.9.2 changes below
+
 **2010-08-23 11:50**
 ## ruby 1.9.2 related changes
 
