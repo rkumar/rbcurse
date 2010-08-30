@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rbcurse}
-  s.version = "1.1.3"
+  s.version = "1.1.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rahul Kumar"]
-  s.date = %q{2010-05-10}
+  s.date = %q{2010-08-30}
   s.default_executable = %q{rbcurse}
   s.description = %q{Ruby curses widgets for easy application development on text terminals (ruby 1.9, 1.8)}
   s.email = %q{sentinel.2001@gmx.com}
@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
      "VERSION",
      "bin/rbcurse",
      "examples/README.txt",
+     "examples/data.txt",
      "examples/keytest.rb",
      "examples/mpad2.rb",
      "examples/newtesttabp.rb",
@@ -46,6 +47,7 @@ Gem::Specification.new do |s|
      "examples/testchars.rb",
      "examples/testcombo.rb",
      "examples/testkeypress.rb",
+     "examples/testlistbox.rb",
      "examples/testmenu.rb",
      "examples/testmulticomp.rb",
      "examples/testscroller.rb",
@@ -69,12 +71,10 @@ Gem::Specification.new do |s|
      "examples/testtpane.rb",
      "examples/testtpane2.rb",
      "examples/testtpanetable.rb",
+     "examples/todo.db",
      "examples/todo.yml",
      "examples/todocsv.csv",
      "examples/viewtodo.rb",
-     "examples/todo.db",
-     "examples/testd.db",
-     "examples/data.txt",
      "lib/rbcurse.rb",
      "lib/rbcurse/action.rb",
      "lib/rbcurse/applicationheader.rb",
@@ -83,6 +83,7 @@ Gem::Specification.new do |s|
      "lib/rbcurse/colormap.rb",
      "lib/rbcurse/comboboxcellrenderer.rb",
      "lib/rbcurse/defaultlistselectionmodel.rb",
+     "lib/rbcurse/extras/tableextended.rb",
      "lib/rbcurse/io.rb",
      "lib/rbcurse/keylabelprinter.rb",
      "lib/rbcurse/listcellrenderer.rb",
@@ -124,13 +125,12 @@ Gem::Specification.new do |s|
      "lib/ver/ncurses.rb",
      "lib/ver/window.rb",
      "rbcurse.gemspec",
-     "lib/rbcurse/extras/tableextended.rb",
      "test/test_rbcurse.rb"
   ]
   s.homepage = %q{http://rbcurse.rubyforge.org/}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.6}
+  s.rubygems_version = %q{1.3.7}
   s.summary = %q{Ruby Curses Toolkit}
   s.test_files = [
     "test/test_rbcurse.rb",
@@ -148,6 +148,7 @@ Gem::Specification.new do |s|
      "examples/testchars.rb",
      "examples/testcombo.rb",
      "examples/testkeypress.rb",
+     "examples/testlistbox.rb",
      "examples/testmenu.rb",
      "examples/testmulticomp.rb",
      "examples/testscroller.rb",
@@ -171,6 +172,7 @@ Gem::Specification.new do |s|
      "examples/testtpane.rb",
      "examples/testtpane2.rb",
      "examples/testtpanetable.rb",
+     "examples/todo.rb",
      "examples/viewtodo.rb"
   ]
 
@@ -178,7 +180,7 @@ Gem::Specification.new do |s|
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
-    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
     else
     end
   else
