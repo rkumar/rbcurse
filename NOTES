@@ -1638,3 +1638,17 @@ complex splits. Or perhaps a way of giving preferred size, so it can
 expand fully in one direction.
 
 * * * * * * * *
+
+Subject: ffi-ncurses ?
+----------------------
+Date: 2010-08-30 12:37
+
+there is some talk of ncurses installation which is hindering people
+from using rbcurse.
+
+Perhaps we should try moving to ffi-ncurses after all. I heard it was
+slow. Is there some way of making it optional, whether a user wishes to
+use ffi or ruby-ncurses. For example, i read that mutt can be compiled
+for ncurses or slang.
+
+* * * * * * * *
