@@ -29,7 +29,6 @@ Gem::Specification.new do |s|
      "TODO",
      "TODO2.txt",
      "VERSION",
-     "bin/rbcurse",
      "examples/README.txt",
      "examples/data.txt",
      "examples/keytest.rb",
