@@ -15,9 +15,11 @@ test2.rb works - i always give it a quick run after making changes. All the test
 
 * <http://totalrecall.wordpress.com>  - always has some status posted.
 
-* Notes on rbcurse - <http://rbcurse.tumblr.com/>
+* <http://rdoc.info/github/rkumar/rbcurse/master> - rdoc
 
-* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/> - Occassionally updated.
+* Notes/thoughts/ideas on rbcurse - <http://rbcurse.tumblr.com/>
+
+* rbcurse on rubyforge: <http://rbcurse.rubyforge.org/> - Occasionally updated.
 
 * See changes on (not updated often)
  <http://github.com/rkumar/rbcurse/tree/master/CHANGELOG>
