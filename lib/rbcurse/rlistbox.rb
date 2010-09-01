@@ -457,7 +457,7 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
-      @one_key_selection ||= true
+      @one_key_selection = true if @one_key_selection.nil?
       bind_key(?f){ ask_selection_for_char() }
       bind_key(?\M-v){ @one_key_selection = false }
       bind_key(?j){ next_row() }
@@ -556,6 +556,7 @@ module RubyCurses
     end
     # Listbox
     def handle_key(ch)
+      $log.debug "3 value of one key is #{@one_key_selection} "
       @current_index ||= 0
       @toprow ||= 0
       h = scrollatrow()
@@ -658,6 +659,7 @@ module RubyCurses
       end
       $multiplier = 0
     end
+    # get a keystroke from user and go to first item starting with that key
     def ask_selection_for_char
       ch = @graphic.getch
       if ch < 0 || ch > 255
