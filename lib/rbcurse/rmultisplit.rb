@@ -153,7 +153,7 @@ module RubyCurses
           comp.col = c
         else
           @comp_height = @height
-          @comp_width = (@width / @split_count) - 1
+          @comp_width = (@width / @split_count) - 0
           h = @comp_height 
           w = @comp_width
           c = @col + ( w * index)
