@@ -36,6 +36,12 @@ module RubyCurses
   #
   # @since 1.1.5
   # TODO - 
+  #  - user specify max panes to show (beyond that hide and pan)
+  #  - how many can be created
+  #  - to squeeze panes and fit all or hide and pan
+  #  - allow resize of panes
+  #  - allow orientation change or not
+  #  - some anamoly reg LEAVE and ENTER from last object
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
@@ -650,14 +656,16 @@ module RubyCurses
           @repaint_required = false
       end
       def on_enter
-         set_form_row
+        return if @components.nil?
+        @current_component = @components.first
+        set_form_row
       end
       def set_form_row
-         if !@current_component.nil?
-            $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
-            @current_component.set_form_row 
-            @current_component.set_form_col 
-         end
+        if !@current_component.nil?
+          $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
+          @current_component.set_form_row 
+          @current_component.set_form_col 
+        end
       end
       # added 2010-02-09 10:10 
       # sets the forms cursor column correctly
