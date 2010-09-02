@@ -23,6 +23,8 @@ require 'rbcurse'
 
 include Ncurses
 include RubyCurses
+KEY_TAB = 9
+KEY_BTAB = 353
 module RubyCurses
   extend self
 
@@ -42,6 +44,8 @@ module RubyCurses
   #  - allow resize of panes
   #  - allow orientation change or not
   #  - some anamoly reg LEAVE and ENTER from last object
+  #  - should we not be managing on_enter of listboxes when tabbing ?
+  #  - how many panes to show, max to create
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
@@ -57,6 +61,11 @@ module RubyCurses
       # should we allow adding more than split_count
       # currently, we don't scroll, we narrow what is shown
       dsl_accessor :unlimited
+      # allow user to resize components, default true
+      dsl_accessor :allow_resizing
+      # allow user to flip / exhange 2 components or not, default false
+      dsl_accessor :allow_exchanging
+
       attr_accessor :one_touch_expandable # boolean, default true  # XXX
 
       def initialize form, config={}, &block
@@ -100,6 +109,10 @@ module RubyCurses
       end
       ## 
       # adds a component to the multisplit
+      # When you add a component to a container such as multisplit, be sure
+      # you create it with a nil form object, or else the main form will try to manage it.
+      # Containers typically manage their own components such as navigation and they
+      # give it the form/graphic object they were created with.
       # @param [widget] a widget object to stack in a pane
       def add comp
         # for starters to make life simple, we force user to specify how many splits
@@ -558,15 +571,23 @@ module RubyCurses
       def getvalue
           # TODO
       end
-      def _switch_component
+      # take focus to next pane (component in it)
+      # if its the last, return UNHANDLED so form can take to next field
+      # @return [0, :UNHANDLED] success, or last component
+      def next_component
           if @current_component != nil 
+            @current_component.on_leave
+            if on_last_component?
+              return :UNHANDLED
+            end
             @current_index += 1
             @current_component = @components[@current_index] 
+            # shoot if this this put on a form with other widgets
+            # we would never get out, should return nil -1 in handle key
             unless @current_component
               @current_index = 0
               @current_component = @components[@current_index] 
             end
-            set_form_row
           else
             # this happens in one_tab_expand
             #@current_component = @second_component if @first_component.nil?
@@ -574,8 +595,40 @@ module RubyCurses
             # XXX not sure what to do here, will it come
             @current_index = 0
             @current_component = @components[@current_index] 
-            set_form_row
           end
+          set_form_row
+          return 0
+      end
+      def prev_component
+          if @current_component != nil 
+            @current_component.on_leave
+            if on_first_component?
+              return :UNHANDLED
+            end
+            @current_index -= 1
+            @current_component = @components[@current_index] 
+            # shoot if this this put on a form with other widgets
+            # we would never get out, should return nil -1 in handle key
+            unless @current_component
+              @current_index = 0
+              @current_component = @components[@current_index] 
+            end
+          else
+            # this happens in one_tab_expand
+            #@current_component = @second_component if @first_component.nil?
+            #@current_component = @first_component if @second_component.nil?
+            # XXX not sure what to do here, will it come
+            @current_index = 0
+            @current_component = @components[@current_index] 
+          end
+          set_form_row
+          return 0
+      end
+      def on_first_component?
+        @current_component == @components.first
+      end
+      def on_last_component?
+        @current_component == @components.last
       end
       ## Handles key for splitpanes
       ## By default, first component gets focus, not the SPL itself.
@@ -590,9 +643,11 @@ module RubyCurses
         ## If tab on second component, return UNHA so form can take to next field
         ## If B_tab on second comp, switch to first
         ## If B_tab on first comp, return UNHA so form can take to prev field
-        if ch == 9
-           _switch_component
-           return 0
+        if ch == KEY_TAB
+           return next_component
+           #return 0
+        elsif ch == KEY_BTAB
+           return prev_component
         end
 
         if @current_component != nil 
@@ -657,13 +712,18 @@ module RubyCurses
       end
       def on_enter
         return if @components.nil?
-        @current_component = @components.first
+        # no, let it remain on whatever component it was on, or always make it first?
+        #@current_component = @components.first
+        @current_component ||= @components.first
         set_form_row
       end
       def set_form_row
         if !@current_component.nil?
           $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
-          @current_component.set_form_row 
+          #@current_component.set_form_row 
+          # trigger the on_enter handler
+          @current_component.on_enter # typically on enter does a set_form_row
+          #
           @current_component.set_form_col 
         end
       end
