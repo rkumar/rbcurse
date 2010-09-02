@@ -13,6 +13,7 @@ require 'rbcurse/rlistbox'
 # Stuatus bar below to reflect full path.
 #
 KEY_ENTER = 13
+KEY_BTAB  = 353
 # @param [Listbox] new list to bind
 # @param [Array] array of lists
 # @param [MultiSplit] msp object to add a new list to
@@ -30,8 +31,9 @@ def bind_list(listb, lists, splitp)
       mylist.delete "."
       mylist.delete ".."
       $log.debug "1 MYLIST #{mylist} dir #{item} "
+      # NOTE that we create component with nil form as container will manage it
       if lists.empty? || lists.last == listb
-        listc = Listbox.new @form do
+        listc = Listbox.new nil do
           name  "LIST" 
           list mylist
           title item
@@ -109,7 +111,9 @@ if $0 == __FILE__
 
       lists = []
       mylist = Dir.glob('*')
-      listb = Listbox.new @form do
+      mylist.delete_if {|x| x =~ /^\./ || x =~ /^_/ || x =~ /bak$/}
+      # NOTE that we create component with nil form as container will manage it
+      listb = Listbox.new nil do
         name   "mylist" 
         list mylist
         title "A short list"
@@ -131,43 +135,20 @@ if $0 == __FILE__
       counter = 0
       while((ch = @window.getchar()) != ?q.getbyte(0) )
         str = keycode_tos ch
-        case ch
-        when ?A.getbyte(0)
-          next
-          r = 0
-        mylist = []
-        counter.upto(counter+100) { |v| mylist << "#{v} scrollable data" }
-        counter+=100;
-        $listdata = Variable.new mylist
-        listb = Listbox.new @form do
-          name   "mylist" 
-#         list mylist
-          list_variable $listdata
-          selection_mode :SINGLE
-          #show_selector true
-          #row_selected_symbol "[X] "
-          #row_unselected_symbol "[ ] "
-          title "A short list"
-          title_attrib 'reverse'
-          #cell_editing_allowed true
-        end
-        #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        #listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi clojure"
-        splitp.add listb
-        when ?V.getbyte(0)
-          splitp.orientation(:VERTICAL_SPLIT)
-          #splitp.reset_to_preferred_sizes
-        when ?H.getbyte(0)
-          splitp.orientation(:HORIZONTAL_SPLIT)
-          #splitp.reset_to_preferred_sizes
-        when ?-.getbyte(0)
-          #splitp.set_divider_location(splitp.divider_location-1)
-        when ?+.getbyte(0)
-          #splitp.set_divider_location(splitp.divider_location+1)
-        when ?=.getbyte(0)
-          #splitp.set_resize_weight(0.50)
-        end
+        #case ch
+        #when ?V.getbyte(0)
+          #splitp.orientation(:VERTICAL_SPLIT)
+          ##splitp.reset_to_preferred_sizes
+        #when ?H.getbyte(0)
+          #splitp.orientation(:HORIZONTAL_SPLIT)
+          ##splitp.reset_to_preferred_sizes
+        #when ?-.getbyte(0)
+          ##splitp.set_divider_location(splitp.divider_location-1)
+        #when ?+.getbyte(0)
+          ##splitp.set_divider_location(splitp.divider_location+1)
+        #when ?=.getbyte(0)
+          ##splitp.set_resize_weight(0.50)
+        #end
         #splitp.get_buffer().wclear
         #splitp << "#{ch} got (#{str})"
         splitp.repaint # since the above keys are not being handled inside
