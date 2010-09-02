@@ -50,15 +50,15 @@ module RubyCurses
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
-      attr_reader :divider_location  # XXX
-      attr_reader :resize_weight     # XXX
-      attr_writer :last_divider_location
+      #attr_reader :divider_location  # XXX
+      #attr_reader :resize_weight     # XXX
+      #attr_writer :last_divider_location
       dsl_accessor :border_color
       dsl_accessor :border_attrib
       # if no components have been added at time of repainting
       #+ we could use this. This idea if that a user may want to 
       #+ show blank splits.
-      dsl_accessor :split_count
+      dsl_property :split_count
       # should we allow adding more than split_count
       # currently, we don't scroll, we narrow what is shown
       dsl_accessor :unlimited
@@ -67,6 +67,8 @@ module RubyCurses
       # allow user to flip / exhange 2 components or not, default false
       dsl_accessor :allow_exchanging
       dsl_accessor :cyclic_behavior
+      # maximum to show, if less than split_count then scrolling
+      dsl_property :max_visible
 
       attr_accessor :one_touch_expandable # boolean, default true  # XXX
 
@@ -89,8 +91,11 @@ module RubyCurses
           init_vars
       end
       def init_vars
-          @divider_location ||= 10
-          @divider_offset ||= 0
+          #@divider_location ||= 10
+          #@divider_offset ||= 0
+          @_first_column_print = 0 # added 2009-10-07 11:25 
+          @max_visible ||= @split_count
+          @_last_column_print = @_first_column_print + @max_visible - 1
           
           # cascade_changes keeps the child exactly sized as per the pane which looks nice
           #+ but may not really be what you want.
@@ -132,7 +137,8 @@ module RubyCurses
         # exceeds
         if @components.size >= @split_count
           if @unlimited
-            @split_count = @components.size + 1
+            #@split_count = @components.size + 1
+            # calc of width depending on ths
           else
             Ncurses.beep
             return
@@ -156,7 +162,10 @@ module RubyCurses
         when 1
           @second_component = comp
         end
+        # dang ! this can go out of bounds ! XXX tab goes out
+        index = @max_visible - 1 if index > @max_visible
         compute_component comp, index
+        #comp.col = @components[index].col # hack
         comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
         comp.set_buffering(:screen_top => @row, :screen_left => @col)
         comp.min_height ||= 5
@@ -166,6 +175,7 @@ module RubyCurses
       # compute component dimensions in one place
       # @param [widget] a widget 
       # @param [Fixnum] offset in list of components
+      # XXX if called from outside balance can have last value !!!
       def compute_component comp, index
         @balance ||= 0
         if @orientation == :HORIZONTAL_SPLIT
@@ -318,13 +328,21 @@ module RubyCurses
         return if @components.nil?
         @repaint_required = true
       end
+      # recalculates components and calls repaint
       def update_components # 
         @balance = 0
+        @max_visible ||= @split_count
+        @_first_column_print ||= 0
+        @_last_column_print = @_first_column_print + @max_visible - 1
+        $log.debug " XXXX #{@_first_column_print} , last print #{@_last_column_print} "
         @components.each_with_index do |comp,index| 
+          next if index < @_first_column_print
+          break if index > @_last_column_print
           compute_component comp, index 
           comp.set_buffering(:screen_top => comp.row, :screen_left => comp.col)
           comp.repaint
         end
+        @balance = 0
       end
       def repaint # multisplitpane
         if @graphic.nil?
@@ -347,7 +365,7 @@ module RubyCurses
             abscol = @col
           end
           if @use_absolute
-            $log.debug " #{@graphic} calling print_border #{@row} #{@col} "
+            $log.debug " #{@graphic} #{name} calling print_border #{@row} #{@col} "
             @graphic.print_border(@row, @col, @height-1, @width-1, bordercolor, borderatt)
           else
             $log.debug " #{@graphic} calling print_border 0,0"
@@ -363,7 +381,7 @@ module RubyCurses
             count = @components.empty? ? @split_count : @components.size
           if @orientation == :VERTICAL_SPLIT
             @comp_height ||= @height
-            @comp_width ||= (@width / @split_count) - 1
+            @comp_width ||= (@width / @split_count) - 0
             $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
             #@graphic.mvvline(absrow+1, rc+abscol, 0, @height-2)
       #      (1...count).each(){|i| @graphic.mvvline(absrow+1, (i*@comp_width)+abscol, 0, @height-2) }
@@ -402,10 +420,18 @@ module RubyCurses
           end
           @current_index += 1
           @current_component = @components[@current_index] 
+          # is it visible
+          #@current_index.between?(_first_column_print, _last_column_print)
+          if @current_index > @_last_column_print
+            @_first_column_print += 1
+            @_last_column_print += 1
+            @repaint_required = true
+          end
           # shoot if this this put on a form with other widgets
           # we would never get out, should return nil -1 in handle key
           unless @current_component
             $log.debug " CAME HERE unless @current_component setting to first"
+            raise " CAME HERE unless @current_component setting to first"
             @current_index = 0
             @current_component = @components[@current_index] 
           end
@@ -415,6 +441,7 @@ module RubyCurses
           #@current_component = @first_component if @second_component.nil?
           # XXX not sure what to do here, will it come
           $log.debug " CAME HERE in else clause MSP setting to first"
+          raise" CAME HERE in else clause MSP setting to first"
           @current_index = 0
           @current_component = @components[@current_index] 
         end
@@ -504,15 +531,18 @@ module RubyCurses
         # cyclic means it always lands into first comp just as in rdoc
         # otherwise it will always land in last visited component
         if @cyclic_behavior
-          @current_component = @components.first 
-          @current_index = 0
+          #@current_component = @components.first 
+          #@current_index = 0
+          @current_component = @components[@_first_column_print]
+          @current_index = @_first_column_print
         end
         @current_component ||= @components.first
         set_form_row
       end
       def set_form_row
         if !@current_component.nil?
-          $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
+          c=@current_component 
+          $log.debug "XXXXX #{@name} set_form_row calling sfr for #{@current_component.name}, #{c.row}, #{c.col}  "
           #@current_component.set_form_row 
           # trigger the on_enter handler
           @current_component.on_enter # typically on enter does a set_form_row
@@ -526,10 +556,10 @@ module RubyCurses
       # Note: splitpane does not use the cursor, so it does not know where cursor should be displayed,
       #+ the child has to decide where it should be displayed.
       def set_form_col
-         if !@current_component.nil?
-            $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
-            @current_component.set_form_col 
-         end
+        if !@current_component.nil?
+          $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
+          @current_component.set_form_col 
+        end
       end
       ## expand a split to maximum. This is the one_touch_expandable feature
       # Currently mapped to C-w 1 (mnemonic for one touch), or C-w o (vim's only)
