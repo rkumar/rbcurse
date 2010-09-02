@@ -50,13 +50,32 @@ module RubyCurses
           @attr = Ncurses::A_BOLD if selected
           @color_pair =get_color $selectedcolor, @parent.selected_color, @parent.selected_bgcolor unless @parent.nil?
         end
-        if focussed 
+        case focussed
+        when :SOFT_FOCUS
+          @attr |= Ncurses::A_BOLD
+        when true
           @attr |= Ncurses::A_REVERSE
+        when false
         end
+        #if focussed 
+          #@attr |= Ncurses::A_REVERSE
+        #end
     end
 
     ##
-    # 
+    #  paint a list box cell
+    #  2010-09-02 15:38 changed focussed to take true, false and :SOFT_FOCUS
+    #  SOFT_FOCUS means the form focus is no longer on this field, but this row
+    #  was focussed when use was last on this field. This row will take focus
+    #  when field is focussed again
+    #
+    #  @param [Buffer] window or buffer object used for printing
+    #  @param [Fixnum] row
+    #  @param [Fixnum] column
+    #  @param [Fixnum]  ??? seems abandoned
+    #  @param [String] text to print in cell
+    #  @param [Boolean, :SOFT_FOCUS] cell focussed, not focussed, cell focussed but field is not focussed
+    #  @param [Boolean] cell selected or not
     def repaint graphic, r=@row,c=@col, row_index=-1,value=@text, focussed=false, selected=false
         #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor= #{acolor} j:#{@justify} dlL: #{@display_length} "
 
