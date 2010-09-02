@@ -8,12 +8,13 @@ require 'rbcurse/rlistbox'
 #
 ## this sample creates a multisplitpane with n objects
 ##+ and move divider around using - + and =.
-# ON_LEAVE make title normal
+# show directories with / etc as in rfe_renderer
 # if possible selection should also become dimmer
 # Stuatus bar below to reflect full path.
 #
 KEY_ENTER = 13
 KEY_BTAB  = 353
+$counter = 0
 # @param [Listbox] new list to bind
 # @param [Array] array of lists
 # @param [MultiSplit] msp object to add a new list to
@@ -33,8 +34,9 @@ def bind_list(listb, lists, splitp)
       $log.debug "1 MYLIST #{mylist} dir #{item} "
       # NOTE that we create component with nil form as container will manage it
       if lists.empty? || lists.last == listb
+        $counter += 1
         listc = Listbox.new nil do
-          name  "LIST" 
+          name  "LIST#{$counter}" 
           list mylist
           title item
           title_attrib 'reverse'
@@ -83,9 +85,6 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       @form = Form.new @window
       r = 3; c = 7; ht = 18
-      # filler just to see that we are covering correct space and not wasting lines or cols
-      filler = "*" * 88
-      (ht+2).times(){|i| @form.window.printstring(i,r, filler, $datacolor) }
 
 
       @help = "q to quit. v h - + =        : #{$0}                              . Check logger too"
@@ -114,7 +113,7 @@ if $0 == __FILE__
       mylist.delete_if {|x| x =~ /^\./ || x =~ /^_/ || x =~ /bak$/}
       # NOTE that we create component with nil form as container will manage it
       listb = Listbox.new nil do
-        name   "mylist" 
+        name   "mainlist" 
         list mylist
         title "A short list"
         title_attrib 'reverse'
