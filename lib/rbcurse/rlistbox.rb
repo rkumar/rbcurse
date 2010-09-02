@@ -529,7 +529,7 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       @color_pair = get_color($datacolor)
-      #$log.debug "rlistb:  window.print_border #{startrow}, #{startcol} , #{height} , #{width} , @color_pair, @attr "
+      #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
       window.print_border startrow, startcol, height, width, @color_pair, @attr
       print_title
     end
@@ -651,7 +651,7 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
-            $multiplier = 0
+            #$multiplier = 0 # 2010-09-02 22:35 this prevents parent from using mult
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
