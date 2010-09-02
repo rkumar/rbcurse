@@ -556,7 +556,6 @@ module RubyCurses
     end
     # Listbox
     def handle_key(ch)
-      $log.debug "3 value of one key is #{@one_key_selection} "
       @current_index ||= 0
       @toprow ||= 0
       h = scrollatrow()
@@ -714,7 +713,8 @@ module RubyCurses
       set_form_row # added 2009-01-11 23:41 
       #$log.debug " ONE ENTER LIST #{@current_index}, #{@form.row}"
       @repaint_required = true
-      fire_handler :ENTER, self
+      super
+      #fire_handler :ENTER, self
     end
     def on_enter_row arow
       #$log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
@@ -832,7 +832,11 @@ module RubyCurses
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
-            focussed = @current_index == crow ? true : false 
+            focussed = @current_index == crow ? true : false  # row focussed ?
+            focus_type = focussed 
+            # added 2010-09-02 14:39 so inactive fields don't show a bright focussed line
+            #focussed = false if focussed && !@focussed
+            focus_type = :SOFT_FOCUS if focussed && !@focussed
             selected = is_row_selected crow
             content = tm[crow]   # 2009-01-17 18:37 chomp giving error in some cases says frozen
             if content.is_a? String
@@ -869,7 +873,8 @@ module RubyCurses
             #renderer.repaint @graphic, r+hh, c+(colix*11), content, focussed, selected
             ## added crow on 2009-02-06 23:03 
             # since data is being truncated and renderer may need index
-            renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focussed, selected
+            renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
         else
           # clear rows
           @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
