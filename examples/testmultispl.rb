@@ -128,6 +128,17 @@ if $0 == __FILE__
       listb.bind(:ENTER) {|l| l.title_attrib 'reverse';  }
       listb.bind(:LEAVE) {|l| l.title_attrib 'normal';  }
       bind_list(listb, lists, splitp)
+      r = ht+r+2
+      fname = "Search"
+        field = Field.new @form do
+          name   fname
+          row  r+2
+          col  12
+          display_length  30
+          bgcolor 'cyan'
+          #set_buffer "abcd " 
+          set_label Label.new @form, {:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}
+        end
 
       @form.repaint
       @window.wrefresh
