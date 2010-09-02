@@ -5,6 +5,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rmultisplit'
 require 'rbcurse/rlistbox'
+require 'fileutils'
 #
 ## this sample creates a multisplitpane with n objects
 ##+ and move divider around using - + and =.
@@ -103,12 +104,13 @@ if $0 == __FILE__
           height ht
           split_count 3
           unlimited true
-  #        focusable false
           orientation :VERTICAL_SPLIT
+          max_visible 3
         end
       splitp.bind(:PROPERTY_CHANGE){|e| $message.value = e.to_s }
 
       lists = []
+      FileUtils.cd("..")
       mylist = Dir.glob('*')
       mylist.delete_if {|x| x =~ /^\./ || x =~ /^_/ || x =~ /bak$/}
       # NOTE that we create component with nil form as container will manage it
@@ -143,7 +145,7 @@ if $0 == __FILE__
       @window.wrefresh
       Ncurses::Panel.update_panels
       counter = 0
-      while((ch = @window.getchar()) != ?q.getbyte(0) )
+      while((ch = @window.getchar()) != KEY_F1 )
         str = keycode_tos ch
         #case ch
         #when ?V.getbyte(0)
