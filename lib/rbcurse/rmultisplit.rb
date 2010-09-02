@@ -46,6 +46,7 @@ module RubyCurses
   #  - some anamoly reg LEAVE and ENTER from last object
   #  - should we not be managing on_enter of listboxes when tabbing ?
   #  - how many panes to show, max to create
+  #  - increase size - currently i recalc each time!
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
@@ -65,12 +66,14 @@ module RubyCurses
       dsl_accessor :allow_resizing
       # allow user to flip / exhange 2 components or not, default false
       dsl_accessor :allow_exchanging
+      dsl_accessor :cyclic_behavior
 
       attr_accessor :one_touch_expandable # boolean, default true  # XXX
 
       def initialize form, config={}, &block
           @focusable = true
           @editable = false
+          @cyclic_behavior = true
           @row = 0
           @col = 0
           @split_count = nil
@@ -105,6 +108,11 @@ module RubyCurses
           bind_key([?\C-w, ?1], :expand)
           bind_key([?\C-w, ?2], :unexpand)
           bind_key([?\C-w, ?x], :exchange)
+          bind_key(?w, :goto_next_component)
+          bind_key(?b, :goto_prev_component)
+          bind_key([?\C-w, ?-], :decrease)
+          bind_key([?\C-w, ?+], :increase)
+          bind_key([?\C-w, ?=], :same)
 
       end
       ## 
@@ -159,14 +167,15 @@ module RubyCurses
       # @param [widget] a widget 
       # @param [Fixnum] offset in list of components
       def compute_component comp, index
+        @balance ||= 0
         if @orientation == :HORIZONTAL_SPLIT
           @comp_height = (@height / @split_count) - 1
           @comp_width = @width
           h = @comp_height
+          comp.height ||= h
           w = @comp_width
-          r = @row + ( h * index)
+          r = @row + ( comp.height * index)
           c = @col
-          comp.height = h
           comp.width = w
           comp.row = r
           comp.col = c
@@ -175,14 +184,67 @@ module RubyCurses
           @comp_width = (@width / @split_count) - 0
           h = @comp_height 
           w = @comp_width
-          c = @col + ( w * index)
+          comp.width ||= w
+          #c = @col + ( w * index) # this makes them all equal
+          c = @col + @balance
+          @balance += comp.width
+          $log.debug "XXXX index #{index} , w #{comp.width} , c = #{c} , bal #{@balance} "
           r = @row
           comp.height = h
-          comp.width = w
           comp.row = r
           comp.col = c
         end
         comp
+      end
+      def increase 
+        _multiplier = ($multiplier == 0 ? 1 : $multiplier )
+        delta = _multiplier
+        c = @current_component 
+        n = get_next_component
+        n = get_prev_component unless n
+        if @orientation == :HORIZONTAL_SPLIT
+          c.height += delta
+          n.height -= delta
+        else
+          c.width += delta
+          n.width -= delta
+        end
+      end
+      # decrease size of current component. 
+      # if last one, then border printing exceeds right boundary. values look okay
+      # dunno why XXX FIXME
+      def decrease 
+        _multiplier = ($multiplier == 0 ? 1 : $multiplier )
+        delta = _multiplier
+        $log.debug "XXXX decrease got mult #{$_multiplier} "
+        c = @current_component 
+        # if decreasing last component then increase previous
+        # otherwise always increase the next
+        n = get_next_component || get_prev_component 
+        return unless n # if no other, don't allow
+        if @orientation == :HORIZONTAL_SPLIT
+          c.height -= delta
+          n.height += delta
+          # TODO
+        else
+          c.width -= delta
+          n.width += delta
+        end
+      end
+      def same
+        @components.each do |comp| 
+          comp.height = @comp_height
+          comp.width = @comp_width
+        end
+      end
+      # @return [widget] next component or nil if no next
+      def get_next_component
+        return @components[@current_index+1] 
+      end
+      # @return [widget] prev component or nil if no next
+      def get_prev_component
+        return nil if @current_index == 0
+        return @components[@current_index-1] 
       end
       ##
       #
@@ -247,262 +309,21 @@ module RubyCurses
             end
           end
       end
-      # set location of divider (row or col depending on orientation)
-      # internally sets the second components row or col
-      # also to set widths or heights
-      # Check minimum sizes are not disrespected
-      # @param rc [int] row or column to place divider
-      #  2010-01-09 23:07 : added sections to prevent a process crash courtesy copywin
-      #+ when pane size exceeds buffer size, so in these cases we increase size of component
-      #+ and therefore buffer size. Needs to be tested for VERTICAL.
-      # If this returns :ERROR, caller may avoid repainting form needlessly.
-      # We may give more meaningful error retval in future. TODO
-      def XXset_divider_location rc
-        $log.debug " SPLP #{@name} setting divider to #{rc} "
-        # add a check for out of bounds since no buffering
-          v = 1 # earlier 2
-        if @orientation == :HORIZONTAL_SPLIT
-          if rc < v || rc > @height - v
-            return :ERROR
-          end
-        else
-          if rc < v || rc > @width - v
-            return :ERROR
-          end
-        end
-        @repaint_required = true
-          old_divider_location = @divider_location || 0
-          # we first check against min_sizes
-          # the calculation is repeated here, and in the actual change
-          # so if modifying, be sure to do in both places.
-          if !@is_expanding # if expanding then i can't check against min_width
-          if rc > old_divider_location
-            if @second_component != nil
-              if @orientation == :VERTICAL_SPLIT
-                # check second comps width
-                if @width - (rc + @col_offset + @divider_offset+1) < @second_component.min_width
-                  $log.debug " #{@name}  SORRY 2c min width prevents further resizing: #{@width} #{rc}"
-                  return :ERROR
-                end
-              else
-                # check second comps ht
-                  $log.debug " YYYY SORRY 2c  H:#{@height} rc: #{rc} 2cmh: #{@second_component.name} "
-                if @height - rc -2 < @second_component.min_height
-                  $log.debug " #{@name}  SORRY 2c min height prevents further resizing"
-                  return :ERROR
-                end
-              end
-            end
-          elsif rc < old_divider_location
-            if @first_component != nil
-               $log.debug " #{@name}  fc min width #{rc}, #{@first_component.min_width} "
-              if @orientation == :VERTICAL_SPLIT
-                # check first comps width
-
-                if rc-1 < @first_component.min_width
-                  $log.debug " SORRY fc min width prevents further resizing"
-                  return :ERROR
-                end
-              else
-                if rc-1 < @first_component.min_height
-                  $log.debug " SORRY fc min height prevents further resizing"
-                  return :ERROR
-                end
-              end
-            end
-          end
-          end # expanding
-          @is_expanding = false
-          @old_divider_location = @divider_location
-          @divider_location = rc
-          if @first_component != nil
-
-            ## added in case not set. it will be set to a sensible default
-            @first_component.height ||= 0
-            @first_component.width ||= 0
-            
-              $log.debug " #{@name}  set div location, setting first comp width #{rc}"
-              if !@cascade_changes.nil?
-                if @orientation == :VERTICAL_SPLIT
-                  @first_component.width(rc-0) #+ @col_offset + @divider_offset
-                  @first_component.height(@height-0) #2+ @col_offset + @divider_offset
-                else
-                  @first_component.height(rc+0) #-1) #1+ @col_offset + @divider_offset
-                  @first_component.width(@width-0) #2+ @col_offset + @divider_offset
-                end
-              else
-                if @orientation == :VERTICAL_SPLIT
-                  $log.debug " DOES IT COME HERE compare fc wt #{@first_component.width} to match #{rc}-1 "
-                  # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
-                  if @first_component.width < rc -0 then
-                    $log.debug " INCRease fc wt #{@first_component.width} to match #{rc}-1 "
-                    @first_component.width(rc-0) #+ @col_offset + @divider_offset
-                    @first_component.repaint_all(true) if !@first_component.nil?
-                    @repaint_required = true
-                  end
-                  ## added this condition 2010-01-11 21:44  again switching needs this
-                  a = 0 #2
-                  if @first_component.height < @height - a then
-                    $log.debug " INCRease fc ht #{@first_component.height} to match #{@height}- #{a} "
-                    @first_component.height(@height-a) #+ @col_offset + @divider_offset
-                  end
-                else
-                  # added 2010-01-09 19:00 increase fc  to avoid copywin crashing process
-                  a = 0 #1
-                  if @first_component.height < rc -a then
-                    $log.debug " INCRease fc ht #{@first_component.height} to match #{rc}-1 "
-                    @first_component.height(rc-a) #+ @col_offset + @divider_offset
-                    @first_component.repaint_all(true) if !@first_component.nil?
-                    @repaint_required = true
-                  end
-                  # added 2010-01-11 19:24 to match c2. Sometimes switching from V to H means
-                  # fc's width needs to be expanded.
-                  if @first_component.width < @width - 1 #+ @col_offset + @divider_offset
-                    $log.debug " INCRease fc wi #{@first_component.width} to match #{@width}-2 "
-                    @first_component.width = @width - 1 #+ @col_offset + @divider_offset
-                    @first_component.repaint_all(true) 
-                    @repaint_required = true
-                  end
-                end
-              end
-              $log.debug " #{@name} TA set C1 H W RC #{@first_component.height} #{@first_component.width} #{rc} "
-              @first_component.set_buffering(:bottom => @first_component.height-1, :right => @first_component.width-1, :form => @form )
-          end
-          if !@second_component.nil?
-
-          ## added  2010-01-11 23:09  since some cases don't set, like splits within split.
-          @second_component.height ||= 0
-          @second_component.width ||= 0
-
-          if @orientation == :VERTICAL_SPLIT
-              #@second_component.col = rc + @col_offset + @divider_offset
-              #@second_component.row = 0 # 1
-              @second_component.col = @col + rc #+ @col_offset + @divider_offset
-              @second_component.row = @row # 1
-              if !@cascade_changes.nil?
-                #@second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
-                #@second_component.height = @height-2  #+ @row_offset + @divider_offset
-                @second_component.width = @width - rc #+ @col_offset + @divider_offset + 1)
-                @second_component.height = @height-0  #+ @row_offset + @divider_offset
-              else
-                # added 2010-01-09 22:49 to be tested XXX
-                # In a vertical split, if widgets w and thus buffer w is less than
-                #+ pane, a copywin can crash process, so we must expand component, and thus buffer
-                $log.debug " #{@name}  2c width does it come here? #{@second_component.name} #{@second_component.width} < #{@width} -( #{rc}+#{@col_offset}+#{@divider_offset} +1 "
-                if @second_component.width < @width - rc #+ @col_offset + @divider_offset + 1)
-                  $log.debug " YES 2c width "
-                  @second_component.width = @width - rc #+ @col_offset + @divider_offset + 1)
-                  @second_component.repaint_all(true) 
-                  @repaint_required = true
-                end
-                # adding 2010-01-17 19:33 since when changing to VERT, it was not expanding
-                if @second_component.height < @height-0  #+ @row_offset + @divider_offset
-                   $log.debug " JUST ADDED 2010-01-17 19:35 HOPE DOES NOT BREAK ANYTHING "
-                   @second_component.height = @height-0  #+ @row_offset + @divider_offset
-                end
-              end
-          else
-            #rc += @row
-             ## HORIZ SPLIT
-            offrow = offcol = 0
-              #@second_component.row = offrow + rc + 0 #1 #@row_offset + @divider_offset
-              #@second_component.col = 0 + offcol # was 1
-            offrow = @row; offcol = @col
-              @second_component.row = offrow + rc + 0 #1 #@row_offset + @divider_offset
-              $log.debug "C2 Horiz row #{@second_component.row} = #{offrow} + #{rc} "
-              @second_component.col = 0 + offcol # was 1
-              if !@cascade_changes.nil?
-                #@second_component.width = @width - 2 #+ @col_offset + @divider_offset
-                #@second_component.height = @height - rc -2 #+ @row_offset + @divider_offset
-                @second_component.width = @width - 0 #+ @col_offset + @divider_offset
-                @second_component.height = @height - rc -0 #+ @row_offset + @divider_offset
-              else
-                 # added 2010-01-16 19:14 -rc since its a HORIZ split
-                 #  2010-01-16 20:45 made 2 to 3 for scrollpanes within splits!!! hope it doesnt
-                 #  break, and why 3. 
-                 # 2010-01-17 13:33 reverted to 2. 3 was required since i was not returning when error in set_screen_max.
-                if @second_component.height < @height-rc-1 #2  #+ @row_offset + @divider_offset
-                  $log.debug " #{@name}  INCRease 2c #{@second_component.name}  ht #{@second_component.height} to match #{@height}-2- #{rc}  "
-                  @second_component.height = @height-rc-1  #2 #+ @row_offset + @divider_offset
-                  @second_component.repaint_all(true) 
-                  @repaint_required = true
-                end
-                # # added 2010-01-10 15:36 still not expanding 
-                if @second_component.width < @width - 2 #+ @col_offset + @divider_offset
-                  $log.debug " #{@name}  INCRease 2c #{@second_component.name}  wi #{@second_component.width} to match #{@width}-2 "
-                  @second_component.width = @width - 2 #+ @col_offset + @divider_offset
-                  @second_component.repaint_all(true) 
-                  @repaint_required = true
-                end
-              end
-          end
-          # i need to keep top and left sync for print_border which uses it UGH !!!
-          if !@second_component.get_buffer().nil?
-            # now that TV and others are creating a buffer in repaint we need another way to set
-            #$log.debug " setting second comp row col offset - i think it doesn't come here till much later "
-            #XXX @second_component.get_buffer().set_screen_row_col(@second_component.row+@ext_row_offset+@row, @second_component.col+@ext_col_offset+@col)
-            # 2010-02-13 09:15 RFED16
-            @second_component.get_buffer().set_screen_row_col(@second_component.row, @second_component.col)
-          end
-            #@second_component.set_buffering(:screen_top => @row, :screen_left => @col)
-            #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
-            #@second_component.set_buffering(:screen_top => @row+@second_component.row, :screen_left => @col+@second_component.col)
-          $log.debug "sdl: #{@name} setting C2 screen_top n left to #{@second_component.row}, #{@second_component.col} "
-          @second_component.set_buffering(:screen_top => @second_component.row, :screen_left => @second_component.col)
-          @second_component.set_buffering(:bottom => @second_component.height-1, :right => @second_component.width-1, :form => @form )
-          #@second_component.ext_row_offset = @row + @ext_row_offset
-          #@second_component.ext_col_offset = @col + @ext_col_offset
-          $log.debug " #{@name}  2 set div location, rc #{rc} width #{@width} height #{@height}" 
-          $log.debug " 2 set div location, setting r #{@second_component.row}, #{@ext_row_offset}, #{@row} "
-          $log.debug " 2 set div location, setting c #{@second_component.col}, #{@ext_col_offset}, #{@col}  "
-          $log.debug " C2 set div location, setting w #{@second_component.width} "
-          $log.debug " C2 set div location, setting h #{@second_component.height} "
-
-          end
-          fire_property_change("divider_location", old_divider_location, @divider_location)
-
-      end
-
-      # calculate divider location based on weight
-      # Weight implies weight of first component, e.g. .70 for 70% of splitpane
-      # @param wt [float, :read] weight of first component
-      def XXset_resize_weight wt
-        raise ArgumentError if wt < 0 or wt >1
-          @repaint_required = true
-          oldvalue = @resize_weight
-          @resize_weight = wt
-          if @orientation == :VERTICAL_SPLIT
-              rc = (@width||@preferred_width) * wt
-          else
-              rc = (@height||@preferred_height) * wt
-          end
-          fire_property_change("resize_weight", oldvalue, @resize_weight)
-          rc = rc.ceil
-          set_divider_location rc
-      end
       ##
       # resets divider location based on preferred size of first component
       # @return :ERROR if min sizes failed
       # You may want to check for ERROR and if so, resize_weight to 0.50
-      def XXreset_to_preferred_sizes
-        return if @first_component.nil?
-          @repaint_required = true
-          ph, pw = @first_component.get_preferred_size
-          if @orientation == :VERTICAL_SPLIT
-             pw ||= @width/2-1  # added 2010-01-16 12:31 so easier to use, 1 to 2 2010-01-16 22:13 
-              rc = pw+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
-              @first_component.width ||= pw ## added 2010-01-11 23:19 
-          else
-             ph ||= @height/2 - 0 # 1  # added 2010-01-16 12:31 so easier to use
-              rc = ph+0 #1  ## added 1 2010-01-11 23:26 else divider overlaps comp
-              @first_component.height ||= ph ## added 2010-01-11 23:19 
-          end
-          #set_divider_location rc TODO
+      def reset_to_preferred_sizes
+        raise "TODO THIS reset_to "
+        return if @components.nil?
+        @repaint_required = true
       end
-      def update_components # UNUSED XXX
+      def update_components # 
+        @balance = 0
         @components.each_with_index do |comp,index| 
           compute_component comp, index 
           comp.set_buffering(:screen_top => comp.row, :screen_left => comp.col)
+          comp.repaint
         end
       end
       def repaint # multisplitpane
@@ -512,6 +333,7 @@ module RubyCurses
         end
 
         if @repaint_required
+          # repaint all ?
           @components.each { |e| e.repaint_all(true) }
         end
         if @repaint_required
@@ -544,8 +366,9 @@ module RubyCurses
             @comp_width ||= (@width / @split_count) - 1
             $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
             #@graphic.mvvline(absrow+1, rc+abscol, 0, @height-2)
-            (1...count).each(){|i| @graphic.mvvline(absrow+1, (i*@comp_width)+abscol, 0, @height-2) }
+      #      (1...count).each(){|i| @graphic.mvvline(absrow+1, (i*@comp_width)+abscol, 0, @height-2) }
             # TODO put vlines here
+            # commented off since it uses fixed values and we are increaseing and dec
 
           else
             @comp_height ||= (@height / @split_count) - 1
@@ -554,19 +377,16 @@ module RubyCurses
             #@graphic.mvhline(rc+absrow, abscol+1, 0, @width-2)
             # XXX in next line -2 at end was causing an overlap into final border col, 
             # this need correction in splitpane XXX
-            (1...count).each(){|i| @graphic.mvhline((i*@comp_height)+absrow, abscol+1, 0, @width-3) }
+            #(1...count).each(){|i| @graphic.mvhline((i*@comp_height)+absrow, abscol+1, 0, @width-3) }
             # TODO put hlines here
           end
           @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
         end
         ## XXX do not paint what is outside of bounds. See tabbedpane or scrollform
-        @components.each_with_index do |comp,index| 
-          compute_component comp, index
-          comp.set_buffering(:screen_top => comp.row, :screen_left => comp.col)
-          comp.repaint 
-        end
+        update_components
         @graphic.wrefresh # 2010-02-14 20:18 SUBWIN ONLY ??? what is this doing here ? XXX
-        paint 
+        #paint 
+        @repaint_required = false
       end
       def getvalue
           # TODO
@@ -574,55 +394,57 @@ module RubyCurses
       # take focus to next pane (component in it)
       # if its the last, return UNHANDLED so form can take to next field
       # @return [0, :UNHANDLED] success, or last component
-      def next_component
-          if @current_component != nil 
-            @current_component.on_leave
-            if on_last_component?
-              return :UNHANDLED
-            end
-            @current_index += 1
-            @current_component = @components[@current_index] 
-            # shoot if this this put on a form with other widgets
-            # we would never get out, should return nil -1 in handle key
-            unless @current_component
-              @current_index = 0
-              @current_component = @components[@current_index] 
-            end
-          else
-            # this happens in one_tab_expand
-            #@current_component = @second_component if @first_component.nil?
-            #@current_component = @first_component if @second_component.nil?
-            # XXX not sure what to do here, will it come
+      def goto_next_component
+        if @current_component != nil 
+          @current_component.on_leave
+          if on_last_component?
+            return :UNHANDLED
+          end
+          @current_index += 1
+          @current_component = @components[@current_index] 
+          # shoot if this this put on a form with other widgets
+          # we would never get out, should return nil -1 in handle key
+          unless @current_component
+            $log.debug " CAME HERE unless @current_component setting to first"
             @current_index = 0
             @current_component = @components[@current_index] 
           end
-          set_form_row
-          return 0
+        else
+          # this happens in one_tab_expand
+          #@current_component = @second_component if @first_component.nil?
+          #@current_component = @first_component if @second_component.nil?
+          # XXX not sure what to do here, will it come
+          $log.debug " CAME HERE in else clause MSP setting to first"
+          @current_index = 0
+          @current_component = @components[@current_index] 
+        end
+        set_form_row
+        return 0
       end
-      def prev_component
-          if @current_component != nil 
-            @current_component.on_leave
-            if on_first_component?
-              return :UNHANDLED
-            end
-            @current_index -= 1
-            @current_component = @components[@current_index] 
-            # shoot if this this put on a form with other widgets
-            # we would never get out, should return nil -1 in handle key
-            unless @current_component
-              @current_index = 0
-              @current_component = @components[@current_index] 
-            end
-          else
-            # this happens in one_tab_expand
-            #@current_component = @second_component if @first_component.nil?
-            #@current_component = @first_component if @second_component.nil?
-            # XXX not sure what to do here, will it come
+      def goto_prev_component
+        if @current_component != nil 
+          @current_component.on_leave
+          if on_first_component?
+            return :UNHANDLED
+          end
+          @current_index -= 1
+          @current_component = @components[@current_index] 
+          # shoot if this this put on a form with other widgets
+          # we would never get out, should return nil -1 in handle key
+          unless @current_component
             @current_index = 0
             @current_component = @components[@current_index] 
           end
-          set_form_row
-          return 0
+        else
+          # this happens in one_tab_expand
+          #@current_component = @second_component if @first_component.nil?
+          #@current_component = @first_component if @second_component.nil?
+          # XXX not sure what to do here, will it come
+          @current_index = 0
+          @current_component = @components[@current_index] 
+        end
+        set_form_row
+        return 0
       end
       def on_first_component?
         @current_component == @components.first
@@ -633,7 +455,8 @@ module RubyCurses
       ## Handles key for splitpanes
       ## By default, first component gets focus, not the SPL itself.
       ##+ Mostly passing to child, and handling child's left-overs.
-      ## NOTE: How do we switch to the other outer SPL?
+      # please use bind_key for all mappings.
+      # Avoid adding code in here. Let this be generic
       def handle_key ch
         _multiplier = ($multiplier == 0 ? 1 : $multiplier )
         @current_component ||= @first_component
@@ -644,10 +467,10 @@ module RubyCurses
         ## If B_tab on second comp, switch to first
         ## If B_tab on first comp, return UNHA so form can take to prev field
         if ch == KEY_TAB
-           return next_component
+           return goto_next_component
            #return 0
         elsif ch == KEY_BTAB
-           return prev_component
+           return goto_prev_component
         end
 
         if @current_component != nil 
@@ -658,62 +481,32 @@ module RubyCurses
           $log.debug " SPLP #{@name} - no component installed in splitpane"
           #return :UNHANDLED
         end
-        $log.debug " splitpane #{@name} gets KEY #{ch}"
+        $log.debug " mmplitpane #{@name} gets KEY #{ch}"
         case ch
-        when ?\M-w.getbyte(0)
-           # switch panes
-          if @current_component != nil 
-            if @current_component == @first_component
-              @current_component = @second_component
-            else
-              @current_component = @first_component
-            end
-            set_form_row
-          else
-           _switch_component
-           return 0
-            # if i've expanded bottom pane, tabbed to opposite higher level, tabbing back
-            # brings me to null first pane and i can't go to second, so switch
-            # this was added for a non-realistic test program with embedded splitpanes
-            #+ but no component inside them. At least one can go from one outer to another.
-            #+ In real life, this should not come.
-
-            return :UNHANDLED
-          end
-        when ?\M-V.getbyte(0)
-          self.orientation(:VERTICAL_SPLIT)
-          @repaint_required = true
-        when ?\M-H.getbyte(0)
-          self.orientation(:HORIZONTAL_SPLIT)
-          @repaint_required = true
-        when ?\M--.getbyte(0)
-          self.set_divider_location(self.divider_location-_multiplier)
-        when ?\M-\+.getbyte(0)
-          self.set_divider_location(self.divider_location+_multiplier)
-        when ?\M-\=.getbyte(0)
-          self.set_resize_weight(0.50)
-        #when ?\C-u.getbyte(0)
-          ## multiplier. Series is 4 16 64
-          #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
-          #return 0
         when ?\C-c.getbyte(0)
           $multiplier = 0
           return 0
-        else
-          # check for bindings, these cannot override above keys since placed at end
-          ret = process_key ch, self
-          return :UNHANDLED if ret == :UNHANDLED
+        when ?0.getbyte(0)..?9.getbyte(0)
+          $multiplier *= 10 ; $multiplier += (ch-48)
+          return 0
         end
+        ret = process_key ch, self
+        return :UNHANDLED if ret == :UNHANDLED
+
         $multiplier = 0
         return 0
       end
       def paint
-          @repaint_required = false
+        #@repaint_required = false
       end
       def on_enter
         return if @components.nil?
-        # no, let it remain on whatever component it was on, or always make it first?
-        #@current_component = @components.first
+        # cyclic means it always lands into first comp just as in rdoc
+        # otherwise it will always land in last visited component
+        if @cyclic_behavior
+          @current_component = @components.first 
+          @current_index = 0
+        end
         @current_component ||= @components.first
         set_form_row
       end
@@ -738,59 +531,56 @@ module RubyCurses
             @current_component.set_form_col 
          end
       end
-      private
-      #def _other_component
-        #if @current_component == @first_component
-          #return @second_component
-        #end
-        #return @first_component
-      #end
       ## expand a split to maximum. This is the one_touch_expandable feature
       # Currently mapped to C-w 1 (mnemonic for one touch), or C-w o (vim's only)
       # To revert, you have to unexpand
       # Note: basically, i nil the component that we don't want to see
       def expand
-        @is_expanding = true # this is required so i don't check for min_width later
-        $log.debug " callign expand "
-        if @current_component == @first_component
-          @saved_component = @second_component
-          @second_component = nil
-          if @orientation == :VERTICAL_SPLIT
-            set_divider_location @width - 1
-          else
-            set_divider_location @height - 1
-          end
-          $log.debug " callign expand 2 nil #{@divider_location}, h:#{@height} w: #{@width}  "
-        else
-          @saved_component = @first_component
-          @first_component = nil
-          set_divider_location 1
-          $log.debug " callign expand 1 nil #{@divider_location}, h:#{@height} w: #{@width}  "
-        end
-        @repaint_required = true
+        #@is_expanding = true # this is required so i don't check for min_width later
+        #$log.debug " callign expand "
+        #if @current_component == @first_component
+          #@saved_component = @second_component
+          #@second_component = nil
+          #if @orientation == :VERTICAL_SPLIT
+            #set_divider_location @width - 1
+          #else
+            #set_divider_location @height - 1
+          #end
+          #$log.debug " callign expand 2 nil #{@divider_location}, h:#{@height} w: #{@width}  "
+        #else
+          #@saved_component = @first_component
+          #@first_component = nil
+          #set_divider_location 1
+          #$log.debug " callign expand 1 nil #{@divider_location}, h:#{@height} w: #{@width}  "
+        #end
+        #@repaint_required = true
       end
       # after expanding one split, revert to original  - actually i reset, rather than revert
       # This only works after expand has been done
       def unexpand
-        $log.debug " inside unexpand "
-        return unless @saved_component
-        if @first_component.nil?
-          @first_component = @saved_component
-        else
-          @second_component = @saved_component
-        end
-        @saved_component = nil
-        @repaint_required = true
-        reset_to_preferred_sizes
+        #$log.debug " inside unexpand "
+        #return unless @saved_component
+        #if @first_component.nil?
+          #@first_component = @saved_component
+        #else
+          #@second_component = @saved_component
+        #end
+        #@saved_component = nil
+        #@repaint_required = true
+        #reset_to_preferred_sizes
       end
 
       # exchange 2 splits, bound to C-w x
       def exchange
-        tmp = @first_component
-        @first_component = @second_component
-        @second_component = tmp
-        @repaint_required = true
-        reset_to_preferred_sizes
+        #tmp = @first_component
+        #@first_component = @second_component
+        #@second_component = tmp
+        #@repaint_required = true
+        #reset_to_preferred_sizes
+      end
+      def tile
+        return unless @tiling_allowed
+        # TODO
       end
   end # class SplitPane
 end # module
