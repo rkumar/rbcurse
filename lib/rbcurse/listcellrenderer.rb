@@ -72,7 +72,8 @@ module RubyCurses
     #  @param [Buffer] window or buffer object used for printing
     #  @param [Fixnum] row
     #  @param [Fixnum] column
-    #  @param [Fixnum]  ??? seems abandoned
+    #  @param [Fixnum] actual index into data, some lists may have actual data elsewhere and
+    #                  display data separate. e.g. rfe_renderer (directory listing)
     #  @param [String] text to print in cell
     #  @param [Boolean, :SOFT_FOCUS] cell focussed, not focussed, cell focussed but field is not focussed
     #  @param [Boolean] cell selected or not
