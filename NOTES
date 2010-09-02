@@ -1652,3 +1652,13 @@ use ffi or ruby-ncurses. For example, i read that mutt can be compiled
 for ncurses or slang.
 
 * * * * * * * *
+
+Subject: on_enter
+-----------------
+Date: 2010-09-02 12:12
+
+i think Form calls `on_enter` of a widget and also fires its `:ENTER`.
+However, looking at the on_enter of some widget;s looks like they also
+fire :ENTER. So things could get fired 2 times.
+
+* * * * * * * *
