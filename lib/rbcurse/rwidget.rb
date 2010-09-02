@@ -408,6 +408,10 @@ module RubyCurses
     attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
     attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
+    # sometimes inside a container there's no way of knowing if an individual comp is in focus
+    # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
+    attr_accessor :focussed  # is this widget in focus, so they may paint differently
+
     def initialize form, aconfig={}, &block
       @form = form
       @bgcolor ||=  "black" # 0
@@ -456,10 +460,12 @@ module RubyCurses
 
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
+      @focussed = true
       fire_handler :ENTER, self
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_leave
+      @focussed = false
       fire_handler :LEAVE, self
     end
     ## 
