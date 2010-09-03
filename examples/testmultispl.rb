@@ -9,9 +9,8 @@ require 'fileutils'
 #
 ## this sample creates a multisplitpane with n objects
 ##+ and move divider around using - + and =.
-# show directories with / etc as in rfe_renderer
-# if possible selection should also become dimmer
-# Stuatus bar below to reflect full path.
+# TODO:
+# - Status bar below to reflect full path.
 #
 KEY_ENTER = 13
 KEY_BTAB  = 353
@@ -62,6 +61,9 @@ def bind_list(listb, lists, splitp)
         listc.one_key_selection = false
         listc.bind(:ENTER) {|l| l.title_attrib 'reverse';  }
         listc.bind(:LEAVE) {|l| l.title_attrib 'normal';  }
+        # FIXME crashes if file nil
+        row_cmd = lambda {|lb, oldlist| list = lb.list(); file = list[lb.current_index]; file ||= "?";  $message.value = File.join(lb.config[:path], file); }
+        listc.bind(:ENTER_ROW, mylist) {|lb,list| row_cmd.call(lb,list) }
         splitp.add listc
         lists << listc
         listb.config[:child] = listc
@@ -71,7 +73,8 @@ def bind_list(listb, lists, splitp)
         #l = lists.first
         l = listb.config[:child]
         l.list_data_model.remove_all
-        l.list_data_model.insert 0, *mylist
+        l.list_data_model.insert 0, *mylist unless mylist.empty?
+        l.config[:path] = fullname
         l.title = item
         while true
           n = l.config[:child]
@@ -104,12 +107,12 @@ if $0 == __FILE__
       r = 3; c = 7; ht = 18
 
 
-      @help = "F1 to quit. v h - + =        : #{$0}                              . Check logger too"
-      RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
+      @help = "F1 to quit. v h - + =        : #{$0}                              . Check log too"
+      RubyCurses::Label.new @form, {:text => @help, :row => ht+r, "col" => 2, "color" => "yellow" }
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => ht+r+2, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => ht+r+2, "col" => 1, "display_length" => 80,  "height" => 2, 'color' => 'cyan'}
       $message.update_command() { message_label.repaint } # why ?
 
       splitp = MultiSplit.new @form do
