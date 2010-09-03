@@ -58,7 +58,7 @@ module Io
         return -1, nil
       when 10, 13
         break
-      when ?\C-h.getbyte(0), ?\C-?.getbyte(0), 127 # delete previous character/backspace
+      when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE # delete previous character/backspace
         len -= 1 if len > prompt.length
         curpos -= 1 if curpos > 0
         str.slice!(curpos)
@@ -89,7 +89,7 @@ module Io
       when ?\M-i.getbyte(0) 
         ins_mode = !ins_mode
         next
-      when 9 # TAB
+      when KEY_TAB # TAB
         if config
           if prevchar == 9
             if !entries.nil? and !entries.empty?
