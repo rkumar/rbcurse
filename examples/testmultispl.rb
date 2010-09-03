@@ -12,6 +12,7 @@ require 'fileutils'
 # TODO:
 # x Status bar below to reflect full path.
 # - enter to gotonext component too, or at least make visible if not
+#    but now cursor is showing around everywhere
 #
 $counter = 0
 
@@ -72,6 +73,10 @@ def bind_list(listb, lists, splitp)
         #l = lists.first
         l = listb.config[:child]
         l.list_data_model.remove_all
+        # if empty maybe we should remove it, but its just a demo
+        # what happens is, this comes up again when going through another
+        # directory. First go down rbcurse/lib/rbcurse/extras
+        # then go to examples which has a shallow structure.
         l.list_data_model.insert 0, *mylist unless mylist.empty?
         l.config[:path] = fullname
         l.title = item
@@ -105,15 +110,15 @@ if $0 == __FILE__
     catch(:close) do
       @form = Form.new @window
       r = 3; c = 7; ht = 18
+      #lastrow = ht+r+5 # 26
+      lastrow = Ncurses.LINES-1
 
 
-      @help = "F1 to quit. v h - + =        : #{$0}                              . Check log too"
-      RubyCurses::Label.new @form, {:text => @help, :row => ht+r, "col" => 2, "color" => "yellow" }
+      help = "F1 to quit. #{$0}  Press Enter on directory, TAB/BTAB to navigate. C-w+-= "
+      RubyCurses::Label.new @form, {:text => help, :row => lastrow, "col" => 2, "color" => "yellow" }
+      title = "Demo of Multi-SplitPane (Column Browse pattern)"
+      RubyCurses::Label.new @form, {:text => title, :row => 1, :col => c, :color => "white" }
 
-      $message = Variable.new
-      $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => ht+r+2, "col" => 1, "display_length" => 80,  "height" => 2, 'color' => 'cyan'}
-      $message.update_command() { message_label.repaint } # why ?
 
       splitp = MultiSplit.new @form do
           name   "mypane" 
@@ -127,6 +132,15 @@ if $0 == __FILE__
           max_visible 3
         end
       splitp.bind(:PROPERTY_CHANGE){|e| $message.value = e.to_s }
+
+      $message = Variable.new
+      $message.value = "Message Comes Here"
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => ht+r+2, "col" => 1, "display_length" => 80,  "height" => 2, 'color' => 'cyan'}
+      $message.update_command() { message_label.repaint } # why ?
+      #message_label.row = splitp.row + splitp.height 
+      #message_label.col = splitp.col
+      @form.place_below(message_label)
+
 
       lists = []
       FileUtils.cd("..")
@@ -149,12 +163,15 @@ if $0 == __FILE__
       listb.bind(:ENTER) {|l| l.title_attrib 'reverse';  }
       listb.bind(:LEAVE) {|l| l.title_attrib 'normal';  }
       bind_list(listb, lists, splitp)
-      r = ht+r+2
+
+      # Dummy field just to see navigation from and to container
       fname = "Search"
+      r, c = @form.next_position
+      c += fname.length + 1
         field = Field.new @form do
           name   fname
-          row  r+2
-          col  12
+          row  r
+          col  c
           display_length  30
           bgcolor 'cyan'
           #set_buffer "abcd " 
