@@ -589,10 +589,9 @@ module RubyCurses
       # Note: splitpane does not use the cursor, so it does not know where cursor should be displayed,
       #+ the child has to decide where it should be displayed.
       def set_form_col
-        if !@current_component.nil?
-          $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
-          @current_component.set_form_col 
-        end
+        return if @current_component.nil?
+        $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
+        @current_component.set_form_col 
       end
       ## expand a split to maximum. This is the one_touch_expandable feature
       # Currently mapped to C-w 1 (mnemonic for one touch), or C-w o (vim's only)
