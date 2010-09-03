@@ -708,13 +708,20 @@ module RubyCurses
           set_focus_on(ix) unless ix.nil?
         end
     end
+    # please check for error before proceeding
+    # @return [Boolean] false if no data
     def on_enter
+      if @list.size < 1
+        Ncurses.beep
+        return false
+      end
       on_enter_row @current_index
       set_form_row # added 2009-01-11 23:41 
       #$log.debug " ONE ENTER LIST #{@current_index}, #{@form.row}"
       @repaint_required = true
       super
       #fire_handler :ENTER, self
+      true
     end
     def on_enter_row arow
       #$log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
