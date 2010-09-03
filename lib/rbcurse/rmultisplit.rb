@@ -70,7 +70,7 @@ module RubyCurses
       # maximum to show, if less than split_count then scrolling
       dsl_property :max_visible
 
-      attr_accessor :one_touch_expandable # boolean, default true  # XXX
+      #attr_accessor :one_touch_expandable # boolean, default true  # XXX
 
       def initialize form, config={}, &block
           @focusable = true
@@ -106,8 +106,8 @@ module RubyCurses
 
           # true means will request child to create a buffer, since cropping will be needed
           @_child_buffering = true # private, internal. not to be changed by callers.
-          @one_touch_expandable = true
-          @is_expanding = false
+          #@one_touch_expandable = true
+          #@is_expanding = false
 
           bind_key([?\C-w, ?o], :expand)
           bind_key([?\C-w, ?1], :expand)
@@ -153,21 +153,20 @@ module RubyCurses
         comp.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row
         comp.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col
         # but we've not calculated height and width !
-        index = @components.size
-        # temporarily just to get old code running
-        # what if component removed XXX
-        case index
-        when 0
-          @first_component = comp
-        when 1
-          @second_component = comp
-        end
+        #index = @components.size
+        ## temporarily just to get old code running
+        ## what if component removed XXX
+        #case index
+        #when 0
+          #@first_component = comp
+        #when 1
+          #@second_component = comp
+        #end
         # dang ! this can go out of bounds ! XXX tab goes out
-        index = @max_visible - 1 if index > @max_visible
-        compute_component comp, index
-        #comp.col = @components[index].col # hack
-        comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
-        comp.set_buffering(:screen_top => @row, :screen_left => @col)
+        #index = @max_visible - 1 if index > @max_visible
+        #compute_component comp, index
+        #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+        #comp.set_buffering(:screen_top => @row, :screen_left => @col)
         comp.min_height ||= 5
         comp.min_width ||= 5
       end
@@ -339,6 +338,8 @@ module RubyCurses
           next if index < @_first_column_print
           break if index > @_last_column_print
           compute_component comp, index 
+        #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
           comp.set_buffering(:screen_top => comp.row, :screen_left => comp.col)
           comp.repaint
         end
@@ -423,6 +424,7 @@ module RubyCurses
           # is it visible
           #@current_index.between?(_first_column_print, _last_column_print)
           if @current_index > @_last_column_print
+            # TODO need to check for exceeding
             @_first_column_print += 1
             @_last_column_print += 1
             @repaint_required = true
@@ -448,6 +450,10 @@ module RubyCurses
         set_form_row
         return 0
       end
+
+      # take focus to prev pane (component in it)
+      # if its the first, return UNHANDLED so form can take to prev field
+      # @return [0, :UNHANDLED] success, or first component
       def goto_prev_component
         if @current_component != nil 
           @current_component.on_leave
@@ -456,6 +462,12 @@ module RubyCurses
           end
           @current_index -= 1
           @current_component = @components[@current_index] 
+          if @current_index < @_first_column_print
+            # TODO need to check for zero
+            @_first_column_print -= 1
+            @_last_column_print -= 1
+            @repaint_required = true
+          end
           # shoot if this this put on a form with other widgets
           # we would never get out, should return nil -1 in handle key
           unless @current_component
@@ -526,6 +538,12 @@ module RubyCurses
       def paint
         #@repaint_required = false
       end
+      # this is executed when the component gets focus
+      # and will happen each time on traversal
+      # Used to place the focus on correct internal component
+      # and place cursor where component should have it
+      # (If we knew if user has backtabbed into this,
+      # we could place cursor on last component) XXX
       def on_enter
         return if @components.nil?
         # cyclic means it always lands into first comp just as in rdoc
@@ -533,8 +551,13 @@ module RubyCurses
         if @cyclic_behavior
           #@current_component = @components.first 
           #@current_index = 0
-          @current_component = @components[@_first_column_print]
-          @current_index = @_first_column_print
+          if $current_key == KEY_BTAB
+            @current_component = @components[@_last_column_print]
+            @current_index     = @_last_column_print
+          else
+            @current_component = @components[@_first_column_print]
+            @current_index     = @_first_column_print
+          end
         end
         @current_component ||= @components.first
         set_form_row
@@ -566,6 +589,7 @@ module RubyCurses
       # To revert, you have to unexpand
       # Note: basically, i nil the component that we don't want to see
       def expand
+        return unless @one_touch_expandable
         #@is_expanding = true # this is required so i don't check for min_width later
         #$log.debug " callign expand "
         #if @current_component == @first_component
