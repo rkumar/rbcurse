@@ -228,7 +228,7 @@ module RubyCurses
         cursor_backward
       when KEY_RIGHT, ?l.getbyte(0)
         cursor_forward
-      when KEY_BACKSPACE, 127, 330
+      when KEY_BACKSPACE, KEY_BSPACE, KEY_DELETE
         cursor_backward
       when ?\C-a.getbyte(0) #, ?0.getbyte(0)
         # take care of data that exceeds maxlen by scrolling and placing cursor at start

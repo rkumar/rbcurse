@@ -274,17 +274,17 @@ module RubyCurses
         ret = up
       when KEY_DOWN
         ret = down
-      when KEY_ENTER, 10, 13
+      when KEY_ENTER, 10, KEY_RETURN
         insert_break
       when KEY_LEFT
         cursor_backward
       when KEY_RIGHT
         cursor_forward
-      when KEY_BACKSPACE, 127
+      when KEY_BACKSPACE, KEY_BSPACE
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
         end
-      when 330, ?\C-d.getbyte(0) # delete char
+      when KEY_DELETE, ?\C-d.getbyte(0) # delete char
         if @editable
           delete_curr_char 
         end
