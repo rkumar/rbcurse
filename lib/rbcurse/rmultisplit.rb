@@ -47,7 +47,10 @@ module RubyCurses
   #  x should we not be managing on_enter of listboxes when tabbing ?
   #  x how many panes to show, max to create
   #  x increase size - currently i recalc each time!
-  #  - print more marker
+  #  x print more marker
+  #  - allow user to specify preffered sizes and respect that
+  #  - don't move to an empty list, can have a crash
+  #  
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
@@ -449,8 +452,7 @@ module RubyCurses
           @current_index = 0
           @current_component = @components[@current_index] 
         end
-        set_form_row
-        return 0
+        return set_form_row
       end
 
       # take focus to prev pane (component in it)
@@ -564,16 +566,22 @@ module RubyCurses
         @current_component ||= @components.first
         set_form_row
       end
+      # sets cursor on correct row, col
+      # should we raise error or throw exception if can;t enter
       def set_form_row
         if !@current_component.nil?
           c=@current_component 
           $log.debug "XXXXX #{@name} set_form_row calling sfr for #{@current_component.name}, #{c.row}, #{c.col}  "
           #@current_component.set_form_row 
           # trigger the on_enter handler
-          @current_component.on_enter # typically on enter does a set_form_row
+          if @current_component.row_count > 0
+            @current_component.on_enter # typically on enter does a set_form_row
+            @current_component.set_form_col 
+            return 0
+          end
           #
-          @current_component.set_form_col 
         end
+        return :UNHANDLED
       end
       # added 2010-02-09 10:10 
       # sets the forms cursor column correctly
