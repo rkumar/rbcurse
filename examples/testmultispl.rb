@@ -11,9 +11,8 @@ require 'fileutils'
 ##+ and move divider around using - + and =.
 # TODO:
 # x Status bar below to reflect full path.
+# - enter to gotonext component too, or at least make visible if not
 #
-KEY_ENTER = 13
-KEY_BTAB  = 353
 $counter = 0
 
 # when displaying a filename, if directory prepend a slash.
@@ -37,7 +36,7 @@ end
 # @param [MultiSplit] msp object to add a new list to
 def bind_list(listb, lists, splitp)
   #listb.bind(:ENTER_ROW, mylist) {|lb,list| row_cmd.call(lb,list) }
-  listb.bind_key(KEY_ENTER) {     
+  listb.bind_key(KEY_RETURN) {     
     #@status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}"
     item = "#{listb.get_content()[listb.current_index]}"
     fullname = File.join(listb.config[:path], item)
@@ -86,6 +85,7 @@ def bind_list(listb, lists, splitp)
         end
         $log.debug " MYLIST #{mylist} dir #{item} "
       end
+      splitp.goto_next_component
     end
   } 
 end
