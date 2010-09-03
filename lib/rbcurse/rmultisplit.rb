@@ -46,8 +46,9 @@ module RubyCurses
   #  x how many panes to show, max to create
   #  x increase size - currently i recalc each time!
   #  x print more marker
-  #  - allow user to specify preffered sizes and respect that
-  #  - don't move to an empty list, can have a crash
+  #  - allow user to specify preferred sizes and respect that
+  #  x don't move to an empty list, can have a crash
+  #  - need to test horizontal, not done at all
   #  
   
   class MultiSplit < Widget
@@ -111,10 +112,10 @@ module RubyCurses
           #@one_touch_expandable = true
           #@is_expanding = false
 
-          bind_key([?\C-w, ?o], :expand)
-          bind_key([?\C-w, ?1], :expand)
-          bind_key([?\C-w, ?2], :unexpand)
-          bind_key([?\C-w, ?x], :exchange)
+          #bind_key([?\C-w, ?o], :expand)
+          #bind_key([?\C-w, ?1], :expand)
+          #bind_key([?\C-w, ?2], :unexpand)
+          #bind_key([?\C-w, ?x], :exchange)
           bind_key(?w, :goto_next_component)
           bind_key(?b, :goto_prev_component)
           bind_key([?\C-w, ?-], :decrease)
@@ -135,6 +136,8 @@ module RubyCurses
         # needed here or what. If we can postpone it, then we can compute this in a loop 
         # in repaint
         raise "split_count must be given first. How many splits there will be." unless @split_count
+        $log.debug " XXXX Adding a component #{@components.size}  "
+
         # until we hide those outside bounds, or are able to scroll, lets not allow add if
         # exceeds
         if @components.size >= @split_count
@@ -165,21 +168,34 @@ module RubyCurses
           #@second_component = comp
         #end
         # dang ! this can go out of bounds ! XXX tab goes out
-        #index = @max_visible - 1 if index > @max_visible
-        #compute_component comp, index
-        #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
-        #comp.set_buffering(:screen_top => @row, :screen_left => @col)
+        index = @components.size - 1 # expected as base 0 in compute
+        #index = @max_visible - 1 if index > @max_visible - 1
+        # all this ado to prevent cursor going out in the first display
+        # when index exceeds visible, since compute now uses running balance
+        if index > @max_visible - 1
+          # we copy the coords of the previous one
+          prev = @components[index-1]
+          comp.row = prev.row
+          comp.col = prev.col
+          comp.width = prev.width
+          comp.height = prev.height
+        else
+          compute_component comp, index
+        end
+        comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+        comp.set_buffering(:screen_top => @row, :screen_left => @col)
         comp.min_height ||= 5
         comp.min_width ||= 5
       end
       ##
       # compute component dimensions in one place
       # @param [widget] a widget 
-      # @param [Fixnum] offset in list of components
+      # @param [Fixnum] offset in list of components 
       # XXX if called from outside balance can have last value !!!
       def compute_component comp, index
         @balance ||= 0
         if @orientation == :HORIZONTAL_SPLIT
+          # XXX NOT TESTED TODO
           @comp_height = (@height / @split_count) - 1
           @comp_width = @width
           h = @comp_height
@@ -198,8 +214,13 @@ module RubyCurses
           comp.width ||= w
           #c = @col + ( w * index) # this makes them all equal
           c = @col + @balance
-          @balance += comp.width
-          $log.debug "XXXX index #{index} , w #{comp.width} , c = #{c} , bal #{@balance} "
+          if c > @col + @width
+            c = @col + @width
+          end
+          $log.debug "XXXX index #{index} , w #{comp.width} , c = #{c} , bal #{@balance} c+w:#{@col+@width} "
+          #if index < @max_visible - 1
+            @balance += comp.width
+          #end
           r = @row
           comp.height = h
           comp.row = r
@@ -341,11 +362,11 @@ module RubyCurses
           break if index > @_last_column_print
           compute_component comp, index 
         #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
-          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
           comp.set_buffering(:screen_top => comp.row, :screen_left => comp.col)
           comp.repaint
         end
-        @balance = 0
+        #@balance = 0
       end
       def repaint # multisplitpane
         if @graphic.nil?
