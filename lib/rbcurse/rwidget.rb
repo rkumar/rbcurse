@@ -1660,6 +1660,40 @@ module RubyCurses
   # 2010-02-07 14:50 to aid in debugging and comparing log files.
   def to_s; @name || self; end
 
+  # NOTE: very experimental, use at risk, can change location or be deprec
+  # place given widget below given one, or last added one
+  # Does not check for availability or overlap
+  def place_below me, other=nil
+    w = widgets
+    if other.nil?
+      other = w[-1]
+      # if user calls this after placing this field
+      other = w[-2] if other == me
+    end
+    if other.height.nil? || other.height == 0
+      h = 1
+    else
+      h = other.height
+    end
+    me.row = other.row + h
+    me.col = other.col
+    me
+  end
+  # NOTE: very experimental, use at risk, can change location or be deprec
+  # return location to place next widget (below)
+  # Does not check for availability or overlap
+  def next_position
+    w = widgets.last
+    if w.height.nil? || w.height == 0
+      h = 1
+    else
+      h = w.height
+    end
+    row = w.row + h
+    col = w.col
+    return row, col
+  end
+
     ## ADD HERE FORM
   end
   ## Created and sent to all listeners whenever a property is changed
