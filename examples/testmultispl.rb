@@ -10,7 +10,7 @@ require 'fileutils'
 ## this sample creates a multisplitpane with n objects
 ##+ and move divider around using - + and =.
 # TODO:
-# - Status bar below to reflect full path.
+# x Status bar below to reflect full path.
 #
 KEY_ENTER = 13
 KEY_BTAB  = 353
