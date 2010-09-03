@@ -1059,6 +1059,9 @@ module RubyCurses
 
       #@allow_alt_digits = true ; # capture Alt-1-9 as digit_args. Set to false if you wish to map
                                  # Alt-1-9 to buttons of tabs 
+      $last_key = 0 # last key pressed @since 1.1.5 (not used yet)
+      $current_key = 0 # curr key pressed @since 1.1.5 (so some containers can behave based on whether
+                    # user tabbed in, or backtabbed in (rmultisplit)
     end
     ##
     # set this menubar as the form's menu bar.
@@ -1567,6 +1570,7 @@ module RubyCurses
           end
         end
 
+        $current_key = ch
         case ch
         when -1
           return
@@ -1613,6 +1617,7 @@ module RubyCurses
         end
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
+       $last_key = ch
        #return handled # TRYNG 2010-03-01 23:30 since TP returns NO_NEXT_FIELD sometimes
        #$multiplier = 0
   end
