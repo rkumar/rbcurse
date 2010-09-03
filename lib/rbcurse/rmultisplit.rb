@@ -38,15 +38,16 @@ module RubyCurses
   #
   # @since 1.1.5
   # TODO - 
-  #  - user specify max panes to show (beyond that hide and pan)
-  #  - how many can be created
+  #  x user specify max panes to show (beyond that hide and pan)
+  #  x how many can be created
   #  - to squeeze panes and fit all or hide and pan
-  #  - allow resize of panes
+  #  x allow resize of panes
   #  - allow orientation change or not
-  #  - some anamoly reg LEAVE and ENTER from last object
-  #  - should we not be managing on_enter of listboxes when tabbing ?
-  #  - how many panes to show, max to create
-  #  - increase size - currently i recalc each time!
+  #  x some anamoly reg LEAVE and ENTER from last object
+  #  x should we not be managing on_enter of listboxes when tabbing ?
+  #  x how many panes to show, max to create
+  #  x increase size - currently i recalc each time!
+  #  - print more marker
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
@@ -403,6 +404,7 @@ module RubyCurses
         end
         ## XXX do not paint what is outside of bounds. See tabbedpane or scrollform
         update_components
+        _print_more_columns_marker true
         @graphic.wrefresh # 2010-02-14 20:18 SUBWIN ONLY ??? what is this doing here ? XXX
         #paint 
         @repaint_required = false
@@ -541,16 +543,16 @@ module RubyCurses
       # this is executed when the component gets focus
       # and will happen each time on traversal
       # Used to place the focus on correct internal component
-      # and place cursor where component should have it
-      # (If we knew if user has backtabbed into this,
-      # we could place cursor on last component) XXX
+      # and place cursor where component should have it.
+      # User can press tab, to come here, or it could be first field of form,
+      # or he could press a mnemonic.
       def on_enter
         return if @components.nil?
         # cyclic means it always lands into first comp just as in rdoc
         # otherwise it will always land in last visited component
         if @cyclic_behavior
-          #@current_component = @components.first 
-          #@current_index = 0
+          # if user backtabbed in place him on last comp
+          # else place him in first. 
           if $current_key == KEY_BTAB
             @current_component = @components[@_last_column_print]
             @current_index     = @_last_column_print
@@ -635,6 +637,17 @@ module RubyCurses
       def tile
         return unless @tiling_allowed
         # TODO
+      end
+      private
+      def _print_more_columns_marker tf
+        # this marker shows that there are more columns to right
+        tf = @_last_column_print < @components.size - 1
+        marker = tf ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
+        #@graphic.mvwaddch @row+@height-1, @col+@width-2, marker
+        @graphic.mvwaddch @row+@height-1, @col+@width-3, marker
+        # show if columns to left or not
+        marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
+        @graphic.mvwaddch @row+@height-1, @col+@_first_column_print+1, marker
       end
   end # class SplitPane
 end # module
