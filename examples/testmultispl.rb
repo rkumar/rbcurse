@@ -16,6 +16,23 @@ require 'fileutils'
 KEY_ENTER = 13
 KEY_BTAB  = 353
 $counter = 0
+
+# when displaying a filename, if directory prepend a slash.
+def format list, fullname=nil
+  list.collect! {|e|
+    if fullname
+      f = File.join(fullname, e)
+    else
+      f = e
+    end
+    if File.directory? f
+      "/" + e
+    else
+      e
+    end
+  }
+  list
+end
 # @param [Listbox] new list to bind
 # @param [Array] array of lists
 # @param [MultiSplit] msp object to add a new list to
@@ -32,7 +49,7 @@ def bind_list(listb, lists, splitp)
       mylist = d.entries
       mylist.delete "."
       mylist.delete ".."
-      $log.debug "1 MYLIST #{mylist} dir #{item} "
+      format(mylist, fullname)
       # NOTE that we create component with nil form as container will manage it
       if lists.empty? || lists.last == listb
         $counter += 1
@@ -83,12 +100,11 @@ if $0 == __FILE__
     @window = VER::Window.root_window
 
     catch(:close) do
-      colors = Ncurses.COLORS
       @form = Form.new @window
       r = 3; c = 7; ht = 18
 
 
-      @help = "q to quit. v h - + =        : #{$0}                              . Check logger too"
+      @help = "F1 to quit. v h - + =        : #{$0}                              . Check logger too"
       RubyCurses::Label.new @form, {'text' => @help, "row" => ht+r, "col" => 2, "color" => "yellow"}
 
       $message = Variable.new
@@ -113,6 +129,7 @@ if $0 == __FILE__
       FileUtils.cd("..")
       mylist = Dir.glob('*')
       mylist.delete_if {|x| x =~ /^\./ || x =~ /^_/ || x =~ /bak$/}
+      format(mylist)
       # NOTE that we create component with nil form as container will manage it
       listb = Listbox.new nil do
         name   "mainlist" 
