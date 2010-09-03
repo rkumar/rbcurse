@@ -550,6 +550,17 @@ module Io
     return yn == 'y' 
   end
 
+  #
+  # warn user: currently flashes and places error in log file
+  # experimental, may change interface later
+  # it does not say anything on screen
+  # @param [String] text of error/warning to put in log
+  # @since 1.1.5
+  def warn string
+    $log.warn string
+    Ncurses.beep
+  end
+
   #def add_item hotkey, label, desc,action
   #
   ## A *simple* way of creating menus that will appear in a single row.
