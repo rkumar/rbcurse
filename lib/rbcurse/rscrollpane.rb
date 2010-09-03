@@ -331,7 +331,7 @@ module RubyCurses
           @child.cols_panned = @child.cols_panned-1  if ret
           @form.setrowcol @form.row, @form.col-1+@col_outofbounds if ret 
         }
-      when KEY_BACKSPACE, 127
+      when KEY_BACKSPACE, KEY_BSPACE
         ret = cursor_backward
       #when ?\C-u.getbyte(0)
         ## multiplier. Series is 4 16 64

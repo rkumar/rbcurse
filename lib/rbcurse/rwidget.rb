@@ -28,6 +28,14 @@ require 'rbcurse/colormap'
 require 'rbcurse/orderedhash'
 require 'rbcurse/io'
 
+# some of these will get overriden by ncurses when we include
+KEY_TAB    = 9
+#KEY_BTAB  = 353 # nc gives same
+KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
+KEY_DELETE = 330
+KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
+KEY_CC     = 3   # C-c
+
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
   # using this resulted in time lost in bedebugging why some method was not working.
@@ -1583,11 +1591,11 @@ module RubyCurses
           # some widgets like textarea and list handle up and down
           if handled == :UNHANDLED or handled == -1 or field.nil?
             case ch
-            when 9, ?\M-\C-i.getbyte(0)  # tab and M-tab in case widget eats tab (such as Table)
+            when KEY_TAB, ?\M-\C-i.getbyte(0)  # tab and M-tab in case widget eats tab (such as Table)
               ret = select_next_field
               return ret if ret == :NO_NEXT_FIELD
               # alt-shift-tab  or backtab (in case Table eats backtab)
-            when 353, 481 ## backtab added 2008-12-14 18:41 
+            when KEY_BTAB, 481 ## backtab added 2008-12-14 18:41 
               ret = select_prev_field
               return ret if ret == :NO_PREV_FIELD
             when KEY_UP

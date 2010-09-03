@@ -23,8 +23,6 @@ require 'rbcurse'
 
 include Ncurses
 include RubyCurses
-KEY_TAB = 9
-KEY_BTAB = 353
 module RubyCurses
   extend self
 

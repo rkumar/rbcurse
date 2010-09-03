@@ -506,9 +506,9 @@ module RubyCurses
           # We need to convert it so the main form can use it
           if @current_tab != @form
           if ret == :UNHANDLED
-            if ch == 9 #or ch == KEY_DOWN
+            if ch == KEY_TAB #or ch == KEY_DOWN
               ret = :NO_NEXT_FIELD
-            elsif ch == 353 #or ch == KEY_UP # btab
+            elsif ch == KEY_BTAB #or ch == KEY_UP # btab
               ret = :NO_PREV_FIELD
             end
           end
