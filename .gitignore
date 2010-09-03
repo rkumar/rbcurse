@@ -33,3 +33,9 @@ report.txt
 examples/ISSUES*
 ISSUES
 *~
+examples/adir/
+examples/cdir/
+examples/expected_output/
+examples/test.expect
+examples/todo.rb
+rbcurse.gemspec.copy
