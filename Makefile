@@ -1,5 +1,5 @@
 DISTFILES := README.markdown TODO2.txt NOTES lib/ examples/
-VERSION := `cat VERSION_FILE`
+VERSION := `cat VERSION`
  
 #all: install
 
