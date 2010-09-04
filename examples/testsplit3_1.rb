@@ -165,9 +165,9 @@ if $0 == __FILE__
         splitrt.first_component(t1)
         splitrt.second_component(ta2)
         t2.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
-        t2.preferred_height (ht/2)-1 ## this messes things up when we change orientation
+        t2.preferred_height((ht/2)-1) ## this messes things up when we change orientation
         t1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
-        t1.preferred_height (ht/2)-1 ## this messes things up when we change orientation
+        t1.preferred_height((ht/2)-1) ## this messes things up when we change orientation
         #t1.set_resize_weight 0.50
         t2.min_width 15
         t2.min_height 5

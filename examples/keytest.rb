@@ -5,15 +5,16 @@ require 'logger'
 require 'rbcurse'
 #require 'lib/ver/ncurses'
 #require 'lib/ver/window'
-require 'lib/rbcurse/rwidget'
-require 'lib/ver/keyboard2'
-#require 'lib/rbcurse/mapper'
+require 'rbcurse/rwidget'
+require 'ver/keyboard2'
+require 'rbcurse/mapper'
 
 # Using mapper with keyboard2 which gives numeric keys
 # The error messages are not so pretty, otherwise its okay... error messages need a little work
 # Use C-q or q to quit
 ## C-s starts a new mode :cx, 'i' gets back to normal 
 #include Ncurses
+# NOTE: this test was created only to test upcoming 1.9 key change and how to handle it.
 
 
 def printstr(pad, r,c,string, color, att = Ncurses::A_NORMAL)

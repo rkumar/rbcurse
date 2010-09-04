@@ -158,7 +158,7 @@ if $0 == __FILE__
           #width 46
         end
         #scroll1.preferred_width w/2 #/2  ## should pertain more to horizontal orientation
-        scroll1.preferred_height (ht/2)-4 ## this messes things up when we change orientation
+        scroll1.preferred_height ht/2-4 ## this messes things up when we change orientation
         # the outer compo needs child set first else cursor does not reach up from
         # lower levels. Is the connection broken ?
         outer.first_component(splitleft)

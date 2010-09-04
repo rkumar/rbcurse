@@ -26,6 +26,8 @@ require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
+KEY_TAB = 9
+KEY_BTAB = 353
 include Ncurses
 include RubyCurses
 module RubyCurses
