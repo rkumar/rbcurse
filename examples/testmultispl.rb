@@ -1,4 +1,4 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
+#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
