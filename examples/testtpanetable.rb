@@ -12,7 +12,7 @@
 
 # this is a test program, tests out tabbed panes. type F1 to exit
 #
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
+$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib/"
 require 'rubygems'
 require 'ncurses'
 require 'logger'
@@ -41,6 +41,8 @@ class TestTabbedPane
       end
       @tab1 = @tp.add_tab "&Table" 
       f1 = @tab1.form
+      f1 = @tp.form @tab1
+      raise "form f1 nil" unless f1
       $log.debug " TABLE FORM #{f1} "
 
       data = [["Pathetique",3,"Tchaikovsky",3.21, true, "WIP"],
@@ -127,7 +129,8 @@ class TestTabbedPane
         end
 
       @tab2 = @tp.add_tab "&ScrollTable" 
-      f2 = @tab2.form
+      #f2 = @tab2.form
+      f2 = @tp.form @tab2
         scroll = ScrollPane.new f2 do
           name   "myScroller" 
           row 4
