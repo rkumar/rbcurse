@@ -28,6 +28,14 @@ require 'rbcurse/colormap'
 require 'rbcurse/orderedhash'
 require 'rbcurse/io'
 
+# some of these will get overriden by ncurses when we include
+KEY_TAB    = 9
+#KEY_BTAB  = 353 # nc gives same
+KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
+KEY_DELETE = 330
+KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
+KEY_CC     = 3   # C-c
+
 module DSL
 ## others may not want this, if = sent, it creates DSL and sets
   # using this resulted in time lost in bedebugging why some method was not working.
@@ -408,6 +416,10 @@ module RubyCurses
     attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
     attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
+    # sometimes inside a container there's no way of knowing if an individual comp is in focus
+    # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
+    attr_accessor :focussed  # is this widget in focus, so they may paint differently
+
     def initialize form, aconfig={}, &block
       @form = form
       @bgcolor ||=  "black" # 0
@@ -456,10 +468,12 @@ module RubyCurses
 
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
+      @focussed = true
       fire_handler :ENTER, self
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_leave
+      @focussed = false
       fire_handler :LEAVE, self
     end
     ## 
@@ -1053,6 +1067,9 @@ module RubyCurses
 
       #@allow_alt_digits = true ; # capture Alt-1-9 as digit_args. Set to false if you wish to map
                                  # Alt-1-9 to buttons of tabs 
+      $last_key = 0 # last key pressed @since 1.1.5 (not used yet)
+      $current_key = 0 # curr key pressed @since 1.1.5 (so some containers can behave based on whether
+                    # user tabbed in, or backtabbed in (rmultisplit)
     end
     ##
     # set this menubar as the form's menu bar.
@@ -1561,6 +1578,7 @@ module RubyCurses
           end
         end
 
+        $current_key = ch
         case ch
         when -1
           return
@@ -1573,11 +1591,11 @@ module RubyCurses
           # some widgets like textarea and list handle up and down
           if handled == :UNHANDLED or handled == -1 or field.nil?
             case ch
-            when 9, ?\M-\C-i.getbyte(0)  # tab and M-tab in case widget eats tab (such as Table)
+            when KEY_TAB, ?\M-\C-i.getbyte(0)  # tab and M-tab in case widget eats tab (such as Table)
               ret = select_next_field
               return ret if ret == :NO_NEXT_FIELD
               # alt-shift-tab  or backtab (in case Table eats backtab)
-            when 353, 481 ## backtab added 2008-12-14 18:41 
+            when KEY_BTAB, 481 ## backtab added 2008-12-14 18:41 
               ret = select_prev_field
               return ret if ret == :NO_PREV_FIELD
             when KEY_UP
@@ -1607,6 +1625,7 @@ module RubyCurses
         end
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
+       $last_key = ch
        #return handled # TRYNG 2010-03-01 23:30 since TP returns NO_NEXT_FIELD sometimes
        #$multiplier = 0
   end
@@ -1640,6 +1659,40 @@ module RubyCurses
   end
   # 2010-02-07 14:50 to aid in debugging and comparing log files.
   def to_s; @name || self; end
+
+  # NOTE: very experimental, use at risk, can change location or be deprec
+  # place given widget below given one, or last added one
+  # Does not check for availability or overlap
+  def place_below me, other=nil
+    w = widgets
+    if other.nil?
+      other = w[-1]
+      # if user calls this after placing this field
+      other = w[-2] if other == me
+    end
+    if other.height.nil? || other.height == 0
+      h = 1
+    else
+      h = other.height
+    end
+    me.row = other.row + h
+    me.col = other.col
+    me
+  end
+  # NOTE: very experimental, use at risk, can change location or be deprec
+  # return location to place next widget (below)
+  # Does not check for availability or overlap
+  def next_position
+    w = widgets.last
+    if w.height.nil? || w.height == 0
+      h = 1
+    else
+      h = w.height
+    end
+    row = w.row + h
+    col = w.col
+    return row, col
+  end
 
     ## ADD HERE FORM
   end

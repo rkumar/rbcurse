@@ -217,7 +217,7 @@ module VER
           elsif @stack == [27, 91]
             if ch == 90
               @stack.clear
-              return 353 # backtab
+              return KEY_BTAB # backtab
             end
           end
           # the usual Meta combos. (alt)

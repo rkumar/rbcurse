@@ -301,7 +301,7 @@ module RubyCurses
         # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
           return
-        when 9
+        when KEY_TAB
           @form.select_next_field 
         else
           # fields must return unhandled else we will miss hotkeys. 
@@ -457,7 +457,7 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
-      @one_key_selection ||= true
+      @one_key_selection = true if @one_key_selection.nil?
       bind_key(?f){ ask_selection_for_char() }
       bind_key(?\M-v){ @one_key_selection = false }
       bind_key(?j){ next_row() }
@@ -529,7 +529,7 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       @color_pair = get_color($datacolor)
-      #$log.debug "rlistb:  window.print_border #{startrow}, #{startcol} , #{height} , #{width} , @color_pair, @attr "
+      #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
       window.print_border startrow, startcol, height, width, @color_pair, @attr
       print_title
     end
@@ -651,13 +651,14 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
-            $multiplier = 0
+            #$multiplier = 0 # 2010-09-02 22:35 this prevents parent from using mult
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
       end
       $multiplier = 0
     end
+    # get a keystroke from user and go to first item starting with that key
     def ask_selection_for_char
       ch = @graphic.getch
       if ch < 0 || ch > 255
@@ -707,12 +708,20 @@ module RubyCurses
           set_focus_on(ix) unless ix.nil?
         end
     end
+    # please check for error before proceeding
+    # @return [Boolean] false if no data
     def on_enter
+      if @list.size < 1
+        Ncurses.beep
+        return false
+      end
       on_enter_row @current_index
       set_form_row # added 2009-01-11 23:41 
       #$log.debug " ONE ENTER LIST #{@current_index}, #{@form.row}"
       @repaint_required = true
-      fire_handler :ENTER, self
+      super
+      #fire_handler :ENTER, self
+      true
     end
     def on_enter_row arow
       #$log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
@@ -830,7 +839,11 @@ module RubyCurses
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
-            focussed = @current_index == crow ? true : false 
+            focussed = @current_index == crow ? true : false  # row focussed ?
+            focus_type = focussed 
+            # added 2010-09-02 14:39 so inactive fields don't show a bright focussed line
+            #focussed = false if focussed && !@focussed
+            focus_type = :SOFT_FOCUS if focussed && !@focussed
             selected = is_row_selected crow
             content = tm[crow]   # 2009-01-17 18:37 chomp giving error in some cases says frozen
             if content.is_a? String
@@ -867,7 +880,8 @@ module RubyCurses
             #renderer.repaint @graphic, r+hh, c+(colix*11), content, focussed, selected
             ## added crow on 2009-02-06 23:03 
             # since data is being truncated and renderer may need index
-            renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focussed, selected
+            renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
         else
           # clear rows
           @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr

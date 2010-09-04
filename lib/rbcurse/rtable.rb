@@ -105,8 +105,8 @@ module RubyCurses
       # alt-shift-tab prev column
       #bind_key(?\M-\C-i) { next_column }
       #bind_key(481) { previous_column }
-      bind_key(9) { next_column }
-      bind_key(353) { previous_column }
+      bind_key(KEY_TAB) { next_column }
+      bind_key(KEY_BTAB) { previous_column }
       bind_key(KEY_RIGHT) { next_column }
       bind_key(KEY_LEFT) { previous_column }
       bind_key(@KEY_ASK_FIND_FORWARD) { ask_search_forward }

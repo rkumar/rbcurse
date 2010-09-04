@@ -193,9 +193,9 @@ module RubyCurses
           #$log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
           return
-        when 9
+        when KEY_TAB
           @form.select_next_field
-        when 353
+        when KEY_BTAB
           @form.select_prev_field
         else
           # fields must return unhandled else we will miss hotkeys. 
