@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rbcurse}
-  s.version = "1.1.4"
+  s.version = "1.1.5"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rahul Kumar"]
-  s.date = %q{2010-08-30}
+  s.date = %q{2010-09-04}
   s.default_executable = %q{rbcurse}
   s.description = %q{Ruby curses widgets for easy application development on text terminals (ruby 1.9, 1.8)}
   s.email = %q{sentinel.2001@gmx.com}
@@ -29,8 +29,10 @@ Gem::Specification.new do |s|
      "TODO",
      "TODO2.txt",
      "VERSION",
+     "bin/rbcurse",
      "examples/README.txt",
      "examples/data.txt",
+     "examples/keytest.rb",
      "examples/mpad2.rb",
      "examples/newtesttabp.rb",
      "examples/qdfilechooser.rb",
@@ -64,7 +66,6 @@ Gem::Specification.new do |s|
      "examples/testsplittvv.rb",
      "examples/testtable.rb",
      "examples/testtabp.rb",
-     "examples/testtestw.rb",
      "examples/testtodo.rb",
      "examples/testtpane.rb",
      "examples/testtpane2.rb",
@@ -132,6 +133,7 @@ Gem::Specification.new do |s|
   s.summary = %q{Ruby Curses Toolkit}
   s.test_files = [
     "test/test_rbcurse.rb",
+     "examples/cdir/testmultispl.rb",
      "examples/keytest.rb",
      "examples/mpad2.rb",
      "examples/newtesttabp.rb",
