@@ -253,8 +253,10 @@ module ListScrollable
   # sets the selection to the next row starting with char
   def set_selection_for_char char
     @oldrow = @current_index
+    @last_regex = "^#{char}"
     ix = next_match char
     @current_index = ix if ix && ix != -1
+    @search_found_ix = @current_index
     bounds_check
     return ix
   end
@@ -328,7 +330,8 @@ module ListScrollable
     # find forwards
     # Using this to start a search or continue search
     def _find_next regex=@last_regex, start = @search_found_ix 
-      raise "No previous search" if regex.nil?
+      #raise "No previous search" if regex.nil?
+      warn "No previous search" and return if regex.nil?
       #$log.debug " _find_next #{@search_found_ix} : #{@current_index}"
       fend = @list.size-1
       if start != fend
@@ -364,6 +367,10 @@ module ListScrollable
       return nil
     end
     def find_next
+      unless @last_regex
+        alert("No previous search. Search first.")
+        return
+      end
         ix = _find_next
         regex = @last_regex 
         if ix.nil?
@@ -375,6 +382,10 @@ module ListScrollable
         end
     end
     def find_prev
+      unless @last_regex
+        alert("No previous search. Search first.")
+        return
+      end
         ix = _find_prev
         regex = @last_regex 
         if ix.nil?
@@ -389,7 +400,8 @@ module ListScrollable
     # find backwards
     # Using this to start a search or continue search
     def _find_prev regex=@last_regex, start = @search_found_ix 
-      raise "No previous search" if regex.nil?
+      #raise "No previous search" if regex.nil?
+      warn "No previous search" and return if regex.nil?
       #$log.debug " _find_prev #{@search_found_ix} : #{@current_index}"
       if start != 0
       start -= 1 unless start == 0

@@ -32,7 +32,6 @@ Gem::Specification.new do |s|
      "bin/rbcurse",
      "examples/README.txt",
      "examples/data.txt",
-     "examples/keytest.rb",
      "examples/mpad2.rb",
      "examples/newtesttabp.rb",
      "examples/qdfilechooser.rb",
