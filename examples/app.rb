@@ -59,9 +59,13 @@ module RubyCurses
 
 
     # i should be able to pass window coords here in config
+    # :title
     def initialize config={}, &block
       #$log.debug " inside constructor of APP #{config}  "
       @config = config
+      @app_row = @app_col = 0
+      @stack = [] # stack's coordinates
+      @flowstack = []
       #instance_eval &block if block_given?
       init_vars
       run &block
@@ -126,6 +130,13 @@ module RubyCurses
           config[:name] = title
         end
       end
+      if @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last
+        @app_row += 1
+        config[:row] = @app_row
+        config[:col] = col
+      end
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
@@ -157,6 +168,13 @@ module RubyCurses
           config[:text] = arg
         end
       end
+      if @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last
+        @app_row += 1
+        config[:row] = @app_row
+        config[:col] = col
+      end
       label = Label.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       return label
@@ -186,12 +204,52 @@ module RubyCurses
           config[:name] = arg
         end
       end
+      if @inflow
+        #col = @flowstack.last
+        config[:row] = @app_row
+        config[:col] = @flowcol
+        @flowcol += config[:text].length + 5
+      elsif @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last
+        @app_row += 1
+        config[:row] = @app_row
+        config[:col] = col
+      end
       button = Button.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
         button.bind(block_event, &block)
       end
       return button
+    end
+    # line up vertically whatever comes in, ignoring r and c 
+    # margin_top to add to margin of existing stack (if embedded) such as extra spacing
+    # margin_rt to add to margin of existing stack, or window (0)
+    def stack config={}, &block
+      @instack = true
+      mt =  config[:margin_top] || 1
+      mr =  config[:margin_rt] || 0
+      @app_row += mt
+      mr += @stack.last if @stack.last
+      @stack << mr
+      instance_eval &block if block_given?
+      @stack.pop
+      @instack = false if @stack.empty?
+    end
+    # keep adding to right of previous and when no more space
+    # move down and continue fitting in
+    def flow config={}, &block
+      @inflow = true
+      mt =  config[:margin_top] || 0
+      @app_row += mt
+      col = @flowstack.last || @stack.last || @app_col
+      col += config[:margin_rt] || 0
+      @flowstack << col
+      @flowcol = col
+      instance_eval &block if block_given?
+      @flowstack.pop
+      @inflow = false if @flowstack.empty?
     end
 
     private
@@ -251,36 +309,53 @@ if $0 == __FILE__
     r, c = 7, 30
     c += fname.length + 1
     #field1 = field( [r,c, 30], fname, :bgcolor => "cyan", :block_event => :CHANGE) do |fld|
-    field1 = field( [r,c, 30], fname, :bgcolor => "cyan") do |fld|
-      message("You entered #{fld.getvalue}. To quit enter quit and tab out")
-      if fld.getvalue == "quit"
-        logger.info "you typed quit!" 
-        throw :close
-      end
-    end
-    #field1.set_label Label.new @form, {:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}
-    field1.set_label(label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}))
-    field1.enter do 
-      message "you entered this field"
-    end
-    label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
-
-    button_row = 12
-    ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
-        alert("About to dump data into log file!")
-        message "Dumped data to log file"
-    end
-
-      # using ampersand to set mnemonic
-      cancel_button = button( [button_row, 40], "&Cancel" ) do
-        if confirm("Do your really want to quit?")== :YES
-          throw(:close); 
-        else
-          $message.value = "Quit aborted"
+    stack :margin_top => 10, :margin_rt => 10 do
+      lbl = label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'})
+      field1 = field( [r,c, 30], fname, :bgcolor => "cyan") do |fld|
+        message("You entered #{fld.getvalue}. To quit enter quit and tab out")
+        if fld.getvalue == "quit"
+          logger.info "you typed quit!" 
+          throw :close
         end
       end
-    logger.info "beforegetch in block"
-    # why not just keystroke, since we are not diong an instance eval
+      #field1.set_label Label.new @form, {:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}
+      field1.set_label( lbl )
+      field1.enter do 
+        message "you entered this field"
+      end
+
+      stack :margin_top => 2, :margin_rt => 0 do
+        label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
+      end
+
+      label( [8, 30, 60],{:text => "B label", :color=>'white',:bgcolor=>'blue'} )
+
+      stack :margin_top => 2, :margin_rt => 0 do
+        flow do
+          button_row = 17
+          ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
+            alert("About to dump data into log file!")
+            message "Dumped data to log file"
+          end
+
+          # using ampersand to set mnemonic
+          cancel_button = button( [button_row, 40], "&Cancel" ) do
+            if confirm("Do your really want to quit?")== :YES
+              throw(:close); 
+            else
+              $message.value = "Quit aborted"
+            end
+          end # cancel
+          button "Don't know"
+        end
+        flow :margin_top => 2 do
+          button "Another"
+          button "Line"
+        end
+      end
+    end # stack
+
+    # Allow user to get the keys
     keystroke do |key|
       if key == 3
         message "You tried to cancel"
