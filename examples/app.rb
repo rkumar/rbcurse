@@ -161,6 +161,38 @@ module RubyCurses
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       return label
     end
+    def button *args, &block
+      config = {}
+      events = [ :PRESS,  :LEAVE, :ENTER ]
+      block_event = :PRESS
+
+      args.each do |arg| 
+        case arg
+        when Array
+          #puts "row, col #{arg[0]} #{arg[1]} "
+          # we can use r,c, w, h
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          config[:height] = height if height
+        when Hash
+          config.merge!(arg)
+          block_event = config.delete(:block_event){ block_event }
+          raise "Invalid event. Use #{events}" unless events.include? block_event
+          #puts "hash #{config}"
+        when String
+          config[:text] = arg
+          config[:name] = arg
+        end
+      end
+      button = Button.new @form, config
+      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
+      if block
+        button.bind(block_event, &block)
+      end
+      return button
+    end
 
     private
     def run &block
@@ -211,7 +243,7 @@ if $0 == __FILE__
   #window.getch
   #app.close
   # this was the yield example, but now we've moved to instance eval
-  App.new do |app, window, form|
+  App.new do 
     @window.printstring 2, 30, "Demo of Listbox - rbcurse", $normalcolor, 'reverse'
     @window.printstring 5, 30, "Hit F1 to quit", $datacolor, 'normal'
     form = @form
@@ -232,6 +264,21 @@ if $0 == __FILE__
       message "you entered this field"
     end
     label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
+
+    button_row = 12
+    ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
+        alert("About to dump data into log file!")
+        message "Dumped data to log file"
+    end
+
+      # using ampersand to set mnemonic
+      cancel_button = button( [button_row, 40], "&Cancel" ) do
+        if confirm("Do your really want to quit?")== :YES
+          throw(:close); 
+        else
+          $message.value = "Quit aborted"
+        end
+      end
     logger.info "beforegetch in block"
     # why not just keystroke, since we are not diong an instance eval
     keystroke do |key|
