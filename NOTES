@@ -1662,3 +1662,39 @@ However, looking at the on_enter of some widget;s looks like they also
 fire :ENTER. So things could get fired 2 times.
 
 * * * * * * * *
+
+Subject: making rbcurse easier
+------------------------------
+Date: 2010-09-05 10:57
+
+Currently making an application in rbcurse, requires a lot of boiler
+plate code. Various methods to be called to setup ... heck even I can't
+remember them! 
+
+I am trying out a wrapper for rbcurse. Much like a file.open block which
+does the dirty work of opening and closing a file while the user only
+supplies a block. 
+
+Then i need to make wrappers for fields and other widgets so they can be
+made easily. This way basic screens can be developed rather easily.
+
+The wrapper is called app.rb and it currently resides in examples since
+it is very much in progress and trial. it will keep changing, so its
+going to remain in examples till it grows up. If you use it, rename it
+first, let me know of any improvements or fixes or changes or ideas.
+
+* * * * * * * *
+
+Subject: shoes changed
+----------------------
+Date: 2010-09-05 15:08
+
+In rbcurse, we use the block to initialize... shoes uses the block as a
+changed action. Is that not better, since there is already a config for
+doing the setting. Why 2 ways of setting ?
+
+Is it too late to change, or shall we go this way in the App wrapper.
+Internally we can bind to CHANGED. or should i have a changed method
+which does this.
+
+* * * * * * * *
