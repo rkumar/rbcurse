@@ -103,8 +103,8 @@ module RubyCurses
     # process arguments based on datatype, perhaps making configuration
     # of some components easier for caller avoiding too much boiler plate code
     def field *args, &block
-      location_found = false
       config = {}
+      events = [ :CHANGED,  :LEAVE, :ENTER, :CHANGE ]
       block_event = :CHANGED # LEAVE, ENTER, CHANGE
 
       args.each do |arg| 
@@ -119,9 +119,9 @@ module RubyCurses
         when Hash
           config.merge!(arg)
           block_event = config.delete(:block_event){ block_event }
+          raise "Invalid event. Use #{events}" unless events.include? block_event
           #puts "hash #{config}"
         when String
-          #puts "Title : #{arg} "
           title = arg
           config[:name] = title
         end
@@ -129,31 +129,39 @@ module RubyCurses
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
-        #field.bind(:CHANGE) { block.call(field) }
-        #block_event = config.fetch(:block_event, block_event)
-        field.bind(block_event) { block.call(field) }
+        field.bind(block_event, &block)
       end
-      field
+      return field
+    end
       #instance_eval &block if block_given?
       # or
       #@blk = block # for later execution using @blk.call()
+      #colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
+      #var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
+      #message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
+
+    def label *args
+      config = {}
+
+      args.each do |arg| 
+        case arg
+        when Array
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          config[:height] = height if height
+        when Hash
+          config.merge!(arg)
+        when String
+          config[:text] = arg
+        end
+      end
+      label = Label.new @form, config
+      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
+      return label
     end
 
-    #def field *args, &block
-      #field = Field.new form do
-        #name   fname
-        #row  r
-        #col  c
-        #display_length  30
-        #bgcolor 'cyan'
-        ##set_buffer "abcd " 
-        #set_label Label.new form, {:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}
-      #end
-      #if block
-        #field.bind(:CHANGED) { block.call(field) }
-      #end
-      #field
-    #end
     private
     def run &block
       begin
@@ -218,10 +226,12 @@ if $0 == __FILE__
         throw :close
       end
     end
-    field1.set_label Label.new @form, {:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}
+    #field1.set_label Label.new @form, {:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}
+    field1.set_label(label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'}))
     field1.enter do 
       message "you entered this field"
     end
+    label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
     logger.info "beforegetch in block"
     # why not just keystroke, since we are not diong an instance eval
     keystroke do |key|
