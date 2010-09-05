@@ -112,6 +112,7 @@ Gem::Specification.new do |s|
      "lib/rbcurse/rtextview.rb",
      "lib/rbcurse/rviewport.rb",
      "lib/rbcurse/rwidget.rb",
+     "lib/rbcurse/rmultisplit.rb",
      "lib/rbcurse/scrollable.rb",
      "lib/rbcurse/selectable.rb",
      "lib/rbcurse/table/tablecellrenderer.rb",
