@@ -5,15 +5,13 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rbcurse}
-  s.version = "1.1.5"
+  s.version = "1.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rahul Kumar"]
-  s.date = %q{2010-09-04}
-  s.default_executable = %q{rbcurse}
+  s.date = %q{2010-09-06}
   s.description = %q{Ruby curses widgets for easy application development on text terminals (ruby 1.9, 1.8)}
-  s.email = %q{sentinel.2001@gmx.com}
-  s.executables = ["rbcurse"]
+  s.email = %q{sentinel1879@gmail.com}
   s.extra_rdoc_files = [
     "README.markdown",
      "TODO"
@@ -29,9 +27,10 @@ Gem::Specification.new do |s|
      "TODO",
      "TODO2.txt",
      "VERSION",
-     "bin/rbcurse",
      "examples/README.txt",
+     "examples/app.rb",
      "examples/data.txt",
+     "examples/keytest.rb",
      "examples/mpad2.rb",
      "examples/newtesttabp.rb",
      "examples/qdfilechooser.rb",
@@ -49,6 +48,7 @@ Gem::Specification.new do |s|
      "examples/testlistbox.rb",
      "examples/testmenu.rb",
      "examples/testmulticomp.rb",
+     "examples/testmultispl.rb",
      "examples/testscroller.rb",
      "examples/testscrolllb.rb",
      "examples/testscrollp.rb",
@@ -100,6 +100,7 @@ Gem::Specification.new do |s|
      "lib/rbcurse/rmenu.rb",
      "lib/rbcurse/rmessagebox.rb",
      "lib/rbcurse/rmulticontainer.rb",
+     "lib/rbcurse/rmultisplit.rb",
      "lib/rbcurse/rmultitextview.rb",
      "lib/rbcurse/rpopupmenu.rb",
      "lib/rbcurse/rscrollform.rb",
@@ -112,7 +113,6 @@ Gem::Specification.new do |s|
      "lib/rbcurse/rtextview.rb",
      "lib/rbcurse/rviewport.rb",
      "lib/rbcurse/rwidget.rb",
-     "lib/rbcurse/rmultisplit.rb",
      "lib/rbcurse/scrollable.rb",
      "lib/rbcurse/selectable.rb",
      "lib/rbcurse/table/tablecellrenderer.rb",
@@ -130,9 +130,10 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
-  s.summary = %q{Ruby Curses Toolkit}
+  s.summary = %q{Ruby ncurses Toolkit}
   s.test_files = [
     "test/test_rbcurse.rb",
+     "examples/app.rb",
      "examples/cdir/testmultispl.rb",
      "examples/keytest.rb",
      "examples/mpad2.rb",
@@ -151,6 +152,7 @@ Gem::Specification.new do |s|
      "examples/testlistbox.rb",
      "examples/testmenu.rb",
      "examples/testmulticomp.rb",
+     "examples/testmultispl.rb",
      "examples/testscroller.rb",
      "examples/testscrolllb.rb",
      "examples/testscrollp.rb",
@@ -171,7 +173,6 @@ Gem::Specification.new do |s|
      "examples/testtpane.rb",
      "examples/testtpane2.rb",
      "examples/testtpanetable.rb",
-     "examples/todo.rb",
      "examples/viewtodo.rb"
   ]
 
