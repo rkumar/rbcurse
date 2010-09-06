@@ -1834,7 +1834,7 @@ module RubyCurses
       fire_handler :CHANGE, self    # 2008-12-09 14:51 
     end
     ## 
-    # should this do a dup ??
+    # should this do a dup ?? YES
     def set_buffer value
       @datatype = value.class
       #$log.debug " FIELD DATA #{@datatype}"
@@ -2061,6 +2061,19 @@ module RubyCurses
     #  2009-01-18 12:25 
     def modified?
       getvalue() != @original_value
+    end
+    # field, a convenience method, since set_buffer sucks, it was "inspired" by ncurses itself
+    # @since 1.2.0
+    def text(*val)
+      if val.empty?
+        return getvalue()
+      else
+        s = val[0].dup
+        set_buffer(s)
+      end
+    end
+    def text=(val)
+      set_buffer(val.dup)
     end
   # ADD HERE FIELD
   end
