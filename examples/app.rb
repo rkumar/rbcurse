@@ -30,9 +30,6 @@ module RubyCurses
   #
   # @since 1.1.6
   # TODO - 
-  # allow user to specify block for keystrokes
-  #    loop do .... end
-  #    stack and flow concept from shoes.
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
   
@@ -51,6 +48,11 @@ module RubyCurses
       bind :PRESS, *args, &block
     end
   end
+  #class Listbox
+    #def text
+      #return get_content()[@current_index]
+    #end
+  #end
   class App
     attr_reader :config
     attr_reader :form
@@ -104,8 +106,13 @@ module RubyCurses
     def message text
       $message.value = text
     end
+    #
+    # @group methods to create widgets easily
+    #
     # process arguments based on datatype, perhaps making configuration
     # of some components easier for caller avoiding too much boiler plate code
+    # 
+    # create a field
     def field *args, &block
       config = {}
       events = [ :CHANGED,  :LEAVE, :ENTER, :CHANGE ]
@@ -133,9 +140,9 @@ module RubyCurses
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last
-        @app_row += 1
         config[:row] = @app_row
         config[:col] = col
+        @app_row += 1
       end
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
@@ -161,29 +168,32 @@ module RubyCurses
           config[:row] = row
           config[:col] = col
           config[:display_length] = display_length if display_length
-          config[:height] = height if height
+          config[:height] = height || 1
         when Hash
           config.merge!(arg)
         when String
           config[:text] = arg
         end
       end
+      config[:height] ||= 1
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last
-        @app_row += 1
         config[:row] = @app_row
         config[:col] = col
+        @app_row += config[:height]
       end
       label = Label.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       return label
     end
+    alias :text :label
     def button *args, &block
       config = {}
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
 
+      #process_args args, config, block_event, events
       args.each do |arg| 
         case arg
         when Array
@@ -204,6 +214,7 @@ module RubyCurses
           config[:name] = arg
         end
       end
+      # flow gets precedence over stack
       if @inflow
         #col = @flowstack.last
         config[:row] = @app_row
@@ -212,9 +223,9 @@ module RubyCurses
       elsif @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last
-        @app_row += 1
         config[:row] = @app_row
         config[:col] = col
+        @app_row += 1
       end
       button = Button.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
@@ -223,6 +234,62 @@ module RubyCurses
       end
       return button
     end
+    #
+    # create a list
+    # Since we are mouseless, one can traverse without selection. So we have a different
+    # way of selecting row/s and traversal. XXX this aspect of LB's has always troubled me hugely.
+    def list_box *args, &block
+      config = {}
+      # TODO confirm events
+      # listdataevent has interval added and interval removed, due to multiple
+      # selection, we have to make that simple for user here.
+      events = [ :LEAVE, :ENTER, :ENTER_ROW, :LEAVE_ROW, :LIST_DATA_EVENT ]
+      # TODO how to do this so he gets selected row easily
+      block_event = :ENTER_ROW
+
+      args.each do |arg| 
+        case arg
+        when Array
+          #puts "row, col #{arg[0]} #{arg[1]} "
+          # we can use r,c, w, h
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          config[:height] = height if height
+        when Hash
+          config.merge!(arg)
+          block_event = config.delete(:block_event){ block_event }
+          raise "Invalid event. Use #{events}" unless events.include? block_event
+          #puts "hash #{config}"
+        when String
+          config[:name] = arg
+          config[:title] = arg
+        end
+      end
+      # naive defaults, since list could be large or have very long items
+      # usually user will provide
+      config[:height] ||= config[:list].length + 2
+      config[:width] ||= longest_in_list(config[:list])+2
+      if @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last
+        config[:row] = @app_row
+        config[:col] = col
+        @app_row += config[:height] # this needs to take into account height of prev object
+      end
+      field = Listbox.new @form, config
+      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
+      if block
+        field.bind(block_event, &block)
+      end
+      return field
+    end
+
+    # @endgroup
+    
+    # @group positioning of components
+    
     # line up vertically whatever comes in, ignoring r and c 
     # margin_top to add to margin of existing stack (if embedded) such as extra spacing
     # margin_rt to add to margin of existing stack, or window (0)
@@ -236,9 +303,13 @@ module RubyCurses
       instance_eval &block if block_given?
       @stack.pop
       @instack = false if @stack.empty?
+      @app_row = 0 if @stack.empty?
     end
     # keep adding to right of previous and when no more space
-    # move down and continue fitting in
+    # move down and continue fitting in.
+    # Useful for button positioning. Currently, we can use a second flow
+    # to get another row.
+    # TODO: move down when row filled
     def flow config={}, &block
       @inflow = true
       mt =  config[:margin_top] || 0
@@ -253,6 +324,12 @@ module RubyCurses
     end
 
     private
+    def longest_in_list list
+      longest = list.inject(0) do |memo,word|
+        memo >= word.length ? memo : word.length
+      end    
+      longest
+    end    
     def run &block
       begin
         # Initialize curses
@@ -309,7 +386,7 @@ if $0 == __FILE__
     r, c = 7, 30
     c += fname.length + 1
     #field1 = field( [r,c, 30], fname, :bgcolor => "cyan", :block_event => :CHANGE) do |fld|
-    stack :margin_top => 10, :margin_rt => 10 do
+    stack :margin_top => 5, :margin_rt => 10 do
       lbl = label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'})
       field1 = field( [r,c, 30], fname, :bgcolor => "cyan") do |fld|
         message("You entered #{fld.getvalue}. To quit enter quit and tab out")
@@ -354,6 +431,18 @@ if $0 == __FILE__
         end
       end
     end # stack
+    # lets make another column
+    stack :margin_top => 5, :margin_rt => 70 do
+      label "Column 2"
+      f1 = field "afield", :bgcolor => 'white',:color => 'black'
+      list_box "A list", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"]
+      list_box "Another", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"] do |list|
+        #f1.set_buffer list.text
+        #f1.text list.text
+        f1.text = list.text
+      end
+
+    end
 
     # Allow user to get the keys
     keystroke do |key|
