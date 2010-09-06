@@ -40,6 +40,7 @@ module RubyCurses
     def clear_selection
       @list_selection_model.clear_selection
     end
+    # why is this commented off XXX could it override listscrollable
     def selected_item
     #  @list[@current_index]
     end
