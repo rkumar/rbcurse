@@ -513,6 +513,21 @@ module RubyCurses
       @list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
       create_default_list_selection_model
     end
+    # get element at
+    # @param [Fixnum] index for element
+    # @return [Object] element
+    # @since 1.2.0  2010-09-06 14:33 making life easier for others.
+    def [](off0)
+      @list[off0]
+    end
+    # return object under cursor
+    # Note: this should not be confused with selected row/s. User may not have selected this.
+    # This is only useful since in some demos we like to change a status bar as a user scrolls down
+    # @since 1.2.0  2010-09-06 14:33 making life easier for others.
+    def current_row
+      @list[@current_index]
+    end
+    alias :text :current_row  # thanks to shoes, not sure how this will impact since widget has text.
 
     def select_default_values
       return if @default_values.nil?
