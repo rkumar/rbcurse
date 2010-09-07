@@ -30,18 +30,18 @@ module RubyCurses
   #
   # @since 1.1.6
   # TODO - 
-  # stack and flow should be objects in Form, put in widget when creating
-  # method: quit
-  # box / rect
-  # animate(n) |i|
-  # move
-  # list_box :choose is the defauly
-  # progress - like a label but fills itself, fraction
-  # para looks like a label that is more than one line, and calculates rows itself based on text
-  # edit_line = fiekd
-  # other buttons: radio, check
-  # edit_box = textarea
-  # margin - is left offset
+  # - stack and flow should be objects in Form, put in widget when creating
+  # x method: quit
+  # - box / rect
+  # - animate(n) |i|
+  # - move
+  # x list_box :choose is the defauly
+  # - progress - like a label but fills itself, fraction
+  # - para looks like a label that is more than one line, and calculates rows itself based on text
+  # - edit_line = fiekd
+  # - other buttons: radio, check
+  # - edit_box = textarea
+  # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
   
@@ -174,6 +174,7 @@ module RubyCurses
       #message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
 
     def label *args
+      block_event = nil
       config = {}
 
       args.each do |arg| 
@@ -230,18 +231,7 @@ module RubyCurses
         end
       end
       # flow gets precedence over stack
-      if @inflow
-        #col = @flowstack.last
-        config[:row] = @app_row
-        config[:col] = @flowcol
-        @flowcol += config[:text].length + 5
-      elsif @instack
-        # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last
-        config[:row] = @app_row
-        config[:col] = col
-        @app_row += 1
-      end
+      _position(config)
       button = Button.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
@@ -262,6 +252,7 @@ module RubyCurses
       # TODO how to do this so he gets selected row easily
       block_event = :ENTER_ROW
 
+      # TODO abstract this into a new method so no copying
       args.each do |arg| 
         case arg
         when Array
@@ -286,6 +277,10 @@ module RubyCurses
       # usually user will provide
       config[:height] ||= config[:list].length + 2
       config[:width] ||= longest_in_list(config[:list])+2
+      #if config.has_key? :choose
+      config[:default_values] = config.delete :choose
+      # we make the default single unless specified
+      config[:selection_mode] = :single unless config.has_key? :selection_mode
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last
@@ -300,6 +295,23 @@ module RubyCurses
       end
       return field
     end
+    
+    def toggle *args, &block
+      config = {}
+      # TODO confirm events
+      events = [ :PRESS,  :LEAVE, :ENTER ]
+      block_event = :PRESS
+      _process_args args, config, block_event, events
+      _position(config)
+      toggle = ToggleButton.new @form, config
+      if block
+        toggle.bind(block_event, &block)
+      end
+      return toggle
+    end
+    
+
+    # ADD new widget above this
 
     # @endgroup
     
@@ -386,6 +398,47 @@ module RubyCurses
         end
       end
     end
+    # TODO
+    # process args, all widgets should call this
+    def _process_args args, config, block_event, events
+      args.each do |arg| 
+        case arg
+        when Array
+          # we can use r,c, w, h
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          # width for most XXX ?
+          config[:height] = height if height
+        when Hash
+          config.merge!(arg)
+          if block_event 
+            block_event = config.delete(:block_event){ block_event }
+            raise "Invalid event. Use #{events}" unless events.include? block_event
+          end
+        when String
+          config[:name] = arg
+          config[:title] = arg # some may not have title
+        end
+      end
+    end # _process
+    # position object based on whether in a flow or stack.
+    # @app_row is prepared for next object based on this objects ht
+    def _position config
+      if @inflow
+        #col = @flowstack.last
+        config[:row] = @app_row
+        config[:col] = @flowcol
+        @flowcol += config[:text].length + 5 # 5 came from buttons
+      elsif @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last
+        config[:row] = @app_row
+        config[:col] = col
+        @app_row += config[:height] || 1
+      end
+    end
   end # class
 end # module 
 if $0 == __FILE__
@@ -427,6 +480,11 @@ if $0 == __FILE__
       label( [8, 30, 60],{:text => "B label", :color=>'white',:bgcolor=>'blue'} )
 
       stack :margin_top => 2, :margin => 0 do
+        toggle :onvalue => " Toggle Down ", :offvalue => "  Untoggle   ", :mnemonic => 'T', :value => true
+
+        toggle :onvalue => " On  ", :offvalue => " Off ", :value => true do |e|
+          alert "You pressed me #{e.state}"
+        end
         flow do
           button_row = 17
           ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
@@ -454,9 +512,9 @@ if $0 == __FILE__
     # lets make another column
     stack :margin_top => 5, :margin => 70 do
       l = label "Column 2"
-      f1 = field "afield", :bgcolor => 'white',:color => 'black'
-      list_box "A list", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"] 
-      list_box "Another", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"] do |list|
+      f1 = field "afield", :bgcolor => 'white', :color => 'black'
+      list_box "A list", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"], :choose => ["Square"]
+      lb = list_box "Another", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"] do |list|
         #f1.set_buffer list.text
         #f1.text list.text
         f1.text = list.text
