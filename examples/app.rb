@@ -30,6 +30,18 @@ module RubyCurses
   #
   # @since 1.1.6
   # TODO - 
+  # stack and flow should be objects in Form, put in widget when creating
+  # method: quit
+  # box / rect
+  # animate(n) |i|
+  # move
+  # list_box :choose is the defauly
+  # progress - like a label but fills itself, fraction
+  # para looks like a label that is more than one line, and calculates rows itself based on text
+  # edit_line = fiekd
+  # other buttons: radio, check
+  # edit_box = textarea
+  # margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
   
@@ -92,7 +104,7 @@ module RubyCurses
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != @quit_key )
         str = keycode_tos ch
-        @keyblock.call(ch) if @keyblock
+        @keyblock.call(str.gsub(/-/, "_").to_sym) if @keyblock
         $log.debug  "#{ch} got (#{str})"
         yield ch if block # <<<----
         @form.handle_key ch
@@ -100,7 +112,10 @@ module RubyCurses
         @window.wrefresh
       end
     end
-    def keystroke &block
+    # returns a symbol of the key pressed
+    # e.g. :C_c for Ctrl-C
+    # :Space, :bs, :M_d etc
+    def keypress &block
      @keyblock = block
     end
     def message text
@@ -292,11 +307,11 @@ module RubyCurses
     
     # line up vertically whatever comes in, ignoring r and c 
     # margin_top to add to margin of existing stack (if embedded) such as extra spacing
-    # margin_rt to add to margin of existing stack, or window (0)
+    # margin to add to margin of existing stack, or window (0)
     def stack config={}, &block
       @instack = true
       mt =  config[:margin_top] || 1
-      mr =  config[:margin_rt] || 0
+      mr =  config[:margin] || 0
       @app_row += mt
       mr += @stack.last if @stack.last
       @stack << mr
@@ -315,7 +330,7 @@ module RubyCurses
       mt =  config[:margin_top] || 0
       @app_row += mt
       col = @flowstack.last || @stack.last || @app_col
-      col += config[:margin_rt] || 0
+      col += config[:margin] || 0
       @flowstack << col
       @flowcol = col
       instance_eval &block if block_given?
@@ -324,6 +339,10 @@ module RubyCurses
     end
 
     private
+    def quit
+      throw(:close)
+    end
+
     def longest_in_list list
       longest = list.inject(0) do |memo,word|
         memo >= word.length ? memo : word.length
@@ -386,7 +405,7 @@ if $0 == __FILE__
     r, c = 7, 30
     c += fname.length + 1
     #field1 = field( [r,c, 30], fname, :bgcolor => "cyan", :block_event => :CHANGE) do |fld|
-    stack :margin_top => 5, :margin_rt => 10 do
+    stack :margin_top => 5, :margin => 10 do
       lbl = label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'})
       field1 = field( [r,c, 30], fname, :bgcolor => "cyan") do |fld|
         message("You entered #{fld.getvalue}. To quit enter quit and tab out")
@@ -401,13 +420,13 @@ if $0 == __FILE__
         message "you entered this field"
       end
 
-      stack :margin_top => 2, :margin_rt => 0 do
+      stack :margin_top => 2, :margin => 0 do
         label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
       end
 
       label( [8, 30, 60],{:text => "B label", :color=>'white',:bgcolor=>'blue'} )
 
-      stack :margin_top => 2, :margin_rt => 0 do
+      stack :margin_top => 2, :margin => 0 do
         flow do
           button_row = 17
           ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
@@ -418,7 +437,8 @@ if $0 == __FILE__
           # using ampersand to set mnemonic
           cancel_button = button( [button_row, 40], "&Cancel" ) do
             if confirm("Do your really want to quit?")== :YES
-              throw(:close); 
+              #throw(:close); 
+              quit
             else
               $message.value = "Quit aborted"
             end
@@ -432,23 +452,25 @@ if $0 == __FILE__
       end
     end # stack
     # lets make another column
-    stack :margin_top => 5, :margin_rt => 70 do
-      label "Column 2"
+    stack :margin_top => 5, :margin => 70 do
+      l = label "Column 2"
       f1 = field "afield", :bgcolor => 'white',:color => 'black'
-      list_box "A list", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"]
+      list_box "A list", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"] 
       list_box "Another", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"] do |list|
         #f1.set_buffer list.text
         #f1.text list.text
         f1.text = list.text
+        l.text = list.text.upcase
       end
 
     end
 
     # Allow user to get the keys
-    keystroke do |key|
-      if key == 3
+    keypress do |key|
+      if key == :C_c
         message "You tried to cancel"
-        throw :close
+        #throw :close
+        quit
       else
         #app.message "You pressed #{key}, #{char} "
         message "You pressed #{key}"
