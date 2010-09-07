@@ -148,9 +148,9 @@ module RubyCurses
         when ?\M-0.getbyte(0)..?\M-9.getbyte(0)
           return "M-"+ (keycode-?\M-0.getbyte(0)).to_s
         when 32
-          return "Space"
+          return "space" # changed to lowercase so consistent
         when 27
-          return "Esc"
+          return "esc" # changed to lowercase so consistent
         when ?\C-].getbyte(0)
           return "C-]"
         when 258
@@ -175,6 +175,8 @@ module RubyCurses
           return "M-F"+ (keycode-392).to_s
         when 0
           return "C-space" # i hope this is correct, just guessing
+        when 160
+          return "M-space" # at least on OSX Leopard now (don't remember this working on PPC)
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->,?\M-?,?\M-/]
           others.collect! {|x| x.getbyte(0)  }  ## added 2009-10-04 14:25 for 1.9
@@ -2182,6 +2184,7 @@ module RubyCurses
   ##
   # the preferred way of printing text on screen, esp if you want to modify it at run time.
   # Use display_length to ensure no spillage.
+  # This can use text or text_variable for setting and getting data (inh from Widget).
   class Label < Widget
     #dsl_accessor :label_for   # related field or buddy
     dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
@@ -2307,7 +2310,7 @@ module RubyCurses
       command { a.call }
     end
     ##
-    # sets text, checking for ampersand, uses that for hotkey and underlines
+    # button:  sets text, checking for ampersand, uses that for hotkey and underlines
     def text(*val)
       if val.empty?
         return @text
