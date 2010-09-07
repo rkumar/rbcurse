@@ -135,6 +135,8 @@ module RubyCurses
           content
       end
       # needs to move to a keystroke class
+      # please use these only for printing or debugging, not comparing
+      # I could soon return symbols instead 2010-09-07 14:14 
       def keycode_tos keycode
         case keycode
         when 33..126
@@ -2393,6 +2395,7 @@ module RubyCurses
         #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
         len = @display_length || value.length
         @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
+        ## a mnemonic not present in field can throw errors XXX FIXME
         @graphic.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
@@ -2525,6 +2528,8 @@ module RubyCurses
     def toggle
       fire
     end
+    # called on :PRESS event
+    # caller should check state of itemevent passed to block
     def fire
       checked(!@value)
       # added ItemEvent on 2008-12-31 13:44 
