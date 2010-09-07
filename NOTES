@@ -1698,3 +1698,19 @@ Internally we can bind to CHANGED. or should i have a changed method
 which does this.
 
 * * * * * * * *
+
+Subject: uniformity and less surprises
+--------------------------------------
+Date: 2010-09-07 20:17
+
+we need more uniformity and less surprise. Let 'text' be the one method
+with 'def text' and 'def text =', in buttons rename text to label, so 
+text can be the answer. Same for all widgets. getvalue and get_value etc
+sucks.
+If a Variable passed in take its value.
+thanks to the DSL approach there's this whole get_ set_ nonsense.
+
+We need to move out the DSLish crap everywhere, even if that means a new
+major revision.
+
+* * * * * * * *
