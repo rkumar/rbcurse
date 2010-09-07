@@ -39,7 +39,7 @@ module RubyCurses
   # - progress - like a label but fills itself, fraction
   # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - edit_line = fiekd
-  # - other buttons: radio, check
+  # x other buttons: radio, check
   # - edit_box = textarea
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
@@ -65,6 +65,16 @@ module RubyCurses
       #return get_content()[@current_index]
     #end
   #end
+  class CheckBox
+    # a little dicey XXX 
+    def text(*val)
+      if val.empty?
+        @value ? @onvalue : @offvalue
+      else
+        super
+      end
+    end
+  end
   class App
     attr_reader :config
     attr_reader :form
@@ -81,6 +91,7 @@ module RubyCurses
       @stack = [] # stack's coordinates
       @flowstack = []
       #instance_eval &block if block_given?
+      @variables = {}
       init_vars
       run &block
     end
@@ -309,6 +320,43 @@ module RubyCurses
       end
       return toggle
     end
+    def check *args, &block
+      config = {}
+      # TODO confirm events
+      events = [ :PRESS,  :LEAVE, :ENTER ]
+      block_event = :PRESS
+      _process_args args, config, block_event, events
+      _position(config)
+      toggle = CheckBox.new @form, config
+      if block
+        toggle.bind(block_event, &block)
+      end
+      return toggle
+    end
+    def radio *args, &block
+      config = {}
+      # TODO confirm events
+      events = [ :PRESS,  :LEAVE, :ENTER ]
+      block_event = :PRESS
+      _process_args args, config, block_event, events
+      a = config[:group]
+      # FIXME we should check if user has set a varialbe in :variable.
+      # we should create a variable, so he can use it if he wants.
+      if @variables.has_key? a
+        v = @variables[a]
+      else
+        v = Variable.new
+        @variables[a] = v
+      end
+      config[:variable] = v
+      config.delete(:group)
+      _position(config)
+      radio = RadioButton.new @form, config
+      if block
+        radio.bind(block_event, &block)
+      end
+      return radio
+    end
     
 
     # ADD new widget above this
@@ -477,7 +525,7 @@ if $0 == __FILE__
         label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
       end
 
-      label( [8, 30, 60],{:text => "B label", :color=>'white',:bgcolor=>'blue'} )
+      @bluelabel = label( [8, 30, 60],{:text => "B label", :color=>'white',:bgcolor=>'blue'} )
 
       stack :margin_top => 2, :margin => 0 do
         toggle :onvalue => " Toggle Down ", :offvalue => "  Untoggle   ", :mnemonic => 'T', :value => true
@@ -485,6 +533,13 @@ if $0 == __FILE__
         toggle :onvalue => " On  ", :offvalue => " Off ", :value => true do |e|
           alert "You pressed me #{e.state}"
         end
+        check :text => "Check me!", :onvalue => "Checked", :offvalue => "Unchecked", :value => true do |e|
+          # this works but long and complicated
+          #@bluelabel.text = e.item.getvalue ? e.item.onvalue : e.item.offvalue
+          @bluelabel.text = e.item.text
+        end
+        radio :text => "red", :value => "RED", :color => "red", :group => :colors
+        radio :text => "green", :value => "GREEN", :color => "green", :group => :colors
         flow do
           button_row = 17
           ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
