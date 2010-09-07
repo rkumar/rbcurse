@@ -619,6 +619,7 @@ module RubyCurses
     # I have modified it to push all words that are exceeding maxlen.
     # This was needed for if i push 10 chars to next line, and the last word is less then the line will 
     # exceed. So i must push as many words as exceed length.
+    # 2010-09-07 22:31 this must not return nil, or previous will crash. This happens if no space in line.
     def push_last_word lineno=@current_index
        _maxlen = @maxlen || @width - 2
       #lastspace = @buffer.rindex(" ")
@@ -627,6 +628,9 @@ module RubyCurses
       line = @list[lineno][0.._maxlen+1] if line.length > _maxlen
       lastspace = line.rindex(/ \w/)
       $log.debug " PUSH:2 #{lastspace},#{line},"
+      # fix to ensure something returned 2010-09-07 22:40 
+      lastspace = _maxlen-1 unless lastspace # added 2010-09-07 22:29  XXXX
+
       if !lastspace.nil?
         lastchars = @list[lineno][lastspace+1..-1]
         @list[lineno] = @list[lineno][0..lastspace]
@@ -715,7 +719,14 @@ module RubyCurses
 
     def putc c
       if c >= 32 and c <= 126
-        ret = putch c.chr
+        begin
+          ret = putch c.chr
+        rescue => ex
+          Ncurses.beep
+          $log.debug " ERROR IN PUTCH RTEXTAREA "
+          $log.debug( ex) if ex
+          $log.debug(ex.backtrace.join("\n")) if ex
+        end
         if ret == 0
         # addcol 1
           set_modified 
