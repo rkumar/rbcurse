@@ -426,7 +426,7 @@ module RubyCurses
       @current_index ||= 0
       @row_offset = @col_offset = 1
       @content_rows = @list.length
-      @selection_mode ||= 'multiple'
+      @selection_mode ||= 'multiple' # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
       # added 2010-02-17 23:05  RFED16 so we don't need a form.
