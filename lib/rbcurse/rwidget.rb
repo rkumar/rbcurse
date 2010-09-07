@@ -85,6 +85,7 @@ class Module
         end
     #attr_writer sym
         def #{sym}=val
+      # TODO if Variable, take .value NEXT VERSION
            #{sym}(val)
         end
       }
@@ -2503,6 +2504,9 @@ module RubyCurses
     def getvalue
       @value ? @onvalue : @offvalue
     end
+    # added for some standardization 2010-09-07 20:28 
+    # alias :text :getvalue # NEXT VERSION
+    # change existing text to label
     ##
     # is the button on or off
     # added 2008-12-09 19:05 
