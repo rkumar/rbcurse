@@ -40,7 +40,10 @@ module RubyCurses
   # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - edit_line = fiekd
   # x other buttons: radio, check
-  # - edit_box = textarea
+  # x edit_box = textarea
+  # - combo
+  # - menu
+  # - table
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
@@ -357,6 +360,21 @@ module RubyCurses
       end
       return radio
     end
+    def textarea *args, &block
+      require 'rbcurse/rtextarea'
+      config = {}
+      # TODO confirm events many more
+      events = [ :CHANGE,  :LEAVE, :ENTER ]
+      block_event = events[0]
+      _process_args args, config, block_event, events
+      config[:width] = config[:display_length] || 10 unless config.has_key? :width
+      _position(config)
+      w = TextArea.new @form, config
+      if block
+        w.bind(block_event, &block)
+      end
+      return w
+    end
     
 
     # ADD new widget above this
@@ -506,7 +524,7 @@ if $0 == __FILE__
     r, c = 7, 30
     c += fname.length + 1
     #field1 = field( [r,c, 30], fname, :bgcolor => "cyan", :block_event => :CHANGE) do |fld|
-    stack :margin_top => 5, :margin => 10 do
+    stack :margin_top => 2, :margin => 10 do
       lbl = label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'})
       field1 = field( [r,c, 30], fname, :bgcolor => "cyan") do |fld|
         message("You entered #{fld.getvalue}. To quit enter quit and tab out")
@@ -565,7 +583,7 @@ if $0 == __FILE__
       end
     end # stack
     # lets make another column
-    stack :margin_top => 5, :margin => 70 do
+    stack :margin_top => 2, :margin => 70 do
       l = label "Column 2"
       f1 = field "afield", :bgcolor => 'white', :color => 'black'
       list_box "A list", :list => ["Square", "Oval", "Rectangle", "Somethinglarge"], :choose => ["Square"]
@@ -574,6 +592,13 @@ if $0 == __FILE__
         #f1.text list.text
         f1.text = list.text
         l.text = list.text.upcase
+      end
+      t = textarea :width => 12, :height => 10 do |e|
+        #@bluelabel.text = e.to_s.tr("\n",' ')
+        @bluelabel.text = e.text.gsub("\n"," ")
+      end
+      t.leave do |c|
+        @bluelabel.text = c.get_text.gsub("\n"," ")
       end
 
     end
