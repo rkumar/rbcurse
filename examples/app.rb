@@ -375,6 +375,21 @@ module RubyCurses
       end
       return w
     end
+    def progress *args, &block
+      require 'rbcurse/rprogress'
+      config = {}
+      # TODO confirm events many more
+      events = [ :CHANGE,  :LEAVE, :ENTER ]
+      block_event = nil
+      _process_args args, config, block_event, events
+      config[:width] = config[:display_length] || 10 unless config.has_key? :width
+      _position(config)
+      w = Progress.new @form, config
+      #if block
+        #w.bind(block_event, &block)
+      #end
+      return w
+    end
     
 
     # ADD new widget above this
@@ -580,6 +595,9 @@ if $0 == __FILE__
           button "Another"
           button "Line"
         end
+        stack do
+          @pbar = progress :width => 20, :bgcolor => 'white', :color => 'red'
+        end
       end
     end # stack
     # lets make another column
@@ -596,6 +614,12 @@ if $0 == __FILE__
       t = textarea :width => 12, :height => 10 do |e|
         #@bluelabel.text = e.to_s.tr("\n",' ')
         @bluelabel.text = e.text.gsub("\n"," ")
+        len = e.source.get_text.length
+        len = len % 20 if len > 20
+        $log.debug " PBAR len of text is #{len}: #{len/20.0} "
+        @pbar.fraction(len/20.0)
+        i = ((len/20.0)*100).to_i
+        #@pbar.text = "completed:#{i}"
       end
       t.leave do |c|
         @bluelabel.text = c.get_text.gsub("\n"," ")
