@@ -722,8 +722,10 @@ module RubyCurses
         begin
           ret = putch c.chr
         rescue => ex
+          # this does not prevent entry, it prevents updating
+          # often comes here if error in event block, not our fault
           Ncurses.beep
-          $log.debug " ERROR IN PUTCH RTEXTAREA "
+          $log.debug " ERROR IN PUTCH RTEXTAREA  "
           $log.debug( ex) if ex
           $log.debug(ex.backtrace.join("\n")) if ex
         end
