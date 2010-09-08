@@ -12,7 +12,6 @@ Gem::Specification.new do |s|
   s.date = %q{2010-09-08}
   s.description = %q{Ruby curses widgets for easy application development on text terminals (ruby 1.9, 1.8)}
   s.email = %q{sentinel1879@gmail.com}
-  s.rubyforge_project = %q{rbcurse}
   s.extra_rdoc_files = [
     "README.markdown",
      "TODO"
@@ -129,6 +128,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://rbcurse.rubyforge.org/}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
+  s.rubyforge_project = %q{rbcurse}
   s.rubygems_version = %q{1.3.7}
   s.summary = %q{Ruby ncurses Toolkit}
   s.test_files = [
