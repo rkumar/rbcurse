@@ -196,6 +196,11 @@ module RubyCurses
         end
       end
 
+      # if passed a string in second or third param, will create a color 
+      # and return, else it will return default color
+      # @param [Fixnum] color_pair created by ncurses
+      # @param [String] color name such as white black cyan magenta red green yellow
+      # @param [String] bgcolor name such as white black cyan magenta red green yellow
       def get_color default=$datacolor, color=@color, bgcolor=@bgcolor
         if bgcolor.is_a? String and color.is_a? String
           acolor = ColorMap.get_color(color, bgcolor)
@@ -1169,7 +1174,7 @@ module RubyCurses
         #  this part caused an endless loop on 2010-01-02 19:20 when scrollpane scrolled up
        $log.debug "form repaint calling select field 0 SHOULD HAPPEN FIRST TIME ONLY"
         #select_field 0
-        req_first_field
+        select_first_field
         @firsttime = false
       end
        setpos 
@@ -1217,10 +1222,38 @@ module RubyCurses
     # take focus to first focussable field
     # we shoud not send to select_next. have a separate method to avoid bugs.
     # but check current_field, in case called from anotehr field TODO FIXME
-    def req_first_field
-      # FIXME this results in on_leave of last field being executed when form starts.
-      @active_index = -1 # FIXME HACK
-      select_next_field
+    def select_first_field
+      # this results in on_leave of last field being executed when form starts.
+      #@active_index = -1 # FIXME HACK
+      #select_next_field
+      ix =  index_of_first_focusable_field()
+
+      # if the user is on a field other than current then fire on_leave
+      if @active_index.nil?
+      elsif @active_index != ix
+        f = @widgets[@active_index]
+        begin
+          on_leave f
+        rescue => err
+         $log.error " Caught EXCEPTION req_first_field on_leave #{err}"
+         Ncurses.beep
+         $error_message = "#{err}"
+         return
+        end
+      end
+      select_field ix
+    end
+    # please do not use req_ i will deprecate it soon.
+    alias :req_first_field :select_first_field
+    # return the offset of first field that takes focus
+    def index_of_first_focusable_field
+      @widgets.each_with_index do |f, i| 
+        if focusable?(f)
+          #select_field i
+          return i
+        end
+      end
+      nil
     end
     def req_last_field
       @active_index = nil 
