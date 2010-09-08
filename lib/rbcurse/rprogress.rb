@@ -43,7 +43,7 @@ module RubyCurses
       bcolor = get_color @color
       @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
       len = 0
-      w2 = @width - 2
+      w2 = @width - 6 #2 account for brackets and printing of percentage
       if @fraction
         @fraction = 1.0 if @fraction > 1.0
         @fraction = 0 if @fraction < 0
@@ -55,17 +55,17 @@ module RubyCurses
         ftext=""
         char = @char || "="
         if @fraction && @fraction >= 0
-          len = @fraction * (@width-2) 
+          len = @fraction * (w2) 
           ftext << sprintf("%3d%s",(@fraction * 100).to_i, "%")
         end
         incomplete = w2 - len
         complete = len
         # I am printing 2 times since sometimes the ending bracket gets printed one position less
         str = @surround_chars[0] + " "*w2 + @surround_chars[1] + ftext
-        @graphic.printstring r, c, str , $datacolor,@attr
+        @graphic.printstring r, c, str , acolor,@attr
         str = char*complete 
         str[-1] = ">" if char == "=" && complete > 2
-        @graphic.printstring r, c+1, str , $datacolor,@attr
+        @graphic.printstring r, c+1, str , acolor,@attr
       else
 
         char = @char || " "
