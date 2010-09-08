@@ -9,9 +9,10 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rahul Kumar"]
-  s.date = %q{2010-09-06}
+  s.date = %q{2010-09-08}
   s.description = %q{Ruby curses widgets for easy application development on text terminals (ruby 1.9, 1.8)}
   s.email = %q{sentinel1879@gmail.com}
+  s.rubyforge_project = %q{rbcurse}
   s.extra_rdoc_files = [
     "README.markdown",
      "TODO"
@@ -94,7 +95,6 @@ Gem::Specification.new do |s|
      "lib/rbcurse/rchangeevent.rb",
      "lib/rbcurse/rcombo.rb",
      "lib/rbcurse/rdialogs.rb",
-     "lib/rbcurse/rform.rb",
      "lib/rbcurse/rinputdataevent.rb",
      "lib/rbcurse/rlistbox.rb",
      "lib/rbcurse/rmenu.rb",
@@ -103,6 +103,7 @@ Gem::Specification.new do |s|
      "lib/rbcurse/rmultisplit.rb",
      "lib/rbcurse/rmultitextview.rb",
      "lib/rbcurse/rpopupmenu.rb",
+     "lib/rbcurse/rprogress.rb",
      "lib/rbcurse/rscrollform.rb",
      "lib/rbcurse/rscrollpane.rb",
      "lib/rbcurse/rsplitpane.rb",
@@ -114,7 +115,6 @@ Gem::Specification.new do |s|
      "lib/rbcurse/rviewport.rb",
      "lib/rbcurse/rwidget.rb",
      "lib/rbcurse/scrollable.rb",
-     "lib/rbcurse/selectable.rb",
      "lib/rbcurse/table/tablecellrenderer.rb",
      "lib/rbcurse/table/tabledatecellrenderer.rb",
      "lib/rbcurse/undomanager.rb",
