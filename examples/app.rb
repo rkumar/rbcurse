@@ -595,8 +595,8 @@ if $0 == __FILE__
           button "Another"
           button "Line"
         end
-        stack do
-          @pbar = progress :width => 20, :bgcolor => 'white', :color => 'red'
+        stack :margin_top => 2, :margin => 0 do
+          @pbar = progress :width => 20, :bgcolor => 'white', :color => 'red', :style => :old, :char => "="
         end
       end
     end # stack
@@ -619,7 +619,7 @@ if $0 == __FILE__
         $log.debug " PBAR len of text is #{len}: #{len/20.0} "
         @pbar.fraction(len/20.0)
         i = ((len/20.0)*100).to_i
-        #@pbar.text = "completed:#{i}"
+        @pbar.text = "completed:#{i}"
       end
       t.leave do |c|
         @bluelabel.text = c.get_text.gsub("\n"," ")
