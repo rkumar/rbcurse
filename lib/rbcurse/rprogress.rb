@@ -30,56 +30,56 @@ module RubyCurses
     end
 
     ##
-    # XXX need to move wrapping etc up and done once. 
+    # 
     def repaint
       return unless @repaint_required
-          $log.debug " XXXX PBAR inside repaint #{@color} , #{@fraction} "
-        r,c = rowcol
-        value = getvalue_for_paint
-        acolor = get_color @bgcolor
-        @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
-        
-        # first print the background horizonal bar
-        @graphic.printstring r, c, " " * @width , acolor,@attr
+      $log.debug " XXXX PBAR inside repaint #{@color} , #{@fraction} "
+      r,c = rowcol
+      value = getvalue_for_paint
+      acolor = get_color @bgcolor
+      @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
 
-        # if the user has passed a percentage we need to print that in @color
-        if @fraction
-          bcolor = get_color @color
-          @fraction = 1.0 if @fraction > 1.0
-          @fraction = 0 if @fraction < 0
-          if @fraction > 0
-            len = @fraction * @width
-            char = @char || " "
+      # first print the background horizonal bar
+      @graphic.printstring r, c, " " * @width , acolor,@attr
 
-            # if text is to printed over the bar
-            if @text
-              textcolor = get_color $datacolor, 'black'
-              txt = @text
-              txt = @text[0..@width] if @text.length > @width
-              textattr = 'bold'
-              # write the text in a color that contrasts with the background
-              # typically black
-              @graphic.printstring r, c, txt , textcolor, textattr if @text
+      # if the user has passed a percentage we need to print that in @color
+      if @fraction
+        bcolor = get_color @color
+        @fraction = 1.0 if @fraction > 1.0
+        @fraction = 0 if @fraction < 0
+        if @fraction > 0
+          len = @fraction * @width
+          char = @char || " "
 
-              # now write the text again, in a color that contrasts with the progress
-              # bar color that is expanding. However, the text must be padded to len and truncated 
-              # to len as well. it must be exactly len in size.
-              txt = sprintf("%-*s", len, txt)
-              if len > 0
-                if len < txt.length
-                  txt = txt[0..len]
-                end
-                textcolor = get_color $datacolor, 'white', @color
-                @graphic.printstring r, c, txt , textcolor, textattr if @text
+          # if text is to printed over the bar
+          if @text
+            textcolor = get_color $datacolor, 'black'
+            txt = @text
+            txt = @text[0..@width] if @text.length > @width
+            textattr = 'bold'
+            # write the text in a color that contrasts with the background
+            # typically black
+            @graphic.printstring r, c, txt , textcolor, textattr if @text
+
+            # now write the text again, in a color that contrasts with the progress
+            # bar color that is expanding. However, the text must be padded to len and truncated 
+            # to len as well. it must be exactly len in size.
+            txt = sprintf("%-*s", len, txt)
+            if len > 0
+              if len < txt.length
+                txt = txt[0..len]
               end
-            else
-              # no text was given just print a horizontal bar
-              @graphic.printstring r, c, char * len , bcolor, 'reverse'
+              textcolor = get_color $datacolor, 'white', @color
+              @graphic.printstring r, c, txt , textcolor, textattr if @text
             end
+          else
+            # no text was given just print a horizontal bar
+            @graphic.printstring r, c, char * len , bcolor, 'reverse'
           end
         end
-        @repaint_required = false
+      end
+      @repaint_required = false
     end
-  # ADD HERE progress
+    # ADD HERE progress
   end
 end
