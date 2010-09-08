@@ -79,7 +79,10 @@ class Module
             newvalue = @#{sym}
             @config["#{sym}"]=@#{sym}
             if oldvalue != newvalue
-              fire_property_change("#{sym}", oldvalue, newvalue)
+              # trying to reduce calls to fire, when object is being created
+              # in some cases property is preset in widget to 0 or -1. row col, color
+              # should i set a flag at end of repaint meaning now firing can happen XXX FIXME
+              fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
             end
           end
         end
@@ -305,8 +308,10 @@ module RubyCurses
       # e.g. fire_handler :ENTER, self
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
+      # XXX: if there's a runtine error in block, then it goes up and often disturbs
+      # object, preventing repaint. we need to catch exceptions here.
       def fire_handler event, object
-        $log.debug " def fire_handler evt:#{event}, o: #{object.class}, hdnler:#{@handler}"
+        $log.debug "inside def fire_handler evt:#{event}, o: #{object.to_s}, hdnler:#{@handler}"
         if !@handler.nil?
         #blk = @handler[event]
           ablk = @handler[event]
@@ -315,7 +320,14 @@ module RubyCurses
             ablk.each_with_index do |blk, ix|
               #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
               $log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
-              blk.call object,  *aeve[ix]
+              begin
+                blk.call object,  *aeve[ix]
+              rescue => ex
+                $log.error " ERROR in block event #{self}: #{name}, #{event}"
+                $log.error(ex.backtrace.join("\n")) 
+                $error_message = "#{ex}"
+                Ncurses.beep
+              end
             end
           end # if
         end # if
@@ -324,6 +336,7 @@ module RubyCurses
       # goes with dsl_property
       # Need to inform listeners - done 2010-02-25 23:09 
     def fire_property_change text, oldvalue, newvalue
+      # should i return if oldvalue is nil ??? TODO XXX
       #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
       if @pce.nil?
         @pce = PropertyChangeEvent.new(self, text, oldvalue, newvalue)
@@ -1201,7 +1214,11 @@ module RubyCurses
       return nil if @active_index.nil?   # for forms that have no focusable field 2009-01-08 12:22 
       @widgets[@active_index]
     end
+    # take focus to first focussable field
+    # we shoud not send to select_next. have a separate method to avoid bugs.
+    # but check current_field, in case called from anotehr field TODO FIXME
     def req_first_field
+      # FIXME this results in on_leave of last field being executed when form starts.
       @active_index = -1 # FIXME HACK
       select_next_field
     end
@@ -1268,8 +1285,8 @@ module RubyCurses
       begin
         on_leave f
       rescue => err
-        $log.debug "form: validate_field caught EXCEPTION #{err}"
-        $log.debug(err.backtrace.join("\n")) 
+        $log.error "form: validate_field caught EXCEPTION #{err}"
+        $log.error(err.backtrace.join("\n")) 
         $error_message = "#{err}"
         Ncurses.beep
         return -1
@@ -1279,18 +1296,19 @@ module RubyCurses
     # put focus on next field
     # will cycle by default, unless navigation policy not :CYCLICAL
     # in which case returns :NO_NEXT_FIELD.
+    # FIXME: in the beginning it comes in as -1 and does an on_leave of last field
     def select_next_field
       return if @widgets.nil? or @widgets.empty?
       $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
-      if @active_index.nil?
+      if @active_index.nil?  || @active_index == -1 # needs to be tested out A LOT
         @active_index = -1 
       else
         f = @widgets[@active_index]
         begin
           on_leave f
         rescue => err
-         $log.debug "select_next_field: caught EXCEPTION #{err}"
-         $log.debug(err.backtrace.join("\n")) 
+         $log.error "select_next_field: caught EXCEPTION #{err}"
+         $log.error(err.backtrace.join("\n")) 
          $error_message = "#{err}"
          Ncurses.beep
          return
@@ -1337,8 +1355,9 @@ module RubyCurses
         begin
           on_leave f
         rescue => err
-         $log.debug " cauGHT EXCEPTION #{err}"
+         $log.error " cauGHT EXCEPTION #{err}"
          Ncurses.beep
+         $error_message = "#{err}"
          return
         end
       end
