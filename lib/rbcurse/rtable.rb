@@ -66,17 +66,31 @@ module RubyCurses
     attr_reader :editing_col, :editing_row  # r and col being edited, set to nil on leave
     attr_accessor :is_editing # boolean is only true if cell_editing_allowed
     dsl_accessor :editing_policy   # :EDITING_AUTO
+    dsl_accessor :size_to_fit   # boolean, will size columns upon set data just to fit
+    dsl_accessor :estimate_widths   # boolean, will size columns upon set data
     
     # A table should only be editable if this is true regardless of other variables
     # In addition, A column to be editable must either have editable as nil or true
     dsl_accessor :cell_editing_allowed # 2009-01-16 22:55 
 
     def initialize form = nil, config={}, &block
+      _data = config.delete :data
+      _columns = config.delete :columns
+      @_column_widths = config.delete :column_widths
+      # if user leaves width blank but gives us col widths, that means calculate total width
+      if @_column_widths && config[:width].nil?
+        total = @_column_widths.inject(0) { |total, w| total+=w }
+        @width = total+2
+      end
+
       super
       init_vars
       install_list_keys
       install_keys_bindings
       ## create_buffer needs to move to repaint. widget needs values to use when i creates buffer in repaint.
+      if _data && _columns
+        set_data _data, _columns
+      end
     end
 
     def init_vars
@@ -153,6 +167,8 @@ module RubyCurses
       # next 2 added in case set_data called again
       @table_changed = true
       @repaint_required = true
+      data ||= [[]]
+      colnames_array ||= [""]
       if data.is_a? Array
         model = RubyCurses::DefaultTableModel.new data, colnames_array
         table_model model
@@ -171,6 +187,19 @@ module RubyCurses
       end
       create_default_list_selection_model
       create_table_header
+      # added 2010-09-09 19:57 if user provides col widths in hash, or size_to_fit
+        $log.debug " XXX @size_to_fit: #{@size_to_fit} "
+      if @_column_widths
+        $log.debug "XXXX inside set column widths "
+        set_column_widths @_column_widths
+      elsif @estimate_widths
+        $log.debug "XXXX inside estimate column widths "
+        cw = estimate_column_widths data
+        set_column_widths cw
+      elsif @size_to_fit
+        $log.debug " XXX inside  @size_to_fit: #{@size_to_fit} "
+        size_columns_to_fit
+      end
     end
     def set_model tm, tcm=nil, lsm=nil
       table_model tm
@@ -1104,9 +1133,26 @@ module RubyCurses
     # using the command: @columns, *rows = @db.execute2(command)
     # @param - datatypes is an array returned by following command to DB
     # @datatypes = @content[0].types 
-    def estimate_column_widths columns, datatypes
+    def estimate_column_widths columns, datatypes=nil
       tablewidth = @width-3
       colwidths = {}
+      unless datatypes
+        datatypes = []
+        row = columns[0]
+        $log.debug " XXX row: #{row} "
+
+        row.each do |c| 
+          $log.debug " XXX c: #{c} "
+          case c
+          when Fixnum, Integer
+            datatypes << "int"
+          when Date, Time
+            datatypes << "date"
+          else
+            datatypes << "varchar"
+          end
+        end
+      end
       min_column_width = (tablewidth/columns.length) -1
       $log.debug("min: #{min_column_width}, #{tablewidth}")
       0.upto(20) do |rowix|
@@ -1116,7 +1162,7 @@ module RubyCurses
         @table_column_model.each_with_index do |acolumn, ix|
           col = get_value_at(rowix, ix)
           colwidths[ix] ||= 0
-          colwidths[ix] = [colwidths[ix], col.length].max
+          colwidths[ix] = [colwidths[ix], col.to_s.length].max
         end
       end
       total = 0
@@ -1133,7 +1179,9 @@ module RubyCurses
       column_widths = colwidths
       @max_data_widths = column_widths.dup
 
+      $log.debug "XXXX datatypes #{datatypes} "
       columns.each_with_index do | col, i|
+       break if datatypes[i].nil?
       if datatypes[i].match(/(real|int)/) != nil
         wid = column_widths[i]
         #   cw = [column_widths[i], [8,min_column_width].min].max
@@ -1164,6 +1212,7 @@ module RubyCurses
     # sets column widths given an array of ints
     # You may get such an array from estimate_column_widths
     def set_column_widths cw
+      raise "Cannot call set_column_widths till table set" unless @table_column_model
       tcm = @table_column_model
       tcm.each_with_index do |col, ix|
         col.width cw[ix]
@@ -1182,6 +1231,7 @@ module RubyCurses
     def accomodate_delta delta
       tcm = @table_column_model
       cc = tcm.column_count 
+      return if cc == 0
       average = (delta/cc).ceil
       total = 0
       tcm.each do |col|
