@@ -1519,11 +1519,30 @@ module RubyCurses
         return ret
       end
       def delete_at row
-        ret = @data.delete_at row
+        if !$multiplier or $multiplier == 0 
+          @delete_buffer = @data.delete_at row
+        else
+          @delete_buffer = @data.slice!(row, $multiplier)
+        end
+        $multiplier = 0
+        #ret = @data.delete_at row
         # create tablemodelevent and fire_table_changed for all listeners 
-        tme = TableModelEvent.new(row, row,:ALL_COLUMNS,  self, :DELETE)
+        # we don;t pass buffer to event as in listeditable. how to undo later?
+        tme = TableModelEvent.new(row, row+@delete_buffer.length,:ALL_COLUMNS,  self, :DELETE)
         fire_handler :TABLE_MODEL_EVENT, tme
-        return ret
+        return @delete_buffer
+      end
+      # a quick method to undo deletes onto given row. More like paste
+      def undo where
+        return unless @delete_buffer
+        case @delete_buffer[0]
+        when Array
+        @delete_buffer.each do |r| 
+          insert where, r 
+        end
+        else
+          insert where, @delete_buffer
+        end
       end
       ## 
       # added 2009-01-17 21:36 
