@@ -313,7 +313,7 @@ module RubyCurses
       # e.g. fire_handler :ENTER, self
       # currently object usually contains self which is perhaps a bit of a waste,
       # could contain an event object with source, and some relevant methods or values
-      # XXX: if there's a runtine error in block, then it goes up and often disturbs
+      # if there's a runtine error in block, then it goes up and often disturbs
       # object, preventing repaint. we need to catch exceptions here.
       def fire_handler event, object
         $log.debug "inside def fire_handler evt:#{event}, o: #{object.to_s}, hdnler:#{@handler}"
@@ -840,7 +840,7 @@ module RubyCurses
          newvalue = @width
          @config["width"]=@width
          if oldvalue != newvalue
-           fire_property_change("width", oldvalue, newvalue)
+           fire_property_change(:width, oldvalue, newvalue)
            repaint_all(true)  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
          if is_double_buffered? and newvalue != oldvalue
@@ -869,9 +869,9 @@ module RubyCurses
          oldvalue = @height || 0 # is this default okay, else later nil cries
          @height = val.size == 1 ? val[0] : val
          newvalue = @height
-         @config["height"]=@height
+         @config[:height]=@height
          if oldvalue != newvalue
-           fire_property_change("height", oldvalue, newvalue)
+           fire_property_change(:height, oldvalue, newvalue)
            $log.debug " widget #{@name} setting repaint_all to true"
            @repaint_all=true
          end
@@ -2277,9 +2277,9 @@ module RubyCurses
     # for other widgets, attempt to change focus to that field
     def bind_hotkey
       if !@mnemonic.nil?
-        ch = @mnemonic.downcase()[0].ord   ## FIXME 1.9 DONE 
+        ch = @mnemonic.downcase()[0].ord   ##  1.9 DONE 
         # meta key 
-        mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))  ## FIXME 1.9
+        mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))  ## 1.9
         if @label_for.is_a? RubyCurses::Button and @label_for.respond_to? :fire
           @form.bind_key(mch, @label_for) { |_form, _butt| _butt.fire }
         else
@@ -2400,7 +2400,7 @@ module RubyCurses
     # If you wish to override the underline?
     # @deprecated . use mnemonic or an ampersand in text.
     def OLDunderline ix
-      _value = @text || getvalue # hack for Togglebutton FIXME
+      _value = @text || getvalue # hack for Togglebutton 
       raise "#{self}: underline requires text to be set " if _value.nil?
       mnemonic _value[ix]
     end
@@ -2411,7 +2411,7 @@ module RubyCurses
       _value = @text || getvalue # hack for Togglebutton FIXME
       #_value = getvalue
       $log.debug " bind hot #{_value} #{@underline}"
-      ch = _value[@underline,1].downcase()[0].ord ## XXX 1.9  2009-10-05 18:55  TOTEST
+      ch = _value[@underline,1].downcase()[0].ord ##  1.9  2009-10-05 18:55  TOTEST
       @mnemonic = _value[@underline,1]
       # meta key 
       mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))
