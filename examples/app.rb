@@ -409,9 +409,22 @@ module RubyCurses
       if config.has_key? :display_length
         config[:width] = config[:display_length] unless config.has_key? :width
       end
+      ext = config.delete :extended_keys
+
       model = nil
       _position(config)
       w = Table.new @form, config
+      if ext
+        require 'rbcurse/extras/tableextended' 
+          # so we can increase and decrease column width using keys
+        w.extend TableExtended
+        w.bind_key(?w){ w.next_column }
+        w.bind_key(?b){ w.previous_column }
+        w.bind_key(?+) { w.increase_column }
+        w.bind_key(?-) { w.decrease_column }
+        w.bind_key([?d, ?d]) { w.table_model.delete_at w.current_index }
+        w.bind_key(?u) { w.table_model.undo w.current_index}
+      end
       if block
         w.bind(block_event, &block)
       end
