@@ -36,7 +36,7 @@ module RubyCurses
   # - animate(n) |i|
   # - move
   # x list_box :choose is the defauly
-  # - progress - like a label but fills itself, fraction
+  # x progress - like a label but fills itself, fraction
   # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - edit_line = fiekd
   # x other buttons: radio, check
@@ -391,6 +391,32 @@ module RubyCurses
       return w
     end
     
+    # @example
+    #  data = [["Roger",16,"SWI"], ["Phillip",1, "DEU"]]
+    #  colnames = ["Name", "Wins", "Place"]
+    #  t = table :width => 40, :height => 10, :columns => colnames, :data => data, :estimate_widths => true
+    #    other options are :column_widths => [12,4,12]
+    #    :size_to_fit => true
+    def table *args, &block
+      require 'rbcurse/rtable'
+      config = {}
+      # TODO confirm events many more
+      events = [ :ENTER_ROW,  :LEAVE, :ENTER ]
+      block_event = events[0]
+      _process_args args, config, block_event, events
+      # if user is leaving out width, then we don't want it in config
+      # else Widget will put a value of 10 as default, overriding what we've calculated
+      if config.has_key? :display_length
+        config[:width] = config[:display_length] unless config.has_key? :width
+      end
+      model = nil
+      _position(config)
+      w = Table.new @form, config
+      if block
+        w.bind(block_event, &block)
+      end
+      return w
+    end
 
     # ADD new widget above this
 
