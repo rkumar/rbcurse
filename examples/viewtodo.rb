@@ -5,7 +5,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rcombo'
 require 'rbcurse/rtable'
-require 'rbcurse/extras/tableextended' # TODO move to extras
+require 'rbcurse/extras/tableextended' 
 require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
