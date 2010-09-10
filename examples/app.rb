@@ -592,7 +592,7 @@ if $0 == __FILE__
     #field1 = field( [r,c, 30], fname, :bgcolor => "cyan", :block_event => :CHANGE) do |fld|
     stack :margin_top => 2, :margin => 10 do
       lbl = label({:text => fname, :color=>'white',:bgcolor=>'red', :mnemonic=> 's'})
-      field1 = field( [r,c, 30], fname, :bgcolor => "cyan") do |fld|
+      field1 = field( [r,c, 30], fname, :bgcolor => "cyan",:block_event => :CHANGE) do |fld|
         message("You entered #{fld.getvalue}. To quit enter quit and tab out")
         if fld.getvalue == "quit"
           logger.info "you typed quit!" 
