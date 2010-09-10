@@ -43,7 +43,8 @@ module RubyCurses
   # x edit_box = textarea
   # - combo
   # - menu
-  # - table
+  # - popup
+  # / table - more work regarding vim keys
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
@@ -429,6 +430,17 @@ module RubyCurses
         w.bind(block_event, &block)
       end
       return w
+    end
+    def title string, config={}
+      ## TODO center it
+      @window.printstring 1, 30, string, $normalcolor, 'reverse'
+    end
+    def subtitle string, config={}
+      @window.printstring 2, 30, string, $datacolor, 'normal'
+    end
+    def menubar &block
+      require 'rbcurse/rmenu'
+      RubyCurses::MenuBar.new &block
     end
 
     # ADD new widget above this
