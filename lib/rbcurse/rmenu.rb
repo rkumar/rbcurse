@@ -55,12 +55,13 @@ module RubyCurses
   end
   ##
   class MenuItem
+    include DSL
     attr_accessor :parent
 #    attr_accessor :window
     attr_accessor :row
     attr_accessor :col
     attr_accessor :width
-    attr_accessor :accelerator
+    dsl_accessor :accelerator
     attr_accessor :enabled
     attr_accessor :text, :mnemonic  # changed reader to accessor 
     def initialize text, mnemonic=nil, &block
@@ -116,6 +117,7 @@ module RubyCurses
       acolor = $reversecolor
       acolor = get_color($reversecolor, 'green', 'white') if !@enabled
       @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], acolor)
+      if @enabled # 2010-09-10 23:56 
       if !@accelerator.nil?
         @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, acolor)
       elsif !@mnemonic.nil?
@@ -125,6 +127,7 @@ module RubyCurses
         #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
         # prev line changed since not working in vt100 and vt200
         @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+      end
       end
     end
     def destroy
@@ -169,7 +172,7 @@ module RubyCurses
     end
     # item could be menuitem or another menu (precreated)
     def add menuitem
-      $log.debug " YYYY inside add menuitem #{menuitem.text} "
+      #$log.debug " YYYY inside add menuitem #{menuitem.text} "
       @items << menuitem
       return self
     end
@@ -178,8 +181,19 @@ module RubyCurses
     # add item method which could be used from blocks
     # add 2010-09-10 12:20 simplifying
     def item text, mnem, &block
-      $log.debug "YYYY inside M: menuitem text #{text}  "
-      add( MenuItem.new text, mnem, &block )
+      #$log.debug "YYYY inside M: menuitem text #{text}  "
+      m =  MenuItem.new text, mnem, &block 
+      add m
+      return m
+    end
+    # create a menu within a menu
+    # add menu method which could be used from blocks
+    # add 2010-09-10 12:20 simplifying
+    def menu text, &block
+      #$log.debug "YYYY inside M: menu text #{text}  "
+      m = Menu.new text, &block 
+      add m
+      return m
     end
     def insert_separator ix
       @items.insert ix, MenuSeparator.new
@@ -431,7 +445,7 @@ module RubyCurses
       cmenu.items.each do |item|
         next if !item.respond_to? :mnemonic or item.mnemonic.nil?
 #       $log.debug "inside check_mnemonics #{item.mnemonic}"
-        if key == item.mnemonic.downcase
+        if key == item.mnemonic.downcase && item.enabled # 2010-09-11 00:03 enabled
           ret = item.fire
           return ret #0 2009-01-23 00:45 
         end
@@ -477,7 +491,7 @@ module RubyCurses
     end
     # add a precreated menu
     def add menu
-      $log.debug "YYYY inside MB: add #{menu.text}  "
+      #$log.debug "YYYY inside MB: add #{menu.text}  "
       @items << menu
       return self
     end
@@ -487,8 +501,10 @@ module RubyCurses
     # 2010-09-10 12:07 added while simplifying the interface
     # this calls add so you get the MB back, not a ref to the menu created NOTE
     def menu text, &block
-      $log.debug "YYYY inside MB: menu text #{text} "
-      add( Menu.new text, &block )
+      #$log.debug "YYYY inside MB: menu text #{text} "
+      m = Menu.new text, &block 
+      add m
+      return m
     end
     def next_menu
       $log.debug "next meu: #{@active_index}  " 
