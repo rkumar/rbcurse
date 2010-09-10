@@ -12,6 +12,7 @@ NOTE : this program works but is one of the first programs and is untouched. It 
       since its quite crappy.
       Also, we should move to Action classes as against just blokcs of code. And action class would have
 a user friendly string to identifiy the action, as well as a disabled option.
+NOTE on 2010-09-10 11:40 : this interface is based on Java's and is not block friendy. Also, i tried to keep the same class to work for horizontal menu bar and vertical submenus as per java's classes and this makes the code very complex. I should just make 2 classes and keep it simple.
   
   --------
   * Date: 2008-11-14 23:43 
@@ -150,12 +151,11 @@ module RubyCurses
     @@col = 0
 
     def initialize text, &block
-      super text, nil, &block
       @text = text
       @items = []
       @enabled = true
       @current_menu = []
-      instance_eval &block if block_given?
+      super text, nil, &block
       @row ||=10
       @col ||=10
       @@menus ||= []
@@ -167,10 +167,19 @@ module RubyCurses
     def to_s
       @text
     end
-    # item could be menuitem or another menu
+    # item could be menuitem or another menu (precreated)
     def add menuitem
+      $log.debug " YYYY inside add menuitem #{menuitem.text} "
       @items << menuitem
       return self
+    end
+    alias :<< :add
+
+    # add item method which could be used from blocks
+    # add 2010-09-10 12:20 simplifying
+    def item text, mnem, &block
+      $log.debug "YYYY inside M: menuitem text #{text}  "
+      add( MenuItem.new text, mnem, &block )
     end
     def insert_separator ix
       @items.insert ix, MenuSeparator.new
@@ -178,6 +187,8 @@ module RubyCurses
     def add_separator 
       @items << MenuSeparator.new
     end
+    alias :separator :add_separator
+
     ## added 2009-01-21 12:09 NEW
     def get_item i
       @items[i]
@@ -464,9 +475,20 @@ module RubyCurses
     def focusable
       false
     end
+    # add a precreated menu
     def add menu
+      $log.debug "YYYY inside MB: add #{menu.text}  "
       @items << menu
       return self
+    end
+    alias :<< :add
+
+    # add a menu through the block, this would happen through instance eval
+    # 2010-09-10 12:07 added while simplifying the interface
+    # this calls add so you get the MB back, not a ref to the menu created NOTE
+    def menu text, &block
+      $log.debug "YYYY inside MB: menu text #{text} "
+      add( Menu.new text, &block )
     end
     def next_menu
       $log.debug "next meu: #{@active_index}  " 
