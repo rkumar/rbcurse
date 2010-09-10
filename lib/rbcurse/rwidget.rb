@@ -1227,6 +1227,7 @@ module RubyCurses
       #@active_index = -1 # FIXME HACK
       #select_next_field
       ix =  index_of_first_focusable_field()
+      return unless ix # no focussable field
 
       # if the user is on a field other than current then fire on_leave
       if @active_index.nil?
