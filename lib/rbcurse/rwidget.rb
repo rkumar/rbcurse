@@ -1836,15 +1836,16 @@ module RubyCurses
     ##
     # define a datatype, currently only influences chars allowed
     # integer and float. what about allowing a minus sign? XXX
+    #  2010-09-10 20:59 changed string to symbol
     def type dtype
       case dtype.to_s.downcase
-      when 'integer'
+      when :integer
         @chars_allowed = /\d/ if @chars_allowed.nil?
-      when 'numeric'
+      when :numeric
         @chars_allowed = /[\d\.]/ if @chars_allowed.nil?
-      when 'alpha'
+      when :alpha
         @chars_allowed = /[a-zA-Z]/ if @chars_allowed.nil?
-      when 'alnum'
+      when :alnum
         @chars_allowed = /[a-zA-Z0-9]/ if @chars_allowed.nil?
       end
     end
@@ -1862,7 +1863,8 @@ module RubyCurses
       end
       @curpos += 1 if @curpos < @maxlen
       @modified = true
-      $log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
+      #$log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
+      # i have no way of knowing what change happened and what char was added deleted or changed
       fire_handler :CHANGE, self    # 2008-12-09 14:51 
       0
     end
