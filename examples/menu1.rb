@@ -5,6 +5,8 @@ if $0 == __FILE__
     title "Demo of Menu - rbcurse"
     subtitle "Hit F1 to quit, F2 for menubar toggle"
 
+    # TODO accelerators and 
+    # getting a handle for later use
     mb = menubar do
       #@toggle_key=KEY_F2
       menu "File" do
@@ -20,12 +22,32 @@ if $0 == __FILE__
       end # menu
       menu "Window" do
         item "Tile", "T"
+        menu "Find" do
+          item "More", "M"
+          $x = item "Less", "L" do
+            #@enabled = false
+            #accelerator "Ctrl-X"
+            command do
+              alert "You clickses on Less"
+            end
+          end
+        end
       end
     end # menubar
     mb.toggle_key = KEY_F2
+    $x.accelerator = "Ctrl-X"
     @form.set_menu_bar mb
     stack :margin_top => 10, :margin => 5 do
-      field "a field", :attr => 'reverse'
+      field "a field", :attr => 'reverse', :block_event => :CHANGE do |fld|
+        case fld.getvalue
+        when "d"
+          alert("Me gots #{fld.getvalue} disabling: #{$x} ")
+          $x.enabled = false
+        when "e"
+          alert("Me gots #{fld.getvalue} ENABLINGg")
+          $x.enabled = true
+        end
+      end
     end
   end # app
 end
