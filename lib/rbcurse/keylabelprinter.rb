@@ -116,11 +116,14 @@ module RubyCurses
     ##
     # updates existing label with a new one.
     # @return true if updated, else false
+    # @example update "C-x", "C-x", "Disable"
     def update_application_key_label(display_code, new_display_code, text)
       @repaint_required = true
       labels = key_labels()
+      raise "labels are nil !!!" unless labels
       labels.each_index do |ix|
         lab = labels[ix]
+        next if lab.nil?
         if lab[0] == display_code
           labels[ix] = [new_display_code , text]
           $log.debug("updated #{labels[ix]}")
@@ -129,6 +132,7 @@ module RubyCurses
       end
       return false
     end
+    alias :update :update_application_key_label
     ##
     # inserts an application label at given index
     # to add the key, use create_datakeys to add bindings

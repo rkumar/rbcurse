@@ -2,8 +2,9 @@ require './app'
 
 if $0 == __FILE__
   App.new do 
-    title "Demo of Menu - rbcurse"
-    subtitle "Hit F1 to quit, F2 for menubar toggle"
+    #title "Demo of Menu - rbcurse"
+    #subtitle "Hit F1 to quit, F2 for menubar toggle"
+    header = app_header "rbcurse 1.2.0", :text_center => "Menubar Demo", :text_right =>"enabled"
 
     # TODO accelerators and 
     # getting a handle for later use
@@ -50,13 +51,27 @@ if $0 == __FILE__
           $x.accelerator = "Ctrl-X"
         end
       end
+      @adock = nil
+    keyarray = [
+      ["F1" , "Exit"], nil,
+      ["F2", "Menu"], nil,
+      ["M-e", "Disable"], ["M-x", "XXXX"],
+      ["C-?", "Help"], nil
+    ]
+    @adock = dock keyarray
       lbltext = "Click this to enable or disable menu option Window:Find:Less"
       blank 1
       hline :width => lbltext.length
       label :text => lbltext
       toggle :offvalue => " Enable  ", :onvalue => " Disable ", :mnemonic => 'E', :value => true do |e|
         $x.enabled = e.item.value
-        @form.handle_key mb.toggle_key
+        header.text_right = e.item.value ? "enabled" : "disabled"
+        if e.item.value 
+          @adock.update_application_key_label "M-e", "M-e", "Disable"
+        else
+          @adock.update_application_key_label "M-e", "M-e", "Enable"
+        end
+        #@form.handle_key mb.toggle_key
       end
     end # stack
   end # app
