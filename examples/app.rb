@@ -42,9 +42,9 @@ module RubyCurses
   # x other buttons: radio, check
   # x edit_box = textarea
   # - combo
-  # - menu
+  # x menu
   # - popup
-  # / table - more work regarding vim keys
+  # / table - more work regarding vim keys, also editable
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
@@ -311,6 +311,7 @@ module RubyCurses
       return field
     end
     
+    # toggle button
     def toggle *args, &block
       config = {}
       # TODO confirm events
@@ -324,6 +325,7 @@ module RubyCurses
       end
       return toggle
     end
+    # check button
     def check *args, &block
       config = {}
       # TODO confirm events
@@ -337,6 +339,7 @@ module RubyCurses
       end
       return toggle
     end
+    # radio button
     def radio *args, &block
       config = {}
       # TODO confirm events
@@ -361,6 +364,7 @@ module RubyCurses
       end
       return radio
     end
+    # editable text area
     def textarea *args, &block
       require 'rbcurse/rtextarea'
       config = {}
@@ -376,6 +380,7 @@ module RubyCurses
       end
       return w
     end
+    # progress bar
     def progress *args, &block
       require 'rbcurse/rprogress'
       config = {}
@@ -392,6 +397,7 @@ module RubyCurses
       return w
     end
     
+    # table widget
     # @example
     #  data = [["Roger",16,"SWI"], ["Phillip",1, "DEU"]]
     #  colnames = ["Name", "Wins", "Place"]
@@ -431,16 +437,39 @@ module RubyCurses
       end
       return w
     end
+    # print a title on first row
     def title string, config={}
       ## TODO center it
       @window.printstring 1, 30, string, $normalcolor, 'reverse'
     end
+    # print a sutitle on second row
     def subtitle string, config={}
       @window.printstring 2, 30, string, $datacolor, 'normal'
     end
+    # menu bar
     def menubar &block
       require 'rbcurse/rmenu'
       RubyCurses::MenuBar.new &block
+    end
+
+    # creates a blank row
+    def blank rows=1, config={}
+      @app_row += rows
+    end
+    # displays a horizontal line
+    # takes col (column to start from) from current stack
+    # take row from app_row
+    #
+    # requires width to be passed in config, else defaults to 20
+    # @example
+    #    hline :width => 55  
+    def hline config={}
+      row = @app_row
+      width = config[:width] || 20
+      _position config
+      col = config[:col] || 1
+      @window.mvwhline( row, col, ACS_HLINE, width)
+      @app_row += 1
     end
 
     # ADD new widget above this
