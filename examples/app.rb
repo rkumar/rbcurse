@@ -44,6 +44,9 @@ module RubyCurses
   # - combo
   # x menu
   # - popup
+  # - multicontainer
+  # - multitextview, multisplit
+  # - tabbedpane
   # / table - more work regarding vim keys, also editable
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
@@ -470,6 +473,14 @@ module RubyCurses
       col = config[:col] || 1
       @window.mvwhline( row, col, ACS_HLINE, width)
       @app_row += 1
+    end
+    def app_header title, config={}, &block
+      require 'rbcurse/applicationheader'
+      header = ApplicationHeader.new @form, title, config, &block
+    end
+    def dock labels, config={}, &block
+      require 'rbcurse/keylabelprinter'
+      klp = RubyCurses::KeyLabelPrinter.new @form, labels, config, &block
     end
 
     # ADD new widget above this
