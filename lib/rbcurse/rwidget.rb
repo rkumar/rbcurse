@@ -26,6 +26,7 @@ require 'logger'
 #require 'rbcurse/mapper'
 require 'rbcurse/colormap'
 require 'rbcurse/orderedhash'
+require 'rbcurse/rinputdataevent' # for FIELD 2010-09-11 12:31 
 require 'rbcurse/io'
 
 # some of these will get overriden by ncurses when we include
@@ -1777,8 +1778,10 @@ module RubyCurses
 
   ##
   # Text edit field
-  # To get value use getvalue() 
+  # NOTE: To get value use getvalue() 
   # TODO - test text_variable
+  # TODO: some methods should return self, so chaining can be done. Not sure if the return value of the 
+  #   fire_handler is being checked.
   #  
   class Field < Widget
     dsl_accessor :maxlen             # maximum length allowed into field
@@ -1838,17 +1841,23 @@ module RubyCurses
     # integer and float. what about allowing a minus sign? XXX
     #  2010-09-10 20:59 changed string to symbol
     def type dtype
+      return if !@chars_allowed.nil?
       case dtype.to_s.downcase
       when :integer
-        @chars_allowed = /\d/ if @chars_allowed.nil?
-      when :numeric
-        @chars_allowed = /[\d\.]/ if @chars_allowed.nil?
+        @chars_allowed = /\d/
+      when :numeric, :float
+        @chars_allowed = /[\d\.]/ 
       when :alpha
-        @chars_allowed = /[a-zA-Z]/ if @chars_allowed.nil?
+        @chars_allowed = /[a-zA-Z]/ 
       when :alnum
-        @chars_allowed = /[a-zA-Z0-9]/ if @chars_allowed.nil?
+        @chars_allowed = /[a-zA-Z0-9]/ 
       end
     end
+    # add a char to field, and validate
+    # NOTE: this should return self for chaining operations and throw an exception
+    # if disabled or exceeding size
+    # @param [char] a character to add
+    # @return [Fixnum] 0 if okay, -1 if not editable or exceeding length
     def putch char
       return -1 if !@editable 
       return -1 if !@overwrite_mode and @buffer.length >= @maxlen
@@ -1856,16 +1865,23 @@ module RubyCurses
         return if char.match(@chars_allowed).nil?
       end
       # added insert or overwrite mode 2010-03-17 20:11 
+      oldchar = nil
       if @overwrite_mode
+        oldchar = @buffer[@curpos] 
         @buffer[@curpos] = char
       else
         @buffer.insert(@curpos, char)
       end
+      oldcurpos = @curpos
       @curpos += 1 if @curpos < @maxlen
       @modified = true
       #$log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
       # i have no way of knowing what change happened and what char was added deleted or changed
-      fire_handler :CHANGE, self    # 2008-12-09 14:51 
+      #fire_handler :CHANGE, self    # 2008-12-09 14:51 
+      if @overwrite_mode
+        fire_handler :CHANGE, InputDataEvent.new(oldcurpos,@curpos, self, :DELETE, 0, oldchar) # 2010-09-11 12:43 
+      end
+      fire_handler :CHANGE, InputDataEvent.new(oldcurpos,@curpos, self, :INSERT, 0, char) # 2010-09-11 12:43 
       0
     end
 
@@ -1882,24 +1898,30 @@ module RubyCurses
             end
           end
           set_modified 
+          return 0 # 2010-09-11 12:59 else would always return -1
         end
       end
       return -1
     end
     def delete_at index=@curpos
       return -1 if !@editable 
-      @buffer.slice!(index,1)
-      $log.debug " delete at #{index}: #{@buffer.length}: #{@buffer}"
+      char = @buffer.slice!(index,1)
+      #$log.debug " delete at #{index}: #{@buffer.length}: #{@buffer}"
       @modified = true
-      fire_handler :CHANGE, self    # 2008-12-09 14:51 
+      #fire_handler :CHANGE, self    # 2008-12-09 14:51 
+      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, 0, char)     # 2010-09-11 13:01 
     end
     ## 
     # should this do a dup ?? YES
     def set_buffer value
       @datatype = value.class
       #$log.debug " FIELD DATA #{@datatype}"
-      @buffer = value.to_s
+      @delete_buffer = @buffer.dup
+      @buffer = value.to_s.dup
       @curpos = 0
+      # XXX hope @delete_buffer is not overwritten
+      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, 0, @delete_buffer)     # 2010-09-11 13:01 
+      fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :INSERT, 0, @buffer)     # 2010-09-11 13:01 
     end
     # converts back into original type
     #  changed to convert on 2009-01-06 23:39 
@@ -1986,7 +2008,7 @@ module RubyCurses
     when ?\C-k.getbyte(0)
       delete_eol if @editable
     when ?\C-_.getbyte(0) # changed on 2010-02-26 14:44 so C-u can be used as numeric arg
-      @buffer.insert @curpos, @delete_buffer unless @delete_buffer.nil?
+      undo_delete_eol
     when 32..126
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
@@ -1998,6 +2020,13 @@ module RubyCurses
       return ret
     end
     0 # 2008-12-16 23:05 without this -1 was going back so no repaint
+  end
+  # does an undo on delete_eol, not a real undo
+  def undo_delete_eol
+    return if @delete_buffer.nil?
+    #oldvalue = @buffer
+    @buffer.insert @curpos, @delete_buffer 
+    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :INSERT, 0, @delete_buffer)     # 2010-09-11 13:01 
   end
   ## 
   # position cursor at start of field
@@ -2025,7 +2054,8 @@ module RubyCurses
     @delete_buffer = @buffer[@curpos..-1]
     # if pos is 0, pos-1 becomes -1, end of line!
     @buffer = pos == -1 ? "" : @buffer[0..pos]
-    fire_handler :CHANGE, self    # 2008-12-09 14:51 
+    #fire_handler :CHANGE, self    # 2008-12-09 14:51 
+    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, 0, @delete_buffer)     # 2010-09-11 13:01 
     return @delete_buffer
   end
   def cursor_forward
