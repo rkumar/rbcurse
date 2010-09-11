@@ -61,7 +61,7 @@ module RubyCurses
     attr_accessor :row
     attr_accessor :col
     attr_accessor :width
-    dsl_accessor :accelerator
+    attr_writer :accelerator
     attr_accessor :enabled
     attr_accessor :text, :mnemonic  # changed reader to accessor 
     def initialize text, mnemonic=nil, &block
@@ -78,25 +78,38 @@ module RubyCurses
       @command = block if block_given?
       @args = args
     end
+    # add accelerator for a menu item
+    # NOTE: accelerator means that the application has tied this string to some action, outside
+    # of the menu bar. It does not mean that the menu bar will trigger the action. So the app still has to 
+    # define the action and bind a key to that accelerator. This is only informative.
+    # Had to do this since dsl_accessor was throwing some nilclass does not have []= nomethod error
+    # This allows user to put accelerator inside dsl block
+    # @example
+    #    accelerator "Ctrl-X"
+    def accelerator(*val)
+      if val.empty?
+        return @accelerator
+      else
+        @accelerator = val[0]
+      end
+    end
     def on_enter
-      $log.debug ">>>on enter menuitem : #{@text} #{@row} #{@width} "
       highlight
     end
     def on_leave
-      $log.debug ">>>on leave menuitem : #{@text} "
       highlight false
     end
     ## XXX it could be a menu again
     def fire
-      $log.debug ">>>fire menuitem : #{@text} #{@command} "
+      #$log.debug ">>>fire menuitem : #{@text} #{@command} "
       @command.call self, *@args if !@command.nil?
       @parent.clear_menus
       return :CLOSE # added 2009-01-02 00:09 to close only actions, not submenus
     end
     def highlight tf=true
       if @parent.nil? or @parent.window.nil?
-        $log.debug "HL XXX #{self} parent nil"
-        $log.debug "HL XXX #{self} - > #{@parent} parent nil"
+        #$log.debug "HL XXX #{self} parent nil"
+        #$log.debug "HL XXX #{self} - > #{@parent} parent nil"
       end
       if tf
         color = $datacolor
@@ -131,7 +144,7 @@ module RubyCurses
       end
     end
     def destroy
-     $log.debug "DESTRY menuitem #{@text}"
+     $log.debug "DESTROY menuitem #{@text}"
     end
   end
   ##class Menu
@@ -236,7 +249,7 @@ module RubyCurses
     # DRAW menuitems
     def repaint # menu.repaint
       return if @items.nil? or @items.empty?
-      $log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
+      #$log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
       if !@parent.is_a? RubyCurses::MenuBar 
         @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, text], $reversecolor)
         @parent.window.refresh
@@ -253,7 +266,7 @@ module RubyCurses
     # recursive if given one not enabled goes to next enabled
     def select_item ix0
       return if @items.nil? or @items.empty?
-       $log.debug "insdie select  item :  #{ix0} active: #{@active_index}" 
+       #$log.debug "insdie select  item :  #{ix0} active: #{@active_index}" 
       if !@active_index.nil?
         @items[@active_index].on_leave 
       end
@@ -262,7 +275,7 @@ module RubyCurses
       if @items[ix0].enabled
         @items[ix0].on_enter
       else
-        $log.debug "insdie sele nxt item ENABLED FALSE :  #{ix0}" 
+        #$log.debug "insdie sele nxt item ENABLED FALSE :  #{ix0}" 
         if @active_index > previtem
           select_next_item
         else
@@ -273,7 +286,7 @@ module RubyCurses
     end
     def select_next_item
       return if @items.nil? or @items.empty?
-       $log.debug "insdie sele nxt item :  #{@active_index}" 
+       #$log.debug "insdie sele nxt item :  #{@active_index}" 
       @active_index = -1 if @active_index.nil?
       if @active_index < @items.length-1
         select_item @active_index + 1
@@ -283,7 +296,7 @@ module RubyCurses
     end
     def select_prev_item
       return if @items.nil? or @items.empty?
-       $log.debug "insdie sele prv item :  #{@active_index}" 
+       #$log.debug "insdie sele prv item :  #{@active_index}" 
       if @active_index > 0
         select_item @active_index - 1
       else
@@ -291,7 +304,7 @@ module RubyCurses
       end
     end
     def on_enter # menu.on_enter
-      $log.debug "menu onenter: #{text} #{@row} #{@col}  " 
+      #$log.debug "menu onenter: #{text} #{@row} #{@col}  " 
       # call parent method. XXX
         if @parent.is_a? RubyCurses::MenuBar 
           @parent.window.printstring( @row, @col, " %s " % text, $datacolor)
@@ -299,24 +312,24 @@ module RubyCurses
           highlight
         end
         if !@window.nil? #and @parent.selected
-          $log.debug "menu onenter: #{text} calling window,show"
+          #$log.debug "menu onenter: #{text} calling window,show"
           @window.show
           select_item 0
         elsif @parent.is_a? RubyCurses::MenuBar and  @parent.selected
           # only on the top level do we open a window if a previous one was opened
-          $log.debug "menu onenter: #{text} calling repaint CLASS: #{@parent.class}"
+          #$log.debug "menu onenter: #{text} calling repaint CLASS: #{@parent.class}"
         #  repaint
           create_window
         end
     end
     def on_leave # menu.on_leave
-      $log.debug "menu onleave: #{text} #{@row} #{@col}  " 
+      #$log.debug "menu onleave: #{text} #{@row} #{@col}  " 
       # call parent method. XXX
         if @parent.is_a? RubyCurses::MenuBar 
           @parent.window.printstring( @row, @col, " %s " % text, $reversecolor)
           @window.hide if !@window.nil?
         else
-          $log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col}  " 
+          #$log.debug "MENU SUBMEN. menu onleave: #{text} #{@row} #{@col}  " 
           # parent is a menu
           highlight false
           #@parent.current_menu.pop
@@ -325,7 +338,7 @@ module RubyCurses
         end
     end
     def highlight tf=true # menu
-          $log.debug "MENU SUBMENU menu highlight: #{text} #{@row} #{@col}, PW #{@parent.width}  " 
+          #$log.debug "MENU SUBMENU menu highlight: #{text} #{@row} #{@col}, PW #{@parent.width}  " 
       color = tf ? $datacolor : $reversecolor
       att = tf ? Ncurses::A_REVERSE : Ncurses::A_NORMAL
       #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
@@ -337,7 +350,7 @@ module RubyCurses
     def create_window # menu
       margin = 3
       @width = array_width @items
-      $log.debug "create window menu #{@text}: #{@row} ,#{@col},wd #{@width}   " 
+      #$log.debug "create window menu #{@text}: #{@row} ,#{@col},wd #{@width}   " 
       @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+1, :left => @col } 
       @win = VER::Window.new(@layout)
       @window = @win
@@ -368,7 +381,7 @@ module RubyCurses
     # private
     def array_width a
       longest = a.max {|a,b| a.to_s.length <=> b.to_s.length }
-      $log.debug "array width #{longest}"
+      #$log.debug "array width #{longest}"
       longest.to_s.length
     end
     def destroy
@@ -407,11 +420,11 @@ module RubyCurses
         return cmenu.fire
       when KEY_LEFT
         if cmenu.parent.is_a? RubyCurses::Menu 
-       $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
-       $log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
+       #$log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
+       #$log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
-       $log.debug " ABOU TO DESTROY DUE TO LEFT"
+       #$log.debug " ABOU TO DESTROY DUE TO LEFT"
           cmenu.parent.current_menu.pop
           @@menus.pop ## NEW
           cmenu.destroy
@@ -419,13 +432,13 @@ module RubyCurses
           return :UNHANDLED
         end
       when KEY_RIGHT
-       $log.debug "RIGHTIN MENU : "
+       #$log.debug "RIGHTIN MENU : "
         if cmenu.parent.is_a? RubyCurses::Menu 
-       $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
-       $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
+       #$log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
+       #$log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
         if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
-          $log.debug " ABOU TO DESTROY DUE TO RIGHT"
+          #$log.debug " ABOU TO DESTROY DUE TO RIGHT"
           cmenu.parent.current_menu.pop
           @@menus.pop
           cmenu.destroy
@@ -454,7 +467,7 @@ module RubyCurses
     end
     ## menu 
     def show # menu.show
-      $log.debug "show (menu) : #{@text} "
+      #$log.debug "show (menu) : #{@text} "
       if @window.nil?
         create_window
       end
@@ -507,7 +520,7 @@ module RubyCurses
       return m
     end
     def next_menu
-      $log.debug "next meu: #{@active_index}  " 
+      #$log.debug "next meu: #{@active_index}  " 
       if @active_index < @items.length-1
         set_menu @active_index + 1
       else
@@ -515,7 +528,7 @@ module RubyCurses
       end
     end
     def prev_menu
-      $log.debug "prev meu: #{@active_index} " 
+      #$log.debug "prev meu: #{@active_index} " 
       if @active_index > 0
         set_menu @active_index-1
       else
@@ -523,7 +536,7 @@ module RubyCurses
       end
     end
     def set_menu index
-      $log.debug "set meu: #{@active_index} #{index}" 
+      #$log.debug "set meu: #{@active_index} #{index}" 
       menu = @items[@active_index]
       menu.on_leave # hide its window, if open
       @active_index = index
@@ -541,12 +554,12 @@ module RubyCurses
       begin
       catch(:menubarclose) do
       while((ch = @window.getchar()) != @toggle_key )
-       $log.debug "menuubar inside handle_keys :  #{ch}"  if ch != -1
+       #$log.debug "menuubar inside handle_keys :  #{ch}"  if ch != -1
         case ch
         when -1
           next
         when KEY_DOWN
-          $log.debug "insdie keyDOWN :  #{ch}" 
+          #$log.debug "insdie keyDOWN :  #{ch}" 
           if !@selected
             current_menu.fire
           else
@@ -556,26 +569,26 @@ module RubyCurses
           @selected = true
         when KEY_ENTER, 10, 13, 32
           @selected = true
-            $log.debug " mb insdie ENTER :  #{current_menu}" 
+            #$log.debug " mb insdie ENTER :  #{current_menu}" 
             ret = current_menu.handle_key ch
-            $log.debug "ret = #{ret}  mb insdie ENTER :  #{current_menu}" 
+            #$log.debug "ret = #{ret}  mb insdie ENTER :  #{current_menu}" 
             #break; ## 2008-12-29 18:00  This will close after firing
             #anything
             break if ret == :CLOSE
         when KEY_UP
-          $log.debug " mb insdie keyUPP :  #{ch}" 
+          #$log.debug " mb insdie keyUPP :  #{ch}" 
           current_menu.handle_key ch
         when KEY_LEFT
-          $log.debug " mb insdie KEYLEFT :  #{ch}" 
+          #$log.debug " mb insdie KEYLEFT :  #{ch}" 
           ret = current_menu.handle_key ch
           prev_menu if ret == :UNHANDLED
           #display_items if @selected
         when KEY_RIGHT
-          $log.debug " mb insdie KEYRIGHT :  #{ch}" 
+          #$log.debug " mb insdie KEYRIGHT :  #{ch}" 
           ret = current_menu.handle_key ch
           next_menu if ret == :UNHANDLED
         else
-          $log.debug " mb insdie ELSE :  #{ch}" 
+          #$log.debug " mb insdie ELSE :  #{ch}" 
           ret = current_menu.handle_key ch
           if ret == :UNHANDLED
             Ncurses.beep 
@@ -693,7 +706,7 @@ module RubyCurses
     end
     def method_missing(sym, *args)
       if checkbox.respond_to? sym
-        $log.debug("calling CHECKBOXMENU #{sym} called #{args[0]}")
+        #$log.debug("calling CHECKBOXMENU #{sym} called #{args[0]}")
         checkbox.send(sym, args)
       else
         $log.error("ERROR CHECKBOXMENU #{sym} called")
