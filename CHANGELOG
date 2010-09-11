@@ -1,3 +1,29 @@
+**2010-09-11**
+## 1.2.0
+
+### Additions
+
+ - App class that allows easy application development (like Shoes)
+ - MultiSplit class: Multicolumn widget (like SplitPane but allows many splits). 
+   aka Column Browse pattern (like OSX Finder). See examples/testmultisplit.rb
+ - Added Progress Bar class
+
+ - Added methods to Menu (rmenu.rb), so easy creation through DSL. See
+ examples/menu1.rb
+
+### Changes
+
+ - Field class now passes InputDataEvent when firing event, not self.
+   Earlier, user trapping :CHANGE would not know what happened (delete,
+   insert, etc) and what char was added, deleted.
+
+### Bugfixes
+
+ - TextArea would crash if user entered long line with no space (line >
+ display length) - fixed
+
+ - Menu items will not show mnemonic highlighted, if disabled. 
+   They will not fire if mnemonic key pressed, when disabled.
 
 **2010-08-30 11:59**
 ## 1.1.4
