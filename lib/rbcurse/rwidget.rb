@@ -2508,7 +2508,9 @@ module RubyCurses
     ## fires PRESS event of button
     def fire
       $log.debug "firing PRESS #{text}"
-      fire_handler :PRESS, @form
+      # why the .... am i passing form ? Pass a ActionEvent with source, text() and getvalue()
+      #fire_handler :PRESS, @form XXX changed on 2010-09-12 19:22 
+      fire_handler :PRESS, ActionEvent.new self, :PRESS, text
     end
     # Button
     def handle_key ch
