@@ -319,7 +319,6 @@ module RubyCurses
       def fire_handler event, object
         $log.debug "inside def fire_handler evt:#{event}, o: #{object.to_s}, hdnler:#{@handler}"
         if !@handler.nil?
-        #blk = @handler[event]
           ablk = @handler[event]
           if !ablk.nil?
             aeve = @event_args[event]
@@ -452,7 +451,8 @@ module RubyCurses
       @state = :NORMAL
       @color ||= "white" # $datacolor
       @attr = nil
-      @handler = {}
+      #@handler = {}
+      @handler = nil # we can avoid firing if nil
       @event_args = {}
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
@@ -493,12 +493,16 @@ module RubyCurses
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
       @focussed = true
-      fire_handler :ENTER, self
+      if @handler && @handler.has_key?(:ENTER)
+        fire_handler :ENTER, self
+      end
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_leave
       @focussed = false
-      fire_handler :LEAVE, self
+      if @handler && @handler.has_key?(:LEAVE)
+        fire_handler :LEAVE, self
+      end
     end
     ## 
     # @return row and col of a widget where painting data actually starts
@@ -2379,6 +2383,7 @@ module RubyCurses
     dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
     dsl_accessor :mnemonic
     def initialize form, config={}, &block
+      require 'rbcurse/ractionevent'
       @focusable = true
       @editable = false
       @handler={} # event handler
@@ -2481,22 +2486,25 @@ module RubyCurses
         #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
         len = @display_length || value.length
         @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
-        ## a mnemonic not present in field can throw errors XXX FIXME
         @graphic.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
-        if !@underline.nil? or !@mnemonic.nil?
+        if @underline || @mnemonic
+          $log.debug " YYYY #{@underline} , #{@mnemonic} "
           uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          $log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline}- #{@graphic.left} #{@graphic} "
+          #$log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline}- #{@graphic.left} #{@graphic} "
           #$log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
-          y=r #-@graphic.top
-          x=c+uline #-@graphic.left
-          if @graphic.window_type == :PAD
-            x -= @graphic.left
-            y -= @graphic.top
+          # if the char is not found don't print it
+          if uline
+            y=r #-@graphic.top
+            x=c+uline #-@graphic.left
+            if @graphic.window_type == :PAD
+              x -= @graphic.left
+              y -= @graphic.top
+            end
+            raise "button underline location error #{x} , #{y} " if x < 0 or c < 0
+            @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
           end
-          raise "button underline location error #{x} , #{y} " if x < 0 or c < 0
-          @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
         end
     end
     ## command of button (invoked on press, hotkey, space)
@@ -2510,7 +2518,7 @@ module RubyCurses
       $log.debug "firing PRESS #{text}"
       # why the .... am i passing form ? Pass a ActionEvent with source, text() and getvalue()
       #fire_handler :PRESS, @form XXX changed on 2010-09-12 19:22 
-      fire_handler :PRESS, ActionEvent.new self, :PRESS, text
+      fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
     end
     # Button
     def handle_key ch
