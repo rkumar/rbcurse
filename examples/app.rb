@@ -309,6 +309,7 @@ module RubyCurses
       field = Listbox.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
+        # this way you can't pass params to the block
         field.bind(block_event, &block)
       end
       return field
@@ -482,6 +483,38 @@ module RubyCurses
       require 'rbcurse/keylabelprinter'
       klp = RubyCurses::KeyLabelPrinter.new @form, labels, config, &block
     end
+    def link *args, &block
+      require 'rbcurse/extras/rlink'
+      config = {}
+      events = [ :PRESS,  :LEAVE, :ENTER ]
+      block_event = :PRESS
+      _process_args args, config, block_event, events
+      _position(config)
+      config[:text] ||= config.delete :title
+      config[:highlight_foreground] = "yellow"
+      config[:highlight_background] = "red"
+      toggle = Link.new @form, config
+      if block
+        toggle.bind(block_event, toggle, &block)
+      end
+      return toggle
+    end
+    def menulink *args, &block
+      require 'rbcurse/extras/rmenulink'
+      config = {}
+      events = [ :PRESS,  :LEAVE, :ENTER ]
+      block_event = :PRESS
+      _process_args args, config, block_event, events
+      _position(config)
+      config[:text] ||= config.delete :title
+      config[:highlight_foreground] = "yellow"
+      config[:highlight_background] = "red"
+      toggle = MenuLink.new @form, config
+      if block
+        toggle.bind(block_event, toggle, &block)
+      end
+      return toggle
+    end
 
     # ADD new widget above this
 
@@ -592,6 +625,7 @@ module RubyCurses
         when String
           config[:name] = arg
           config[:title] = arg # some may not have title
+          #config[:text] = arg # some may not have title
         end
       end
     end # _process

@@ -73,6 +73,7 @@ if $0 == __FILE__
         end
         #@form.handle_key mb.toggle_key
       end
+      link "a linkie"
     end # stack
   end # app
 end
