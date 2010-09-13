@@ -175,8 +175,9 @@ module RubyCurses
         $log.debug " file edit got cb : #{@current_buffer} "
         set_current_buffer
       rescue => err
-        $error_message = "Error: #{err} "
-        @form.window.print_error_message
+#        $error_message = "Error: #{err} " # changed 2010 dts  
+        $error_message.value = "Error: #{err} "
+        #@form.window.print_error_message
         Ncurses.beep
         return -1
       end
