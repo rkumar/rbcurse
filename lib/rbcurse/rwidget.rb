@@ -2498,7 +2498,6 @@ module RubyCurses
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
         if @underline || @mnemonic
-          $log.debug " YYYY #{@underline} , #{@mnemonic} "
           uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
           #$log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline}- #{@graphic.left} #{@graphic} "
           #$log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
@@ -2601,6 +2600,9 @@ module RubyCurses
     # item_event
     def initialize form, config={}, &block
       super
+      unless @display_length
+        @display_length = [ @onvalue.length, @offvalue.length ].max
+      end
       # no longer linked to text_variable, that was a misunderstanding
       @value ||= (@variable.nil? ? false : @variable.get_value(@name)==true)
     end
@@ -2619,7 +2621,7 @@ module RubyCurses
     alias :selected? :checked?
 
     def getvalue_for_paint
-      buttontext = getvalue()
+      buttontext = getvalue().center(@display_length)
       @text_offset = @surround_chars[0].length
       @surround_chars[0] + buttontext + @surround_chars[1]
     end
