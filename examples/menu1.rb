@@ -1,6 +1,6 @@
 require './app'
 
-if $0 == __FILE__
+#if $0 == __FILE__
   App.new do 
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
@@ -76,4 +76,4 @@ if $0 == __FILE__
       link "a linkie"
     end # stack
   end # app
-end
+#end
