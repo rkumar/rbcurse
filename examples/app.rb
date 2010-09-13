@@ -104,12 +104,27 @@ module RubyCurses
     end
     def init_vars
       @quit_key ||= KEY_F1
+      unless $ncurses_started
+        $ncurses_started = true
+        init_ncurses
+      end
+    end
+    # Initialize curses
+    def init_ncurses
+      VER::start_ncurses  # this is initializing colors via ColorMap.setup
+      $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
+      $log.level = Logger::DEBUG
+      colors = Ncurses.COLORS
+      $log.debug "START #{colors} colors  --------- #{$0}"
+      @stop_ncurses_on_close = true
     end
     def logger; return $log; end
     def close
-      #if @close_on_terminate
       @window.destroy if !@window.nil?
-      VER::stop_ncurses
+      if @stop_ncurses_on_close
+        VER::stop_ncurses
+        $log.debug " CLOSING NCURSES"
+      end
       $log.debug " CLOSING APP"
       #end
     end
@@ -139,7 +154,7 @@ module RubyCurses
     # updates a global var with text. Calling app has to set up a Variable with that name and attach to 
     # a label so it can be printed.
     def message text
-      $message.value = text
+      @message.value = text
     end
     def message_row row
       @message_label.row = row
@@ -572,21 +587,15 @@ module RubyCurses
     end    
     def run &block
       begin
-        # Initialize curses
-        VER::start_ncurses  # this is initializing colors via ColorMap.setup
-        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
-        $log.level = Logger::DEBUG
 
         # check if user has passed window coord in config, else root window
         @window = VER::Window.root_window
         catch(:close) do
-          colors = Ncurses.COLORS
-          $log.debug "START #{colors} colors  --------- #{$0}"
           @form = Form.new @window
-          $message = Variable.new
-          $message.value = "Message Comes Here"
-          @message_label = RubyCurses::Label.new @form, {:text_variable => $message, :name=>"message_label",:row => 24, :col => 1, :display_length => 60,  :height => 1, :color => 'cyan'}
-          $error_message.update_command { $message.set_value($error_message.value) }
+          @message = Variable.new
+          @message.value = "Message Comes Here"
+          @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => 24, :col => 1, :display_length => 60,  :height => 1, :color => 'cyan'}
+          $error_message.update_command { @message.set_value($error_message.value) }
           if block
             begin
               #yield(self, @window, @form)
@@ -717,7 +726,7 @@ if $0 == __FILE__
               #throw(:close); 
               quit
             else
-              $message.value = "Quit aborted"
+              message "Quit aborted"
             end
           end # cancel
           button "Don't know"
