@@ -50,6 +50,7 @@ module RubyCurses
   # / table - more work regarding vim keys, also editable
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
+  # - promptmenu
   #  
   
   class Widget
@@ -97,7 +98,6 @@ module RubyCurses
       @app_row = @app_col = 0
       @stack = [] # stack's coordinates
       @flowstack = []
-      #instance_eval &block if block_given?
       @variables = {}
       init_vars
       run &block
@@ -136,8 +136,13 @@ module RubyCurses
     def keypress &block
      @keyblock = block
     end
+    # updates a global var with text. Calling app has to set up a Variable with that name and attach to 
+    # a label so it can be printed.
     def message text
       $message.value = text
+    end
+    def message_row row
+      @message_label.row = row
     end
     #
     # @group methods to create widgets easily
@@ -189,7 +194,6 @@ module RubyCurses
       #@blk = block # for later execution using @blk.call()
       #colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
       #var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
-      #message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
 
     def label *args
       block_event = nil
@@ -581,7 +585,8 @@ module RubyCurses
           @form = Form.new @window
           $message = Variable.new
           $message.value = "Message Comes Here"
-          message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 25, "col" => 1, "display_length" => 60,  "height" => 1, 'color' => 'cyan'}
+          @message_label = RubyCurses::Label.new @form, {:text_variable => $message, :name=>"message_label",:row => 24, :col => 1, :display_length => 60,  :height => 1, :color => 'cyan'}
+          $error_message.update_command { $message.set_value($error_message.value) }
           if block
             begin
               #yield(self, @window, @form)
@@ -643,6 +648,7 @@ module RubyCurses
         config[:row] = @app_row
         config[:col] = col
         @app_row += config[:height] || 1
+        # TODO need to allow stack to have its spacing, but we don't have an object as yet.
       end
     end
   end # class
