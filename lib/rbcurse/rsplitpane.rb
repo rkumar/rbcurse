@@ -91,7 +91,7 @@ module RubyCurses
           @orientation ||= :HORIZONTAL_SPLIT # added 2010-01-13 15:05 since not set
 
           # true means will request child to create a buffer, since cropping will be needed
-          @_child_buffering = true # private, internal. not to be changed by callers.
+          @_child_buffering = false # private, internal. not to be changed by callers.
           @one_touch_expandable = true
           @is_expanding = false
 
@@ -125,25 +125,32 @@ module RubyCurses
           comp.should_create_buffer = @_child_buffering 
           # adding ext_offsets 2010-02-09 13:39 
           # setting the form is again adding top and left which are the row and col from here.
-          $log.debug "SPLP exp_row #{@name}, #{comp}  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}   "
-          $log.debug "SPLP exp_col  #{@name}  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}   "
+          #$log.debug "SPLP exp_row #{@name}, #{comp}  #{comp.ext_row_offset} += #{@ext_row_offset} + #{@row}   "
+          #$log.debug "SPLP exp_col  #{@name}  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}   "
 #XXX          comp.ext_row_offset += @ext_row_offset + @row - @subform1.window.top #0# screen_row
 #XXX          comp.ext_col_offset += @ext_col_offset + @col -@subform1.window.left # 0# screen_col
           comp.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row
           comp.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col
 
-          ## trying out 2010-01-16 12:11 so component does not have to set size
-          # The suggestd heights really depend on orientation.
+          # The suggestd heights depend on orientation.
            a = 0 # = 2
           if @orientation == :HORIZONTAL_SPLIT
+            $log.debug "H FC ht #{comp.height} , w #{comp.width}  #{comp.name}, #{comp.class} "
              @first_component.height ||= @first_component.preferred_height || @height/2 - 1 #1
              @first_component.width ||= @first_component.preferred_width || @width - a
+            $log.debug " FC2 ht #{comp.height} , w #{comp.width}  #{comp.name} "
           else
+            $log.debug "V FC ht #{comp.height} , w #{comp.width} #{comp.name} "
              @first_component.height ||= @first_component.preferred_height || @height - a
              @first_component.width ||= @first_component.preferred_width || @width/2 -1
+            $log.debug " FC2 ht #{comp.height} , w #{comp.width}  #{comp.name} "
           end
           #layout = { :height => @height-1, :width => @width-1, :top => @row, :left => @col }
-          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          # form may not be available at this point if setting internal componnedts FC first
+          #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          # added 2010-09-13 23:33 XXX
+          raise "first components height or preferred height is required" unless comp.height
+          raise "first components width or preferred width is required" unless comp.width
           comp.set_buffering(:screen_top => @row, :screen_left => @col)
           @first_component.min_height ||= 5
           @first_component.min_width ||= 5
@@ -191,9 +198,9 @@ module RubyCurses
           comp.ext_row_offset += @ext_row_offset + @row
           $log.debug "SPLP exp_col #{@name} 2 #{comp}:  #{comp.ext_col_offset} += #{@ext_col_offset} + #{@col}  "
           comp.ext_col_offset += @ext_col_offset + @col 
-          layout = { :height => @height-1, :width => @width-1, :top => comp.row, :left => comp.col }
-          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
-                             :right => comp.width-1, :form => @form )
+          #layout = { :height => @height-1, :width => @width-1, :top => comp.row, :left => comp.col }
+          #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
+                             #:right => comp.width-1, :form => @form )
           $log.debug " setting c2 screen_top n left to #{@row} #{@col} "
           @second_component.set_buffering(:screen_top => @row, :screen_left => @col)
           @second_component.min_height ||= 5 # added 2010-01-16 12:37 
@@ -362,9 +369,12 @@ module RubyCurses
               $log.debug " #{@name}  set div location, setting first comp width #{rc}"
               if !@cascade_changes.nil?
                 if @orientation == :VERTICAL_SPLIT
+                  $log.warn " SPLP height nil in #{@name}  #{@first_component.name} " unless @height
+                  @height ||= 23
                   @first_component.width(rc-0) #+ @col_offset + @divider_offset
                   @first_component.height(@height-0) #2+ @col_offset + @divider_offset
                 else
+                  $log.warn " SPLP width nil in #{@name}  #{@first_component.name} " unless @width
                   @first_component.height(rc+0) #-1) #1+ @col_offset + @divider_offset
                   @first_component.width(@width-0) #2+ @col_offset + @divider_offset
                 end
@@ -421,7 +431,7 @@ module RubyCurses
                 #@second_component.width = @width - (rc + @col_offset + @divider_offset + 1)
                 #@second_component.height = @height-2  #+ @row_offset + @divider_offset
                 @second_component.width = @width - rc #+ @col_offset + @divider_offset + 1)
-                @second_component.height = @height-0  #+ @row_offset + @divider_offset
+                @second_component.height = @height  #+ @row_offset + @divider_offset
               else
                 # added 2010-01-09 22:49 to be tested XXX
                 # In a vertical split, if widgets w and thus buffer w is less than
@@ -474,6 +484,8 @@ module RubyCurses
                 end
               end
           end
+          raise "2nd components height or preferred height is required (#{@second_component.name})" unless @second_component.height
+          raise "2nd components width or preferred width is required(#{@second_component.name})" unless @second_component.width
           # i need to keep top and left sync for print_border which uses it UGH !!!
           if !@second_component.get_buffer().nil?
             # now that TV and others are creating a buffer in repaint we need another way to set
@@ -543,10 +555,13 @@ module RubyCurses
         @first_component.row(@row)
         @first_component.col(@col)
         $log.debug "UCF #{@name} #{@first_component.row} #{@first_component.col} "
+        comp = @first_component
+        comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
         @first_component.set_buffering(:screen_top => @first_component.row, :screen_left => @first_component.col)
       end
       def update_second_component
         $log.debug " #{@name} update+secoond dl: #{@divider_location} "
+        comp = @second_component
         return if @divider_location == 0
           if @orientation == :HORIZONTAL_SPLIT
             @second_component.row(@row+@divider_location)
@@ -556,6 +571,8 @@ module RubyCurses
             @second_component.col(@col+@divider_location)
           end
           $log.debug "UCS #{@name} #{@second_component.row} #{@second_component.col} "
+          comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, 
+                             :right => comp.width-1, :form => @form )
           @second_component.set_buffering(:screen_top => @second_component.row, :screen_left => @second_component.col)
       end
       def repaint # splitpane
@@ -649,12 +666,22 @@ module RubyCurses
       def getvalue
           # TODO
       end
-      def _switch_component
+      # we forgot to call the on_enter and on_leave
+      # this switches between components. Now we tab out after last.
+      def goto_next_component
           if @current_component != nil 
             if @current_component == @first_component
-              @current_component = @second_component
+              @current_component.on_leave
+              if @second_component
+                @current_component = @second_component
+                @current_component.on_enter
+              else
+                return :UNHANDLED
+              end
             else
-              @current_component = @first_component
+              #@current_component = @first_component
+              @current_component.on_leave
+              return :UNHANDLED # try to get him out.
             end
             set_form_row
           else
@@ -663,6 +690,31 @@ module RubyCurses
             @current_component = @first_component if @second_component.nil?
             set_form_row
           end
+          0
+      end
+      def goto_prev_component
+          if @current_component != nil 
+            if @current_component == @second_component
+              @current_component.on_leave
+              if @first_component
+                @current_component = @first_component
+                @current_component.on_enter
+              else
+                return :UNHANDLED
+              end
+            else
+              #@current_component = @first_component
+              @current_component.on_leave
+              return :UNHANDLED # try to get him out.
+            end
+            set_form_row
+          else
+            # this happens in one_tab_expand
+            @current_component = @second_component if @first_component.nil?
+            @current_component = @first_component if @second_component.nil?
+            set_form_row
+          end
+          0
       end
       ## Handles key for splitpanes
       ## By default, first component gets focus, not the SPL itself.
@@ -677,11 +729,12 @@ module RubyCurses
         ## If B_tab on second comp, switch to first
         ## If B_tab on first comp, return UNHA so form can take to prev field
         if ch == 9
-           _switch_component
-           return 0
+           #return goto_next_component
+           #return 0
         end
 
         if @current_component != nil 
+          # give the child the key to handle, this is the last current child
           ret = @current_component.handle_key ch
           return ret if ret != :UNHANDLED
         else
@@ -691,6 +744,11 @@ module RubyCurses
         end
         $log.debug " splitpane #{@name} gets KEY #{ch}"
         case ch
+        when  KEY_TAB
+           return goto_next_component
+        when  KEY_BTAB
+           return goto_prev_component
+           #return 0
         when ?\M-w.getbyte(0)
            # switch panes
           if @current_component != nil 
@@ -701,8 +759,8 @@ module RubyCurses
             end
             set_form_row
           else
-           _switch_component
-           return 0
+           return goto_next_component
+           #return 0
             # if i've expanded bottom pane, tabbed to opposite higher level, tabbing back
             # brings me to null first pane and i can't go to second, so switch
             # this was added for a non-realistic test program with embedded splitpanes
@@ -741,9 +799,23 @@ module RubyCurses
       def paint
           @repaint_required = false
       end
+      # on entering this component
+      # place user on first child
+      # TODO if he backtabs in then place on last
       def on_enter
+        # 2010-09-14 00:58 forcing first always
+        if $current_key == KEY_BTAB
+          @current_component = @second_component
+        else
+          @current_component = @first_component
+        end
+        @current_component.on_enter if @current_component
+
          set_form_row
       end
+      # used to set form to whatever was current last
+      # now we set to first so user can cycle through. User does not see it as a split 
+      # within split, just as panes.
       def set_form_row
          if !@current_component.nil?
             $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
