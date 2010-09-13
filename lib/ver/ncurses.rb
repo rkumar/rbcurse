@@ -5,6 +5,8 @@ include ColorMap
 
   # Setup ncurses, nicely documented by the curses manpages
   def start_ncurses
+    return if $ncurses_started
+    $ncurses_started = true
     # The initscr code determines the terminal type and initializes all curses
     # data structures.
     # initscr also causes the first call to refresh to clear the screen.
@@ -83,11 +85,14 @@ include ColorMap
     # Ncurses::nodelay(Ncurses::stdscr, bf = true)
   end
 
+  # this should happen only in outermost program that started ncurses
+  # if a called program does this, the calling program can have a display freeze
   def stop_ncurses
     Ncurses.echo
     Ncurses.nocbreak
     Ncurses.nl
     Ncurses.endwin
+    puts "ncurses stopped"
   ensure
     return unless error = @last_error
     log = Config[:logfile].value
