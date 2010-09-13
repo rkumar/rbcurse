@@ -24,6 +24,7 @@ if $0 == __FILE__
       blank
       menulink "&Messages", :width => w, :description => "View messages in current folder"  do |s|
         message "Pressed #{s.text} "
+        load './menu1.rb'
       end
       blank
       menulink "&Compose", :width => w, :description => "Compose a mail"  do |s|
