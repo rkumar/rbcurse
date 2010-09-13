@@ -15,14 +15,14 @@ DONE,GEN,5,Make  widget of Keylabelprinter,TESTED,Tue Jan 20 00:38:43 +0530 2009
 DONE,GEN,5,Added Action class shared by Button Menuitem ,TESTED,Thu Jan 22 18:08:28 +0530 2009
 DONE,GEN,5,Added PopupMenu 2009-01-22 18:09 ,TESTED,Thu Jan 22 18:09:34 +0530 2009
 DONE,LIST,0,call on_enter and on_leave of component,TOTEST,Sun Feb 22 12:19:38 +0530 2009
+DONE,FIELD,5,Field: OVERWRITE Mode,TESTED,2010-09-13 11:24:35 +0530
+DONE,GEN,5,"Modified should check if value changed, not UP etc",TOTEST,2010-09-13 11:25:18 +0530
 TODO,TABLE,1,table.set_data should check if models already created.,TODO
 TODO,TABLE,5,"Set column_class in TableColumn, to avoid hassles",TODO
 TODO,TABLE,2,Table sorting and filtering is required - using VIEW,TODO
 TODO,TABLE,5,Table height and col widths auto sizing or FILLING extra space.,TODO
 TODO,TEXTAREA,9,"Textarea: wrap options NONE, COLUMN",TODO,Tue Jan 20 01:04:15 +0530 2009
-TODO,GEN,5,"Modified should check if value changed, not UP etc",TOTEST
 TODO,GEN,5,Give a decent FileChooser and FileSaver,TODO
 TODO,GEN,5,Focus Traversable vs focusable,TODO
 TODO,GEN,5,Action class: fire event for listeners,TODO,Thu Jan 22 20:09:50 +0530 2009
-TODO,FIELD,5,Field: OVERWRITE Mode,TODO
 TODO,FIELD,5,Field: Auto-skip when reaching end of maxlen,TODO
