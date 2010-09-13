@@ -34,11 +34,9 @@ module RubyCurses
   # x method: quit
   # - box / rect
   # - animate(n) |i|
-  # - move
   # x list_box :choose is the defauly
   # x progress - like a label but fills itself, fraction
   # - para looks like a label that is more than one line, and calculates rows itself based on text
-  # - edit_line = fiekd
   # x other buttons: radio, check
   # x edit_box = textarea
   # - combo
@@ -104,19 +102,17 @@ module RubyCurses
     end
     def init_vars
       @quit_key ||= KEY_F1
+      # actually this should be maintained inside ncurses pack, so not loaded 2 times.
+      # this way if we call an app from existing program, App won't start ncurses.
       unless $ncurses_started
-        $ncurses_started = true
         init_ncurses
       end
-    end
-    # Initialize curses
-    def init_ncurses
-      VER::start_ncurses  # this is initializing colors via ColorMap.setup
-      $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
-      $log.level = Logger::DEBUG
-      colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors  --------- #{$0}"
-      @stop_ncurses_on_close = true
+      unless $log
+        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
+        $log.level = Logger::DEBUG
+        colors = Ncurses.COLORS
+        $log.debug "START #{colors} colors  --------- #{$0}"
+      end
     end
     def logger; return $log; end
     def close
@@ -192,7 +188,7 @@ module RubyCurses
       end
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last
+        col = @stack.last.margin
         config[:row] = @app_row
         config[:col] = col
         @app_row += 1
@@ -231,7 +227,7 @@ module RubyCurses
       config[:height] ||= 1
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last
+        col = @stack.last.margin
         config[:row] = @app_row
         config[:col] = col
         @app_row += config[:height]
@@ -314,13 +310,15 @@ module RubyCurses
       # usually user will provide
       config[:height] ||= config[:list].length + 2
       config[:width] ||= longest_in_list(config[:list])+2
+      # if no width given, expand to flows width XXX SHOULD BE NOT EXPAND ?
+      #config[:width] ||= @stack.last.width if @stack.last
       #if config.has_key? :choose
       config[:default_values] = config.delete :choose
       # we make the default single unless specified
       config[:selection_mode] = :single unless config.has_key? :selection_mode
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last
+        col = @stack.last.margin
         config[:row] = @app_row
         config[:col] = col
         @app_row += config[:height] # this needs to take into account height of prev object
@@ -341,6 +339,8 @@ module RubyCurses
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
       _process_args args, config, block_event, events
+      config[:text] ||= longest_in_list2( [config[:onvalue], config[:offvalue]])
+        #config[:onvalue] # needed for flow, we need a better way FIXME
       _position(config)
       toggle = ToggleButton.new @form, config
       if block
@@ -395,8 +395,10 @@ module RubyCurses
       events = [ :CHANGE,  :LEAVE, :ENTER ]
       block_event = events[0]
       _process_args args, config, block_event, events
-      config[:width] = config[:display_length] || 10 unless config.has_key? :width
+      config[:width] = config[:display_length] unless config.has_key? :width
       _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
       w = TextArea.new @form, config
       if block
         w.bind(block_event, &block)
@@ -443,6 +445,8 @@ module RubyCurses
 
       model = nil
       _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
       w = Table.new @form, config
       if ext
         require 'rbcurse/extras/tableextended' 
@@ -534,6 +538,21 @@ module RubyCurses
       end
       return toggle
     end
+    def splitpane *args, &block
+      require 'rbcurse/rsplitpane'
+      config = {}
+      events = [ :PROPERTY_CHANGE,  :LEAVE, :ENTER ]
+      block_event = events[0]
+      _process_args args, config, block_event, events
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      w = SplitPane.new @form, config
+      if block
+        w.bind(block_event, w, &block)
+      end
+      return w
+    end
 
     # ADD new widget above this
 
@@ -544,13 +563,17 @@ module RubyCurses
     # line up vertically whatever comes in, ignoring r and c 
     # margin_top to add to margin of existing stack (if embedded) such as extra spacing
     # margin to add to margin of existing stack, or window (0)
+    Stack = Struct.new(:margin_top, :margin, :width)
     def stack config={}, &block
       @instack = true
       mt =  config[:margin_top] || 1
       mr =  config[:margin] || 0
+      w =   config[:width] || 50
+      s = Stack.new(mt, mr, w)
       @app_row += mt
-      mr += @stack.last if @stack.last
-      @stack << mr
+      mr += @stack.last.margin if @stack.last
+      #@stack << mr
+      @stack << s
       instance_eval &block if block_given?
       @stack.pop
       @instack = false if @stack.empty?
@@ -561,11 +584,12 @@ module RubyCurses
     # Useful for button positioning. Currently, we can use a second flow
     # to get another row.
     # TODO: move down when row filled
+    # TODO: align right, center
     def flow config={}, &block
       @inflow = true
       mt =  config[:margin_top] || 0
       @app_row += mt
-      col = @flowstack.last || @stack.last || @app_col
+      col = @flowstack.last || @stack.last.margin || @app_col
       col += config[:margin] || 0
       @flowstack << col
       @flowcol = col
@@ -578,10 +602,24 @@ module RubyCurses
     def quit
       throw(:close)
     end
+    # Initialize curses
+    def init_ncurses
+      VER::start_ncurses  # this is initializing colors via ColorMap.setup
+      #$ncurses_started = true
+      @stop_ncurses_on_close = true
+    end
 
+    # returns length of longest
     def longest_in_list list
       longest = list.inject(0) do |memo,word|
         memo >= word.length ? memo : word.length
+      end    
+      longest
+    end    
+    # returns longest item
+    def longest_in_list2 list
+      longest = list.inject(list[0]) do |memo,word|
+        memo.length >= word.length ? memo : word
       end    
       longest
     end    
@@ -628,6 +666,7 @@ module RubyCurses
           config[:row] = row
           config[:col] = col
           config[:display_length] = display_length if display_length
+          config[:width] = display_length if display_length
           # width for most XXX ?
           config[:height] = height if height
         when Hash
@@ -650,10 +689,11 @@ module RubyCurses
         #col = @flowstack.last
         config[:row] = @app_row
         config[:col] = @flowcol
+        $log.debug " YYYY config #{config} "
         @flowcol += config[:text].length + 5 # 5 came from buttons
       elsif @instack
         # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last
+        col = @stack.last.margin
         config[:row] = @app_row
         config[:col] = col
         @app_row += config[:height] || 1
