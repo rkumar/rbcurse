@@ -330,7 +330,8 @@ module RubyCurses
               rescue => ex
                 $log.error " ERROR in block event #{self}: #{name}, #{event}"
                 $log.error(ex.backtrace.join("\n")) 
-                $error_message = "#{ex}"
+#                $error_message = "#{ex}" # changed 2010  
+                $error_message.value = "#{ex}"
                 Ncurses.beep
               end
             end
@@ -1098,6 +1099,7 @@ module RubyCurses
       $last_key = 0 # last key pressed @since 1.1.5 (not used yet)
       $current_key = 0 # curr key pressed @since 1.1.5 (so some containers can behave based on whether
                     # user tabbed in, or backtabbed in (rmultisplit)
+      $error_message ||= Variable.new ""
     end
     ##
     # set this menubar as the form's menu bar.
@@ -1169,10 +1171,12 @@ module RubyCurses
         # Drat - this line is happeing since components inside a TP are double_buffered
         #x f.buffer_to_screen(pb) if f.is_double_buffered? 
       end
-      @window.clear_error # suddenly throwing up on a small pad 2010-03-02 15:22 TPNEW
-      @window.print_status_message $status_message unless $status_message.nil?
-      @window.print_error_message $error_message unless $error_message.nil?
-      $error_message = $status_message = nil
+      # 2010-09-13 00:33 commented off. App should create a label with a Variable named
+      # $message
+      #@window.clear_error # suddenly throwing up on a small pad 2010-03-02 15:22 TPNEW
+      #@window.print_status_message $status_message unless $status_message.nil?
+      #@window.print_error_message $error_message unless $error_message.nil?
+      #$error_message = $status_message = nil
       #  this can bomb if someone sets row. We need a better way!
       if @row == -1 and @firsttime == true
         #set_field_cursor 0
@@ -1243,7 +1247,8 @@ module RubyCurses
         rescue => err
          $log.error " Caught EXCEPTION req_first_field on_leave #{err}"
          Ncurses.beep
-         $error_message = "#{err}"
+         #$error_message = "#{err}"
+         $error_message.value = "#{err}"
          return
         end
       end
@@ -1326,7 +1331,8 @@ module RubyCurses
       rescue => err
         $log.error "form: validate_field caught EXCEPTION #{err}"
         $log.error(err.backtrace.join("\n")) 
-        $error_message = "#{err}"
+#        $error_message = "#{err}" # changed 2010  
+        $error_message.value = "#{err}"
         Ncurses.beep
         return -1
       end
@@ -1348,7 +1354,8 @@ module RubyCurses
         rescue => err
          $log.error "select_next_field: caught EXCEPTION #{err}"
          $log.error(err.backtrace.join("\n")) 
-         $error_message = "#{err}"
+#         $error_message = "#{err}" # changed 2010  
+         $error_message.value = "#{err}"
          Ncurses.beep
          return
         end
@@ -1394,9 +1401,10 @@ module RubyCurses
         begin
           on_leave f
         rescue => err
-         $log.error " cauGHT EXCEPTION #{err}"
+         $log.error " Caught EXCEPTION #{err}"
          Ncurses.beep
-         $error_message = "#{err}"
+#         $error_message = "#{err}" # changed 2010  
+         $error_message.value = "#{err}"
          return
         end
       end
@@ -2352,7 +2360,7 @@ module RubyCurses
         str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
         # loop added for labels that are wrapped.
         # TODO clear separately since value can change in status like labels
-        $log.debug " RWID 1595 #{self.class} value: #{value} form:  #{form} "
+        #$log.debug " RWID 1595 #{self.class} value: #{value} form:  #{form} "
         @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
         0.upto(_height-1) { |i| 
           @graphic.printstring r+i, c, " " * len , acolor,@attr
