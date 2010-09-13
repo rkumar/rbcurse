@@ -30,6 +30,7 @@ module RubyCurses
   #
   # @since 1.1.6
   # TODO - 
+  # what of internal objects that don't want a form !
   # - stack and flow should be objects in Form, put in widget when creating
   # x method: quit
   # - box / rect
@@ -97,6 +98,8 @@ module RubyCurses
       @stack = [] # stack's coordinates
       @flowstack = []
       @variables = {}
+      # if we are creating child objects then we will not use outer form. this object will manage
+      @current_object = [] 
       init_vars
       run &block
     end
@@ -309,13 +312,20 @@ module RubyCurses
       # naive defaults, since list could be large or have very long items
       # usually user will provide
       config[:height] ||= config[:list].length + 2
-      config[:width] ||= longest_in_list(config[:list])+2
+      if @current_object.empty?
+        $log.debug "1 APP LB w: #{config[:width]} ,#{config[:name]} "
+        config[:width] ||= @stack.last.width if @stack.last
+        $log.debug "2 APP LB w: #{config[:width]} "
+        config[:width] ||= longest_in_list(config[:list])+2
+        $log.debug "3 APP LB w: #{config[:width]} "
+      end
       # if no width given, expand to flows width XXX SHOULD BE NOT EXPAND ?
       #config[:width] ||= @stack.last.width if @stack.last
       #if config.has_key? :choose
       config[:default_values] = config.delete :choose
       # we make the default single unless specified
       config[:selection_mode] = :single unless config.has_key? :selection_mode
+      if @current_object.empty?
       if @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last.margin
@@ -323,7 +333,10 @@ module RubyCurses
         config[:col] = col
         @app_row += config[:height] # this needs to take into account height of prev object
       end
-      field = Listbox.new @form, config
+      end
+      useform = nil
+      useform = @form if @current_object.empty?
+      field = Listbox.new useform, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
         # this way you can't pass params to the block
@@ -399,7 +412,9 @@ module RubyCurses
       _position(config)
       # if no width given, expand to flows width
       config[:width] ||= @stack.last.width if @stack.last
-      w = TextArea.new @form, config
+      useform = nil
+      useform = @form if @current_object.empty?
+      w = TextArea.new useform, config
       if block
         w.bind(block_event, &block)
       end
@@ -547,9 +562,19 @@ module RubyCurses
       _position(config)
       # if no width given, expand to flows width
       config[:width] ||= @stack.last.width if @stack.last
-      w = SplitPane.new @form, config
-      if block
-        w.bind(block_event, w, &block)
+      config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = SplitPane.new useform, config
+      #if block
+        #w.bind(block_event, w, &block)
+      #end
+      if block_given?
+        @current_object << w
+        #instance_eval &block if block_given?
+        yield w
+        @current_object.pop
       end
       return w
     end
@@ -685,6 +710,10 @@ module RubyCurses
     # position object based on whether in a flow or stack.
     # @app_row is prepared for next object based on this objects ht
     def _position config
+      unless @current_object.empty?
+        $log.debug " WWWW returning from position #{@current_object.last} "
+        return
+      end
       if @inflow
         #col = @flowstack.last
         config[:row] = @app_row
