@@ -66,8 +66,9 @@ module RubyCurses
           ret = process_key ch, self
           $log.debug " MULTI = process_key returned #{ret} "
         rescue => err
-          $error_message = err
-          @form.window.print_error_message
+#          $error_message = err # changed 2010 dts  
+          $error_message.value = err
+          #@form.window.print_error_message PLEASE CREATE LABEL
           $log.error " Multicomponent process_key #{err} "
           $log.debug(err.backtrace.join("\n"))
         end
