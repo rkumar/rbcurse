@@ -1,14 +1,11 @@
 require './app'
 
-if $0 == __FILE__
   App.new do 
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
     header = app_header "rbcurse 1.2.0", :text_center => "Alpine Menu Demo", :text_right =>""
     message_row(27)
 
-    # TODO accelerators and 
-    # getting a handle for later use
     stack :margin_top => 10, :margin => 15 do
       #w = "Messages".length + 1
       w = 60
@@ -43,4 +40,3 @@ if $0 == __FILE__
       end
     end # stack
   end # app
-end
