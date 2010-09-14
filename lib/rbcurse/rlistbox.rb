@@ -13,6 +13,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/listcellrenderer'
 require 'rbcurse/listkeys'
+require 'forwardable'
 
 
 include Ncurses
@@ -382,6 +383,7 @@ module RubyCurses
     include ListScrollable
     include ListSelectable
     include RubyCurses::ListKeys
+    extend Forwardable
     dsl_accessor :height
     dsl_accessor :title
     dsl_property :title_attrib   # bold, reverse, normal
@@ -513,6 +515,8 @@ module RubyCurses
       @list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
       create_default_list_selection_model
     end
+    # added 2010-09-15 00:11 to make life easier
+    def_delegators :@list, :insert, :remove_all, :delete_at, :include?
     # get element at
     # @param [Fixnum] index for element
     # @return [Object] element
