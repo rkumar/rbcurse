@@ -7,7 +7,7 @@ App.new do
 
   stack :margin_top => 5, :margin => 15, :width => 79 do
     splp = splitpane "outer", :height => 15  do |s|
-      fc = splitpane "top", :orientation => :VERTICAL_SPLIT, :border_color => $promptcolor do |fc1|
+      fc = splitpane "top", :orientation => :VERTICAL_SPLIT, :border_color => $promptcolor, :divider_at => 0.3 do |fc1|
         lb = list_box "Shapes",:list => ["Square", "Oval", "Rectangle", "Somethinglarge"], :choose => ["Oval"]
         fc1.first_component lb
 

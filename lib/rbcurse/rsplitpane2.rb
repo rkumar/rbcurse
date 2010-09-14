@@ -3,6 +3,10 @@
   * Description: allows user to split 2 components vertically or horizontally
     Try to make it simpler for user to use.
     Should work with no constraints, and take percentage or integer for div location. No more.
+**** THIS IS EXPERIMENTAL AND NEW
+  NOTE: it can crash if you change orientation after painting and if you try too much resizing.
+   Also it will not notify children of changes in size. it avoids all complexity and tries
+ to be as simple as possible.
   * NOTE that VERTICAL_SPLIT means the *divider* is vertical.
   * Author: rkumar (arunachalesha)
   * file created 2010-09-14 10:31 
@@ -27,10 +31,10 @@ module RubyCurses
   extend self
 
   ##
-  # A SplitPane allows user to split 2 components vertically or horizontally.
-  # such as textarea, table or a form, usually the underlying data is larger
-  # than what can be displayed.
-  # @since 0.1.3
+  # A simpler SplitPane allows user to split 2 components vertically or horizontally.
+  # such as textarea, table or a list.
+  # Besides components, it allows user to set position of divider using divider_at (fraction).
+  # @since 1.2.0
   # TODO - 
   
   class SplitPane < Widget
@@ -47,7 +51,6 @@ module RubyCurses
       dsl_accessor :border_color
       dsl_accessor :border_attrib
       attr_accessor :one_touch_expandable # boolean, default true 
-      dsl_property :divider_at # fraction or specific NEW
 
       def initialize form, config={}, &block
           @focusable = true
@@ -81,10 +84,11 @@ module RubyCurses
       end
       def init_vars
         @orientation ||= :HORIZONTAL_SPLIT # added 2010-01-13 15:05 since not set
+        @divider_at ||= 0.5
         if @orientation == :VERTICAL_SPLIT
-          @divider_location ||= @width/2
+          @divider_location ||= (@width * @divider_at).to_i
         else
-          @divider_location ||= @height/2
+          @divider_location ||= (@height * @divider_at).to_i
         end
         @divider_offset ||= 0
           
@@ -117,9 +121,9 @@ module RubyCurses
           $log.debug " orientation CAME HERE #{val[0]} prev div loc was #{@divider_location}  "
           case val[0]
           when :VERTICAL_SPLIT
-            @divider_location = @width/2
+            @divider_location = (@width * @divider_at).to_i
           when :HORIZONTAL_SPLIT
-            @divider_location = @height/2
+            @divider_location = (@height * @divider_at).to_i
           else
             raise ArgumentError "orientation value is wrong"
           end
@@ -127,6 +131,21 @@ module RubyCurses
           @repaint_required = true
           $log.debug " orientation set divi loc to #{@divider_location} "
         end
+      end
+      # sets a fraction to use to determine placement of divider_location and consequently
+      # size of components
+      # @param [Float] percent for placing divider e.g. 0.5. Should be between 0.2 and 0.8
+      # @return [Float] fraction if no param passed
+      def divider_at(*val)
+        if val.empty?
+          return @divider_at
+        else
+          where = val[0]
+          raise ArgumentError "divider_at value should be between 0.2 and 0.8" if where < 0.2 || where > 0.8
+          @divider_at = where
+          @repaint_required = true
+        end
+        self
       end
 
       ## 
@@ -162,7 +181,7 @@ module RubyCurses
           if @orientation == :HORIZONTAL_SPLIT
             raise "SPLP width of #{comp.name} required " unless @width
             $log.debug "H FC ht #{comp.height} , w #{comp.width}  #{comp.name}, #{comp.class} "
-             @first_component.height = @height/2 - 1 #1
+             @first_component.height = (@height * @divider_at - 1).to_i #1
              @first_component.width =  @width - a
              $log.debug " FC2 ht #{comp.height} , w #{comp.width}  #{comp.name} "
              @divider_location = comp.height + 1
@@ -170,7 +189,7 @@ module RubyCurses
             raise "SPLP height of #{comp.name} required " unless @height
             $log.debug "V FC ht #{comp.height} , w #{comp.width} #{comp.name} "
              @first_component.height = @height - a
-             @first_component.width = @width/2 -1
+             @first_component.width = (@width * @divider_at -1).to_i
              @divider_location = comp.width + 1
             $log.debug " FC2 ht #{comp.height} , w #{comp.width}  #{comp.name} "
           end
@@ -214,7 +233,7 @@ module RubyCurses
           if @orientation == :HORIZONTAL_SPLIT
             @second_component.row(@row+@divider_location)
             @second_component.col(@col+@col_offset)
-             @second_component.height = @height/2 - 1 #1
+             @second_component.height = (@height * @divider_at - 1).to_i #1
              @second_component.width = @width - 0 # 2
              $log.debug "H SC2 ht #{comp.height} , w #{comp.width}  #{comp.name} "
              $log.debug "H SC2 rc #{comp.row} , c #{comp.col}  #{comp.name} "
@@ -222,7 +241,7 @@ module RubyCurses
             @second_component.row(@row+@row_offset)
             @second_component.col(@col+@divider_location)
              @second_component.height =  @height - 0 # 2
-             @second_component.width =  @width/2 -4 # 1 to 4 2010-01-16 22:10  TRYING COULD BREAK STUFF testsplit3a;s right splitpane
+             @second_component.width =  (@width * @divider_at -4).to_i # 1 to 4 2010-01-16 22:10  TRYING COULD BREAK STUFF testsplit3a;s right splitpane
              $log.debug "V SC2 ht #{comp.height} , w #{comp.width}  #{comp.name} "
              $log.debug "V SC2 rc #{comp.row} , c #{comp.col}  #{comp.name} "
     # added 2010-01-16 23:55 
@@ -633,11 +652,11 @@ module RubyCurses
           @repaint_required = true
           ph, pw = @first_component.get_preferred_size
           if @orientation == :VERTICAL_SPLIT
-             pw ||= @width/2-1  # added 2010-01-16 12:31 so easier to use, 1 to 2 2010-01-16 22:13 
+             pw ||= (@width * @divider_at-1).to_i  # added 2010-01-16 12:31 so easier to use, 1 to 2 2010-01-16 22:13 
               rc = pw+1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.width ||= pw ## added 2010-01-11 23:19 
           else
-             ph ||= @height/2 - 0 # 1  # added 2010-01-16 12:31 so easier to use
+             ph ||= (@height * @divider_at - 0).to_i # 1  # added 2010-01-16 12:31 so easier to use
               rc = ph+0 #1  ## added 1 2010-01-11 23:26 else divider overlaps comp
               @first_component.height ||= ph ## added 2010-01-11 23:19 
           end
@@ -713,7 +732,7 @@ module RubyCurses
           $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} dl #{@divider_location} "
           if v?
             if @divider_location >= @width
-              @divider_location = @width/2
+              @divider_location = (@width*@divider_at).to_i
               $log.debug " SPLP correcting div loc to #{@divider_location} "
             end
           end
