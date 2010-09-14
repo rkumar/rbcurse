@@ -119,11 +119,14 @@ module RubyCurses
     end
     def logger; return $log; end
     def close
+      $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       @window.destroy if !@window.nil?
+      $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       if @stop_ncurses_on_close
         VER::stop_ncurses
         $log.debug " CLOSING NCURSES"
       end
+      #p $error_message.value unless $error_message.value.nil?
       $log.debug " CLOSING APP"
       #end
     end
@@ -554,7 +557,7 @@ module RubyCurses
       return toggle
     end
     def splitpane *args, &block
-      require 'rbcurse/rsplitpane'
+      require 'rbcurse/rsplitpane2'
       config = {}
       events = [ :PROPERTY_CHANGE,  :LEAVE, :ENTER ]
       block_event = events[0]
@@ -665,12 +668,18 @@ module RubyCurses
               instance_eval &block if block_given?
               loop
             rescue => ex
-              p ex if ex
-              p(ex.backtrace.join("\n")) if ex
+              $log.debug( "APP.rb rescue reached ")
               $log.debug( ex) if ex
               $log.debug(ex.backtrace.join("\n")) if ex
             ensure
               close
+              # putting it here allows it to be printed on screen, otherwise it was not showing at all.
+              if ex
+                puts "========== EXCEPTION =========="
+                p ex 
+                puts "=========="
+                puts(ex.backtrace.join("\n")) 
+              end
             end
             nil
           else
