@@ -581,6 +581,31 @@ module RubyCurses
       end
       return w
     end
+    def multisplit *args, &block
+      require 'rbcurse/rmultisplit'
+      config = {}
+      events = [ :PROPERTY_CHANGE,  :LEAVE, :ENTER ]
+      block_event = events[0]
+      _process_args args, config, block_event, events
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = MultiSplit.new useform, config
+      #if block
+        #w.bind(block_event, w, &block)
+      #end
+      if block_given?
+        @current_object << w
+        #instance_eval &block if block_given?
+        yield w
+        @current_object.pop
+      end
+      return w
+    end
 
     # ADD new widget above this
 
@@ -596,7 +621,9 @@ module RubyCurses
       @instack = true
       mt =  config[:margin_top] || 1
       mr =  config[:margin] || 0
-      w =   config[:width] || 50
+      # must take into account margin
+      defw = Ncurses.COLS - mr
+      w =   config[:width] || [50, defw].min
       s = Stack.new(mt, mr, w)
       @app_row += mt
       mr += @stack.last.margin if @stack.last
@@ -750,8 +777,8 @@ if $0 == __FILE__
   #app.close
   # this was the yield example, but now we've moved to instance eval
   App.new do 
-    @window.printstring 2, 30, "Demo of Listbox - rbcurse", $normalcolor, 'reverse'
-    @window.printstring 5, 30, "Hit F1 to quit", $datacolor, 'normal'
+    @window.printstring 0, 30, "Demo of Listbox - rbcurse", $normalcolor, 'reverse'
+    @window.printstring 1, 30, "Hit F1 to quit", $datacolor, 'normal'
     form = @form
     fname = "Search"
     r, c = 7, 30
@@ -773,7 +800,7 @@ if $0 == __FILE__
       end
 
       stack :margin_top => 2, :margin => 0 do
-        label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
+        #label( [8, 30, 60],{:text => "A label", :color=>'white',:bgcolor=>'blue'} )
       end
 
       @bluelabel = label( [8, 30, 60],{:text => "B label", :color=>'white',:bgcolor=>'blue'} )
@@ -830,7 +857,7 @@ if $0 == __FILE__
         f1.text = list.text
         l.text = list.text.upcase
       end
-      t = textarea :width => 12, :height => 10 do |e|
+      t = textarea :height => 10 do |e|
         #@bluelabel.text = e.to_s.tr("\n",' ')
         @bluelabel.text = e.text.gsub("\n"," ")
         len = e.source.get_text.length
