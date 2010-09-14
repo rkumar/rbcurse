@@ -299,11 +299,12 @@ module VER
       # @panel = @window.panel if @window
       #Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
       #@window.delwin if !@window.nil?
-      $log.debug "win destroy"
+      $log.debug "win destroy start"
 
       #@panel = @window.panel if @window
       Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
       @window.delwin if !@window.nil?
+      $log.debug "win destroy end"
     end
     ## 
     # added by rk 2008-11-29 19:01 
