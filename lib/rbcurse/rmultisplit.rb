@@ -72,6 +72,7 @@ module RubyCurses
       dsl_accessor :cyclic_behavior
       # maximum to show, if less than split_count then scrolling
       dsl_property :max_visible
+      attr_reader :components
 
       #attr_accessor :one_touch_expandable # boolean, default true  # XXX
 
@@ -94,8 +95,6 @@ module RubyCurses
           init_vars
       end
       def init_vars
-          #@divider_location ||= 10
-          #@divider_offset ||= 0
           @_first_column_print = 0 # added 2009-10-07 11:25 
           @max_visible ||= @split_count
           @_last_column_print = @_first_column_print + @max_visible - 1
@@ -187,6 +186,14 @@ module RubyCurses
         comp.min_height ||= 5
         comp.min_width ||= 5
       end
+      def [](index)
+        raise "MultiSplit: Please add components first" unless @components
+        @components[index]
+      end
+      def size
+        @components.size
+      end
+      alias :length :size
       ##
       # compute component dimensions in one place
       # @param [widget] a widget 
