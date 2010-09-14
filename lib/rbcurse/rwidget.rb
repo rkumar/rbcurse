@@ -2600,9 +2600,6 @@ module RubyCurses
     # item_event
     def initialize form, config={}, &block
       super
-      unless @display_length
-        @display_length = [ @onvalue.length, @offvalue.length ].max
-      end
       # no longer linked to text_variable, that was a misunderstanding
       @value ||= (@variable.nil? ? false : @variable.get_value(@name)==true)
     end
@@ -2621,6 +2618,11 @@ module RubyCurses
     alias :selected? :checked?
 
     def getvalue_for_paint
+      unless @display_length
+        if @onvalue && @offvalue
+          @display_length = [ @onvalue.length, @offvalue.length ].max
+        end
+      end
       buttontext = getvalue().center(@display_length)
       @text_offset = @surround_chars[0].length
       @surround_chars[0] + buttontext + @surround_chars[1]
