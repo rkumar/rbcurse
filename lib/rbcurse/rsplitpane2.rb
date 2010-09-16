@@ -61,26 +61,8 @@ module RubyCurses
           super
           @row_offset = @col_offset = 1
           @orig_col = @col
-          @use_absolute = true; # set to true if not using subwins XXX
+          #@use_absolute = true; # set to true if not using subwins XXX
           init_vars
-          @subwin_created = true # set to true if you don't want subwins created
-          @@ctr ||= 0
-        if @@ctr == 0
-        if @subwin_created == false
-          #layout = { :height => @height, :width => @width, :top => @row, :left => @col }
-          layout = { :height => @height-1, :width => @width-1, :top => @row+1, :left => @col+1 }
-          @graphic = @graphic._subwin(layout)
-          fw = form.window 
-          raise "graphic nil #{@name} " unless @graphic
-          $log.debug " SUBWIN CREATED "
-          @subwin_created = true
-          @target_window = @graphic
-          @@ctr += 1
-          @use_absolute = false
-          bordercolor = @border_color || $datacolor
-          borderatt = @border_attrib || Ncurses::A_NORMAL
-        end
-        end
       end
       def init_vars
         @orientation ||= :HORIZONTAL_SPLIT # added 2010-01-13 15:05 since not set
@@ -738,18 +720,10 @@ module RubyCurses
           end
           bordercolor = @border_color || $datacolor
           borderatt = @border_attrib || Ncurses::A_NORMAL
-          absrow = abscol = 0
-          if @use_absolute
             absrow = @row
             abscol = @col
-          end
-          if @use_absolute
             $log.debug " #{@graphic} calling print_border #{@row} #{@col} "
             @graphic.print_border(@row, @col, @height-1, @width-1, bordercolor, borderatt)
-          else
-            $log.debug " #{@graphic} calling print_border 0,0"
-            @graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
-          end
           rc = @divider_location
 
           @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)

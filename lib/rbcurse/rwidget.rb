@@ -225,7 +225,7 @@ module RubyCurses
       case keycode
       when String
         keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
-        $log.debug " #{name} Widg String called bind_key BIND #{keycode}, #{keycode_tos(keycode)}  "
+        #$log.debug " #{name} Widg String called bind_key BIND #{keycode}, #{keycode_tos(keycode)}  "
         @key_handler[keycode] = blk
       when Array
         # for starters lets try with 2 keys only
@@ -332,6 +332,7 @@ module RubyCurses
     def fire_property_change text, oldvalue, newvalue
       # should i return if oldvalue is nil ??? TODO XXX
       #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
+      return if oldvalue.nil? || @_object_created.nil? # added 2010-09-16 so if called by methods it is still effective
       if @pce.nil?
         @pce = PropertyChangeEvent.new(self, text, oldvalue, newvalue)
       else
@@ -1198,10 +1199,11 @@ module RubyCurses
       return unless ix # no focussable field
 
       # if the user is on a field other than current then fire on_leave
-      if @active_index.nil?
+      if @active_index.nil? || @active_index < 0
       elsif @active_index != ix
         f = @widgets[@active_index]
         begin
+          $log.debug " XXX select first field, calling on_leave of #{f} #{@active_index} "
           on_leave f
         rescue => err
          $log.error " Caught EXCEPTION req_first_field on_leave #{err}"
@@ -1236,7 +1238,7 @@ module RubyCurses
     # form's trigger, fired when any widget loses focus
     #  This wont get called in editor components in tables, since  they are formless XXX
     def on_leave f
-      return if f.nil?
+      return if f.nil? || !f.focusable # added focusable, else label was firing
       f.state = :NORMAL
       # on leaving update text_variable if defined. Should happen on modified only
       # should this not be f.text_var ... f.buffer ? XXX 2008-11-25 18:58 
@@ -1250,7 +1252,7 @@ module RubyCurses
       end
     end
     def on_enter f
-      return if f.nil?
+      return if f.nil? || !f.focusable # added focusable, else label was firing 2010-09
       f.state = :HIGHLIGHTED
       f.modified false
       #f.set_modified false

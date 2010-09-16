@@ -11,6 +11,7 @@ module ListScrollable
   attr_reader :search_found_ix, :find_offset, :find_offset1
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
   def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
+    return :UNHANDLED if @current_index == 0
     @oldrow = @current_index
     # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
     # on leave and on enter
@@ -22,8 +23,9 @@ module ListScrollable
   end
   alias :up :previous_row
   def next_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
-    @oldrow = @current_index
     rc = row_count
+    return :UNHANDLED if @current_index == rc-1
+    @oldrow = @current_index
     @current_index += 1*num if @current_index < rc
     bounds_check
     $multiplier = 0
@@ -206,7 +208,7 @@ module ListScrollable
         #select_prev_row
         #up
         #$log.debug " GOT KEY UP NEW SCROLL"
-        previous_row
+        return previous_row
       when KEY_LEFT
       when KEY_RIGHT
       when KEY_DOWN

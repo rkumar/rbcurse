@@ -735,13 +735,13 @@ Subject: microemacs user setup tabbedpane
 -----------------------------------------
 Date: 2010-01-30 00:06
 
-Micremacs has user setup tabbedpanes.
+Micremacs has user setup tabbedpanes. (Use F1)
 Left and right keys are used to move from one tab to another.
 
 Tab jumps to form associated with a tab. Tab does not cycle between
 tabs. IN some fields, where there are selectable values (combos) a "v"
 is shown but i am not clear how to access that list. Pressing Enter
-opens up the config file.
+opens up the config file. (Use spacebar)
 
 * * * * * * * *
 
