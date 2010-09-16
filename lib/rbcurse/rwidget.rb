@@ -381,7 +381,6 @@ module RubyCurses
     # NOTE: I may soon remove the config hash. I don't use it and its just making things heavy.
     # Unless someone convinces me otherwise.
   class Widget
-    include DSL
     include EventHandler
     include ConfigSetup
     include RubyCurses::Utils
@@ -621,6 +620,39 @@ module RubyCurses
         acolor = default
       end
       return acolor
+    end
+    ##
+    # bind an action to a key, required if you create a button which has a hotkey
+    # or a field to be focussed on a key, or any other user defined action based on key
+    # e.g. bind_key ?\C-x, object, block 
+    # added 2009-01-06 19:13 since widgets need to handle keys properly
+    #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
+    #  TODO add symbol so easy to map from config file or mapping file
+    def OLDbind_key keycode, *args, &blk
+      @key_handler ||= {}
+      if !block_given?
+        blk = args.pop
+        raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
+        $log.debug " #{@name} bind_key received a symbol #{blk} "
+      end
+      case keycode
+      when String
+        $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
+        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
+        @key_handler[keycode] = blk
+      when Array
+        # for starters lets try with 2 keys only
+        a0 = keycode[0]
+        a0 = keycode[0].getbyte(0) if keycode[0].class == String
+        a1 = keycode[1]
+        a1 = keycode[1].getbyte(0) if keycode[1].class == String
+        @key_handler[a0] ||= OrderedHash.new
+        @key_handler[a0][a1] = blk
+      else
+        @key_handler[keycode] = blk
+      end
+      @key_args ||= {}
+      @key_args[keycode] = args
     end
     ##
     # remove a binding that you don't want
