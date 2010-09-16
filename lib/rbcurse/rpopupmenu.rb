@@ -705,7 +705,6 @@ module RubyCurses
   end # menubar
 
   class CheckBoxMenuItem < MenuItem
-    include DSL
     attr_reader :checkbox
     def initialize text, mnemonic=nil, &block
       @checkbox = CheckBox.new nil
