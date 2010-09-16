@@ -12,7 +12,7 @@ module RubyCurses
       @anchor_selection_index = -1
       @lead_selection_index = -1
       @selection_mode = 'multiple'
-      $log.debug " created DefaultListSelectionModel XXX"
+      #$log.debug " created DefaultListSelectionModel XXX"
     end
 
     def clear_selection

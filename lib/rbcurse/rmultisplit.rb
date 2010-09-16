@@ -185,7 +185,10 @@ module RubyCurses
         comp.set_buffering(:screen_top => @row, :screen_left => @col)
         comp.min_height ||= 5
         comp.min_width ||= 5
+        return self
       end
+      alias :<< :add
+
       def [](index)
         raise "MultiSplit: Please add components first" unless @components
         @components[index]
@@ -248,6 +251,7 @@ module RubyCurses
           c.width += delta
           n.width -= delta
         end
+        self
       end
       # decrease size of current component. 
       # if last one, then border printing exceeds right boundary. values look okay
@@ -269,12 +273,14 @@ module RubyCurses
           c.width -= delta
           n.width += delta
         end
+        self
       end
       def same
         @components.each do |comp| 
           comp.height = @comp_height
           comp.width = @comp_width
         end
+        self
       end
       # @return [widget] next component or nil if no next
       def get_next_component
@@ -444,6 +450,7 @@ module RubyCurses
       # take focus to next pane (component in it)
       # if its the last, return UNHANDLED so form can take to next field
       # @return [0, :UNHANDLED] success, or last component
+
       def goto_next_component
         if @current_component != nil 
           @current_component.on_leave
@@ -600,8 +607,12 @@ module RubyCurses
           $log.debug "XXXXX #{@name} set_form_row calling sfr for #{@current_component.name}, #{c.row}, #{c.col}  "
           #@current_component.set_form_row 
           # trigger the on_enter handler
+          # my god XXX this assumes a listbox !! FIXME
+          # on enter should return a false or error so we don't proceed
+          # or throw exception
           if @current_component.row_count > 0
             @current_component.on_enter # typically on enter does a set_form_row
+            # XXX  another assumption that is has this !!!
             @current_component.set_form_col 
             return 0
           end

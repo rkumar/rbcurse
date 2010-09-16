@@ -190,7 +190,6 @@ module RubyCurses
   # pops up a list of values for selection
   # 2008-12-10
   class PopupList
-    include DSL
     include RubyCurses::EventHandler
     dsl_accessor :title
     dsl_accessor :row, :col, :height, :width
@@ -583,9 +582,9 @@ module RubyCurses
       #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
       when KEY_UP  # show previous value
-        previous_row
+        return previous_row
       when KEY_DOWN  # show previous value
-        next_row
+        return next_row
       when @KEY_ROW_SELECTOR # 32
         return if is_popup and @selection_mode == 'single' # not allowing select this way since there will be a difference 
         toggle_row_selection @current_index #, @current_index
@@ -651,9 +650,11 @@ module RubyCurses
           end
         end
         if ret == :UNHANDLED
+          # beware one-key eats up numbers. we'll be wondering why
           if @one_key_selection
             case ch
-            when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0), ?0.getbyte(0)..?9.getbyte(0)
+            #when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0), ?0.getbyte(0)..?9.getbyte(0)
+            when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
               # simple motion, key press defines motion
               ret = set_selection_for_char ch.chr
             else
@@ -846,7 +847,7 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
 
-      $log.debug " rlistbox repaint graphic #{@graphic} "
+      $log.debug "VIM rlistbox repaint  #{@name} graphic #{@graphic}"
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen ||= @width-2
@@ -858,11 +859,11 @@ module RubyCurses
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
-            focussed = @current_index == crow ? true : false  # row focussed ?
-            focus_type = focussed 
+            _focussed = @current_index == crow ? true : false  # row focussed ?
+            focus_type = _focussed 
             # added 2010-09-02 14:39 so inactive fields don't show a bright focussed line
             #focussed = false if focussed && !@focussed
-            focus_type = :SOFT_FOCUS if focussed && !@focussed
+            focus_type = :SOFT_FOCUS if _focussed && !@focussed
             selected = is_row_selected crow
             content = tm[crow]   # 2009-01-17 18:37 chomp giving error in some cases says frozen
             if content.is_a? String
@@ -896,10 +897,10 @@ module RubyCurses
             #renderer.show_selector @show_selector
             #renderer.row_selected_symbol @row_selected_symbol
             #renderer.left_margin @left_margin
-            #renderer.repaint @graphic, r+hh, c+(colix*11), content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+(colix*11), content, _focussed, selected
             ## added crow on 2009-02-06 23:03 
             # since data is being truncated and renderer may need index
-            #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focussed, selected
+            #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
         else
           # clear rows

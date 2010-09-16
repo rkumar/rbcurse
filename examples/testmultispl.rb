@@ -200,7 +200,7 @@ if $0 == __FILE__
         #end
         #splitp.get_buffer().wclear
         #splitp << "#{ch} got (#{str})"
-        splitp.repaint # since the above keys are not being handled inside
+        #splitp.repaint # since the above keys are not being handled inside
         @form.handle_key(ch)
         @window.wrefresh
       end
@@ -210,7 +210,7 @@ if $0 == __FILE__
     @window.destroy if !@window.nil?
     VER::stop_ncurses
     p ex if ex
-    p(ex.backtrace.join("\n")) if ex
+    puts(ex.backtrace.join("\n")) if ex
     $log.debug( ex) if ex
     $log.debug(ex.backtrace.join("\n")) if ex
   end
