@@ -75,7 +75,6 @@ module RubyCurses
     end
   end
   class TabbedWindow
-    include DSL
     include EventHandler
     dsl_accessor :row, :col
     dsl_accessor :height, :width
