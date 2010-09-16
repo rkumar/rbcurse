@@ -55,7 +55,6 @@ module RubyCurses
   end
   ##
   class MenuItem
-    include DSL
     attr_accessor :parent
 #    attr_accessor :window
     attr_accessor :row
@@ -669,7 +668,6 @@ module RubyCurses
   end # menubar
 
   class CheckBoxMenuItem < MenuItem
-    include DSL
     attr_reader :checkbox
     def initialize text, mnemonic=nil, &block
       @checkbox = CheckBox.new nil
