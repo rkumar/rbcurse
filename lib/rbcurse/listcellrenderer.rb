@@ -9,8 +9,6 @@ module RubyCurses
   # Using alignment one can use for numbers too.
   # However, for booleans it will print true and false. If editing, you may want checkboxes
   class ListCellRenderer
-    #include DSL
-    #include EventHandler
     include RubyCurses::ConfigSetup
     include RubyCurses::Utils
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
