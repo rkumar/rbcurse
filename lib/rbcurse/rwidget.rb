@@ -37,19 +37,6 @@ KEY_DELETE = 330
 KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
 KEY_CC     = 3   # C-c
 
-module DSL
-## others may not want this, if = sent, it creates DSL and sets
-  # using this resulted in time lost in bedebugging why some method was not working.
-  def OLD_method_missing(sym, *args)
-    $log.debug "METHOD MISSING : #{sym} #{self} "
-    #if "#{sym}"[-1].chr=="="
-    #  sym = "#{sym}"[0..-2]
-    #else
-    self.class.dsl_accessor sym
-    #end
-    send(sym, *args)
-  end
-end
 class Module
 ## others may not want this, sets config, so there's a duplicate hash
   # also creates a attr_writer so you can use =.
@@ -636,39 +623,6 @@ module RubyCurses
       return acolor
     end
     ##
-    # bind an action to a key, required if you create a button which has a hotkey
-    # or a field to be focussed on a key, or any other user defined action based on key
-    # e.g. bind_key ?\C-x, object, block 
-    # added 2009-01-06 19:13 since widgets need to handle keys properly
-    #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
-    #  TODO add symbol so easy to map from config file or mapping file
-    def OLDbind_key keycode, *args, &blk
-      @key_handler ||= {}
-      if !block_given?
-        blk = args.pop
-        raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
-        $log.debug " #{@name} bind_key received a symbol #{blk} "
-      end
-      case keycode
-      when String
-        $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
-        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
-        @key_handler[keycode] = blk
-      when Array
-        # for starters lets try with 2 keys only
-        a0 = keycode[0]
-        a0 = keycode[0].getbyte(0) if keycode[0].class == String
-        a1 = keycode[1]
-        a1 = keycode[1].getbyte(0) if keycode[1].class == String
-        @key_handler[a0] ||= OrderedHash.new
-        @key_handler[a0][a1] = blk
-      else
-        @key_handler[keycode] = blk
-      end
-      @key_args ||= {}
-      @key_args[keycode] = args
-    end
-    ##
     # remove a binding that you don't want
     def unbind_key keycode
       @key_args.delete keycode unless @key_args.nil?
@@ -1163,20 +1117,13 @@ module RubyCurses
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
-        f._object_created = true
+        f._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
       end
-      # 2010-09-13 00:33 commented off. App should create a label with a Variable named
-      # $message
-      #@window.clear_error # suddenly throwing up on a small pad 2010-03-02 15:22 TPNEW
-      #@window.print_status_message $status_message unless $status_message.nil?
-      #@window.print_error_message $error_message unless $error_message.nil?
-      #$error_message = $status_message = nil
       #  this can bomb if someone sets row. We need a better way!
       if @row == -1 and @_firsttime == true
         #set_field_cursor 0
         #  this part caused an endless loop on 2010-01-02 19:20 when scrollpane scrolled up
-       $log.debug "form repaint calling select field 0 SHOULD HAPPEN FIRST TIME ONLY"
-        #select_field 0
+        #$log.debug "form repaint calling select field 0 SHOULD HAPPEN FIRST TIME ONLY"
         select_first_field
         @_firsttime = false
       end
@@ -1187,21 +1134,6 @@ module RubyCurses
        if @window.window_type == :WINDOW
          $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
-       else
-         # UGLY HACK TO MAKE TABBEDPANES WORK !!
-         # If the form is based on a Pad, then it would come here to write the Pad onto the parent_buffer
-         # However, I've obviated the need to handle anything here by adding a display_form after handle_key
-         # in TP.
-         #x if @parent_buffer!=nil
-           #x $log.debug " formrep coming to set backing window part #{@window} , type:#{@window.window_type}, #{@parent_buffer}, #{@parent_buffer.window_type} "
-           # XXX RFED19 do we need at all 2010-02-19 15:26 
-           # this is required so that each key stroke registers on tabbedpane
-           # for this to work both have to be pads
-           #x @window.set_backing_window(@parent_buffer)
-           #x @window.copy_pad_to_win
-           #x @window.wrefresh #since the pads are writing onto window directly, i don't think we need  this
-           #x $log.debug " DO I NEED TO DO SOMETHING HERE FOR TABBEDPANES now ? WARN ?? YES, else keystrokes won't be updated "
-         #x end
        end
     end
     ## 
@@ -1217,6 +1149,7 @@ module RubyCurses
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
       @window.wmove r,c
     end
+    # @return [Widget, nil] current field, nil if no focusable field
     def get_current_field
       select_next_field if @active_index == -1
       return nil if @active_index.nil?   # for forms that have no focusable field 2009-01-08 12:22 
@@ -1260,10 +1193,13 @@ module RubyCurses
       end
       nil
     end
-    def req_last_field
+    # take focus to last field on form
+    def select_last_field
       @active_index = nil 
       select_prev_field
     end
+    # please do not use req_ i will deprecate it soon.
+    alias :req_last_field :select_last_field
     ## do not override
     # form's trigger, fired when any widget loses focus
     #  This wont get called in editor components in tables, since  they are formless XXX
@@ -1385,6 +1321,8 @@ module RubyCurses
     # put focus on previous field
     # will cycle by default, unless navigation policy not :CYCLICAL
     # in which case returns :NO_PREV_FIELD.
+    # @return [nil, :NO_PREV_FIELD] nil if cyclical and it finds a field
+    #  if not cyclical, and no more fields then :NO_PREV_FIELD
     def select_prev_field
       return if @widgets.nil? or @widgets.empty?
       #$log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
@@ -1461,27 +1399,6 @@ module RubyCurses
       end
     end
 
-    ## added 2009-12-29 15:46  BUFFERED
-    # Set forms row and col, so that the cursor can be displayed at that point.
-    # Widgets should call this rather than touch row and col
-    # directly. This should percolate the row and col
-    # upwards to parent forms, after comparing to prevent 
-    # infinite recursion.
-    # This is being done for embedded objects so that the cursor
-    # can be maintained correctly.
-    def OLDsetrowcol r, c
-      @row = r unless r.nil?
-      @col = c unless c.nil?
-           r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
-           c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
-           $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self}  "
-      if !@parent_form.nil? and @parent_form != self
-        $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
-        r += @parent_form.window.top unless  r.nil?
-        c += @parent_form.window.left unless c.nil?
-        @parent_form.setrowcol r, c
-      end
-    end
     ## Form
     # New attempt at setting cursor using absolute coordinates
     # Also, trying NOT to go up. let this pad or window print cursor.
@@ -1499,32 +1416,6 @@ module RubyCurses
       end
     end
   ##
-  # bind an action to a key, required if you create a button which has a hotkey
-  # or a field to be focussed on a key, or any other user defined action based on key
-  # e.g. bind_key ?\C-x, object, block
-    # 1.9 if string passed then getbyte so user does not need to change much and
-    # less chance of error 2009-10-04 16:08 
-  def OLDbind_key keycode, *args, &blk
-      @key_handler ||= {}
-      case keycode
-      when String
-        $log.debug "FORM String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
-        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
-        @key_handler[keycode] = blk
-      when Array
-        # for starters lets try with 2 keys only
-        a0 = keycode[0]
-        a0 = keycode[0].getbyte(0) if keycode[0].class == String
-        a1 = keycode[1]
-        a1 = keycode[1].getbyte(0) if keycode[1].class == String
-        @key_handler[a0] ||= OrderedHash.new
-        @key_handler[a0][a1] = blk
-      else
-        @key_handler[keycode] = blk
-      end
-      @key_args ||= {}
-      @key_args[keycode] = args
-  end
 
   # e.g. process_key ch, self
   # returns UNHANDLED if no block for it
@@ -1534,29 +1425,6 @@ module RubyCurses
   def process_key keycode, object
     return _process_key keycode, object, @window
   end
-      #return :UNHANDLED if @key_handler.nil?
-      #blk = @key_handler[keycode]
-      #return :UNHANDLED if blk.nil?
-      #if blk.is_a? OrderedHash
-        ## Please note that this does not wait too long, you have to press next key fast
-        ## since i have set halfdelay in ncurses.rb, test this with getchar to get more keys TODO
-          #ch = @window.getch
-          #if ch < 0 || ch > 255
-            ##next
-            #return nil
-          #end
-          #$log.debug " process_key: got #{keycode} , #{ch} "
-          #yn = ch.chr
-          #blk1 = blk[ch]
-          #return nil if blk1.nil?
-          #$log.debug " process_key: found block for #{keycode} , #{ch} "
-          #blk = blk1
-      #end
-      #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
-     ## return blk.call object,  *@key_args[keycode]
-    #blk.call object,  *@key_args[keycode]
-    #0
-  #end
   # Defines how user can give numeric args to a command even in edit mode
   # User either presses universal_argument (C-u) which generates a series of 4 16 64.
   # Or he presses C-u and then types some numbers. Followed by the action.
@@ -2435,15 +2303,6 @@ module RubyCurses
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
     ##
-    # which index to use as underline.
-    # Instead of using this to make a hotkey, I am thinking of giving this a new usage.
-    # If you wish to override the underline?
-    # @deprecated . use mnemonic or an ampersand in text.
-    def OLDunderline ix
-      _value = @text || getvalue # hack for Togglebutton 
-      raise "#{self}: underline requires text to be set " if _value.nil?
-      mnemonic _value[ix]
-    end
     # bind hotkey to form keys. added 2008-12-15 20:19 
     # use ampersand in name or underline
     def bind_hotkey
