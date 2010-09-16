@@ -15,7 +15,6 @@ module RubyCurses
   # dimensions of window should be derived on content
   #
   class MessageBox
-    include DSL
     include RubyCurses::Utils
     dsl_accessor :title
     dsl_accessor :message
