@@ -79,6 +79,7 @@ class Module
             @#{sym} = val.size == 1 ? val[0] : val
             newvalue = @#{sym}
             @config["#{sym}"]=@#{sym}
+            return if oldvalue.nil? || @_object_created.nil?
             if oldvalue != newvalue
               # trying to reduce calls to fire, when object is being created
               # in some cases property is preset in widget to 0 or -1. row col, color
@@ -429,6 +430,7 @@ module RubyCurses
     ## 2010-01-05 13:27 create buffer conditionally, if enclosing component asks. Needs to be passed down
     ##+ to further children or editor components. Default false.
     attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
+    attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
@@ -1083,11 +1085,11 @@ module RubyCurses
       @focusable = true
       @navigation_policy ||= :CYCLICAL
       instance_eval &block if block_given?
-      @firsttime = true # internal, don't touch
+      @_firsttime = true # internal, don't touch
       ## I need some counter so a widget knows it has been panned and can send a correct
       ##+ cursor coordinate to system.
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
-      @firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
+      @_firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
       @name ||= ""
       $kill_ring ||= [] # 2010-03-09 22:42 so textarea and others can copy and paste emacs EMACS
       $kill_ring_pointer = 0 # needs to be incremented with each append, moved with yank-pop
@@ -1161,15 +1163,7 @@ module RubyCurses
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
-        # added 2009-10-29 20:11 for double buffered widgets
-        # this should only happen if painting actually happened
-        #$log.debug " #{self} form repaint parent_buffer (#{@parent_buffer}) if #{f.is_double_buffered?} : #{f.name} "
-        pb = @parent_buffer #|| @window
-        # is next line used 2010-02-05 00:04 its wiping off top in scrollpane in tabbedpane
-        # RFED16 - the next line should never execute now, since no outer object is buffered
-        #+ only those within containers are.
-        # Drat - this line is happeing since components inside a TP are double_buffered
-        #x f.buffer_to_screen(pb) if f.is_double_buffered? 
+        f._object_created = true
       end
       # 2010-09-13 00:33 commented off. App should create a label with a Variable named
       # $message
@@ -1178,13 +1172,13 @@ module RubyCurses
       #@window.print_error_message $error_message unless $error_message.nil?
       #$error_message = $status_message = nil
       #  this can bomb if someone sets row. We need a better way!
-      if @row == -1 and @firsttime == true
+      if @row == -1 and @_firsttime == true
         #set_field_cursor 0
         #  this part caused an endless loop on 2010-01-02 19:20 when scrollpane scrolled up
        $log.debug "form repaint calling select field 0 SHOULD HAPPEN FIRST TIME ONLY"
         #select_field 0
         select_first_field
-        @firsttime = false
+        @_firsttime = false
       end
        setpos 
        # XXX this creates a problem if window is a pad
