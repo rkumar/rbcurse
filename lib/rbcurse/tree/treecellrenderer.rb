@@ -95,11 +95,23 @@ module RubyCurses
         end
         len = @display_length || value.length
         #icon = object.is_leaf? ? "-" : "+"
-        icon = leaf ? "-" : "+"
+        #icon = leaf ? "-" : "+"
+
         #level = treearraynode.level
         #node = treearraynode.node
         level = treearraynode.level
         node = treearraynode
+        if parent.node_expanded? node
+          icon = "+-"
+        else
+          icon = "++"
+        end
+        if node.children.size == 0
+          icon = "+?"
+          if parent.has_been_expanded node
+            icon = "+-"
+          end
+        end
         _value =  "%*s %s" % [ level+1, icon,  node.user_object ]
         graphic.printstring r, c, "%-*s" % [len, _value], @color_pair,@attr
         #_height = @height || 1
