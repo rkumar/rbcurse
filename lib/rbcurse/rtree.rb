@@ -5,6 +5,13 @@
   * Date: 2010-09-18 12:02 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
   * This file started on 2010-09-18 12:03 (copied from rlistbox)
+TODO:
+   [ ] load on tree will expand
+   [ ] selected row on startup
+   [ ] open up a node and make current on startup
+   [ ] find string
+   [ ] expand all descendants
+   ++ +- and +?
 =end
 require 'rbcurse'
 require 'rbcurse/tree/treemodel'
@@ -60,6 +67,9 @@ module RubyCurses
       @list = []
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
+      # hash containing nodes that are expanded or once expanded
+      # if value is true, then currently expanded, else once expanded
+      # TODO : will need purging under some situations
       @expanded_state = {}
       super
       @current_index ||= 0
@@ -72,9 +82,8 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
 
-      select_default_values
+      select_default_values #TODO
 
-      #install_keys ## FIXME kill this crap
       init_vars
 
       #if !@list.selected_index.nil? 
@@ -147,14 +156,18 @@ module RubyCurses
       #@height - 2
       @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
     end
+    # pass data to create this tree model
     # used to be list
     def data alist=nil
       return @treemodel if alist.nil?
       @data = alist # data given by user
       case alist
       when Array
-
+        @treemodel = RubyCurses::DefaultTreeModel.new("/")
+        @treemodel.root.add alist
       when Hash
+        @treemodel = RubyCurses::DefaultTreeModel.new("/")
+        @treemodel.root.add alist
       when TreeNode
         # this is a root node
         @treemodel = RubyCurses::DefaultTreeModel.new(alist)

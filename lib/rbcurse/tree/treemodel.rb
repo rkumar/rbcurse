@@ -8,12 +8,23 @@ module RubyCurses
     include RubyCurses::EventHandler 
     attr_reader :root
     attr_reader :asks_allow_children
+    attr_accessor :root_visible
     def initialize node, asks_allow_children=false, &block
       @asks_allow_children = asks_allow_children
-      @root                = node
+      @root_visible        = true
+      _set_root_node node
       instance_eval &block if block_given?
     end
     # insert a node the old sucky java pain in the butt way
+    # private
+    # sets node as root
+    def _set_root_node node
+      if !node.is_a? TreeNode
+        n = TreeNode.new node
+        node = n
+      end
+      @root = node
+    end
     def insert_node_into nodechild, nodeparent, index
       $log.debug " TODO remove from existing parent to avoid bugs XXX"
       nodeparent.insert nodechild, index
@@ -23,9 +34,9 @@ module RubyCurses
       end
     end
     # add a node to root passing a block optionally
-    #
+    # @see TreeNode.add
     def add nodechild, allow_children=true, &block
-      $log.debug " TODO remove from existing parent to avoid bugs XXX"
+      # calling TreeNode.add
       @root.add nodechild, allow_children, &block
       if @handler # only if someone is listening, won't fire when being prepared
         tme = TreeModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
@@ -34,11 +45,18 @@ module RubyCurses
       return @root
     end
     alias :<< :add
+    def insert row, obj
+      @data.insert row, obj
+      if @handler # only if someone is listening, won't fire when being prepared
+        tme = TreeModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
+        fire_handler :TREE_MODEL_EVENT, tme
+      end
     def child_at parent, index
     end
     def index_of_child parent, child
     end
-    def child_count
+    def child_count node
+      node.children.size
     end
 
     def row_count
@@ -67,12 +85,6 @@ module RubyCurses
       #tme = TreeModelEvent.new(@data.length-1,@data.length-1, :ALL_COLUMNS, self, :INSERT)
       #fire_handler :TREE_MODEL_EVENT, tme
     #end
-    def insert row, obj
-      @data.insert row, obj
-      if @handler # only if someone is listening, won't fire when being prepared
-        tme = TreeModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
-        fire_handler :TREE_MODEL_EVENT, tme
-      end
       # create tablemodelevent and fire_table_changed for all listeners 
     end
     def delete obj
@@ -230,16 +242,38 @@ module RubyCurses
       #n = TreeNode.new user_object, allows_children, &block
       #add n
     #end
-    # add a node to this node, optionally passing a block for further adding 
-    def add node, allows_children=true, &block
+    # private
+    #@returns just creates node
+    def _add node, allows_children=true, &block
       #raise ArgumentError, "Argument should be a node" if !node.is_a? TreeNode
+      $log.debug " TODO remove from existing parent to avoid bugs XXX"
       if !node.is_a? TreeNode
         n = TreeNode.new node, allows_children, &block
         node = n
       end
       node.parent = self
       @children << node
-      self
+      node
+    end
+    # add a node to this node, optionally passing a block for further adding 
+    # add a node as child to existing node
+    # If node is not a TreeNode it will be converted to one.
+    # @param [TreeNode, Array] node/s to add
+    # @param [boolean] should children be allowed
+    def add node, allows_children=true, &block
+      case node
+      when Array
+        node.each do |e| 
+          add e, allows_children, &block 
+        end
+      when Hash
+        node.each_pair { |name, val|  
+          n = _add name, allows_children, &block 
+          n.add val, allows_children, &block
+        }
+      else
+        _add node, allows_children, &block 
+      end
     end
     alias :<< :add
     def insert node, index

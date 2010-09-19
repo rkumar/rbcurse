@@ -11,6 +11,9 @@ class Tester
     @form = Form.new @window
 
     h = 20; w = 75; t = 3; l = 4
+    choice = 3
+    case choice
+    when 1
     root    =  TreeNode.new "ROOT"
     subroot =  TreeNode.new "subroot"
     leaf1   =  TreeNode.new "leaf 1"
@@ -31,7 +34,19 @@ class Tester
         add "block31"
       end
     end
+    when 2
 
+      # use an array to populate
+      # we need to do root_visible = false so you get just a list
+    model  = %W[ ruby cobol jruby smalltalk fortran piethon purrl lithp ]
+
+    when 3
+
+      # use an Has to populate
+      #model = { :ruby => %W[ "jruby", "mri", "yarv", "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
+      model = { :ruby => [ "jruby", {:mri => %W[ 1.8.6 1.8.7]}, {:yarv => %W[1.9.1 1.9.2]}, "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
+
+    end
     Tree.new @form, :data => model, :row =>2, :col=>2, :height => 20, :width => 30
 
 
