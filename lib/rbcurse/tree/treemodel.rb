@@ -4,26 +4,34 @@
 require 'rbcurse'
 
 module RubyCurses
+  class IllegalStateException < Exception
+  end
+
   class DefaultTreeModel #< TreeModel
     include RubyCurses::EventHandler 
-    attr_reader :root
     attr_reader :asks_allow_children
     attr_accessor :root_visible
-    def initialize node, asks_allow_children=false, &block
-      @asks_allow_children = asks_allow_children
+    def initialize node=nil, asks_allow_children=false, &block
       @root_visible        = true
-      _set_root_node node
+      root(node, asks_allow_children) if node
       instance_eval &block if block_given?
     end
     # insert a node the old sucky java pain in the butt way
     # private
     # sets node as root
-    def _set_root_node node
+    #def root node, asks_allow_children=false, &block
+    def root *args, &block
+      return @root if args.empty?
+      node = args[0]
+      @asks_allow_children = args[1]
       if !node.is_a? TreeNode
         n = TreeNode.new node
         node = n
       end
       @root = node
+      $log.debug " XXX def root created root with #{node} "
+      #add node, true, &block 
+      instance_eval &block if block_given?
     end
     def insert_node_into nodechild, nodeparent, index
       $log.debug " TODO remove from existing parent to avoid bugs XXX"
@@ -35,14 +43,21 @@ module RubyCurses
     end
     # add a node to root passing a block optionally
     # @see TreeNode.add
-    def add nodechild, allow_children=true, &block
+    def add nodechild, allows_children=true, &block
       # calling TreeNode.add
-      @root.add nodechild, allow_children, &block
+      $log.debug " XXX def add of DTM #{nodechild} to root "
+      @root.add nodechild, allows_children, &block
       if @handler # only if someone is listening, won't fire when being prepared
         tme = TreeModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
         fire_handler :TREE_MODEL_EVENT, tme
       end
       return @root
+    end
+    def leaf node, &block
+      add node, false, &block
+    end
+    def branch node, &block
+      add node, true, &block
     end
     alias :<< :add
     def insert row, obj
@@ -229,9 +244,9 @@ module RubyCurses
     attr_accessor :parent
     attr_reader :children
     attr_reader :user_object
-    attr_reader :allow_children
-    def initialize user_object=nil, allow_children=true, &block #form, config={}, &block
-      @allow_children  = allow_children
+    attr_reader :allows_children
+    def initialize user_object=nil, allows_children=true, &block #form, config={}, &block
+      @allows_children  = allows_children
       @user_object  = user_object
       @children = []
       #super
@@ -261,6 +276,8 @@ module RubyCurses
     # @param [TreeNode, Array] node/s to add
     # @param [boolean] should children be allowed
     def add node, allows_children=true, &block
+      raise IllegalStateException, "Cannot add a child to this node" unless @allows_children
+      $log.debug " XXX def add of TreeNode #{node} parent #{self}  "
       case node
       when Array
         node.each do |e| 
@@ -274,6 +291,13 @@ module RubyCurses
       else
         _add node, allows_children, &block 
       end
+      self
+    end
+    def leaf node, &block
+      add node, false, &block
+    end
+    def branch node, &block
+      add node, true, &block
     end
     alias :<< :add
     def insert node, index

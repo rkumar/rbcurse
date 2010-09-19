@@ -24,18 +24,11 @@ module RubyCurses
   #
   # @since 1.1.6
   # TODO - 
-  # what of internal objects that don't want a form !
   # - stack and flow should be objects in Form, put in widget when creating
-  # x method: quit
   # - box / rect
   # - animate(n) |i|
-  # x list_box :choose is the defauly
-  # x progress - like a label but fills itself, fraction
   # - para looks like a label that is more than one line, and calculates rows itself based on text
-  # x other buttons: radio, check
-  # x edit_box = textarea
   # - combo
-  # x menu
   # - popup
   # - multicontainer
   # - multitextview, multisplit
@@ -44,6 +37,8 @@ module RubyCurses
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   # - promptmenu
+  # - tree
+  # - vimsplit
   #  
   
   class Widget
@@ -61,11 +56,6 @@ module RubyCurses
       bind :PRESS, *args, &block
     end
   end
-  #class Listbox
-    #def text
-      #return get_content()[@current_index]
-    #end
-  #end
   class CheckBox
     # a little dicey XXX 
     def text(*val)
@@ -598,6 +588,23 @@ module RubyCurses
         yield w
         @current_object.pop
       end
+      return w
+    end
+    def tree *args, &block
+      require 'rbcurse/rtree'
+      config = {}
+      events = [ :TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER ]
+      block_event = nil
+      _process_args args, config, block_event, events
+      config[:height] ||= 10
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = Tree.new useform, config, &block
       return w
     end
 

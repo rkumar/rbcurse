@@ -64,7 +64,7 @@ module RubyCurses
       @row = 0
       @col = 0
       # array representation of tree
-      @list = []
+      @list = nil
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
       # hash containing nodes that are expanded or once expanded
@@ -74,7 +74,6 @@ module RubyCurses
       super
       @current_index ||= 0
       @row_offset = @col_offset = 1
-      @content_rows = @list.length
       #@selection_mode ||= :single # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
@@ -102,6 +101,8 @@ module RubyCurses
       end
       @left_margin ||= 0
       @one_key_selection = false if @one_key_selection.nil?
+      @height ||= 10
+      @width  ||= 30
 
     end
     # maps keys to methods
@@ -134,21 +135,11 @@ module RubyCurses
         bind_key([?g,?g]){ goto_top() }
         bind_key(?/){ ask_search() }
       end
-
     end
 
     ##
-    # getter and setter for selection_mode
-    # Must be called after creating model, so no duplicate. Since one may set in model directly.
-    #def selection_mode(*val)
-      #raise "ListSelectionModel not yet created!" if @list_selection_model.nil?
-      #if val.empty?
-        #@list_selection_model.selection_mode
-      #else
-        #@list_selection_model.selection_mode = val[0] 
-      #end
-    #end
     def row_count
+      return 0 if @list.nil?
       @list.length
     end
     # added 2009-01-07 13:05 so new scrollable can use
@@ -156,10 +147,17 @@ module RubyCurses
       #@height - 2
       @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
     end
+    # this allows a user to use this 2 times !! XXX
+    def root node, asks_allow_children=false, &block
+      raise ArgumentError "root: node cannot be nil" unless node
+      @treemodel = RubyCurses::DefaultTreeModel.new(node, asks_allow_children, &block)
+    end
     # pass data to create this tree model
     # used to be list
     def data alist=nil
-      return @treemodel if alist.nil?
+      #return @treemodel if alist.nil?
+      # if nothing passed, print an empty root, rather than crashing
+      alist = [] if alist.nil?
       @data = alist # data given by user
       case alist
       when Array
@@ -200,7 +198,7 @@ module RubyCurses
     end
     def convert_to_list tree
       @list = get_expanded_descendants(tree.root)
-      $log.debug " convert #{tree.root.children.size} "
+      $log.debug "XXX convert #{tree.root.children.size} "
       #traverse tree.root, 0 do |n, level|
         #@list << TreeArrayNode.new(n,level)
       #end
@@ -214,30 +212,6 @@ module RubyCurses
       node.children.each do |e| 
         traverse e, level+1, &block
       end
-    end
-    #def list_variable alist=nil
-      #return @list if alist.nil?
-      #@list = RubyCurses::DefaultTreeModel.new(alist.value)
-      ## added on 2009-01-13 23:19 since updates are not automatic now
-      #@list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
-      #create_default_list_selection_model
-    #end
-    #def list_data_model ldm=nil
-      #return @list if ldm.nil?
-      #raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::DefaultTreeModel
-      #@list = ldm
-      ## added on 2009-01-13 23:19 since updates are not automatic now
-      #@list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
-      #create_default_list_selection_model
-    #end
-    # added 2010-09-15 00:11 to make life easier
-    #def_delegators :@list, :insert, :remove_all, :delete_at, :include?
-    # get element at
-    # @param [Fixnum] index for element
-    # @return [Object] element
-    # @since 1.2.0  2010-09-06 14:33 making life easier for others.
-    def [](off0)
-      @list[off0]
     end
     # return object under cursor
     # Note: this should not be confused with selected row/s. User may not have selected this.
@@ -279,6 +253,7 @@ module RubyCurses
     def get_content
       #@list 2008-12-01 23:13 
       @list_variable && @list_variable.value || @list 
+      raise "unused what to do ??"
     end
     def get_window
       @graphic # 2010-01-04 12:37 BUFFERED
@@ -290,6 +265,7 @@ module RubyCurses
     end
     # Listbox
     def handle_key(ch)
+      return if @list.nil? || @list.empty?
       @current_index ||= 0
       @toprow ||= 0
       map_keys unless @keys_mapped
@@ -565,6 +541,11 @@ module RubyCurses
     def toggle_expanded_state row=@current_index
       state = row_expanded? row
       node  = row_to_node
+      if node.nil?
+        Ncurses.beep
+        $log.debug " No such node on row #{row} "
+        return
+      end
       $log.debug " toggle XXX state #{state} #{node} "
       if state
         collapse_node node
@@ -634,16 +615,6 @@ module RubyCurses
         else
           next
         end
-      end
-    end
-    def OLDtraverse_expanded node, nodes
-      if node_expanded? node
-        nodes << node
-      else
-        return
-      end
-      node.children.each do |e| 
-        traverse_expanded e, nodes
       end
     end
     private

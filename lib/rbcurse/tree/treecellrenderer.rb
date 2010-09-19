@@ -8,6 +8,9 @@ module RubyCurses
   # Using alignment one can use for numbers too.
   # However, for booleans it will print true and false. If editing, you may want checkboxes
   class TreeCellRenderer
+    PLUS_PLUS = "++"
+    PLUS_MINUS = "+-"
+    PLUS_Q     = "+?"
     include RubyCurses::ConfigSetup
     include RubyCurses::Utils
     dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
@@ -102,17 +105,18 @@ module RubyCurses
         level = treearraynode.level
         node = treearraynode
         if parent.node_expanded? node
-          icon = "+-"
+          icon = PLUS_MINUS  # can collapse
         else
-          icon = "++"
+          icon = PLUS_PLUS   # can expand
         end
         if node.children.size == 0
-          icon = "+?"
+          icon = PLUS_Q # either no children or not visited yet
           if parent.has_been_expanded node
-            icon = "+-"
+            icon = PLUS_MINUS # definitely no children, we've visited
           end
         end
-        _value =  "%*s %s" % [ level+1, icon,  node.user_object ]
+        # adding 2 to level, that's the size of icon
+        _value =  "%*s %s" % [ level+2, icon,  node.user_object ]
         graphic.printstring r, c, "%-*s" % [len, _value], @color_pair,@attr
         #_height = @height || 1
         #0.upto(_height-1) { |i| 
