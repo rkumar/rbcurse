@@ -432,6 +432,8 @@ module RubyCurses
     # sometimes inside a container there's no way of knowing if an individual comp is in focus
     # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
     attr_accessor :focussed  # is this widget in focus, so they may paint differently
+    #@since 1.2.0 added to Tree as yet
+    attr_accessor :key_map   # use :vim or :emacs mappings. default is :vim
 
     def initialize form, aconfig={}, &block
       @form = form

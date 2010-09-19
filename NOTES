@@ -1714,3 +1714,26 @@ We need to move out the DSLish crap everywhere, even if that means a new
 major revision.
 
 * * * * * * * *
+
+Subject: testing of widgets
+---------------------------
+Date: 2010-09-19 10:59
+
+If we keep the model separate, we can test the model out. Helps if the
+model is complex like a tree, but what if the model is an inbuilt one
+such as a list ? 
+
+If the widget keeps UI separate, which includes ncurses, then we can run
+tests on it from command line. However, widgets are instantiated with
+form and window.!!! How to do change this ?
+
+
+Can i create objects without passing a form ? and then call methods on
+it, like setting data, set_value, add etc. See that events are fired,
+exceptions are raised ?
+
+actually even form is okay, but window printing is the issue. we need to
+prevent that, windowless form that handles keys sent by a program. but
+no ncurses loaded or displayed.
+
+* * * * * * * *

@@ -21,12 +21,6 @@ module RubyCurses
   extend self
 
   ##
-  # A MultiSplit allows user to split N components vertically or horizontally.
-  # such as 3 listboxes, each dependent on what is selected in previous.
-  # This is the column-browse pattern, as in ruby's rdoc when seen in a browser.
-  # Also, this can be used for directory browsing, as in OSX Finder.
-  # At some point, it should be possible to keep adding components, and to scroll
-  # back and forth, so we can have more components than are visible.
   #
   # @since 1.1.6
   # TODO - 

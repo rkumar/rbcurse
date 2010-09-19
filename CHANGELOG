@@ -11,6 +11,9 @@
  - Added methods to Menu (rmenu.rb), so easy creation through DSL. See
  examples/menu1.rb
 
+ - Added VimSplit - can have multiple splits stacked and flowed
+ - Added Tree     - tree control
+
 ### Changes
 
  - Field class now passes InputDataEvent when firing event, not self.
