@@ -374,8 +374,13 @@ module RubyCurses
     end
     # private
     def on_enter
-      $log.debug " VIM came to on_enter"
-      @current_component = @components.first
+      # TODO if BTAB the last comp
+      if $current_key == KEY_BTAB
+        @current_component = @components.last
+      else
+        @current_component = @components.first
+      end
+      $log.debug " VIM came to on_enter #{@current_component} "
       set_form_row
     end
     def goto_next_component
@@ -409,6 +414,7 @@ module RubyCurses
     # private
     def set_form_row
       #return :UNHANDLED if @current_component.nil?
+      $log.debug " VIM on enter sfr #{@current_component} "
       @current_component.on_enter
       @current_component.set_form_col # XXX 
       @current_component.repaint

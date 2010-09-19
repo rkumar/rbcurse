@@ -31,7 +31,7 @@ class Tester
 
     h = 20; w = 75; t = 3; l = 4
 
-    vf = :V
+    vf = :H
     @vim = VimSplit.new @form, {:row => 2, :col => 5, :width => :EXPAND, :height => 25, :orientation => vf, :weight => 0.4}
     lb = Listbox.new nil, :list => ["ruby","perl","lisp","jaava", "c-blunt"] , :name => "mylist"
     lb1 = Listbox.new nil, :list => ["roger","borg","haas","tsonga", "kolya","delpotro"] , :name => "mylist1"

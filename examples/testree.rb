@@ -1,0 +1,95 @@
+require 'rbcurse'
+require 'rbcurse/rtree'
+
+if $0 == __FILE__
+class Tester
+  def initialize
+    acolor = $reversecolor
+  end
+  def run
+    @window = VER::Window.root_window 
+    @form = Form.new @window
+
+    h = 20; w = 75; t = 3; l = 4
+    root    =  TreeNode.new "ROOT"
+    subroot =  TreeNode.new "subroot"
+    leaf1   =  TreeNode.new "leaf 1"
+    leaf2   =  TreeNode.new "leaf 2"
+
+    model = DefaultTreeModel.new root
+    #model.insert_node_into(subroot, root,  0)
+    #model.insert_node_into(leaf1, subroot, 0)
+    #model.insert_node_into(leaf2, subroot, 1)
+    root << subroot
+    subroot << leaf1 << leaf2
+    leaf1 << "leaf11"
+    leaf1 << "leaf12"
+
+    root.add "blocky", true do 
+      add "block2"
+      add "block3" do
+        add "block31"
+      end
+    end
+
+    Tree.new @form, :data => model, :row =>2, :col=>2, :height => 20, :width => 30
+
+
+
+    ok_button = Button.new @form do
+      text "+"
+      name "+"
+      row 27
+      col 10
+    end
+    #ok_button.command { |form| @vim.weight(@vim.weight + 0.1)  }
+    ok_button.command {  @vim.increase_weight }
+
+
+    k_button = Button.new @form do
+      text "-"
+      name "-"
+      row 27
+      col 17
+    end
+    #k_button.command { |form| @vim.weight( @vim.weight - 0.1) }
+    k_button.command { |form| @vim.decrease_weight }
+
+    #
+    @help = "F1 to quit. #{$0} "
+    RubyCurses::Label.new @form, {'text' => @help, "row" => 1, "col" => 2, "color" => "yellow"}
+    @form.repaint
+    @window.wrefresh
+    Ncurses::Panel.update_panels
+    while((ch = @window.getchar()) != KEY_F1 )
+      ret = @form.handle_key(ch)
+      @window.wrefresh
+      if ret == :UNHANDLED
+        str = keycode_tos ch
+        $log.debug " UNHANDLED #{str} by Vim #{ret} "
+      end
+    end
+
+    @window.destroy
+
+  end
+end
+include RubyCurses
+include RubyCurses::Utils
+# Initialize curses
+begin
+  # XXX update with new color and kb
+  VER::start_ncurses  # this is initializing colors via ColorMap.setup
+  $log = Logger.new("view.log")
+  $log.level = Logger::DEBUG
+  n = Tester.new
+  n.run
+rescue => ex
+ensure
+  VER::stop_ncurses
+  p ex if ex
+  puts(ex.backtrace.join("\n")) if ex
+  $log.debug( ex) if ex
+  $log.debug(ex.backtrace.join("\n")) if ex
+end
+end
