@@ -422,6 +422,18 @@ module VER
     # XXX this reduces 1 from width but not height !!! FIXME 
     def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
+      case att.to_s.downcase
+      when 'normal'
+        att = Ncurses::A_NORMAL
+      when 'underline'
+        att = Ncurses::A_UNDERLINE
+      when 'bold'
+        att = Ncurses::A_BOLD
+      when 'blink'
+        att = Ncurses::A_BLINK    # unlikely to work
+      when 'reverse'
+        att = Ncurses::A_REVERSE    
+      end
       attron(Ncurses.COLOR_PAIR(color) | att)
       mvwaddch row, col, ACS_ULCORNER
       mvwhline( row, col+1, ACS_HLINE, width-2)
