@@ -1,12 +1,11 @@
-require 'rbcurse'
 require 'rbcurse/app'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Tree Demo", :text_right =>"enabled"
+  header = app_header "rbcurse 1.2.0", :text_center => "Tree Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
   message "Press Enter to expand/collapse"
 
   stack :margin_top => 2, :margin => 5, :width => 30 do
-      tree :height => 10  do
+      tree :height => 10, :title => "ruby way"  do
         root "root" do
           branch "hello" do
             leaf "ruby"
@@ -21,13 +20,13 @@ App.new do
 
       # using a Hash
       model = { :ruby => [ "jruby", {:mri => %W[ 1.8.6 1.8.7]}, {:yarv => %W[1.9.1 1.9.2]}, "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
-      tree :data => model
+      tree :data => model, :title => "Hash"
 
   end # stack
   stack :margin_top => 2, :margin => 40, :width => 30 do
     
       # using an Array
-      tree :data => %W[ ruby cobol jruby smalltalk fortran piethon purrl lithp ]
+      tree :data => %W[ ruby cobol jruby smalltalk fortran piethon purrl lithp ], :title=> "Array"
 
       # long way ISO 9001 certifed, SEI CMM 5 compliant
       #
@@ -52,6 +51,6 @@ App.new do
         end
       end
 
-      tree :data => model
+      tree :data => model, :title => "legacy way"
   end
 end # app
