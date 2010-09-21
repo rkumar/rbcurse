@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'ver/ncurses'
 module ColorMap
+  # 2010-09-20 12:22 changed colors from string to symbol
   ## private
   # returns a color constant for a human color string
   def ColorMap.get_color_const colorstring
@@ -18,9 +19,22 @@ module ColorMap
     $color_map[[fgc, bgc]] = @color_id
     return @color_id
   end
+  #
+  # returns the colors that make up the given pair
+  # you may want to find what makes up $bottomcolor and set color and bgcolor with it.
+  # @param [Fixnum] color_pair
+  # @return [Symbol, Symbol]  foreground and backgrounf color
+  # @example 
+  #     color, bgcolor = get_colors_for_pair $datacolor
+  #
+  def ColorMap.get_colors_for_pair pair
+    $color_map.invert[pair]
+  end
   ## public
   # returns a color_pair for a given foreground and background color
   def ColorMap.get_color fgc, bgc=$def_bg_color
+    fgc = fgc.to_sym if fgc.is_a? String
+    bgc = bgc.to_sym if bgc.is_a? String
     if $color_map.include? [fgc, bgc]
 #      $log.debug " get_color found #{fgc} #{@bgc} "
       return $color_map[[fgc, bgc]]
@@ -32,6 +46,12 @@ module ColorMap
   def ColorMap.colors
     @@colors
   end
+  # returns true if color is a valid one, else false
+  # @param [Symbol] color such as :black :cyan :yellow
+  # @return [Boolean] true if valid, else false
+  def ColorMap.is_color? color
+    @@colors.include? color.to_sym
+  end
 
   ## public
   # setup color map at start of application
@@ -40,11 +60,11 @@ module ColorMap
     $color_map = {}
     Ncurses.start_color();
     # Initialize few color pairs 
-    $def_fg_color = "white"   # pls set these 2 for your application
-    $def_bg_color = "black"
+    $def_fg_color = :white   # pls set these 2 for your application
+    $def_bg_color = :black
     #COLORS = [COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE, 
     #     COLOR_MAGENTA, COLOR_CYAN, COLOR_WHITE]
-    @@colors = %w[black red green yellow blue magenta cyan white]
+    @@colors = [:black, :red, :green, :yellow, :blue, :magenta, :cyan, :white]
 
     # make foreground colors
     bg = ColorMap.get_color_const $def_bg_color
@@ -53,12 +73,12 @@ module ColorMap
       ColorMap.install_color color, $def_bg_color
     end
     $reversecolor = ColorMap.get_color $def_bg_color, $def_fg_color
-    $popupcolor = ColorMap.get_color 'cyan', $def_fg_color
+    $popupcolor = ColorMap.get_color :cyan, $def_fg_color
 
-    $errorcolor = ColorMap.get_color 'white', 'red'
-    $promptcolor = $selectedcolor = ColorMap.get_color('yellow', 'red')
-    $normalcolor = $datacolor = ColorMap.get_color('white', 'black')
-    $bottomcolor = $topcolor = ColorMap.get_color('white', 'blue')
+    $errorcolor = ColorMap.get_color :white, :red
+    $promptcolor = $selectedcolor = ColorMap.get_color(:yellow, :red)
+    $normalcolor = $datacolor = ColorMap.get_color(:white, :black)
+    $bottomcolor = $topcolor = ColorMap.get_color(:white, :blue)
 
 #    $log.debug " colormap SETUP: #{$datacolor} #{$reversecolor} "
   end
