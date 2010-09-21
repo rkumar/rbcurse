@@ -12,7 +12,10 @@ module RubyCurses
     def initialize form, text1, config={}, &block
 
       @text1 = text1
+      # setting default first or else Widget will place its BW default
+      @color, @bgcolor = ColorMap.get_colors_for_pair $bottomcolor
       super form, config, &block
+      @color_pair = get_color $bottomcolor, @color, @bgcolor
       @window = form.window
       @editable = false
       @focusable = false
@@ -20,7 +23,8 @@ module RubyCurses
       @row ||= 0
       @col ||= 0
       @repaint_required = true
-      @color_pair ||= $bottomcolor
+      #@color_pair ||= $bottomcolor  # XXX this was forcing the color
+      #pair
       @text2 ||= ""
       @text_center ||= ""
       @text_right ||= ""
@@ -33,6 +37,7 @@ module RubyCurses
     # XXX need to move wrapping etc up and done once. 
     def repaint
       return unless @repaint_required
+ 
       #print_header(htext, posy = 0, posx = 0)
       print_header(@text1 + " %15s " % @text2 + " %20s" % @text_center , posy=0, posx=0)
       print_top_right(@text_right)
@@ -41,7 +46,7 @@ module RubyCurses
     def print_header(htext, r = 0, c = 0)
     $log.debug " def print_header(#{htext}, posy = 0, posx = 0)"
       win = @window
-      len = Ncurses.COLS-1
+      len = Ncurses.COLS-0
       @form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
     end
     def print_top_right(htext)
