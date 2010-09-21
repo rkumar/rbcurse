@@ -36,6 +36,8 @@ module RubyCurses
     dsl_accessor :height
     dsl_accessor :title
     dsl_property :title_attrib   # bold, reverse, normal
+    dsl_accessor :border_attrib, :border_color # FIXME not used currently
+
     attr_reader :toprow
   #  attr_reader :prow
   #  attr_reader :winrow
@@ -116,7 +118,9 @@ module RubyCurses
       bind_key(?\M-v){ @one_key_selection = true }
       bind_key(KEY_DOWN){ next_row() }
       bind_key(KEY_UP){ previous_row() }
-      if @key_map == :emacs
+      bind_key([?z,?o]){ expand_children() }
+      bind_key([?z,?c]){ collapse_children() }
+      if $key_map == :emacs
         $log.debug " EMACSam in XXXX  map keys"
         bind_key(?\C-v){ scroll_forward }
         bind_key(?\M-v){ scroll_backward }
@@ -189,6 +193,10 @@ module RubyCurses
     end
     # private, for use by repaint
     def _list
+      if @_structure_changed 
+        @list = nil
+        @_structure_changed = false
+      end
       unless @list
         $log.debug " XXX recreating _list"
         convert_to_list @treemodel
@@ -236,9 +244,13 @@ module RubyCurses
       window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
-      @color_pair = get_color($datacolor)
+      #@color_pair = get_color($datacolor)
+      bordercolor = @border_color || $datacolor
+      borderatt = @border_attrib || Ncurses::A_NORMAL
+                           
       #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
-      window.print_border startrow, startcol, height, width, @color_pair, @attr
+      #window.print_border startrow, startcol, height, width, @color_pair, @attr
+      window.print_border startrow, startcol, height, width, bordercolor, borderatt
       print_title
     end
     def print_title
@@ -416,7 +428,7 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
 
-      $log.debug "VIM rlistbox repaint  #{@name} graphic #{@graphic}"
+      $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       maxlen = @maxlen ||= @width-2
       tm = _list()
@@ -476,7 +488,6 @@ module RubyCurses
             end
             renderer = cell_renderer()
             #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
-            $log.debug " calling XXXX renderer for #{content} "
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, object, content, leaf,  focus_type, selected, expanded
         else
           # clear rows
@@ -532,7 +543,7 @@ module RubyCurses
         @selected_index = @current_index
       end
       state = @selected_index.nil? ? :DESELECTED : :SELECTED
-#TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
+      #TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
       @tree_selection_event = TreeSelectionEvent.new(node, self, state, previous_node, @current_index) #if @item_event.nil?
       fire_handler :TREE_SELECTION_EVENT, @tree_selection_event # should the event itself be ITEM_EVENT
       $log.debug " XXX tree selected #{@selected_index}/ #{@current_index} , #{state} "
@@ -589,6 +600,49 @@ module RubyCurses
       set_expanded_state(node, state)
       fire_handler :TREE_COLLAPSED_EVENT, node
     end
+    # this is required to make a node visible, if you wish to start from a node that is not root
+    # e.g. you are loading app in a dir somewhere but want to show path from root down.
+    def mark_parents_expanded node
+      # i am setting parents as expanded, but NOT firing handlers - XXX separate this into expand_parents
+      _path = node.tree_path
+      _path.each do |e| 
+        # if already expanded parent then break we should break
+        set_expanded_state(e, true) 
+      end
+    end
+    # this expands all the children of a node, recursively
+    # we can't use multiplier concept here since we are doing a preorder enumeration
+    # we need to do a breadth first enumeration to use a multiplier
+    #
+    def expand_children node=:current_index
+      $multiplier = 999 if !$multiplier || $multiplier == 0
+      node = row_to_node if node == :current_index
+      return if node.children.empty? # or node.is_leaf?
+      #node.children.each do |e| 
+        #expand_node e # this will keep expanding parents
+        #expand_children e
+      #end
+      node.breadth_each($multiplier) do |e|
+        expand_node e
+      end
+      $multiplier = 0
+      _structure_changed true
+    end
+    def collapse_children node=:current_index
+      $multiplier = 999 if !$multiplier || $multiplier == 0
+      node = row_to_node if node == :current_index
+      return if node.children.empty? # or node.is_leaf?
+      #node.children.each do |e| 
+        #expand_node e # this will keep expanding parents
+        #expand_children e
+      #end
+      node.breadth_each($multiplier) do |e|
+        collapse_node e
+      end
+      $multiplier = 0
+      _structure_changed true
+    end
+
     def has_been_expanded node
       @expanded_state.has_key? node
     end
@@ -621,7 +675,8 @@ module RubyCurses
     # please do not rely on this yet, name could change
     def _structure_changed tf=true
       @_structure_changed = tf
-      @list = nil
+      @repaint_required = true
+      #@list = nil
     end
 
 
