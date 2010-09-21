@@ -306,10 +306,12 @@ module RubyCurses
       ##
       # Fire all bindings for given event
       # e.g. fire_handler :ENTER, self
-      # currently object usually contains self which is perhaps a bit of a waste,
-      # could contain an event object with source, and some relevant methods or values
-      # if there's a runtine error in block, then it goes up and often disturbs
-      # object, preventing repaint. we need to catch exceptions here.
+      # The first parameter passed to the calling block is either self, or some action event
+      # The second and beyond are any objects you passed when using `bind` or `command`.
+      # Exceptions are caught here itself, or else they prevent objects from updating, usually the error is 
+      # in the block sent in by application, not our error.
+      # TODO: if an object throws a subclass of VetoException we should not catch it and throw it back for 
+      # caller to catch and take care of, such as prevent LEAVE or update etc.
       def fire_handler event, object
         $log.debug "inside def fire_handler evt:#{event}, o: #{object.to_s}, hdnler:#{@handler}"
         if !@handler.nil?
@@ -327,9 +329,10 @@ module RubyCurses
               begin
                 blk.call object,  *aeve[ix]
               rescue => ex
-                $log.error " ERROR in block event #{self}: #{name}, #{event}"
+                $log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
+                $log.error ex
                 $log.error(ex.backtrace.join("\n")) 
-#                $error_message = "#{ex}" # changed 2010  
+                #$error_message = "#{ex}" # changed 2010  
                 $error_message.value = "#{ex}"
                 Ncurses.beep
               end
@@ -2305,6 +2308,8 @@ module RubyCurses
   end
   ##
   # action buttons
+  # NOTE: When firing event, an ActionEvent will be passed as the first parameter, followed by anything
+  # you may have passed when binding, or calling the command() method. 
   # TODO: phasing out underline, and giving mnemonic and ampersand preference
   #  - Action: may have to listen to Action property changes so enabled, name etc change can be reflected
   class Button < Widget
