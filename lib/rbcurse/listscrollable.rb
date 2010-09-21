@@ -441,7 +441,7 @@ module ListScrollable
     # goes to start of next word (or n words) - vi's w
     #
     def forward_word
-      $multiplier = 1 if !$multiplier or $multiplier == 0
+      $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
       buff = @list[line]
       pos = @curpos
