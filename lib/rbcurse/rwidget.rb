@@ -187,15 +187,18 @@ module RubyCurses
 
       # if passed a string in second or third param, will create a color 
       # and return, else it will return default color
+      # Use this in order to create a color pair with the colors
+      # provided, however, if user has not provided, use supplied
+      # default.
       # @param [Fixnum] color_pair created by ncurses
-      # @param [String] color name such as white black cyan magenta red green yellow
-      # @param [String] bgcolor name such as white black cyan magenta red green yellow
+      # @param [Symbol] color name such as white black cyan magenta red green yellow
+      # @param [Symbol] bgcolor name such as white black cyan magenta red green yellow
+      # @example get_color $promptcolor, :white, :cyan
       def get_color default=$datacolor, color=@color, bgcolor=@bgcolor
-        if bgcolor.is_a? String and color.is_a? String
-          acolor = ColorMap.get_color(color, bgcolor)
-        else
-          acolor = default
-        end
+        return default if color.nil? || bgcolor.nil?
+        raise ArgumentError, "Color not valid: #{color}: #{ColorMap.colors} " if !ColorMap.is_color? color
+        raise ArgumentError, "Bgolor not valid: #{bgcolor} : #{ColorMap.colors} " if !ColorMap.is_color? bgcolor
+        acolor = ColorMap.get_color(color, bgcolor)
         return acolor
       end
       ## repeats the given action based on how value of universal numerica argument
@@ -433,21 +436,23 @@ module RubyCurses
     # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
     attr_accessor :focussed  # is this widget in focus, so they may paint differently
     #@since 1.2.0 added to Tree as yet
-    attr_accessor :key_map   # use :vim or :emacs mappings. default is :vim
+    #attr_accessor :key_map   # use :vim or :emacs mappings. default is :vim
 
     def initialize form, aconfig={}, &block
       @form = form
-      @bgcolor ||=  "black" # 0
       @row_offset = @col_offset = 0
       @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
       @state = :NORMAL
-      @color ||= "white" # $datacolor
       @attr = nil
       #@handler = {}
       @handler = nil # we can avoid firing if nil
       @event_args = {}
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
+      # 2010-09-20 13:12 moved down, so it does not create problems with other who want to set their
+      # own default
+      @bgcolor ||=  "black" # 0
+      @color ||= "white" # $datacolor
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
     end
@@ -616,7 +621,7 @@ module RubyCurses
         @form.select_field @id
       end
     end
-    def get_color default=$datacolor, _color=@color, _bgcolor=@bgcolor
+    def OLDget_color default=$datacolor, _color=@color, _bgcolor=@bgcolor
       if _bgcolor.is_a? String and _color.is_a? String
         acolor = ColorMap.get_color(_color, _bgcolor)
       else
@@ -1091,6 +1096,7 @@ module RubyCurses
       $current_key = 0 # curr key pressed @since 1.1.5 (so some containers can behave based on whether
                     # user tabbed in, or backtabbed in (rmultisplit)
       $error_message ||= Variable.new ""
+      $key_map ||= :vim ## should this come here or in App or ??? 2010-09-20 23:50 
     end
     ##
     # set this menubar as the form's menu bar.
