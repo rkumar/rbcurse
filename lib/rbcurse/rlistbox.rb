@@ -50,8 +50,9 @@ module RubyCurses
     attr_accessor :selected_index
     attr_reader :last_regex # should i really keep here as public or maintain in listbox
 
-    def initialize anarray
+    def initialize anarray=[]
       @list = anarray.dup
+      @_events = [:LIST_DATA_EVENT, :ENTER_ROW]
     end
     # changd on 2009-01-14 12:28 based on ..
     # http://www.ruby-forum.com/topic/175637#769030
@@ -99,6 +100,7 @@ module RubyCurses
       return ret
     end
     def remove_all
+      return if @list.nil? || @list.empty? # 2010-09-21 13:25 
       lde = ListDataEvent.new(0, @list.size, self, :INTERVAL_REMOVED)
       @list = []
       fire_handler :LIST_DATA_EVENT, lde
@@ -114,11 +116,14 @@ module RubyCurses
     def include?(obj)
       return @list.include?(obj)
     end
+    # returns a `dup()` of the list
     def values
       @list.dup
     end
+    # why do we have this here in data, we should remove this
+    # @deprecated this was just eye candy for some demo
     def on_enter_row object
-      #$log.debug " XXX on_enter_row of list_data"
+      $log.debug " XXX on_enter_row of list_data"
       fire_handler :ENTER_ROW, object
     end
     # ##
@@ -190,6 +195,7 @@ module RubyCurses
   #  
 
   ##
+  # TODO CAN WE MOVE THIS OUT TO ANOTHER FILE as confusing me
   # pops up a list of values for selection
   # 2008-12-10
   class PopupList
@@ -249,6 +255,7 @@ module RubyCurses
       @window.wrefresh
       handle_keys
     end
+    # class popup
     def list alist=nil
       return @list if alist.nil?
       @list = ListDataModel.new(alist)
@@ -256,6 +263,7 @@ module RubyCurses
       #  will we need this ? listbox made each time so data should be fresh
       #@list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
     end
+    # class popup
     def list_data_model ldm
       raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
       @list = ldm
@@ -379,6 +387,7 @@ module RubyCurses
   # this is the new LISTBOX, based on new scrollable.
   #
   class Listbox < Widget
+
     require 'rbcurse/listscrollable'
     require 'rbcurse/listselectable'
     require 'rbcurse/defaultlistselectionmodel'
@@ -421,13 +430,13 @@ module RubyCurses
 
 
     def initialize form, config={}, &block
+      @_events = [:ENTER, :LEAVE, :ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT]
       @focusable = true
       @editable = false
       @row = 0
       @col = 0
-      # data of listbox
-      #@list = []
-      @list = nil
+      # data of listbox this is not an array, its a pointer to the  listdatamodel
+      @list = nil 
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
       super
@@ -455,6 +464,8 @@ module RubyCurses
         set_focus_on @list.selected_index # the new version
       end
     end
+    # this is called several times, from constructor
+    # and when list data changed, so only put relevant resets here.
     def init_vars
       @to_print_borders ||= 1
       @repaint_required = true
@@ -477,6 +488,7 @@ module RubyCurses
       bind_key([?g,?g]){ goto_top() }
       bind_key(?/){ ask_search() }
       bind_key(?n){ find_more() }
+      bind_key(32){ toggle_row_selection() }
 
     end
 
@@ -509,19 +521,55 @@ module RubyCurses
       #@height - 2
       @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
     end
-    # add data to list
+    # provide data to List in the form of an Array or Variable or
+    # ListDataModel. This will create a default ListSelectionModel.
+    #
+    # CHANGE as on 2010-09-21 12:53:
+    # If explicit nil passed then dummy datamodel and selection model created
+    # From now on, constructor will call this, so this can always
+    # happen.
+    #
     # NOTE: sometimes this can be added much after its painted.
     # Do not expect this to be called from constructor, although that
     # is the usual case. it can be dependent on some other list or tree.
-    def list alist=nil
-      return @list if alist.nil?
-      @list = RubyCurses::ListDataModel.new(alist)
+    # @param [Array, Variable, ListDataModel] data to populate list with
+    # @return [ListDataModel] just created or assigned
+    
+    def list *val
+      return @list if val.empty?
+      alist = val[0]
+      case alist
+      when Array
+        if @list
+          @list.remove_all
+          @list.insert 0, *alist
+        else
+          @list = RubyCurses::ListDataModel.new(alist)
+        end
+      when NilClass
+        if @list
+          @list.remove_all
+        else
+          @list = RubyCurses::ListDataModel.new(alist)
+        end
+      when Variable
+        @list = RubyCurses::ListDataModel.new(alist.value)
+      when RubyCurses::ListDataModel
+        @list = alist
+      else
+        raise ArgumentError, "Listbox list(): do not know how to handle #{alist.class} " 
+      end
       # added on 2009-01-13 23:19 since updates are not automatic now
       @list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
       create_default_list_selection_model
       @list_selection_model.selection_mode = @tmp_selection_mode if @tmp_selection_mode
       @repaint_required = true
+      @list
     end
+    # populate using a Variable which should contain a list
+    # NOTE: This explicilty overwrites any existing datamodel such as the
+    # default one. You may lose any events you have bound to the listbox
+    # prior to this call.
     def list_variable alist=nil
       return @list if alist.nil?
       @list = RubyCurses::ListDataModel.new(alist.value)
@@ -529,6 +577,11 @@ module RubyCurses
       @list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
       create_default_list_selection_model
     end
+    # populate using a custom data model
+    # NOTE: This explicilty overwrites any existing datamodel such as the
+    # default one. You may lose any events you have bound to the listbox
+    # prior to this call. 
+    
     def list_data_model ldm=nil
       return @list if ldm.nil?
       raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
@@ -536,6 +589,16 @@ module RubyCurses
       # added on 2009-01-13 23:19 since updates are not automatic now
       @list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
       create_default_list_selection_model
+    end
+    # create a default list selection model and set it
+    # NOTE: I am now checking if one is not already created, since
+    # a second creation would wipe out any listeners on it.
+    # @see ListSelectable 
+    # @see DefaultListSelectionModel
+    def create_default_list_selection_model
+      if @list_selection_model.nil?
+        list_selection_model DefaultListSelectionModel.new(self)
+      end
     end
     # added 2010-09-15 00:11 to make life easier
     def_delegators :@list, :insert, :remove_all, :delete_at, :include?
@@ -550,11 +613,14 @@ module RubyCurses
     # Note: this should not be confused with selected row/s. User may not have selected this.
     # This is only useful since in some demos we like to change a status bar as a user scrolls down
     # @since 1.2.0  2010-09-06 14:33 making life easier for others.
-    def current_row
+    def current_value
       @list[@current_index]
     end
-    alias :text :current_row  # thanks to shoes, not sure how this will impact since widget has text.
+    # avoid using "row", i'd rather stick with "index" and "value".
+    alias :current_row :current_value
+    alias :text :current_value  # thanks to shoes, not sure how this will impact since widget has text.
 
+    # XXX can this not be done at repaint
     def select_default_values
       return if @default_values.nil?
       @default_values.each do |val|
@@ -569,7 +635,7 @@ module RubyCurses
       window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
-      #@color_pair = get_color($datacolor)
+      @color_pair = get_color($datacolor)
       bordercolor = @border_color || $datacolor
       borderatt = @border_attrib || Ncurses::A_NORMAL
 
@@ -595,6 +661,7 @@ module RubyCurses
     end
     ### END FOR scrollable ###
     # override widgets text
+    # returns indices of selected rows
     def getvalue
       selected_rows
     end
@@ -604,7 +671,7 @@ module RubyCurses
       @toprow ||= 0
       h = scrollatrow()
       rc = row_count
-      $log.debug " listbxo got ch #{ch}"
+      $log.debug " listbox got ch #{ch}"
       #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
       when KEY_UP  # show previous value
@@ -773,7 +840,7 @@ module RubyCurses
       #$log.debug " Listbox #{self} ENTER_ROW with curr #{@current_index}. row: #{arow} H: #{@handler.keys}"
       #fire_handler :ENTER_ROW, arow
       fire_handler :ENTER_ROW, self
-      @list.on_enter_row self
+      @list.on_enter_row self  ## XXX WHY THIS ???
       edit_row_at arow
       @repaint_required = true
     end
