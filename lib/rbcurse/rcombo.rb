@@ -41,6 +41,7 @@ module RubyCurses
       # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
       set_buffer @list[@current_index].dup if @buffer.nil? or @buffer.empty?
       init_vars
+      @_events.push(*[:CHANGE, :ENTER_ROW, :LEAVE_ROW])
     end
     def init_vars
       super

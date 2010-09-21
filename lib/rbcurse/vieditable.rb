@@ -38,6 +38,7 @@ module ViEditable
     bind_key(?f, :forward_char)
     bind_key(?\M-y, :yank_pop)
     bind_key(?\M-w, :kill_ring_save)
+    @_events.push :CHANGE # thru vieditable
 
   end
   ##

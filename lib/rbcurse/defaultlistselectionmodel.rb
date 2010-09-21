@@ -7,7 +7,6 @@ require 'rbcurse/listselectable'
 
 module RubyCurses
   class DefaultListSelectionModel
-    @@events = [:LIST_SELECTION_EVENT]
     include EventHandler
     attr_accessor :selection_mode
     attr_reader :anchor_selection_index
@@ -21,6 +20,8 @@ module RubyCurses
       @anchor_selection_index = -1
       @lead_selection_index = -1
       @selection_mode = 'multiple'
+      @_events = [:LIST_SELECTION_EVENT]
+
       #$log.debug " created DefaultListSelectionModel XXX"
     end
      #def event_list

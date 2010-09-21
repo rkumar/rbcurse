@@ -82,7 +82,7 @@ module RubyCurses
       # added 2010-02-17 23:05  RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
-
+      @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
       select_default_values #TODO
 
       init_vars

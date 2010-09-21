@@ -1737,3 +1737,16 @@ prevent that, windowless form that handles keys sent by a program. but
 no ncurses loaded or displayed.
 
 * * * * * * * *
+
+Subject: temporarily leaving ncurses
+------------------------------------
+Date: 2010-09-20 13:23
+
+If i want to run some command, temporarily leave ncurses using
+def_prog_mode do stuff and then return. SEE:
+http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html#TEMPLEAVE
+
+I think vim does this when you type :ls . One can use this to display
+bindings, events etc.
+
+* * * * * * * *

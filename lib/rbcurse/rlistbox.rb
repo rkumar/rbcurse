@@ -430,7 +430,6 @@ module RubyCurses
 
 
     def initialize form, config={}, &block
-      @_events = [:ENTER, :LEAVE, :ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT]
       @focusable = true
       @editable = false
       @row = 0
@@ -440,6 +439,7 @@ module RubyCurses
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
       super
+      @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT])
       @current_index ||= 0
       @row_offset = @col_offset = 1
       @selection_mode ||= 'multiple' # default is multiple, anything else given becomes single

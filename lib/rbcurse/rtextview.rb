@@ -62,6 +62,7 @@ module RubyCurses
       @content_rows = @list.length
       @win = @graphic
 
+      @_events.push :CHANGE # thru vieditable
       install_keys
       init_vars
     end
