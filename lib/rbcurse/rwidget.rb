@@ -286,10 +286,13 @@ module RubyCurses
       # bind an event to a block, optional args will also be passed when calling
       def bind event, *xargs, &blk
        #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
+          if @_events
+            raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+          else
+            $log.debug "BIND #{self.class}  XXXXX no events defined in @_events. Please do so to avoid bugs and debugging. This will become a fatal error soon."
+          end
         @handler ||= {}
         @event_args ||= {}
-        #@handler[event] = blk
-        #@event_args[event] = xargs
         @handler[event] ||= []
         @handler[event] << blk
         @event_args[event] ||= []
@@ -310,6 +313,11 @@ module RubyCurses
       def fire_handler event, object
         $log.debug "inside def fire_handler evt:#{event}, o: #{object.to_s}, hdnler:#{@handler}"
         if !@handler.nil?
+          if @_events
+            raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+          else
+            $log.debug "bIND #{self.class}  XXXXX TEMPO no events defined in @_events "
+          end
           ablk = @handler[event]
           if !ablk.nil?
             aeve = @event_args[event]
@@ -1026,6 +1034,10 @@ module RubyCurses
           $log.debug " copywin ret --> #{ret} "
           #
       end
+     end
+     def event_list
+       return @@events if defined? @@events
+       nil
      end
      ##
     ## ADD HERE WIDGET
