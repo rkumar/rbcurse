@@ -1757,7 +1757,7 @@ module RubyCurses
       @event_args = {}             # arguments passed at time of binding, to use when firing event
       init_vars
       super
-      @_events = [:CHANGE, :ENTER, :LEAVE]
+      @_events.push(:CHANGE)
     end
     def init_vars
       @pcol = 0   # needed for horiz scrolling
