@@ -402,9 +402,10 @@ if $0 == __FILE__
         col col
         mnemonic 'O'
       end
-      ok_button.command { |form| 
+      ok_button.command() { |eve| 
         alert("About to dump data into log file!")
-        form.dump_data; $message.value = "Dumped data to log file"
+        @form.dump_data 
+        $message.value = "Dumped data to log file"
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
@@ -416,7 +417,7 @@ if $0 == __FILE__
         col col + 10
         #surround_chars ['{ ',' }']  ## change the surround chars
       end
-      cancel_button.command { |form| 
+      cancel_button.command { |aeve| 
         if confirm("Do your really want to quit?")== :YES
           throw(:close); 
         else
@@ -479,8 +480,6 @@ if $0 == __FILE__
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
-        #@cell.repaint @form.window, 29,1, "ok #{ch} pressed!"
-        #@cell.repaint @form.window, 29,45, "#{ch} pressed!"
         @form.handle_key(ch)
         #@form.repaint
         @window.wrefresh
@@ -488,11 +487,12 @@ if $0 == __FILE__
     end
   rescue => ex
   ensure
-      @window.destroy if !@window.nil?
-    VER::stop_ncurses
-    p ex if ex
-    p(ex.backtrace.join("\n")) if ex
+    $log.debug " -==== EXCEPTION ===== -"
     $log.debug( ex) if ex
     $log.debug(ex.backtrace.join("\n")) if ex
+    @window.destroy if !@window.nil?
+    VER::stop_ncurses
+    puts ex if ex
+    puts(ex.backtrace.join("\n")) if ex
   end
 end
