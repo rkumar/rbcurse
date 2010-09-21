@@ -40,18 +40,23 @@ module RubyCurses
         tme = TreeModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
         fire_handler :TREE_MODEL_EVENT, tme
       end
+      self
     end
     # add a node to root passing a block optionally
+    # @param [String, TreeNode, Array, Hash] node/s to add
+    # @param [Boolean] allow children to be added
     # @see TreeNode.add
+    # @return [TreeNode] node just added to root (NOT self)
     def add nodechild, allows_children=true, &block
       # calling TreeNode.add
       $log.debug " XXX def add of DTM #{nodechild} to root "
-      @root.add nodechild, allows_children, &block
+      node = @root.add nodechild, allows_children, &block
       if @handler # only if someone is listening, won't fire when being prepared
         tme = TreeModelEvent.new(row, row,:ALL_COLUMNS,  self, :INSERT)
         fire_handler :TREE_MODEL_EVENT, tme
       end
-      return @root
+      #return @root
+      return node
     end
     def leaf node, &block
       add node, false, &block
@@ -258,7 +263,7 @@ module RubyCurses
       #add n
     #end
     # private
-    #@returns just creates node
+    #@return [TreeNode] just creates node
     def _add node, allows_children=true, &block
       #raise ArgumentError, "Argument should be a node" if !node.is_a? TreeNode
       $log.debug " TODO remove from existing parent to avoid bugs XXX"
@@ -273,8 +278,9 @@ module RubyCurses
     # add a node to this node, optionally passing a block for further adding 
     # add a node as child to existing node
     # If node is not a TreeNode it will be converted to one.
-    # @param [TreeNode, Array] node/s to add
+    # @param [TreeNode, Array, Hash] node/s to add
     # @param [boolean] should children be allowed
+    # @return [TreeNode] node last added (*NOT* self)
     def add node, allows_children=true, &block
       raise IllegalStateException, "Cannot add a child to this node" unless @allows_children
       $log.debug " XXX def add of TreeNode #{node} parent #{self}  "
@@ -289,7 +295,7 @@ module RubyCurses
           n.add val, allows_children, &block
         }
       else
-        _add node, allows_children, &block 
+        return _add node, allows_children, &block 
       end
       self
     end
@@ -327,17 +333,60 @@ module RubyCurses
     def user_object_path
     end
     def level
-      $log.debug " inside level XXX for #{user_object} "
       level = 0
       nodeparent = parent()
       while( nodeparent != nil )
-        $log.debug " inside level loop XXX for #{nodeparent.user_object}, nodeparent "
         level += 1
         nodeparent = nodeparent.parent()
       end
       return level
     end
     def leaf_count
+    end
+    def traverse_up &block
+      nodeparent = parent()
+      while ( nodeparent != nil )
+        yield nodeparent
+        nodeparent = nodeparent.parent()
+      end
+    end
+    # returns an array of user_objects for the current node
+    # starting from root, ending in the current one. The last node
+    # represents this node.
+    # @return [Array] Strings[]
+    def user_object_path
+      arr = []
+      arr << self.user_object.to_s
+      traverse_up do |e|
+        arr << e.user_object.to_s
+      end
+      arr.reverse!
+    end
+    # returns an array of nodes for the current node
+    # starting from root, ending in the current one. The last node
+    # represents this node.
+    # @return [Array] TreeNode[]
+    def tree_path
+      arr = []
+      arr << self
+      traverse_up do |e|
+        arr << e
+      end
+      arr.reverse!
+    end
+    # http://github.com/evolve75/RubyTree/blob/master/lib/tree.rb
+    def breadth_each(max_depth=999,&block)
+      node_queue = [self] # Create a queue with self as the initial entry
+
+      # Use a queue to do breadth traversal
+      until node_queue.empty?
+        node_to_traverse = node_queue.shift
+        yield node_to_traverse
+        # Enqueue the children from left to right.
+        node_to_traverse.children { |child| node_queue.push child }
+        max_depth -= 1
+        break if max_depth == 0
+      end
     end
     def to_s
       @user_object.to_s
@@ -349,7 +398,9 @@ module RubyCurses
 end # module
 
 if $0 == __FILE__
-
+  $log = Logger.new("view.log")
+  $log.level = Logger::DEBUG
+     
   include RubyCurses
   root    =  TreeNode.new "ROOT"
   subroot =  TreeNode.new "subroot"
@@ -361,9 +412,12 @@ if $0 == __FILE__
   #model.insert_node_into(leaf1, subroot, 0)
   #model.insert_node_into(leaf2, subroot, 1)
   root << subroot
-  subroot << leaf1 << leaf2
-  leaf1 << "leaf11"
-  leaf1 << "leaf12"
+  # this will allow us to do a recursive add
+  #subroot << leaf1 << leaf2
+  subroot << leaf1 
+  subroot << leaf2 
+  leaf1 << "leaf11" << "leaf111"
+  leaf1 << "leaf12" << "leaf121"
 
   root.add "blocky", true do 
     add "block2"
@@ -373,4 +427,8 @@ if $0 == __FILE__
   end
   
   model.traverse root
+  puts "tree path: ..."
+  puts leaf2.tree_path
+  puts "object  path: ..."
+  puts leaf2.user_object_path
 end
