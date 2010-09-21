@@ -704,7 +704,7 @@ module RubyCurses
               if ex
                 puts "========== EXCEPTION =========="
                 p ex 
-                puts "=========="
+                puts "==============================="
                 puts(ex.backtrace.join("\n")) 
               end
             end
