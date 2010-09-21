@@ -6,6 +6,9 @@
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
   * This file started on 2009-01-13 22:18 (broken off rwidgets.rb)
 TODO 
+   LIST_SELECTION_EVENT has to be bound on the datamodel, this is really sucky,
+   we should either disallow binding wrong events, or allow them to be bound on listbox
+   I cannot add to an empty listbox, since DM not created.
 =end
 require 'rubygems'
 require 'ncurses'
@@ -249,6 +252,7 @@ module RubyCurses
     def list alist=nil
       return @list if alist.nil?
       @list = ListDataModel.new(alist)
+      @repaint_required = true
       #  will we need this ? listbox made each time so data should be fresh
       #@list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
     end
@@ -413,6 +417,8 @@ module RubyCurses
     dsl_accessor :KEY_PREV_SELECTION
     dsl_accessor :valign  # 2009-01-17 18:32 
     attr_accessor :one_key_selection # will pressing a single key select or not
+    dsl_accessor :border_attrib, :border_color # 
+
 
     def initialize form, config={}, &block
       @focusable = true
@@ -420,13 +426,13 @@ module RubyCurses
       @row = 0
       @col = 0
       # data of listbox
-      @list = []
+      #@list = []
+      @list = nil
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
       super
       @current_index ||= 0
       @row_offset = @col_offset = 1
-      @content_rows = @list.length
       @selection_mode ||= 'multiple' # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
@@ -443,8 +449,9 @@ module RubyCurses
       install_keys
       init_vars
       install_list_keys
+      install_bindings
 
-      if !@list.selected_index.nil? 
+      if @list && !@list.selected_index.nil? 
         set_focus_on @list.selected_index # the new version
       end
     end
@@ -459,6 +466,9 @@ module RubyCurses
       end
       @left_margin ||= 0
       @one_key_selection = true if @one_key_selection.nil?
+
+    end
+    def install_bindings
       bind_key(?f){ ask_selection_for_char() }
       bind_key(?\M-v){ @one_key_selection = false }
       bind_key(?j){ next_row() }
@@ -469,22 +479,29 @@ module RubyCurses
       bind_key(?n){ find_more() }
 
     end
-    def install_bindings
-
-    end
 
     ##
     # getter and setter for selection_mode
     # Must be called after creating model, so no duplicate. Since one may set in model directly.
     def selection_mode(*val)
-      raise "ListSelectionModel not yet created!" if @list_selection_model.nil?
+      #raise "ListSelectionModel not yet created!" if @list_selection_model.nil?
+
       if val.empty?
-        @list_selection_model.selection_mode
+        if @list_selection_model
+          return @list_selection_model.selection_mode
+        else
+          return @tmp_selection_mode
+        end
       else
-        @list_selection_model.selection_mode = val[0] 
+        if @list_selection_model.nil?
+          @tmp_selection_mode = val[0] 
+        else
+          @list_selection_model.selection_mode = val[0] 
+        end
       end
     end
     def row_count
+      return 0 if @list.nil?
       @list.length
     end
     # added 2009-01-07 13:05 so new scrollable can use
@@ -492,12 +509,18 @@ module RubyCurses
       #@height - 2
       @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
     end
+    # add data to list
+    # NOTE: sometimes this can be added much after its painted.
+    # Do not expect this to be called from constructor, although that
+    # is the usual case. it can be dependent on some other list or tree.
     def list alist=nil
       return @list if alist.nil?
       @list = RubyCurses::ListDataModel.new(alist)
       # added on 2009-01-13 23:19 since updates are not automatic now
       @list.bind(:LIST_DATA_EVENT) { |e| list_data_changed() }
       create_default_list_selection_model
+      @list_selection_model.selection_mode = @tmp_selection_mode if @tmp_selection_mode
+      @repaint_required = true
     end
     def list_variable alist=nil
       return @list if alist.nil?
@@ -546,9 +569,12 @@ module RubyCurses
       window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
-      @color_pair = get_color($datacolor)
+      #@color_pair = get_color($datacolor)
+      bordercolor = @border_color || $datacolor
+      borderatt = @border_attrib || Ncurses::A_NORMAL
+
       #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
-      window.print_border startrow, startcol, height, width, @color_pair, @attr
+      window.print_border startrow, startcol, height, width, bordercolor, borderatt
       print_title
     end
     def print_title
@@ -731,9 +757,9 @@ module RubyCurses
     # please check for error before proceeding
     # @return [Boolean] false if no data
     def on_enter
-      if @list.size < 1
+      if @list.nil? || @list.size == 0
         Ncurses.beep
-        return false
+        return :UNHANDLED
       end
       on_enter_row @current_index
       set_form_row # added 2009-01-11 23:41 
@@ -847,18 +873,20 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
 
-      $log.debug "VIM rlistbox repaint  #{@name} graphic #{@graphic}"
+      $log.debug "rlistbox repaint  #{@name} graphic #{@graphic}"
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
-      rc = row_count
       maxlen = @maxlen ||= @width-2
       tm = list()
-      tr = @toprow
-      acolor = get_color $datacolor
-      h = scrollatrow()
-      r,c = rowcol
-      0.upto(h) do |hh|
-        crow = tr+hh
-        if crow < rc
+      rc = row_count
+      $log.debug " rlistbox #{row_count} "
+      if rc > 0     # just added in case no data passed
+        tr = @toprow
+        acolor = get_color $datacolor
+        h = scrollatrow()
+        r,c = rowcol
+        0.upto(h) do |hh|
+          crow = tr+hh
+          if crow < rc
             _focussed = @current_index == crow ? true : false  # row focussed ?
             focus_type = _focussed 
             # added 2010-09-02 14:39 so inactive fields don't show a bright focussed line
@@ -902,14 +930,15 @@ module RubyCurses
             # since data is being truncated and renderer may need index
             #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
-        else
-          # clear rows
-          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          else
+            # clear rows
+            @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          end
         end
-      end
-      if @cell_editing_allowed
-        @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
-      end
+        if @cell_editing_allowed
+          @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
+        end
+      end # rc == 0
       @table_changed = false
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
