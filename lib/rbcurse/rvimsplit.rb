@@ -31,6 +31,7 @@ module RubyCurses
     dsl_accessor :orientation 
     # min and max weight of main split. do not allow user to exceed these
     dsl_accessor :min_weight, :max_weight
+    dsl_accessor :border_attrib, :border_color
     def initialize form, config={}, &block
       if config[:width] == :EXPAND
         config[:width] = Ncurses.COLS - config[:col]
