@@ -63,6 +63,7 @@ module RubyCurses
       super
       @row_offset = @col_offset = 1
       init_vars
+      @_events.push :STATE_CHANGE
     #  $log.debug " SCROLLPANE recvs form #{form.name}, #{form.window.name} " unless form.nil?
 
 

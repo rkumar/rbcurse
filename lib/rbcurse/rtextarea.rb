@@ -73,6 +73,7 @@ module RubyCurses
       #print_borders
       # 2010-01-10 19:35 compute locally if not set
       #@maxlen ||= @width-2
+      @_events.push :CHANGE
       install_keys
       init_vars
     end

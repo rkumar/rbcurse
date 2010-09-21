@@ -19,6 +19,12 @@
  - Field class now passes InputDataEvent when firing event, not self.
    Earlier, user trapping :CHANGE would not know what happened (delete,
    insert, etc) and what char was added, deleted.
+ - List and ListData and ListSelection listener
+   Many changes, new methods, def list(), space bar selects,
+   List listens to selection changes, selectionEvent contains List as source
+   not ListSelectionModel.
+ - Widget checks event names before firing and binding to save time in wrong
+ events.
 
 ### Bugfixes
 

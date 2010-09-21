@@ -160,6 +160,7 @@ module RubyCurses
       @col_offset = 2;  @row_offset = 1 # added 2010-01-10 22:54 
       @recreate_buttons = true
       install_keys
+      @_events.push(*[:OPEN, :INSERT, :DELETE])
     end
     def install_keys
       @form.bind_key([?d, ?d]) { ix = highlighted_tab_index; repeatm { remove_tab(ix) } }

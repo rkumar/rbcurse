@@ -84,6 +84,7 @@ module RubyCurses
       end
 
       super
+      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT)
       init_vars
       install_list_keys
       install_keys_bindings
@@ -1295,6 +1296,7 @@ module RubyCurses
       @header_value = header_value
       @config={}
       instance_eval &block if block_given?
+      @_events = [:PROPERTY_CHANGE]
     end
     def fire_property_change(text, oldval, newval)
       #$log.debug "TC: def fire_property_change(#{text}, #{oldval}, #{newval})"
@@ -1357,6 +1359,7 @@ module RubyCurses
       ##cols.each_with_index {|c, index| @columns << TableColumn.new(index, c, c, 10) }
       cols.each_with_index {|c, index| add_column(TableColumn.new(index, c, c, 10)) }
       @selected_columns = []
+      @_events = [:TABLE_COLUMN_MODEL_EVENT, :PROPERTY_CHANGE]
     end
     def column ix
       raise "Invalid arg #{ix}" if ix < 0 or ix > (@columns.length() -1)
@@ -1469,6 +1472,7 @@ module RubyCurses
       def initialize data, colnames_array
         @data = data
         @column_identifiers = colnames_array
+        @_events = [:TABLE_MODEL_EVENT, :PROPERTY_CHANGE]
       end
       def column_count
          # 2010-01-12 19:35  changed count to size since size is supported in 1.8.6 also
@@ -1615,53 +1619,6 @@ module RubyCurses
     end # class  DTC
 
     ##
-    # LSM 
-    # XXX UNUSED
-    class OLDDefaultListSelectionModel
-      include RubyCurses::EventHandler 
-      attr_accessor :selection_mode
-      attr_reader :anchor_selection_index
-      attr_reader :lead_selection_index
-      def initialize
-        @selected_indices=[]
-        @anchor_selection_index = -1
-        @lead_selection_index = -1
-        @selection_mode = :MULTIPLE
-        $log.debug " OLD VERSION OF LIST SELECTION MODEL IN rtable.rb"
-      end
-
-      def clear_selection
-        @selected_indices=[]
-      end
-      def is_selected_index ix
-        @selected_indices.include? ix
-      end
-      def get_max_selection_index
-        @selected_indices[-1]
-      end
-      def get_min_selection_index
-        @selected_indices[0]
-      end
-      def get_selected_rows
-        @selected_indices
-      end
-      ## TODO should go in sorted, and no dupes
-      def add_selection_interval ix0, ix1
-        @anchor_selection_index = ix0
-        @lead_selection_index = ix1
-        ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
-      end
-      def remove_selection_interval ix0, ix1
-        @anchor_selection_index = ix0
-        @lead_selection_index = ix1
-        @selected_indices.delete_if {|x| x >= ix0 and x <= ix1}
-      end
-      def insert_index_interval ix0, len
-        @anchor_selection_index = ix0
-        @lead_selection_index = ix0+len
-        add_selection_interval @anchor_selection_index, @lead_selection_index
-      end
-    end # class DefaultListSelectionModel
     ##
     # Class that manages Table's Header
     # are we not taking events such as column added, removed ?

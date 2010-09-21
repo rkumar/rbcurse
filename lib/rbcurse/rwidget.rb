@@ -461,6 +461,10 @@ module RubyCurses
       # own default
       @bgcolor ||=  "black" # 0
       @color ||= "white" # $datacolor
+      # These are standard events for most widgets which will be fired by 
+      # Form. In the case of CHANGED, form fires if it's editable property is set, so
+      # it does not apply to all widgets.
+      @_events = [:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE]
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
     end
@@ -1750,10 +1754,10 @@ module RubyCurses
       @name = config.fetch("name", nil)
       @editable = config.fetch("editable", true)
       @focusable = config.fetch("focusable", true)
-      @handler = {}
       @event_args = {}             # arguments passed at time of binding, to use when firing event
       init_vars
       super
+      @_events = [:CHANGE, :ENTER, :LEAVE]
     end
     def init_vars
       @pcol = 0   # needed for horiz scrolling
@@ -2317,6 +2321,7 @@ module RubyCurses
       @color ||= $datacolor 
       @surround_chars ||= ['[ ', ' ]'] 
       @col_offset = @surround_chars[0].length 
+      @_events.push :PRESS
     end
     ##
     # set button based on Action

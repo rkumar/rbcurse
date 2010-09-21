@@ -20,6 +20,7 @@ module RubyCurses
       @name.freeze
       @enabled = true
       config_setup config # @config.each_pair { |k,v| variable_set(k,v) }
+      @_events = [:FIRE]
     end
     def call
       return unless @enabled

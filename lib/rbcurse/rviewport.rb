@@ -49,6 +49,7 @@ module RubyCurses
       #@row_offset = @col_offset = 1
       #@orig_col = @col
       init_vars
+      @_events.push :STATE_CHANGE
     end
     def init_vars
       #@curpos = @pcol = @toprow = @current_index = 0
@@ -65,7 +66,7 @@ module RubyCurses
       height(h)
       width(w)
       fire_state_changed
-      #fire_handler :PROPERTY_CHANGE, self # XXX should it be an event STATE_CHANGED with details
+      #fire_handler :PROPERTY_CHANGE, self # XXX should it be an event STATE_CHANGE with details
     end
     ##
     # Set the row and col of the child, that the viewport starts displaying.
