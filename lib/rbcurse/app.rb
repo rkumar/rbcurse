@@ -9,7 +9,6 @@ Todo:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'rubygems'
 require 'ncurses'
 require 'logger'
 require 'rbcurse'
@@ -593,14 +592,14 @@ module RubyCurses
     def tree *args, &block
       require 'rbcurse/rtree'
       config = {}
-      events = [ :TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER ]
+      events = [:TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER ]
       block_event = nil
       _process_args args, config, block_event, events
       config[:height] ||= 10
       _position(config)
       # if no width given, expand to flows width
       config[:width] ||= @stack.last.width if @stack.last
-      config.delete :title
+      #config.delete :title
       useform = nil
       useform = @form if @current_object.empty?
 
@@ -688,7 +687,7 @@ module RubyCurses
           @form = Form.new @window
           @message = Variable.new
           @message.value = "Message Comes Here"
-          @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => 24, :col => 1, :display_length => 60,  :height => 1, :color => 'cyan'}
+          @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
           $error_message.update_command { @message.set_value($error_message.value) }
           if block
             begin
