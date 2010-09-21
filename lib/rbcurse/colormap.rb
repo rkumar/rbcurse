@@ -76,9 +76,11 @@ module ColorMap
     $popupcolor = ColorMap.get_color :cyan, $def_fg_color
 
     $errorcolor = ColorMap.get_color :white, :red
-    $promptcolor = $selectedcolor = ColorMap.get_color(:yellow, :red)
+    #$promptcolor = $selectedcolor = ColorMap.get_color(:yellow, :red)
+    $promptcolor = ColorMap.get_color(:yellow, :red)
     $normalcolor = $datacolor = ColorMap.get_color(:white, :black)
     $bottomcolor = $topcolor = ColorMap.get_color(:white, :blue)
+    $selectedcolor = $datacolor # since we now use reverse attr in list
 
 #    $log.debug " colormap SETUP: #{$datacolor} #{$reversecolor} "
   end
