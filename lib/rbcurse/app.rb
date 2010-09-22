@@ -16,6 +16,7 @@ require 'rbcurse'
 include Ncurses
 include RubyCurses
 include RubyCurses::Utils
+include Io
 module RubyCurses
   extend self
 
@@ -36,7 +37,7 @@ module RubyCurses
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   # - promptmenu
-  # - tree
+  # x tree
   # - vimsplit
   #  
   
@@ -72,7 +73,7 @@ module RubyCurses
     attr_writer :quit_key
 
 
-    # i should be able to pass window coords here in config
+    # TODO: i should be able to pass window coords here in config
     # :title
     def initialize config={}, &block
       #$log.debug " inside constructor of APP #{config}  "
@@ -93,6 +94,7 @@ module RubyCurses
       unless $ncurses_started
         init_ncurses
       end
+      $lastline = Ncurses.LINES - 1
       unless $log
         $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
         $log.level = Logger::DEBUG
@@ -143,6 +145,57 @@ module RubyCurses
     end
     def message_row row
       @message_label.row = row
+    end
+    #
+    # suspends curses so you can play around on the shell
+    # or in cooked mode like Vim does. Expects a block to be passed.
+    # Purpose: you can print some stuff without creating a window, or 
+    # just run shell commands without coming out.
+    # NOTE: if you pass clear as true, then the screen will be cleared
+    # and you can use puts or print to print. You may have to flush.
+    # However, with clear as false, the screen will not be cleared. You
+    # will have to print using printw, and if you expect user input
+    # you must do a "system /bin/stty sane"
+    # If you print stuff, you will have to put a getch() or system("read")
+    # to pause the screen.
+    def suspend clear=true
+      return unless block_given?
+      Ncurses.def_prog_mode
+      if clear
+        Ncurses.endwin 
+        # NOTE: avoid false since screen remains half off
+        # too many issues
+      else
+        system "/bin/stty sane"
+      end
+      yield if block_given?
+      Ncurses.reset_prog_mode
+      if !clear
+        # Hope we don't screw your terminal up with this constantly.
+        VER::stop_ncurses
+        VER::start_ncurses  
+        #@form.reset_all # not required
+      end
+      @form.repaint
+      @window.wrefresh
+      Ncurses::Panel.update_panels
+    end
+    def get_command_from_user
+      code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
+      return unless code == 0
+      # shell the command
+      if str =~ /^:!/
+        str = str[2..-1]
+        suspend(false) { system(str); 
+          system("echo ");
+          system("echo Press Enter to continue.");
+          system("read"); }
+      else
+        # TODO
+        # here's where we can take internal commands
+        alert "[#{str}] string did not match :!"
+      end
+
     end
     #
     # @group methods to create widgets easily
@@ -606,6 +659,24 @@ module RubyCurses
       w = Tree.new useform, config, &block
       return w
     end
+    def vimsplit *args, &block
+      require 'rbcurse/rvimsplit'
+      config = {}
+      #TODO check these
+      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
+      block_event = nil
+      _process_args args, config, block_event, events
+      config[:height] ||= 10
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      #config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = Vimsplit.new useform, config, &block
+      return w
+    end
 
     # ADD new widget above this
 
@@ -685,6 +756,17 @@ module RubyCurses
         @window = VER::Window.root_window
         catch(:close) do
           @form = Form.new @window
+          @form.bind_key([?\C-x, ?c]) { suspend(false) do
+            system("tput cup 26 0")
+            system("tput ed")
+            system("echo Enter C-d to return to application")
+            system("/bin/sh");
+          end
+          }
+          @form.bind_key(?:) { 
+            get_command_from_user
+          }
+
           @message = Variable.new
           @message.value = "Message Comes Here"
           @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
