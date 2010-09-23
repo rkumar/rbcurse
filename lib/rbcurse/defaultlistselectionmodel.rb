@@ -53,7 +53,7 @@ module RubyCurses
     ## TODO should go in sorted, and no dupes
     def add_selection_interval ix0, ix1
       $log.debug " def add_selection_interval #{ix0}, #{ix1}, mode: #{@selection_mode} "
-      if @selection_mode != 'multiple'
+      if @selection_mode != :multiple
         clear_selection
       end
       @anchor_selection_index = ix0
