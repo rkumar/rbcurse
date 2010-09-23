@@ -6,9 +6,8 @@
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
   * This file started on 2009-01-13 22:18 (broken off rwidgets.rb)
 TODO 
-   LIST_SELECTION_EVENT has to be bound on the datamodel, this is really sucky,
-   we should either disallow binding wrong events, or allow them to be bound on listbox
-   I cannot add to an empty listbox, since DM not created.
+  Perhaps keep printed data created by convert_value_to_text cached, and used for searching
+  cursor movement and other functions. 
 =end
 require 'rubygems'
 require 'ncurses'
@@ -384,7 +383,14 @@ module RubyCurses
     end
   end # class PopupList
   ##
-  # this is the new LISTBOX, based on new scrollable.
+  # A control for displaying a list of data or values. 
+  # The list will be editable if @cell_editing_allowed
+  # is set to true when creating. By default, multiple selection is allowed, but may be set to :single.
+  # TODO: were we not going to force creation of datamodel and listener on startup by putting a blank
+  # :list in config, if no list or list_variable or model is there ?
+  # Or at end of constructor check, if no listdatamodel then create default.
+  # TODO : perhaps when datamodel created, attach listener to it, so we can fire to callers when
+  # they want to be informed of changes. As we did with selection listeners.
   #
   class Listbox < Widget
 
@@ -427,6 +433,7 @@ module RubyCurses
     dsl_accessor :valign  # 2009-01-17 18:32 
     attr_accessor :one_key_selection # will pressing a single key select or not
     dsl_accessor :border_attrib, :border_color # 
+    dsl_accessor :sanitization_required
 
 
     def initialize form, config={}, &block
@@ -439,10 +446,10 @@ module RubyCurses
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
       super
-      @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT])
+      @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @current_index ||= 0
       @row_offset = @col_offset = 1
-      @selection_mode ||= 'multiple' # default is multiple, anything else given becomes single
+      @selection_mode ||= :multiple # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
       # added 2010-02-17 23:05  RFED16 so we don't need a form.
@@ -458,7 +465,6 @@ module RubyCurses
       install_keys
       init_vars
       install_list_keys
-      install_bindings
 
       if @list && !@list.selected_index.nil? 
         set_focus_on @list.selected_index # the new version
@@ -467,6 +473,7 @@ module RubyCurses
     # this is called several times, from constructor
     # and when list data changed, so only put relevant resets here.
     def init_vars
+      @sanitization_required = true
       @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
@@ -479,7 +486,8 @@ module RubyCurses
       @one_key_selection = true if @one_key_selection.nil?
 
     end
-    def install_bindings
+    def map_keys
+      return if @keys_mapped
       bind_key(?f){ ask_selection_for_char() }
       bind_key(?\M-v){ @one_key_selection = false }
       bind_key(?j){ next_row() }
@@ -489,6 +497,9 @@ module RubyCurses
       bind_key(?/){ ask_search() }
       bind_key(?n){ find_more() }
       bind_key(32){ toggle_row_selection() }
+      bind_key(10){ fire_action_event }
+      bind_key(13){ fire_action_event }
+      @keys_mapped = true
 
     end
 
@@ -508,7 +519,7 @@ module RubyCurses
         if @list_selection_model.nil?
           @tmp_selection_mode = val[0] 
         else
-          @list_selection_model.selection_mode = val[0] 
+          @list_selection_model.selection_mode = val[0].to_sym
         end
       end
     end
@@ -543,6 +554,7 @@ module RubyCurses
         if @list
           @list.remove_all
           @list.insert 0, *alist
+          @current_index = 0
         else
           @list = RubyCurses::ListDataModel.new(alist)
         end
@@ -667,6 +679,7 @@ module RubyCurses
     end
     # Listbox
     def handle_key(ch)
+      map_keys unless @keys_mapped
       @current_index ||= 0
       @toprow ||= 0
       h = scrollatrow()
@@ -694,15 +707,15 @@ module RubyCurses
       when @KEY_NEXT_SELECTION # ?'
         $log.debug "insdie next selection"
         @oldrow = @current_index
-        do_next_selection #if @select_mode == 'multiple'
+        do_next_selection 
         bounds_check
       when @KEY_PREV_SELECTION # ?"
         @oldrow = @current_index
         $log.debug "insdie prev selection"
-        do_prev_selection #if @select_mode == 'multiple'
+        do_prev_selection 
         bounds_check
       when @KEY_CLEAR_SELECTION
-        clear_selection #if @select_mode == 'multiple'
+        clear_selection 
         @repaint_required = true
       when 27, ?\C-c.getbyte(0)
         editing_canceled @current_index if @cell_editing_allowed
@@ -764,12 +777,16 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
-            #$multiplier = 0 # 2010-09-02 22:35 this prevents parent from using mult
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
       end
       $multiplier = 0
+    end
+    def fire_action_event
+      require 'rbcurse/ractionevent'
+      # should have been callled :ACTION_EVENT !!!
+      fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
     end
     # get a keystroke from user and go to first item starting with that key
     def ask_selection_for_char
@@ -934,17 +951,17 @@ module RubyCurses
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
-      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
-      raise " #{@name} neither form, nor target window given TV paint " unless my_win
-      raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
+      raise " #{@name} neither form, nor target window given LB paint " unless my_win
+      raise " #{@name} NO GRAPHIC set as yet                 LB paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
 
       $log.debug "rlistbox repaint  #{@name} graphic #{@graphic}"
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
-      maxlen = @maxlen ||= @width-2
+      #maxlen = @maxlen ||= @width-2
       tm = list()
       rc = row_count
+      @longest_line = @width
       $log.debug " rlistbox #{row_count} "
       if rc > 0     # just added in case no data passed
         tr = @toprow
@@ -961,21 +978,12 @@ module RubyCurses
             focus_type = :SOFT_FOCUS if _focussed && !@focussed
             selected = is_row_selected crow
             content = tm[crow]   # 2009-01-17 18:37 chomp giving error in some cases says frozen
+            content = convert_value_to_text content, crow # 2010-09-23 20:12 
+            # by now it has to be a String
             if content.is_a? String
               content = content.dup
-              content.chomp!
-              content.gsub!(/\t/, '  ') # don't display tab
-              content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
-              if !content.nil? 
-                if content.length > maxlen # only show maxlen
-                  content = content[@pcol..@pcol+maxlen-1] 
-                else
-                  content = content[@pcol..-1]
-                end
-              end
-            elsif content.is_a? TrueClass or content.is_a? FalseClass
-            else
-              content = content.to_s
+              sanitize content if @sanitization_required
+              truncate content
             end
             ## set the selector symbol if requested
             selection_symbol = ''
@@ -989,13 +997,6 @@ module RubyCurses
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = cell_renderer()
-            #renderer.show_selector @show_selector
-            #renderer.row_selected_symbol @row_selected_symbol
-            #renderer.left_margin @left_margin
-            #renderer.repaint @graphic, r+hh, c+(colix*11), content, _focussed, selected
-            ## added crow on 2009-02-06 23:03 
-            # since data is being truncated and renderer may need index
-            #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
           else
             # clear rows
@@ -1011,6 +1012,48 @@ module RubyCurses
       @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
       buffer_to_window # RFED16 2010-02-17 23:16 
     end
+    # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
+    # method. This assumes your List has some data, but you print a lot more. Now you don't need to
+    # change the data in the renderer, or keep formatted data in the list itself.
+    # e.g. @list contains file names, or File objects, and this converts to a long listing.
+    # If the renderer did that, the truncation would be on wrong data.
+    # @since 1.2.0
+    def convert_value_to_text value, crow
+      case value
+      when TrueClass, FalseClass
+        value
+      else
+        value.to_s if value
+      end
+    end
+    # takes a block, this way anyone extending this class can just pass a block to do his job
+    # This modifies the string
+    def sanitize content
+      if content.is_a? String
+        content.chomp!
+        content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+      else
+        content
+      end
+    end
+    # returns only the visible portion of string taking into account display length
+    # and horizontal scrolling. MODIFIES STRING
+    def truncate content
+      maxlen = @maxlen ||= @width-2
+      if !content.nil? 
+        if content.length > maxlen # only show maxlen
+          @longest_line = content.length if content.length > @longest_line
+          #content = content[@pcol..@pcol+maxlen-1] 
+          content.replace content[@pcol..@pcol+maxlen-1] 
+        else
+          # can this be avoided if pcol is 0 XXX
+          content.replace content[@pcol..-1]
+        end
+      end
+      content
+    end
+
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
         init_vars
@@ -1019,9 +1062,12 @@ module RubyCurses
       end
       @repaint_required = true
     end
+    # set cursor column position
+    # if i set col1 to @curpos, i can move around left right if key mapped
     def set_form_col col1=0
       # TODO BUFFERED use setrowcol @form.row, col
       # TODO BUFFERED use cols_panned
+      #col1 ||= 0
       @cols_panned ||= 0 # RFED16 2010-02-17 23:40 
       # editable listboxes will involve changing cursor and the form issue
       ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
