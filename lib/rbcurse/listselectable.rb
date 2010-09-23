@@ -38,7 +38,7 @@ module RubyCurses
       @list_selection_model.remove_selection_interval ix0, ix1
     end
     def toggle_row_selection row=@current_index
-      if is_row_selected row
+      if is_selected? row
         $log.debug " deleting row #{row}"
         remove_row_selection_interval(row, row)
       else
