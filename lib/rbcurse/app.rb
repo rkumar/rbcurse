@@ -66,6 +66,8 @@ module RubyCurses
       end
     end
   end
+  # This is the Application class which does the job of setting up the 
+  # environment, and closing it at the end.
   class App
     attr_reader :config
     attr_reader :form
@@ -674,7 +676,13 @@ module RubyCurses
       useform = nil
       useform = @form if @current_object.empty?
 
-      w = Vimsplit.new useform, config, &block
+      w = VimSplit.new useform, config # NO BLOCK GIVEN
+      if block_given?
+        @current_object << w
+        #instance_eval &block if block_given?
+        yield w
+        @current_object.pop
+      end
       return w
     end
 
@@ -687,6 +695,8 @@ module RubyCurses
     # line up vertically whatever comes in, ignoring r and c 
     # margin_top to add to margin of existing stack (if embedded) such as extra spacing
     # margin to add to margin of existing stack, or window (0)
+    # NOTE: since these coordins are calculated at start
+    # therefore if window resized i can't recalculate.
     Stack = Struct.new(:margin_top, :margin, :width)
     def stack config={}, &block
       @instack = true
@@ -694,6 +704,7 @@ module RubyCurses
       mr =  config[:margin] || 0
       # must take into account margin
       defw = Ncurses.COLS - mr
+      config[:width] = defw if config[:width] == :EXPAND
       w =   config[:width] || [50, defw].min
       s = Stack.new(mt, mr, w)
       @app_row += mt
@@ -760,7 +771,7 @@ module RubyCurses
             system("tput cup 26 0")
             system("tput ed")
             system("echo Enter C-d to return to application")
-            system("/bin/sh");
+            system($ENV['SHELL']);
           end
           }
           @form.bind_key(?:) { 
