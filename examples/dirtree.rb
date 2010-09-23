@@ -11,7 +11,7 @@ def _directories wd
   return ent
 end
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Yet Another File Manager", :text_right =>"Directory Lister", :color => :black, :bgcolor => :white, :attr =>  Ncurses::A_BLINK
+  header = app_header "rbcurse 1.2.0", :text_center => "Yet Another File Manager", :text_right =>"Directory Lister", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
   message "Press Enter to expand/collapse"
 
   pwd = Dir.getwd
@@ -57,7 +57,8 @@ App.new do
         path = File.join(*node.user_object_path)
         files = Dir.new(path).entries
         files.delete(".")
-        @l.list files # this could create a new list data model each time so you lose your listeners
+        @l.list files 
+        #TODO show all details in filelist
         @current_path = path
         $log.debug " XXX selected afterseeting lb: #{@l} "
       end
@@ -70,6 +71,8 @@ App.new do
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       $log.debug " XXX GOT A LIST EVENT #{ev} "
       message ev.source.selected_value
+      #TODO when selects drill down
+      #TODO when selecting, sync tree with this
     end
   end
 end # app
