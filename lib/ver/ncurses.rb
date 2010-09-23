@@ -92,6 +92,7 @@ include ColorMap
     Ncurses.nocbreak
     Ncurses.nl
     Ncurses.endwin
+    $ncurses_started = false
     puts "ncurses stopped"
   ensure
     return unless error = @last_error
