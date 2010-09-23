@@ -25,6 +25,8 @@
    not ListSelectionModel.
  - Widget checks event names before firing and binding to save time in wrong
  events.
+ - Listbox, some refactoring of `repaint`. Added convert_value_to_text since
+ we subclass this a lot.
 
 ### Bugfixes
 
