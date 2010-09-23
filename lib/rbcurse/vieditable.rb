@@ -71,14 +71,14 @@ module ViEditable
     bind_key(?\M-y, :yank_pop)
     bind_key(?\C-y, :yank)
     bind_key(?\M-w, :kill_ring_save)
+    @_events.push :CHANGE # thru vieditable
 
   end
 
   ##
   # edit current or given line
-  # FIXME needs to fire handler 2010-05-23 11:40 
   def edit_line lineno=@current_index
-    line = @list[lineno]
+    line = self[lineno]
     prompt = "Edit: "
     maxlen = 80
     config={}; 
@@ -87,7 +87,7 @@ module ViEditable
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     $log.debug " rbgetstr returned #{ret} , #{str} "
     return if ret != 0
-    @list[lineno].replace(str)
+    self[lineno].replace(str)
     fire_handler :CHANGE, InputDataEvent.new(0,oldline.length, self, :DELETE_LINE, lineno, oldline)     #  2008-12-24 18:34 
     fire_handler :CHANGE, InputDataEvent.new(0,str.length, self, :INSERT_LINE, lineno, str)
     @repaint_required = true
