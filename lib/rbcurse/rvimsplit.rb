@@ -62,6 +62,7 @@ module RubyCurses
       @c2rc = nil
 
       @ch = {}
+      @weight ||= 0.50
 
       init_vars
       bind_key([?\C-w,?o], :goto_other_split)  
@@ -128,10 +129,11 @@ module RubyCurses
     end
     private
     def _add type, c, which, weight
-      raise ArgumentError "which must be :FIRST or :SECOND" if which != :FIRST && which != :SECOND
+      raise ArgumentError, "Nil component passed to add" unless c
+      raise ArgumentError, "which must be :FIRST or :SECOND" if which != :FIRST && which != :SECOND
       if weight.nil? || weight == :AUTO || (weight > 0 && weight <= 1.0)
       else
-        raise ArgumentError "weight must be >0 and <=1.0 or nil or :AUTO"
+        raise ArgumentError, "weight must be >0 and <=1.0 or nil or :AUTO"
       end
       if c.is_a? Widget
         $log.debug " XXXX VIM is a widget"
@@ -187,16 +189,17 @@ module RubyCurses
     # called by Form, and sometimes parent component (if not form).
     def repaint
       safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
-      return unless @repaint_required
-      # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
-      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
       raise " #{@name} neither form, nor target window given TV paint " unless my_win
       raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
 
+      #return unless @repaint_required
+
+      # if some major change has happened then repaint everything
+      if @repaint_required == true
       $log.debug " VIM repaint graphic #{@graphic} "
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       r,c = rowcol
@@ -289,7 +292,14 @@ module RubyCurses
           e.repaint
         end
       end
-      #end # repaint_re
+      else
+        # only repaint those that are needing repaint
+        # 2010-09-22 18:09 its possible somenoe has updated an internal
+        # component, but this container does not know. So we've got to call
+        # repaint on all components, only those which are changed will
+        # actually be repainted
+        @components.each { |e| e.repaint }
+      end # if repaint_required
       # NOTE: at present one cannot change from flow to stack inside a pane
 
       @repaint_required = false
