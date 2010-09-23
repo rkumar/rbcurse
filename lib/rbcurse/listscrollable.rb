@@ -439,6 +439,9 @@ module ListScrollable
     end
     ##
     # goes to start of next word (or n words) - vi's w
+    # NOTE: will not work if the list has different data from what is displayed
+    # Nothing i can do about it.
+    # Also does not work as expected if consecutive spaces FIXME
     #
     def forward_word
       $multiplier = 1 if !$multiplier || $multiplier == 0
@@ -449,7 +452,11 @@ module ListScrollable
         found = buff.index(/[[:punct:][:space:]]/, pos)
         if !found
           # if not found, we've lost a counter
-          line += 1 # unless eof
+          if line+1 < @list.length
+            line += 1
+          else
+            return
+          end
           buff = @list[line]
           pos = 0
         else
