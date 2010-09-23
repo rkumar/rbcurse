@@ -154,7 +154,9 @@ module VER
     end
 
     def getch
-      @window.getch
+      c = @window.getch
+      #if c == Ncurses::KEY_RESIZE
+
     rescue Interrupt => ex
       3 # is C-c
     end
