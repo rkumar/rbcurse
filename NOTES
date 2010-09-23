@@ -1750,3 +1750,84 @@ I think vim does this when you type :ls . One can use this to display
 bindings, events etc.
 
 * * * * * * * *
+
+Subject: repainting of containers
+---------------------------------
+Date: 2010-09-22 18:15
+
+Seem to be screwing this up. Either I am painting all in repaint which
+is not good. Yet, i do not know which are updated. Perhaps one component
+has been externally updated, and the container does not know. So its
+repaint required is still false.
+
+So ... if `repaint_required` is true, it should repaint the borders, the
+components, resize etc.
+
+If `repaint_required` is *false*, it still must call `repaint()` on all
+components, which will repaint if they have been modified. I've done
+this in rvimsplit.
+
+* * * * * * * *
+
+Subject: Listbox and CellRenderer
+---------------------------------
+Date: 2010-09-23 22:25
+
+Often what is displayed in a listbox is quite different from the data in
+the list provided. Such as filenames in the list, but a long list is
+dislpayed.
+There are several ways to handle this.
+I am not addressing obvious performance vs memory issues here. Only
+implementation issues and their diffculties wrt display and app
+programming.
+
+1. Keep file names in list. But use the cell renderer to show complete
+   info. The repaint method truncates and treats the values from list,
+   so scrolling can't happen. The main program has a false idea of line
+   length. So cell renderers should only be used for format or color the
+   data, changes in length etc should not happen. Else we will have to
+   rewrite repaint and do length and scolling in renderer.
+
+2. Keep the formatted data in the list. This makes it difficult to do
+   work on firing the list. We don't have the filenames. We would have
+   to maintain a backing store. There are additional issues such as if
+   we are updating a list, the value shown will be the entire formatted
+   line, and that will be updated into the formatted list.
+
+3. So now we use `convert_value_to_text` to format the data, so scrolling
+   can happen. Cellrenderer just does coloring based on select focus etc
+   which was the original purpose. But since the formatted data is not
+   in the list, movement methods like end of line, forward word don't
+   work correctly since they consider the original data not the
+   formatted data.
+
+Currently, Listbox does not have a separation of methods that act on
+displayed data and actual (model) data. It assumes one list.
+Listbox already is complicated enough with all the editing.
+
+I've gone back and forth with moving the formatting in and out of hte
+list, (in appdirtree and directorylist.rb) and i am doing no more. My
+suggestion is. ... perhaps you should put formatted data into the list
+itself. Have a backing store of the real data (that's what crow and
+row_index are for). However, in some case, you will have to face the
+difference between the 2 when updating only the model value.
+
+
+Some of hte performance considerations. If you have very long lists but
+only little of the data is seen by user the creating formatted date for
+all rows can be wasteful. Cellrenderer and convert_value_to_text only
+work on the rows beign displayed. However, they will keep working on the
+rows if you keep viewing them over and over. No cacheing etc.
+If you put formatted data in the list, there would be no repeated
+formatting. In the directory lister demo, there is no cacheing of file
+stat objects. Since the speed is fine, i did not bother to do any
+cacheing.
+
+One option is to maintain a cache of only those objects on screen.
+Populate the cache in the convert_value_to_text loop. Or in
+cell_renderer. Clear it every time you get a row_index of 0 and start
+over.
+This way all operations that require movement over formatted data can
+use that cache.
+
+* * * * * * * *
