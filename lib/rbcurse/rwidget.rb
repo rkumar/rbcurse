@@ -223,7 +223,7 @@ module RubyCurses
       if !block_given?
         blk = args.pop
         raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
-        $log.debug " #{@name} bind_key received a symbol #{blk} "
+        #$log.debug " #{@name} bind_key received a symbol #{blk} "
       end
       case keycode
       when String
@@ -1576,6 +1576,15 @@ module RubyCurses
         case ch
         when -1
           return
+        when Ncurses::KEY_RESIZE # SIGWINCH
+          lines = Ncurses.LINES
+          cols = Ncurses.COLS
+          x = Ncurses.stdscr.getmaxy
+          y = Ncurses.stdscr.getmaxx
+          $log.debug " form RESIZE HK #{ch} #{self}, #{@name}, #{ch}  "
+          alert "WE NEED TO RECALC AND REPAINT resize #{lines}, #{cols}: #{x}, #{y} "
+          Ncurses.endwin
+          @window.wrefresh
         else
           keycode = keycode_tos(ch)
           $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}  "
@@ -1687,6 +1696,15 @@ module RubyCurses
     col = w.col
     return row, col
   end
+  ## so if we come back from ncurses cooked mode we can repaint.
+  # not required, we have to stop and restart ncurses. 
+  #def reset_all
+    #$log.debug " form reset:#{self}, #{@name} , r #{@row} c #{@col} "
+    #@widgets.each do |f|
+      #next if f.visible == false # added 2008-12-09 12:17 
+      #f.repaint_all()
+    #end
+  #end
 
     ## ADD HERE FORM
   end
