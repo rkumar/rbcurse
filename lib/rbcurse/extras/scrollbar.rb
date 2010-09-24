@@ -8,9 +8,10 @@ include RubyCurses
 # of caller or in the traversal event. This would look best if the listbox also has a reverse video border, or none.
 # @example
 #     lb = list_box ....
-#     sb = Scrollbar.new @form, :row => lb.row, :col => lb.col, :length => lb.height, :list_length => lb.list.length, :current_index => 0
+#     sb = Scrollbar.new @form, :row => lb.row, :col => lb.col, :length => lb.height, :list_length => lb.row_count, :current_index => 0
 #      .... later as user traverses
 #      sb.current_index = lb.current_index
+#     sb = Scrollbar.new @form, :parent => list
 #
 # At a later stage, we will integrate this with lists and tables, so it will happen automatically.
 #
@@ -25,13 +26,14 @@ module RubyCurses
     dsl_property :length
     # vertical or horizontal currently only VERTICAL
     dsl_property :orientation
-    # to take changes or data, unused as of now
+    # initialize based on parent's values
     dsl_property :parent
     # which row is focussed, current_index of listbox, required.
     dsl_property :current_index
     # how many total rows of data does the list have, same as @list.length, required.
     dsl_property :list_length
 
+    # TODO: if parent passed, we shold bind to ON_ENTER and get current_index, so no extra work is required.
 
     def initialize form, config={}, &block
 
@@ -43,15 +45,30 @@ module RubyCurses
       @window = form.window
       @editable = false
       @focusable = false
-      @row ||= 0
-      @col ||= 0
       @repaint_required = true
       @orientation = :V
+      if @parent
+        @parent.bind :ENTER_ROW do |p|
+          self.current_index = p.current_index
+          @repaint_required = true  #requred otherwise at end when same value sent, prop handler
+          # will not be fired.
+        end
+      end
     end
 
     ##
-    # XXX need to move wrapping etc up and done once. 
+    # repaint the scrollbar
+    # Taking the data from parent as late as possible in case parent resized, or 
+    # moved around by a container.
     def repaint
+      if @parent
+        @row = @parent.row+1
+        @col = @parent.col + @parent.width - 1
+        @length = @parent.height - 2
+        @list_length = @parent.row_count 
+        @current_index ||= @parent.current_index
+        @border_attrib ||= @parent.border_attrib
+      end
       raise ArgumentError, "current_index must be provided" unless @current_index
       raise ArgumentError, "list_length must be provided" unless @list_length
       my_win = @form ? @form.window : @target_window
@@ -59,11 +76,14 @@ module RubyCurses
       return unless @repaint_required
 
       # first print a right side vertical line
-      bordercolor = @border_color || $datacolor
+      #bc = $bottomcolor  # dark blue
+      bc = $datacolor
+      bordercolor = @border_color || bc
       borderatt = @border_attrib || Ncurses::A_REVERSE
 
 
       @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+      $log.debug " XXX SCROLL #{@row} #{@col} #{@length} "
       @graphic.mvvline(@row+0, @col, 1, @length-0)
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
 
@@ -75,6 +95,9 @@ module RubyCurses
       sclen = (pht/listlen)* @length
       scloc = (@current_index/listlen)* @length
       scloc = (@length - sclen) if scloc > @length - sclen # don't exceed end
+      if @current_index == @list_length - 1
+        scloc = @length - sclen + 1
+      end
       @graphic.attron(Ncurses.COLOR_PAIR(@scroll_pair) | borderatt)
       r = @row + scloc
       c = @col + 0
@@ -87,18 +110,23 @@ module RubyCurses
     # ADD HERE 
   end
 end
-App.new do
-  r = 5
-  len = 20
-  hline :width => 20, :row => r, :attrib => Ncurses::A_REVERSE
-  sb = Scrollbar.new @form, :row => r, :col => 20, :length => len, :list_length => 50, :current_index => 0
-  hline :width => 20, :row => len+r
-  keypress do |ch|
-    case ch
-    when :down
-      sb.current_index += 1
-    when :up
-      sb.current_index -= 1
-    end
+if __FILE__ == $PROGRAM_NAME
+  App.new do
+    r = 5
+    len = 20
+    list = []
+    0.upto(100) { |v| list << "#{v} scrollable data" }
+    lb = list_box "A list", :list => list
+    #sb = Scrollbar.new @form, :row => r, :col => 20, :length => len, :list_length => 50, :current_index => 0
+    rb = Scrollbar.new @form, :parent => lb
+    #hline :width => 20, :row => len+r
+    #keypress do |ch|
+      #case ch
+      #when :down
+        #sb.current_index += 1
+      #when :up
+        #sb.current_index -= 1
+      #end
+    #end
   end
 end
