@@ -258,10 +258,6 @@ module RubyCurses
       instance_eval &block if block_given?
       init_vars
     end
-    #def node user_object = nil, allows_children=true, &block
-      #n = TreeNode.new user_object, allows_children, &block
-      #add n
-    #end
     # private
     #@return [TreeNode] just creates node
     def _add node, allows_children=true, &block
@@ -329,8 +325,6 @@ module RubyCurses
       @children.size == 0
     end
     def leaf_count
-    end
-    def user_object_path
     end
     def level
       level = 0
