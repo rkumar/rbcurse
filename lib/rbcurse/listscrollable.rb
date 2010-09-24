@@ -231,11 +231,14 @@ module ListScrollable
   ## 2008-12-18 18:03 
   # finds the next match for the char pressed
   # returning the index
+  # If we are only checking first char, then why chomp ?
+  # Please note that this is used now by tree, and list can have non-strings, so use to_s
   def next_match char
     data = get_content
     row = focussed_index + 1
     row.upto(data.length-1) do |ix|
-      val = data[ix].chomp rescue return  # 2010-01-05 15:28 crashed on trueclass
+      #val = data[ix].chomp rescue return  # 2010-01-05 15:28 crashed on trueclass
+      val = data[ix].to_s rescue return  # 2010-01-05 15:28 crashed on trueclass
       #if val[0,1] == char #and val != currval
       if val[0,1].casecmp(char) == 0 #AND VAL != CURRval
         return ix
@@ -243,7 +246,8 @@ module ListScrollable
     end
     row = focussed_index - 1
     0.upto(row) do |ix|
-      val = data[ix].chomp
+      #val = data[ix].chomp
+      val = data[ix].to_s
       #if val[0,1] == char #and val != currval
       if val[0,1].casecmp(char) == 0 #and val != currval
         return ix
@@ -273,25 +277,6 @@ module ListScrollable
     bounds_check if @oldrow != @current_index
   end
   ##
-  # 2008-12-18 18:05 
-  # set focus on given index
-  def OLDset_focus_on arow
-    return if arow > row_count()-1 or arow < 0
-    @oldrow = @current_index
-    total = row_count()
-    @current_index = arow
-    sar = scrollatrow + 1
-    @toprow = (@current_index / sar) * sar
-
-    #$log.debug "1 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
-    if total - @toprow < sar
-      @toprow = (total - sar) 
-    end
-    #$log.debug "2 set_focus #{total}, sar #{sar}, toprow #{@toprow}, current_index #{@current_index}"
-    set_form_row # 2009-01-17 12:44 
-    @repaint_required = true
-    #bounds_check
-  end
     def install_keys
 =begin
       @KEY_ASK_FIND_FORWARD ||= ?\M-f.getbyte(0)
@@ -342,7 +327,7 @@ module ListScrollable
       @search_start_ix = start
       regex = Regexp.new(regex, Regexp::IGNORECASE) if @search_case
       start.upto(fend) do |ix| 
-        row = @list[ix]
+        row = @list[ix].to_s
         m=row.match(regex)
         if !m.nil?
           @find_offset = m.offset(0)[0]
@@ -356,7 +341,7 @@ module ListScrollable
       start = 0
       if @search_wrap
         start.upto(fend) do |ix| 
-          row = @list[ix]
+          row = @list[ix].to_s
           m=row.match(regex)
           if !m.nil?
             @find_offset = m.offset(0)[0]
@@ -411,7 +396,7 @@ module ListScrollable
       @search_start_ix = start
       regex = Regexp.new(regex, Regexp::IGNORECASE) if @search_case
       start.downto(0) do |ix| 
-        row = @list[ix]
+        row = @list[ix].to_s
         m=row.match(regex)
         if !m.nil?
           @find_offset = m.offset(0)[0]
@@ -425,7 +410,7 @@ module ListScrollable
       start = @list.size-1
       if @search_wrap
         start.downto(fend) do |ix| 
-          row = @list[ix]
+          row = @list[ix].to_s
           m=row.match(regex)
           if !m.nil?
             @find_offset = m.offset(0)[0]
@@ -446,7 +431,7 @@ module ListScrollable
     def forward_word
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
-      buff = @list[line]
+      buff = @list[line].to_s
       pos = @curpos
       $multiplier.times {
         found = buff.index(/[[:punct:][:space:]]/, pos)
@@ -457,7 +442,7 @@ module ListScrollable
           else
             return
           end
-          buff = @list[line]
+          buff = @list[line].to_s
           pos = 0
         else
           pos = found + 1
@@ -466,7 +451,7 @@ module ListScrollable
       }
       @current_index = line
       @curpos = pos
-      @buffer = @list[@current_index]
+      @buffer = @list[@current_index].to_s
       set_form_row
       set_form_col pos
       @repaint_required = true
@@ -486,7 +471,7 @@ module ListScrollable
       $log.debug " forward_char char:#{char}:"
       $multiplier = 1 if !$multiplier or $multiplier == 0
       line = @current_index
-      buff = @list[line]
+      buff = @list[line].to_s
       pos = @curpos
       $multiplier.times {
         found = false
@@ -494,7 +479,7 @@ module ListScrollable
           found = buff.index(char, pos)
           if !found
             line += 1 # unless eof
-            buff = @list[line]
+            buff = @list[line].to_s
             pos = 0
           else
             pos = found + 1
@@ -505,7 +490,7 @@ module ListScrollable
       }
       @current_index = line
       @curpos = pos
-      @buffer = @list[@current_index]
+      @buffer = @list[@current_index].to_s
       set_form_row
       set_form_col pos
       @repaint_required = true
