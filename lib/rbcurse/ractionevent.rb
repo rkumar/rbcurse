@@ -15,6 +15,7 @@
 module RubyCurses
   # source - as always is the object whose event has been fired
   # id     - event identifier (seems redundant since we bind events often separately.
+  # event  - is :PRESS
   # action_command - command string associated with event (such as title of button that changed
   ActionEvent = Struct.new(:source, :event, :action_command) do
     # This should always return the most relevant text associated with this object
@@ -31,6 +32,36 @@ module RubyCurses
     # @return text associated with source (label of button)
     def getvalue
       source.getvalue
+    end
+  end
+  # a derivative of Action Event for textviews
+  # We allow a user to press ENTER on a row and use that for processing.
+  # We are basically using TextView as a list in which user can scroll around
+  # and move cursor at will.
+  class TextActionEvent < ActionEvent
+    # current_index or line number starting 0
+    attr_accessor :current_index
+    # cursor position on the line
+    attr_accessor :curpos
+    def initialize source, event, action_command, current_index, curpos
+      super source, event, action_command
+      @current_index = current_index
+      @curpos = curpos
+    end
+    # the text of the line on which the user is
+    def text
+      source.current_value
+    end
+    # the word under the cursor TODO
+    # if its a text with pipe delim, then ??
+    def word_under_cursor line=text(), pos=@curpos, delim=" "
+      line ||= text()
+      pos ||= @curpos
+      finish = line.index(delim, pos)
+      start = line.rindex(delim,pos)
+      finish = -1 if finish.nil?
+      start = 0 if start.nil?
+      return line[start..finish]
     end
   end
 end
