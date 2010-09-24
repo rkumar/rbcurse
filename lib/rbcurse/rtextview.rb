@@ -63,6 +63,7 @@ module RubyCurses
       @win = @graphic
 
       @_events.push :CHANGE # thru vieditable
+      @_events << :PRESS # new, in case we want to use this for lists and allow ENTER
       install_keys
       init_vars
     end
@@ -87,7 +88,7 @@ module RubyCurses
       bind_key(?n, :find_more)
       bind_key([?\C-x, ?>], :scroll_right)
       bind_key([?\C-x, ?<], :scroll_left)
-      bind_key(?r) { getstr("Enter a word") }
+      bind_key(?r) { getstr("Enter a word: ") }
       bind_key(?m, :disp_menu)
     end
     ## 
@@ -193,6 +194,9 @@ module RubyCurses
     def getvalue
       @list
     end
+    def current_value
+      @list[@current_index]
+    end
     # textview
     def handle_key ch
       @buffer = @list[@current_index]
@@ -247,6 +251,9 @@ module RubyCurses
         ask_search
       when @KEY_FIND_MORE
         find_more
+      when 10, 13, KEY_ENTER
+        #fire_handler :PRESS, self
+        fire_action_event
       when ?0.getbyte(0)..?9.getbyte(0)
         # FIXME the assumption here was that if numbers are being entered then a 0 is a number
         # not a beg-of-line command.
@@ -444,7 +451,7 @@ module RubyCurses
           @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
         end
       end
-      show_caret_func
+      #show_caret_func
       @table_changed = false
       @repaint_required = false
       @repaint_footer_required = true # 2010-01-23 22:41 
@@ -458,7 +465,7 @@ module RubyCurses
     def getstr prompt, maxlen=10
       tabc = Proc.new {|str| Dir.glob(str +"*") }
       config={}; config[:tab_completion] = tabc
-      config[:default] = "defaulT"
+      config[:default] = "default"
       $log.debug " inside getstr before call "
       ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen, config)
       $log.debug " rbgetstr returned #{ret} , #{str} "
@@ -488,6 +495,13 @@ module RubyCurses
       require "rbcurse/#{requirename}"
       extend Object.const_get("#{includename}")
       send("#{requirename}_init") #if respond_to? "#{includename}_init"
+    end
+    # on pressing ENTER we send user some info
+    # FIXME we can create this once and reuse
+    def fire_action_event
+      require 'rbcurse/ractionevent'
+      aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
+      fire_handler :PRESS, aev
     end
 
   end # class textview
