@@ -232,6 +232,7 @@ module RubyCurses
         @key_handler[keycode] = blk
       when Array
         # for starters lets try with 2 keys only
+        raise "A one key array will not work. Pass without array" if keycode.size == 1
         a0 = keycode[0]
         a0 = keycode[0].getbyte(0) if keycode[0].class == String
         a1 = keycode[1]
