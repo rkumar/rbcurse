@@ -29,6 +29,7 @@ module RubyCurses
   # - animate(n) |i|
   # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - combo
+  # - textview
   # - popup
   # - multicontainer
   # - multitextview, multisplit
@@ -352,7 +353,10 @@ module RubyCurses
       end
       # naive defaults, since list could be large or have very long items
       # usually user will provide
-      config[:height] ||= config[:list].length + 2
+      if !config.has_key? :height
+        config[:height] ||= config[:list].length + 2
+        config[:height] = 15 if config[:height] > 20
+      end
       if @current_object.empty?
         $log.debug "1 APP LB w: #{config[:width]} ,#{config[:name]} "
         config[:width] ||= @stack.last.width if @stack.last
@@ -461,6 +465,26 @@ module RubyCurses
       end
       return w
     end
+    def textview *args, &block
+      require 'rbcurse/rtextview'
+      config = {}
+      # TODO confirm events many more
+      events = [ :PRESS, :LEAVE, :ENTER ]
+      block_event = events[0]
+      _process_args args, config, block_event, events
+      config[:width] = config[:display_length] unless config.has_key? :width
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      raise "height needed for textview" if !config.has_key? :height
+      useform = nil
+      useform = @form if @current_object.empty?
+      w = TextView.new useform, config
+      if block
+        w.bind(block_event, &block)
+      end
+      return w
+    end
     # progress bar
     def progress *args, &block
       require 'rbcurse/rprogress'
@@ -547,11 +571,15 @@ module RubyCurses
     # @example
     #    hline :width => 55  
     def hline config={}
-      row = @app_row
+      row = config[:row] || @app_row
       width = config[:width] || 20
       _position config
       col = config[:col] || 1
+      @color_pair = config[:color_pair] || $datacolor
+      @attrib = config[:attrib] || Ncurses::A_NORMAL
+      @window.attron(Ncurses.COLOR_PAIR(@color_pair) | @attrib)
       @window.mvwhline( row, col, ACS_HLINE, width)
+      @window.attron(Ncurses.COLOR_PAIR(@color_pair) | @attrib)
       @app_row += 1
     end
     def app_header title, config={}, &block
