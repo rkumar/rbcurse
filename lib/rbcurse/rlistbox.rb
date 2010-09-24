@@ -9,9 +9,6 @@ TODO
   Perhaps keep printed data created by convert_value_to_text cached, and used for searching
   cursor movement and other functions. 
 =end
-require 'rubygems'
-require 'ncurses'
-require 'logger'
 require 'rbcurse'
 require 'rbcurse/listcellrenderer'
 require 'rbcurse/listkeys'
@@ -434,6 +431,7 @@ module RubyCurses
     attr_accessor :one_key_selection # will pressing a single key select or not
     dsl_accessor :border_attrib, :border_color # 
     dsl_accessor :sanitization_required
+    dsl_accessor :to_print_borders
 
 
     def initialize form, config={}, &block
