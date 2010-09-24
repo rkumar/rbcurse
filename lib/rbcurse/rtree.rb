@@ -6,11 +6,11 @@
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
   * This file started on 2010-09-18 12:03 (copied from rlistbox)
 TODO:
-   [ ] load on tree will expand
+   [x] load on tree will expand
    [ ] selected row on startup
-   [ ] open up a node and make current on startup
+   [/] open up a node and make current on startup
    [ ] find string
-   [ ] expand all descendants
+   [/] expand all descendants
    ++ +- and +?
 =end
 require 'rbcurse'
@@ -102,7 +102,7 @@ module RubyCurses
         @left_margin ||= @row_selected_symbol.length
       end
       @left_margin ||= 0
-      @one_key_selection = false if @one_key_selection.nil?
+      @one_key_selection = true if @one_key_selection.nil?
       @height ||= 10
       @width  ||= 30
 
@@ -114,12 +114,16 @@ module RubyCurses
       $log.debug " cam in XXXX  map keys"
       bind_key(32){ toggle_row_selection() }
       bind_key(KEY_RETURN) { toggle_expanded_state() }
+      bind_key(?o) { toggle_expanded_state() }
       bind_key(?f){ ask_selection_for_char() }
       bind_key(?\M-v){ @one_key_selection = true }
       bind_key(KEY_DOWN){ next_row() }
       bind_key(KEY_UP){ previous_row() }
-      bind_key([?z,?o]){ expand_children() }
-      bind_key([?z,?c]){ collapse_children() }
+      bind_key(?O){ expand_children() }
+      bind_key(?X){ collapse_children() }
+      # TODO
+      bind_key(?x){ collapse_parent() }
+      bind_key(?p){ goto_parent() }
       if $key_map == :emacs
         $log.debug " EMACSam in XXXX  map keys"
         bind_key(?\C-v){ scroll_forward }
@@ -153,7 +157,7 @@ module RubyCurses
     end
     # this allows a user to use this 2 times !! XXX
     def root node, asks_allow_children=false, &block
-      raise ArgumentError "root: node cannot be nil" unless node
+      raise ArgumentError, "root: node cannot be nil" unless node
       @treemodel = RubyCurses::DefaultTreeModel.new(node, asks_allow_children, &block)
     end
     # pass data to create this tree model
@@ -244,28 +248,25 @@ module RubyCurses
       window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
-      #@color_pair = get_color($datacolor)
       bordercolor = @border_color || $datacolor
       borderatt = @border_attrib || Ncurses::A_NORMAL
                            
-      #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
-      #window.print_border startrow, startcol, height, width, @color_pair, @attr
       window.print_border startrow, startcol, height, width, bordercolor, borderatt
       print_title
     end
     def print_title
-      #printstring(@graphic, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
-      # 2010-01-04 15:53 BUFFERED
       # I notice that the old version would print a title that was longer than width,
       #+ but the new version won't print anything if it exceeds width.
       # TODO check title.length and truncate if exceeds width
+      @color_pair = get_color($datacolor)
       @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
     def get_content
       #@list 2008-12-01 23:13 
       @list_variable && @list_variable.value || @list 
-      raise "unused what to do ??"
+      # called by next_match in listscrollable
+      @list
     end
     def get_window
       @graphic # 2010-01-04 12:37 BUFFERED
@@ -298,18 +299,7 @@ module RubyCurses
         @multiplier = 0
         return 0
       else
-        # this has to be fixed, if compo does not handle key it has to continue into next part FIXME
-        ret = :UNHANDLED # changed on 2009-01-27 13:14 not going into unhandled, tab not released
-        #if @cell_editing_allowed
-          #@repaint_required = true
-          ## hack - on_enter_row should fire when this widget gets focus. first row that is DONE
-          #begin
-            #ret = @cell_editor.component.handle_key(ch)
-          #rescue
-            #on_enter_row @current_index
-            #ret = @cell_editor.component.handle_key(ch)
-          #end
-        #end
+        ret = :UNHANDLED 
         if ret == :UNHANDLED
           # beware one-key eats up numbers. we'll be wondering why
           if @one_key_selection
@@ -331,7 +321,9 @@ module RubyCurses
               #$log.debug " setting mult to #{$multiplier} in list "
               return 0
             end
+            $log.debug " TREE before process key #{ch} "
             ret = process_key ch, self
+            $log.debug " TREE after process key #{ch} #{ret} "
             #$multiplier = 0 # 2010-09-02 22:35 this prevents parent from using mult
             return :UNHANDLED if ret == :UNHANDLED
           end
@@ -602,6 +594,7 @@ module RubyCurses
     end
     # this is required to make a node visible, if you wish to start from a node that is not root
     # e.g. you are loading app in a dir somewhere but want to show path from root down.
+    # NOTE this sucks since you have to click 2 times to expand it.
     def mark_parents_expanded node
       # i am setting parents as expanded, but NOT firing handlers - XXX separate this into expand_parents
       _path = node.tree_path
@@ -630,6 +623,7 @@ module RubyCurses
     end
     def collapse_children node=:current_index
       $multiplier = 999 if !$multiplier || $multiplier == 0
+      $log.debug " CCCC IINSIDE COLLLAPSE"
       node = row_to_node if node == :current_index
       return if node.children.empty? # or node.is_leaf?
       #node.children.each do |e| 
@@ -637,10 +631,36 @@ module RubyCurses
         #expand_children e
       #end
       node.breadth_each($multiplier) do |e|
+        $log.debug "CCC collapsing #{e.user_object}  "
         collapse_node e
       end
       $multiplier = 0
       _structure_changed true
+    end
+    # collapse parent
+    # can use multiplier.
+    # # we need to move up also
+    def collapse_parent node=:current_index
+      node = row_to_node if node == :current_index
+      parent = node.parent
+      return if parent.nil?
+      goto_parent node
+      collapse_node parent
+    end
+    def goto_parent node=:current_index
+      node = row_to_node if node == :current_index
+      parent = node.parent
+      return if parent.nil?
+      crow = @current_index
+      @list.each_with_index { |e,i| 
+        if e == parent
+          crow = i
+          break
+        end
+      }
+      @repaint_required = true
+      #set_form_row  # will not work if off form
+      set_focus_on crow
     end
 
     def has_been_expanded node
