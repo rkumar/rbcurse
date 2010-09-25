@@ -46,6 +46,8 @@ module RubyCurses
     # painting the footer does slow down cursor painting slightly if one is moving cursor fast
     dsl_accessor :print_footer
     dsl_accessor :suppress_borders # added 2010-02-10 20:05 values true or false
+    attr_reader :current_index
+    dsl_accessor :border_attrib, :border_color # 
 
     def initialize form = nil, config={}, &block
       @focusable = true
@@ -64,6 +66,7 @@ module RubyCurses
 
       @_events.push :CHANGE # thru vieditable
       @_events << :PRESS # new, in case we want to use this for lists and allow ENTER
+      @_events << :ENTER_ROW # new, should be there in listscrollable ??
       install_keys
       init_vars
     end
@@ -155,8 +158,10 @@ module RubyCurses
     ## Note that print_border clears the area too, so should be used sparingly.
     def print_borders
       $log.debug " #{@name} print_borders,  #{@graphic.name} "
-      color = $datacolor
-      @graphic.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
+      
+      bordercolor = @border_color || $datacolor
+      borderatt = @border_attrib || Ncurses::A_NORMAL
+      @graphic.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
     end
     def print_title
@@ -502,6 +507,11 @@ module RubyCurses
       require 'rbcurse/ractionevent'
       aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
       fire_handler :PRESS, aev
+    end
+    # called by listscrollable, used by scrollbar ENTER_ROW
+    def on_enter_row arow
+      fire_handler :ENTER_ROW, self
+      @repaint_required = true
     end
 
   end # class textview
