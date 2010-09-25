@@ -654,6 +654,7 @@ module RubyCurses
       print_title
     end
     def print_title
+      @color_pair ||= get_color($datacolor)
       #printstring(@graphic, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
       # 2010-01-04 15:53 BUFFERED
       # I notice that the old version would print a title that was longer than width,
