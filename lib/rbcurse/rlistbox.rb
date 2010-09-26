@@ -8,6 +8,8 @@
 TODO 
   Perhaps keep printed data created by convert_value_to_text cached, and used for searching
   cursor movement and other functions. 
+  [ ] XXX Can we separate editing out. Make a ReadonlyList, and extend it as EditableList. This way the usual
+  use case remains cleaner.
 =end
 require 'rbcurse'
 require 'rbcurse/listcellrenderer'
@@ -814,28 +816,6 @@ module RubyCurses
       else
         set_focus_on(ix)
       end
-    end
-    ## listbox find_prev
-    def OLDfind_prev
-        ix = @list.find_prev
-        regex = @last_regex 
-        if ix.nil?
-          alert("No previous matching data for: #{regex}")
-        else
-          @oldrow = @current_index
-          @current_index = ix
-          bounds_check
-        end
-    end
-    # table find_next
-    def OLDfind_next
-        ix = @list.find_next
-        regex = @last_regex 
-        if ix.nil?
-          alert("No more matching data for: #{regex}")
-        else
-          set_focus_on(ix) unless ix.nil?
-        end
     end
     # please check for error before proceeding
     # @return [Boolean] false if no data
