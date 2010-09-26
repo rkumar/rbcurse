@@ -73,8 +73,6 @@ module RubyCurses
     # returns value of first selected row (lowest index)
     def selected_value
       #@list[@current_index].to_s # old behavior since curr row was in reverse
-      $log.debug " XXXX TEMP1 #{selected_row} "
-      $log.debug " XXXX TEMP2 #{@list.size} "
       return nil if selected_row().nil?
       @list[selected_row()].to_s
     end
