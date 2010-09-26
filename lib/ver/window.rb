@@ -400,6 +400,8 @@ module VER
     # prints a border around a widget, CLEARING the area.
     #  If calling with a pad, you would typically use 0,0, h-1, w-1.
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
+      raise "height needs to be supplied." if height.nil?
+      raise "width needs to be supplied." if width.nil?
       att ||= Ncurses::A_NORMAL
 
       $log.debug " inside window print_border r #{row} c #{col} h #{height} w #{width} "
