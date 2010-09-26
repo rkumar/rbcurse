@@ -82,6 +82,10 @@ module ColorMap
     $bottomcolor = $topcolor = ColorMap.get_color(:white, :blue)
     $selectedcolor = $datacolor # since we now use reverse attr in list
 
+    $row_selected_attr = Ncurses::A_REVERSE
+    $row_focussed_attr = Ncurses::A_BOLD
+    $row_attr          = Ncurses::A_NORMAL
+
 #    $log.debug " colormap SETUP: #{$datacolor} #{$reversecolor} "
   end
 
