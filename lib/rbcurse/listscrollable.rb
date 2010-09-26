@@ -116,7 +116,7 @@ module ListScrollable
     #@form.setrowcol row, nil
     #setformrowcol row, nil
     setrowcol row, nil
-    show_caret_func
+    #show_caret_func
   end
   ## In many situations like placing a textarea or textview inside a splitpane 
   ##+ or scrollpane there have been issues getting the cursor at the right point, 
@@ -188,47 +188,7 @@ module ListScrollable
   end
   #alias :current_index :focussed_index
   alias :selected_index :focussed_index
-  def OLDscrollable_handle_key ch
-    begin
-      ###pre_key # 2009-01-07 13:23 
-      case ch
-      when ?\C-n.getbyte(0)
-        scroll_forward
-      when 32
-        scroll_forward
-      when ?\C-p.getbyte(0)
-        scroll_backward
-      when ?0.getbyte(0)
-        #goto_start
-        goto_top
-      when ?9.getbyte(0)
-        #goto_end
-        goto_bottom
-      when KEY_UP
-        #select_prev_row
-        #up
-        #$log.debug " GOT KEY UP NEW SCROLL"
-        return previous_row
-      when KEY_LEFT
-      when KEY_RIGHT
-      when KEY_DOWN
-        #down
-        #$log.debug " GOT KEY DOWN NEW SCROLL"
-        next_row
-      when KEY_ENTER, 10, 13
-        if respond_to? :fire
-          fire
-        end
-      when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
-        ret = set_selection_for_char ch.chr
-      else
-        return :UNHANDLED #if ret == -1
-      end
-    ensure
-      #post_key
-    end
-  end # handle_k listb
-  ## 2008-12-18 18:03 
+  
   # finds the next match for the char pressed
   # returning the index
   # If we are only checking first char, then why chomp ?
