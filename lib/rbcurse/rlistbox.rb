@@ -429,7 +429,8 @@ module RubyCurses
     dsl_accessor :KEY_CLEAR_SELECTION
     dsl_accessor :KEY_NEXT_SELECTION
     dsl_accessor :KEY_PREV_SELECTION
-    dsl_accessor :valign  # 2009-01-17 18:32 
+    #dsl_accessor :valign  # 2009-01-17 18:32 
+    dsl_accessor :justify  #  2010-09-27 12:41 used by renderer
     attr_accessor :one_key_selection # will pressing a single key select or not
     dsl_accessor :border_attrib, :border_color # 
     dsl_accessor :sanitization_required
@@ -1027,7 +1028,7 @@ module RubyCurses
           content.replace content[@pcol..@pcol+maxlen-1] 
         else
           # can this be avoided if pcol is 0 XXX
-          content.replace content[@pcol..-1]
+          content.replace content[@pcol..-1] if @pcol > 0
         end
       end
       content
