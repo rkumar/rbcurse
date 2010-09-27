@@ -799,7 +799,8 @@ module RubyCurses
             system("tput cup 26 0")
             system("tput ed")
             system("echo Enter C-d to return to application")
-            system($ENV['SHELL']);
+            system (ENV['PS1']='\s-\v\$ ')
+            system(ENV['SHELL']);
           end
           }
           @form.bind_key(?:) { 
