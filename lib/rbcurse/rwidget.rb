@@ -48,6 +48,7 @@ class Module
             @#{sym}
           else
             @#{sym} = val.size == 1 ? val[0] : val
+            # i am itching to deprecate next line XXX
             @config["#{sym}"]=@#{sym}
           end
         end
@@ -55,6 +56,8 @@ class Module
       }
     }
   end
+  # Besides creating getters and setters,  this also fires property change handler
+  # if the value changes, and after the object has been painted once.
   def dsl_property(*symbols)
     symbols.each { |sym|
       class_eval %{
@@ -65,12 +68,11 @@ class Module
             oldvalue = @#{sym}
             @#{sym} = val.size == 1 ? val[0] : val
             newvalue = @#{sym}
+            # i am itching to deprecate next line XXX 
             @config["#{sym}"]=@#{sym}
             return if oldvalue.nil? || @_object_created.nil?
             if oldvalue != newvalue
               # trying to reduce calls to fire, when object is being created
-              # in some cases property is preset in widget to 0 or -1. row col, color
-              # should i set a flag at end of repaint meaning now firing can happen XXX FIXME
               fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
             end
           end
@@ -363,7 +365,7 @@ module RubyCurses
       # private
       def variable_set var, val
         nvar = "@#{var}"
-        send("#{var}", val)   # 2009-01-08 01:30 BIG CHANGE calling methods too here.
+        send("#{var}", val) #rescue send("#{var}=", val)    # 2009-01-08 01:30 BIG CHANGE calling methods too here.
         #instance_variable_set(nvar, val)   # we should not call this !!! bypassing 
       end
       def configure(*val , &block)
@@ -460,7 +462,14 @@ module RubyCurses
       @handler = nil # we can avoid firing if nil
       @event_args = {}
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
-      instance_eval &block if block_given?
+      #instance_eval &block if block_given?
+      if block_given?
+        if block.arity > 0
+          yield self
+        else
+          self.instance_eval(&block)
+        end
+      end
       # 2010-09-20 13:12 moved down, so it does not create problems with other who want to set their
       # own default
       @bgcolor ||=  "black" # 0
@@ -848,13 +857,14 @@ module RubyCurses
      # @since 0.1.3
      #
      def width(*val)
-       #$log.debug " inside XXX width() #{val[0]}"
+       $log.debug " inside XXX width() #{val}"
        if val.empty?
          return @width
        else
          #$log.debug " inside XXX width()"
          oldvalue = @width || 0 # is this default okay, else later nil cries
-         @width = val.size == 1 ? val[0] : val
+         #@width = val.size == 1 ? val[0] : val
+         @width = val[0]
          newvalue = @width
          @config["width"]=@width
          if oldvalue != newvalue
