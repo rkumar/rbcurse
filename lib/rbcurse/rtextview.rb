@@ -48,10 +48,12 @@ module RubyCurses
     dsl_accessor :suppress_borders # added 2010-02-10 20:05 values true or false
     attr_reader :current_index
     dsl_accessor :border_attrib, :border_color # 
+    dsl_accessor :sanitization_required
 
     def initialize form = nil, config={}, &block
       @focusable = true
       @editable = false
+      @sanitization_required = true
       @row = 0
       @col = 0
       @show_focus = false  # don't highlight row under focus
@@ -60,19 +62,19 @@ module RubyCurses
       # ideally this should have been 2 to take care of borders, but that would break
       # too much stuff !
       @row_offset = @col_offset = 1 
-      #@scrollatrow = @height-2
-      @content_rows = @list.length
       @win = @graphic
 
       @_events.push :CHANGE # thru vieditable
       @_events << :PRESS # new, in case we want to use this for lists and allow ENTER
       @_events << :ENTER_ROW # new, should be there in listscrollable ??
-      install_keys
+      install_keys # do something about this nonsense FIXME
       init_vars
+      map_keys
     end
-    def init_vars
+    def init_vars #:nodoc:
       @curpos = @pcol = @toprow = @current_index = 0
       @repaint_all=true 
+      @repaint_required=true 
       ## 2010-02-10 20:20 RFED16 taking care if no border requested
       @suppress_borders ||= false
       @row_offset = @col_offset = 0 if @suppress_borders == true
@@ -85,6 +87,8 @@ module RubyCurses
       # longest line on screen.
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
 
+    end
+    def map_keys
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
@@ -98,6 +102,8 @@ module RubyCurses
     # send in a list
     # e.g.         set_content File.open("README.txt","r").readlines
     # set wrap at time of passing :WRAP_NONE :WRAP_WORD
+    # XXX if we widen the textview later, as in a vimsplit that data
+    # will still be wrapped at this width !!
     def set_content list, wrap = :WRAP_NONE
       @wrap_policy = wrap
       if list.is_a? String
@@ -117,27 +123,27 @@ module RubyCurses
       else
         raise "set_content expects Array not #{list.class}"
       end
+      init_vars
     end
     ## display this row on top
-    def top_row(*val)
+    def top_row(*val) #:nodoc:
       if val.empty?
         @toprow
       else
         @toprow = val[0] || 0
-        #@prow = val[0] || 0
       end
       @repaint_required = true
     end
     ## ---- for listscrollable ---- ##
-    def scrollatrow
-      @height - 3 # trying out 2009-10-31 15:22 XXX since we seem to be printing one more line
+    def scrollatrow #:nodoc:
+      @height - 3 
     end
     def row_count
       @list.length
     end
     ##
     # returns row of first match of given regex (or nil if not found)
-    def find_first_match regex
+    def find_first_match regex #:nodoc:
       @list.each_with_index do |row, ix|
         return ix if !row.match(regex).nil?
       end
@@ -145,10 +151,10 @@ module RubyCurses
     end
     ## returns the position where cursor was to be positioned by default
     # It may no longer work like that. 
-    def rowcol
+    def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
     end
-    def wrap_text(txt, col = @maxlen)
+    def wrap_text(txt, col = @maxlen) #:nodoc:
       col ||= @width-2
       $log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
@@ -156,7 +162,10 @@ module RubyCurses
     end
     ## print a border
     ## Note that print_border clears the area too, so should be used sparingly.
-    def print_borders
+    def print_borders #:nodoc:
+      raise "textview needs width" unless @width
+      raise "textview needs height" unless @height
+
       $log.debug " #{@name} print_borders,  #{@graphic.name} "
       
       bordercolor = @border_color || $datacolor
@@ -164,14 +173,15 @@ module RubyCurses
       @graphic.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
     end
-    def print_title
+    def print_title #:nodoc:
+      raise "textview needs width" unless @width
       $log.debug " print_title #{@row}, #{@col}, #{@width}  "
       @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
-    def print_foot
+    def print_foot #:nodoc:
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+      #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
@@ -179,11 +189,11 @@ module RubyCurses
     def get_content
       @list
     end
-    def get_window
+    def get_window #:nodoc:
       @graphic
     end
-    ### FOR scrollable ###
-    def repaint # textview
+
+    def repaint # textview :nodoc:
       if @screen_buffer.nil?
         safe_create_buffer
         @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
@@ -203,7 +213,7 @@ module RubyCurses
       @list[@current_index]
     end
     # textview
-    def handle_key ch
+    def handle_key ch #:nodoc:
       @buffer = @list[@current_index]
       if @buffer.nil? and row_count == 0
         @list << "\r"
@@ -302,7 +312,7 @@ module RubyCurses
       return 0 # added 2010-01-12 22:17 else down arrow was going into next field
     end
     # newly added to check curpos when moving up or down
-    def check_curpos
+    def check_curpos #:nodoc:
       @buffer = @list[@current_index]
       # if the cursor is ahead of data in this row then move it back
       if @pcol+@curpos > @buffer.length
@@ -322,7 +332,7 @@ module RubyCurses
       end
     end
     # set cursor on correct column tview
-    def set_form_col col1=@curpos
+    def set_form_col col1=@curpos #:nodoc:
       @cols_panned ||= 0
       @pad_offset ||= 0 # added 2010-02-11 21:54 since padded widgets get an offset.
       @curpos = col1
@@ -343,7 +353,7 @@ module RubyCurses
       setrowcol nil, col2
       @repaint_footer_required = true
     end
-    def cursor_forward
+    def cursor_forward #:nodoc:
       maxlen = @maxlen || @width-2
       repeatm { 
       if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
@@ -357,7 +367,7 @@ module RubyCurses
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
     end
-    def addcol num
+    def addcol num #:nodoc:
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
       if @form
@@ -366,7 +376,7 @@ module RubyCurses
         @parent_component.form.addcol num
       end
     end
-    def addrowcol row,col
+    def addrowcol row,col #:nodoc:
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
       if @form
@@ -375,7 +385,7 @@ module RubyCurses
         @parent_component.form.addrowcol num
       end
     end
-    def cursor_backward
+    def cursor_backward  #:nodoc:
       repeatm { 
       if @curpos > 0
         @curpos -= 1
@@ -389,10 +399,12 @@ module RubyCurses
       @repaint_footer_required = true # 2010-01-23 22:41 
     end
     # gives offset of next line, does not move
-    def next_line
+    # @deprecated
+    def next_line  #:nodoc:
       @list[@current_index+1]
     end
-    def do_relative_row num
+    # @deprecated
+    def do_relative_row num  #:nodoc:
       yield @list[@current_index+num] 
     end
 
@@ -400,7 +412,7 @@ module RubyCurses
     ##+ a window is resized, and destroyed, then this was never called again, so the 
     ##+ border would not be seen in splitpane unless the width coincided exactly with
     ##+ what is calculated in divider_location.
-    def paint
+    def paint  #:nodoc:
       # not sure where to put this, once for all or repeat 2010-02-11 15:06 RFED16
       my_win = nil
       if @form
@@ -409,16 +421,13 @@ module RubyCurses
         my_win = @target_window
       end
       @graphic = my_win unless @graphic
-      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
-      #raise " #{@name} neither form, nor target window given TV paint " unless my_win
-      #raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       maxlen = @maxlen || @width-2
-      $log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
+      #$log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
@@ -430,18 +439,14 @@ module RubyCurses
         if crow < rc
             #focussed = @current_index == crow ? true : false 
             #selected = is_row_selected crow
-            content = tm[crow].chomp
-            content.gsub!(/\t/, '  ') # don't display tab
-            content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
-            if !content.nil? 
-              if content.length > maxlen # only show maxlen
-                @longest_line = content.length if content.length > @longest_line
-                content = content[@pcol..@pcol+maxlen-1] 
-              else
-                content = content[@pcol..-1]
-              end
-            end
+            content = tm[crow]
+            # next call modified string. you may wanna dup the string.
+            # rlistbox does
+            sanitize content if @sanitization_required
+            truncate content
             @graphic.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
+
+            # highlighting search results.
             if @search_found_ix == tr+hh
               if !@find_offset.nil?
                 # handle exceed bounds, and if scrolling
@@ -459,15 +464,42 @@ module RubyCurses
       #show_caret_func
       @table_changed = false
       @repaint_required = false
-      @repaint_footer_required = true # 2010-01-23 22:41 
+      @repaint_footer_required = true
       @buffer_modified = true # required by form to call buffer_to_screen
-      @repaint_all = false # added 2010-01-08 18:56 for redrawing everything
+      @repaint_all = false 
 
       # 2010-02-10 22:08 RFED16
     end
+    # takes a block, this way anyone extending this class can just pass a block to do his job
+    # This modifies the string
+    def sanitize content  #:nodoc:
+      if content.is_a? String
+        content.chomp!
+        content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+      else
+        content
+      end
+    end
+    # returns only the visible portion of string taking into account display length
+    # and horizontal scrolling. MODIFIES STRING
+    def truncate content  #:nodoc:
+      maxlen = @maxlen ||= @width-2
+      if !content.nil? 
+        if content.length > maxlen # only show maxlen
+          @longest_line = content.length if content.length > @longest_line
+          #content = content[@pcol..@pcol+maxlen-1] 
+          content.replace content[@pcol..@pcol+maxlen-1] 
+        else
+          # can this be avoided if pcol is 0 XXX
+          content.replace content[@pcol..-1] if @pcol > 0
+        end
+      end
+      content
+    end
     ## this is just a test of prompting user for a string
     #+ as an alternative to the dialog.
-    def getstr prompt, maxlen=10
+    def getstr prompt, maxlen=10  #:nodoc:
       tabc = Proc.new {|str| Dir.glob(str +"*") }
       config={}; config[:tab_completion] = tabc
       config[:default] = "default"
@@ -478,7 +510,7 @@ module RubyCurses
       return str
     end
     # this is just a test of the simple "most" menu
-    def disp_menu
+    def disp_menu  #:nodoc:
       menu = PromptMenu.new self 
       menu.add( menu.create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} ))
       menu.add(menu.create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right ))
@@ -501,8 +533,11 @@ module RubyCurses
       extend Object.const_get("#{includename}")
       send("#{requirename}_init") #if respond_to? "#{includename}_init"
     end
-    # on pressing ENTER we send user some info
+    # on pressing ENTER we send user some info, the calling program
+    # would bind :PRESS
+    #--
     # FIXME we can create this once and reuse
+    #++
     def fire_action_event
       require 'rbcurse/ractionevent'
       aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
@@ -512,6 +547,18 @@ module RubyCurses
     def on_enter_row arow
       fire_handler :ENTER_ROW, self
       @repaint_required = true
+    end
+    # added 2010-09-30 18:48 so standard with other components, esp on enter 
+    def on_enter
+      if @list.nil? || @list.size == 0
+        Ncurses.beep
+        return :UNHANDLED
+      end
+      on_enter_row @current_index
+      set_form_row 
+      @repaint_required = true
+      super
+      true
     end
 
   end # class textview
