@@ -25,6 +25,7 @@ module RubyCurses
   extend self
   class Coord < Struct.new(:row, :col, :h, :w); end
   class Split < Struct.new(:which, :type, :weight, :add_weight); end
+  class ResizeEvent < Struct.new(:source, :type); end
   class VimSplit < Widget
 
     # split orientation :V or :H
@@ -63,6 +64,7 @@ module RubyCurses
 
       @ch = {}
       @weight ||= 0.50
+      @_events.push :COMPONENT_RESIZE_EVENT
 
       init_vars
       bind_key([?\C-w,?o], :goto_other_split)  
@@ -167,7 +169,9 @@ module RubyCurses
       #@ch[c] = [which, type, weight]
       @ch[c] = Split.new(which, type, weight)
       @repaint_required = true
+      return c
     end
+    public
     def split_info_for(c = @current_component)
       @ch[c]
     end
@@ -176,10 +180,12 @@ module RubyCurses
     def current_split
       split_info_for(@current_component).which
     end
+    # returns the other split.
     def other_split
       which = current_split
       return which == :FIRST ? :SECOND : :FIRST
     end
+    # returns list of components for FIRST or SECOND split
     def components_for which
       return which == :FIRST ? @c1 : @c2
     end
@@ -474,22 +480,27 @@ module RubyCurses
       _multiplier = ($multiplier == 0 ? 1 : $multiplier )
       weight(weight + 0.1*_multiplier)
     end
+    # FIXME - i can only reduce if i've increased
     def decrease_current_component
       info = split_info_for
       info.add_weight = 0 if info.add_weight.nil?
-      if info.add_weight > 0.0
-        info.add_weight = info.add_weight - 0.05
-      end
-      @repaint_required = true
+      #if info.add_weight > 0.0
+        #info.add_weight = info.add_weight - 0.05
+      #end
+      e = ResizeEvent.new @current_component, :DECREASE
+      fire_handler :COMPONENT_RESIZE_EVENT, e
+      #@repaint_required = true
     end
     def increase_current_component
       info = split_info_for
       info.add_weight = 0 if info.add_weight.nil?
-      if info.add_weight < 0.3
-        info.add_weight = info.add_weight + 0.05
-      end
+      #if info.add_weight < 0.3
+        #info.add_weight = info.add_weight + 0.05
+      #end
       $log.debug " XXX modifed add_weight to #{info.add_weight} "
-      @repaint_required = true
+      e = ResizeEvent.new @current_component, :INCREASE
+      fire_handler :COMPONENT_RESIZE_EVENT, e
+      #@repaint_required = true
     end
 
     # ADD HERE ABOVe
