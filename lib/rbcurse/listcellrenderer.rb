@@ -77,6 +77,8 @@ module RubyCurses
     def repaint graphic, r=@row,c=@col, row_index=-1,value=@text, focussed=false, selected=false
 
       select_colors focussed, selected 
+      # if listboxes width is reduced, display_len remains the same
+      @display_length = @parent.width - 2 - @parent.left_margin
 
       value=value.to_s
       if !@display_length.nil?
@@ -89,6 +91,7 @@ module RubyCurses
         end
       end
       len = @display_length || value.length
+      $log.debug " CELLREND len #{len} "
       graphic.printstring r, c, @format % [len, value], @color_pair, @attr
     end # repaint
   end # class
