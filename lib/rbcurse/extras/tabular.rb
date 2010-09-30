@@ -99,7 +99,7 @@ module RubyCurses
     # set width of a given column
     # @param [Number] column offset, starting 0
     # @param [Number] width
-    def width colindex, width
+    def column_width colindex, width
       @cw[colindex] ||= width
       if @chash[colindex].nil?
         @chash[colindex] = ColumnInfo.new("", width) 
@@ -122,29 +122,17 @@ module RubyCurses
       end
       @chash
     end
+
     # 
     # Now returns an array with formatted data
     # @return [Array<String>] array of formatted data
     def render
       buffer = []
-      guess_col_widths
-      puts @cw
+      _guess_col_widths
       rows = @list.size.to_s.length
       @rows = rows
-      @fmtstr = nil
+      _prepare_format
       
-      fmt = []
-      @cw.each_with_index { |c, i| 
-        w = @cw[i]
-        case @calign[i]
-        when :right
-          fmt << "%#{w}s "
-        else
-          fmt << "%-#{w}s "
-        end
-      }
-      @fmstr = fmt.join(@y)
-      #str = @columns.join(@y)
       str = ""
       if @numbering
         str = " "*(rows+1)+@y
@@ -160,18 +148,21 @@ module RubyCurses
         #@list.each { |e| puts e.join(@y) }
         count = 0
         @list.each_with_index { |r,i|  
-          if r == :separator
-            buffer << separator
-            next
-          end
-          if @numbering
-            r.insert 0, count+1
-          end
-          buffer << @fmstr % r;  
+          value = convert_value_to_text r, count
+          buffer << value
           count += 1
         }
       end
       buffer
+    end
+    def convert_value_to_text r, count
+      if r == :separator
+        return separator
+      end
+      if @numbering
+        r.insert 0, count+1
+      end
+      return @fmstr % r;  
     end
     # use this for printing out on terminal
     # @example
@@ -191,7 +182,8 @@ module RubyCurses
       @cw.each_pair { |k,v| str << "-" * (v+1) + @x }
       @separ = str.chop
     end
-    def guess_col_widths
+    private
+    def _guess_col_widths  #:nodoc:
       @list.each_with_index { |r, i| 
         break if i > 10
         next if r == :separator
@@ -205,48 +197,62 @@ module RubyCurses
         }
       }
     end
+    def _prepare_format  #:nodoc:
+      @fmtstr = nil
+      fmt = []
+      @cw.each_with_index { |c, i| 
+        w = @cw[i]
+        case @calign[i]
+        when :right
+          fmt << "%#{w}s "
+        else
+          fmt << "%-#{w}s "
+        end
+      }
+      @fmstr = fmt.join(@y)
+    end
   end
 end
 
-  if __FILE__ == $PROGRAM_NAME
-    include RubyCurses
-    t = Tabular.new(['a', 'b'], [1, 2], [3, 4])
-    puts t.to_s
-    puts 
-    t = Tabular.new([" Name ", " Number ", "  Email    "])
-    t.add %w{ rahul 32 r@ruby.org }
-    t << %w{ _why 133 j@gnu.org }
-    t << %w{ Jane 1331 jane@gnu.org }
-    t.align_column 1, :right
-    puts t.to_s
-    puts
+if __FILE__ == $PROGRAM_NAME
+  include RubyCurses
+  t = Tabular.new(['a', 'b'], [1, 2], [3, 4])
+  puts t.to_s
+  puts 
+  t = Tabular.new([" Name ", " Number ", "  Email    "])
+  t.add %w{ rahul 32 r@ruby.org }
+  t << %w{ _why 133 j@gnu.org }
+  t << %w{ Jane 1331 jane@gnu.org }
+  t.align_column 1, :right
+  puts t.to_s
+  puts
 
-    s = Tabular.new do |b|
-      b.columns = %w{ country continent text }
-      b << ["india","asia","a warm country" ] 
-      b << ["japan","asia","a cool country" ] 
-      b << ["russia","europe","a hot country" ] 
-      b.width 2, 30
-    end
-    puts s.to_s
-    puts
-    puts "::::"
-    puts
-    s = Tabular.new do |b|
-      b.columns = %w{ place continent text }
-      b << ["india","asia","a warm country" ] 
-      b << ["japan","asia","a cool country" ] 
-      b << ["russia","europe","a hot country" ] 
-      b << ["sydney","australia","a dry country" ] 
-      b << ["canberra","australia","a dry country" ] 
-      b << ["ross island","antarctica","a dry country" ] 
-      b << ["mount terror","antarctica","a windy country" ] 
-      b << ["mt erebus","antarctica","a cold place" ] 
-      b << ["siberia","russia","an icy city" ] 
-      b << ["new york","USA","a fun place" ] 
-      b.width 0, 12
-      b.width 1, 12
-      b.numbering = true
-    end
-    puts s.to_s
+  s = Tabular.new do |b|
+    b.columns = %w{ country continent text }
+    b << ["india","asia","a warm country" ] 
+    b << ["japan","asia","a cool country" ] 
+    b << ["russia","europe","a hot country" ] 
+    b.column_width 2, 30
   end
+  puts s.to_s
+  puts
+  puts "::::"
+  puts
+  s = Tabular.new do |b|
+    b.columns = %w{ place continent text }
+    b << ["india","asia","a warm country" ] 
+    b << ["japan","asia","a cool country" ] 
+    b << ["russia","europe","a hot country" ] 
+    b << ["sydney","australia","a dry country" ] 
+    b << ["canberra","australia","a dry country" ] 
+    b << ["ross island","antarctica","a dry country" ] 
+    b << ["mount terror","antarctica","a windy country" ] 
+    b << ["mt erebus","antarctica","a cold place" ] 
+    b << ["siberia","russia","an icy city" ] 
+    b << ["new york","USA","a fun place" ] 
+    b.column_width 0, 12
+    b.column_width 1, 12
+    b.numbering = true
+  end
+  puts s.to_s
+end
