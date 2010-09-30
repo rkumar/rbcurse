@@ -364,7 +364,7 @@ module RubyCurses
         @repaint_required = true
       end
       # recalculates components and calls repaint
-      def update_components # 
+      def update_components #   #:nodoc:
         @balance = 0
         @max_visible ||= @split_count
         @_first_column_print ||= 0
@@ -381,7 +381,7 @@ module RubyCurses
         end
         #@balance = 0
       end
-      def repaint # multisplitpane
+      def repaint # multisplitpane  #:nodoc:
         if @graphic.nil?
           @graphic = @target_window || @form.window
           raise "graphic nil in rsplitpane #{@name} " unless @graphic
