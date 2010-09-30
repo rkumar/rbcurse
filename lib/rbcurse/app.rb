@@ -354,7 +354,9 @@ module RubyCurses
       # naive defaults, since list could be large or have very long items
       # usually user will provide
       if !config.has_key? :height
-        config[:height] ||= config[:list].length + 2
+        ll = 0
+        ll = config[:list].length + 2 if config.has_key? :list
+        config[:height] ||= ll
         config[:height] = 15 if config[:height] > 20
       end
       if @current_object.empty?
