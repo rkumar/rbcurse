@@ -8,9 +8,9 @@
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
-require 'ncurses'
-require 'logger'
+#require 'rubygems'
+#require 'ncurses'
+#require 'logger'
 require 'rbcurse'
 
 include Ncurses
@@ -39,8 +39,8 @@ module RubyCurses
       super
       bind_key(?\M-:, :buffer_menu)
       # bind_key([?\C-x, ?f], :file_edit)
-      bind_key([?\C-x, ?k], :buffer_delete)
-      bind_key([?\C-x, ?\C-b], :buffers_list)
+      bind_key([?\C-x, ?k], :delete_component)
+      bind_key([?\C-x, ?\C-b], :list_components)
       # easily cycle using p. n is used for next search.
       #bind_key(?p, :buffer_previous)
       @suppress_borders = false 
@@ -49,12 +49,12 @@ module RubyCurses
     end
     ## returns current buffer
     # @return  [RBuffer] current buffer
-    def current_buffer
+    def current_component
       @bmanager.current
     end
     ## 
     # multi-container
-    def handle_key ch
+    def handle_key ch  #:nodoc:
       $log.debug " MULTI handlekey #{ch}, #{@current_component}  "
       ret = :UNHANDLED
       return :UNHANDLED unless @current_component
@@ -83,13 +83,13 @@ module RubyCurses
       $log.debug " MULTI REPAINT "
       ret = @current_component.repaint
     end
-    def print_border
+    def print_border  #:nodoc:
       $log.debug " #{@name} print_borders,  #{@graphic.name} "
       color = $datacolor
       @graphic.print_border_only @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       print_title
     end
-    def print_title
+    def print_title  #:nodoc:
       $log.debug " print_title #{@row}, #{@col}, #{@width}  "
       @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
@@ -97,14 +97,14 @@ module RubyCurses
     # can use this for next, prev, first, last, new, delete, overwrite etc
     def buffer_menu
       menu = PromptMenu.new self 
-      menu.add(menu.create_mitem( 'l', "list buffers", "list buffers ", :buffers_list ))
+      menu.add(menu.create_mitem( 'l', "list buffers", "list buffers ", :list_components ))
       item = menu.create_mitem( 'b', "Buffer Options", "Buffer Options" )
       menu1 = PromptMenu.new( self, "Buffer Options")
-      menu1.add(menu1.create_mitem( 'n', "Next", "Switched to next buffer", :buffer_next ))
-      menu1.add(menu1.create_mitem( 'p', "Prev", "Switched to previous buffer", :buffer_previous ))
-      menu1.add(menu1.create_mitem( 'f', "First", "Switched to first buffer", :buffer_first ))
-      menu1.add(menu1.create_mitem( 'l', "Last", "Switched to last buffer", :buffer_last ))
-      menu1.add(menu1.create_mitem( 'd', "Delete", "Deleted buffer", :buffer_delete ))
+      menu1.add(menu1.create_mitem( 'n', "Next", "Switched to next buffer", :goto_next_component ))
+      menu1.add(menu1.create_mitem( 'p', "Prev", "Switched to previous buffer", :goto_prev_component ))
+      menu1.add(menu1.create_mitem( 'f', "First", "Switched to first buffer", :goto_first_component ))
+      menu1.add(menu1.create_mitem( 'l', "Last", "Switched to last buffer", :goto_last_component ))
+      menu1.add(menu1.create_mitem( 'd', "Delete", "Deleted buffer", :delete_component ))
       item.action = menu1
       menu.add(item)
       # how do i know what's available. the application or window should know where to place
@@ -114,90 +114,50 @@ module RubyCurses
     #%w[next previous first last].each do |pos|
       #eval(
            #"def _buffer_#{pos}
-              #@current_buffer = @bmanager.#{pos}
+              #@current_component = @bmanager.#{pos}
               #set_current_buffer
            #end"
           #)
     #end
 
-    def buffer_next
+    def goto_next_component
       perror "No other buffer" and return if @bmanager.size < 2
 
-      @current_buffer = @bmanager.next
-      set_current_buffer
+      @current_component = @bmanager.next
+      set_current_component
     end
-    def buffer_previous
+
+    def goto_prev_component
       perror "No other buffer" and return if @bmanager.size < 2
 
-      @current_buffer = @bmanager.previous
-      $log.debug " buffer_prev got #{@current_buffer} "
-      set_current_buffer
+      @current_component = @bmanager.previous
+      $log.debug " buffer_prev got #{@current_component} "
+      set_current_component
     end
-    def buffer_first
-      @current_buffer = @bmanager.first
-      $log.debug " buffer_first got #{@current_buffer} "
-      set_current_buffer
+    def goto_first_component
+      @current_component = @bmanager.first
+      $log.debug " buffer_first got #{@current_component} "
+      set_current_component
     end
-    def buffer_last
-      @current_buffer = @bmanager.last
-      $log.debug " buffer_last got #{@current_buffer} "
-      set_current_buffer
+    def goto_last_component
+      @current_component = @bmanager.last
+      $log.debug " buffer_last got #{@current_component} "
+      set_current_component
     end
-    def buffer_delete
+    def delete_component
       if @bmanager.size > 1
         @bmanager.delete_at
-        @current_buffer = @bmanager.previous
-        set_current_buffer
+        @current_component = @bmanager.previous
+        set_current_component
       else
         perror "Only one buffer. Cannot delete."
       end
     end
 
-    #%w[next previous first last].each do |pos|
-      #eval(
-           #"def _buffer_#{pos}
-              #@current_buffer = @bmanager.#{pos}
-              #set_current_buffer
-           #end"
-          #)
-    #end
-
-    def buffer_next
-      perror "No other buffer" and return if @bmanager.size < 2
-
-      @current_buffer = @bmanager.next
-      set_current_buffer
-    end
-    def buffer_previous
-      perror "No other buffer" and return if @bmanager.size < 2
-
-      @current_buffer = @bmanager.previous
-      $log.debug " buffer_prev got #{@current_buffer} "
-      set_current_buffer
-    end
-    def buffer_first
-      @current_buffer = @bmanager.first
-      $log.debug " buffer_first got #{@current_buffer} "
-      set_current_buffer
-    end
-    def buffer_last
-      @current_buffer = @bmanager.last
-      $log.debug " buffer_last got #{@current_buffer} "
-      set_current_buffer
-    end
-    def buffer_delete
-      if @bmanager.size > 1
-        @bmanager.delete_at
-        @current_buffer = @bmanager.previous
-        set_current_buffer
-      else
-        perror "Only one buffer. Cannot delete."
-      end
-    end
-    def buffer_at index
-      @current_buffer = @bmanager.element_at index
-      $log.debug " buffer_last got #{@current_buffer} "
-      set_current_buffer
+    def component_at index
+      @current_component = @bmanager.element_at index
+      $log.debug " buffer_last got #{@current_component} "
+      set_current_component
     end
     ##
     # Add a component with a title
@@ -210,23 +170,23 @@ module RubyCurses
       component.height = @height-2
       component.form = @form
       component.override_graphic(@graphic)
-      @current_buffer = @bmanager.add component, title
-      set_current_buffer
-      $log.debug " ADD got cb : #{@current_buffer} "
+      @current_component = @bmanager.add component, title
+      set_current_component
+      $log.debug " ADD got cb : #{@current_component} "
     end
-    def set_current_buffer
-      @current_component = @current_buffer.component
-      @current_title = @current_buffer.title
+    def set_current_component
+      @current_component = @current_component.component
+      @current_title = @current_component.title
       @current_component.repaint_all true
     end
     def perror errmess=$error_message
       @form.window.print_error_message errmess
     end
-    def buffers_list
+    def list_components
       $log.debug " TODO buffers_list: #{@bmanager.size}  "
       menu = PromptMenu.new self 
       @bmanager.each_with_index{ |b, ix|
-        aproc = Proc.new { buffer_at(ix) }
+        aproc = Proc.new { component_at(ix) }
         name = b.title
         num = ix + 1
         menu.add(menu.create_mitem( num.to_s, name, "Switched to buffer #{ix}", aproc ))
@@ -238,17 +198,17 @@ module RubyCurses
     def on_enter
       set_form_row
     end
-    def set_form_row
+    def set_form_row  #:nodoc:
       if !@current_component.nil?
-        $log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
+        #$log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
         @current_component.set_form_row 
         @current_component.set_form_col 
       end
     end
-  end # class multitextview
+  end # class multicontainer
   ##
   # Handles multiple buffers, navigation, maintenance etc
-  # Instantiated at startup of MultiTextView
+  # Instantiated at startup of 
   #
   class BufferManager
     include Enumerable
