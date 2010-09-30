@@ -455,6 +455,33 @@ module ListScrollable
       set_form_col pos
       @repaint_required = true
     end
+    # takes a block, this way anyone extending this class can just pass a block to do his job
+    # This modifies the string
+    def sanitize content  #:nodoc:
+      if content.is_a? String
+        content.chomp!
+        content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
+      else
+        content
+      end
+    end
+    # returns only the visible portion of string taking into account display length
+    # and horizontal scrolling. MODIFIES STRING
+    def truncate content  #:nodoc:
+      maxlen = @maxlen ||= @width-2
+      if !content.nil? 
+        if content.length > maxlen # only show maxlen
+          @longest_line = content.length if content.length > @longest_line
+          #content = content[@pcol..@pcol+maxlen-1] 
+          content.replace content[@pcol..@pcol+maxlen-1] 
+        else
+          # can this be avoided if pcol is 0 XXX
+          content.replace content[@pcol..-1] if @pcol > 0
+        end
+      end
+      content
+    end
      
 
 end
