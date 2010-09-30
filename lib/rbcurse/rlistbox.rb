@@ -440,6 +440,7 @@ module RubyCurses
     def initialize form, config={}, &block
       @focusable = true
       @editable = false
+      @sanitization_required = true
       @row = 0
       @col = 0
       # data of listbox this is not an array, its a pointer to the  listdatamodel
@@ -474,7 +475,6 @@ module RubyCurses
     # this is called several times, from constructor
     # and when list data changed, so only put relevant resets here.
     def init_vars
-      @sanitization_required = true
       @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
@@ -1019,18 +1019,22 @@ module RubyCurses
     end
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
+    # if you;ve truncated the data, it could stay truncated even if lb is increased. be careful
     def truncate content
-      maxlen = @maxlen ||= @width-2
+      _maxlen = @maxlen || @width-2
+      _maxlen = @width-2 if _maxlen > @width-2
+      $log.debug "TRUNCATE: listbox maxlen #{@maxlen}, #{_maxlen} width #{@width}: #{content} "
       if !content.nil? 
-        if content.length > maxlen # only show maxlen
+        if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
           #content = content[@pcol..@pcol+maxlen-1] 
-          content.replace content[@pcol..@pcol+maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
         else
           # can this be avoided if pcol is 0 XXX
           content.replace content[@pcol..-1] if @pcol > 0
         end
       end
+      $log.debug " content: #{content}" 
       content
     end
 
