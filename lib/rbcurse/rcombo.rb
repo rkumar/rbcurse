@@ -9,9 +9,6 @@
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
-require 'ncurses'
-require 'logger'
 require 'rbcurse'
 require 'rbcurse/rlistbox'
 
@@ -24,6 +21,7 @@ module RubyCurses
   # TODO : 
   # i no longer use values, i now use "list" or better "list_data_model"
   # try to make it so values gets converted to list.
+  # NOTE: 2010-10-01 13:25 spacebar and enter will popup in addition to Alt-Down
   class ComboBox < Field
     include RubyCurses::EventHandler
     dsl_accessor :list_config
@@ -85,7 +83,8 @@ module RubyCurses
       #  previous_row
       #when KEY_DOWN  # show previous value
       #  next_row
-      when KEY_DOWN+ RubyCurses::META_KEY # alt down
+        # adding spacebar to popup combo, as in microemacs 2010-10-01 13:21 
+      when 32, KEY_DOWN+ RubyCurses::META_KEY # alt down
         popup  # pop up the popup
       else
         super
