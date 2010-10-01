@@ -11,7 +11,8 @@ module ListScrollable
   attr_reader :search_found_ix, :find_offset, :find_offset1
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
   def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
-    return :UNHANDLED if @current_index == 0
+    #return :UNHANDLED if @current_index == 0 # EVIL
+    return false if @current_index == 0 
     @oldrow = @current_index
     # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
     # on leave and on enter
@@ -24,7 +25,11 @@ module ListScrollable
   alias :up :previous_row
   def next_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
     rc = row_count
-    return :UNHANDLED if @current_index == rc-1
+    # returning unhandled was clever .. when user hits down arrow on last row the focus goes to
+    # next field. however, in long lists when user scrolls the sudden jumping to next is very annoying.
+    # In combos, if focus was on last row, the combo closed which is not accceptable.
+    #return :UNHANDLED if @current_index == rc-1 # EVIL !!!
+    return false if @current_index == rc-1 
     @oldrow = @current_index
     @current_index += 1*num if @current_index < rc
     bounds_check
