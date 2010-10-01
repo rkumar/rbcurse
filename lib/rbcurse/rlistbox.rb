@@ -694,7 +694,7 @@ module RubyCurses
       when KEY_DOWN  # show previous value
         return next_row
       when @KEY_ROW_SELECTOR # 32
-        return if is_popup and @selection_mode == 'single' # not allowing select this way since there will be a difference 
+        return if is_popup && @selection_mode != :multiple # not allowing select this way since there will be a difference 
         toggle_row_selection @current_index #, @current_index
         @repaint_required = true
       when @KEY_SCROLL_FORWARD # ?\C-n
