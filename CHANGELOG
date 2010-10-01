@@ -13,6 +13,11 @@
 
  - Added VimSplit - can have multiple splits stacked and flowed
  - Added Tree     - tree control
+ - Added Scrollbar class
+ - Added Tabular - quick readonly tabular data generator that can be used with
+ listboxes or textviews.
+ - Added BasicList - a stripped down, readonly version of Listbox.
+ - 
 
 ### Changes
 
@@ -27,6 +32,8 @@
  events.
  - Listbox, some refactoring of `repaint`. Added convert_value_to_text since
  we subclass this a lot.
+ - Listcellrenderer: refactoring and changes, will break extending classes!!
+ - Combolist - popup on spacebar
 
 ### Bugfixes
 
