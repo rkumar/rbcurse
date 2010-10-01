@@ -1,6 +1,3 @@
-require 'rubygems'
-require 'ncurses'
-require 'logger'
 require 'rbcurse/listcellrenderer'
 module RubyCurses
 
@@ -9,16 +6,7 @@ module RubyCurses
   # Using alignment one can use for numbers too.
   # However, for booleans it will print true and false. If editing, you may want checkboxes
   class CheckBoxCellRenderer < ListCellRenderer
-    include ConfigSetup
-    include RubyCurses::Utils
-    dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
-    dsl_accessor :display_length     #  please give this to ensure the we only print this much
-    dsl_accessor :height    # if you want a multiline label.
-    dsl_accessor :text    # text of label
     dsl_accessor :value    # text of label
-    dsl_accessor :color, :bgcolor
-    dsl_accessor :row, :col
-    dsl_accessor :parent    #usuall the table to get colors and other default info
     dsl_accessor :surround_chars
 
     def initialize boolean=nil, config={}, &block
