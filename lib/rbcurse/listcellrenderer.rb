@@ -1,6 +1,3 @@
-#require 'rubygems'
-#require 'ncurses'
-#require 'logger'
 require 'rbcurse/rwidget'
 module RubyCurses
 
@@ -10,6 +7,8 @@ module RubyCurses
   # This is a basic list cell renderer that will render the to_s value of anything.
   # Using alignment one can use for numbers too.
   # However, for booleans it will print true and false. If editing, you may want checkboxes
+  # NOTE: this class is being extended by many other classes. Careful while making
+  # sweeping changes.
   class ListCellRenderer
     include RubyCurses::ConfigSetup
     include RubyCurses::Utils
@@ -29,11 +28,16 @@ module RubyCurses
       instance_eval &block if block_given?
       init_vars
     end
-    def init_vars
+    # NOTE: please call super() if you override this
+    def init_vars  #:nodoc:
       @justify ||= (@parent.justify || :left)
       @format = @justify.to_sym == :right ? "%*s" : "%-*s"  
       @display_length ||= 10
       # create color pairs once for this 2010-09-26 20:53 
+    end
+    # creates pairs of colors at start
+    # since often classes are overriding init_vars, so not gettin created
+    def create_color_pairs
       @color_pair = get_color $datacolor
       @pairs = Hash.new(@color_pair)
       @attrs = Hash.new(Ncurses::A_NORMAL)
@@ -51,6 +55,8 @@ module RubyCurses
     ##
     # sets @color_pair and @attr
     def select_colors focussed, selected
+      create_color_pairs unless @pairs
+      raise ArgumentError, "pairs hash is null. Changes have happened in listcellrenderer" unless @pairs
       @color_pair = @pairs[:normal]
       @attr = $row_attr
       # give precedence to a selected row
@@ -94,6 +100,30 @@ module RubyCurses
       $log.debug " CELLREND len #{len} "
       graphic.printstring r, c, @format % [len, value], @color_pair, @attr
     end # repaint
+
+    # @deprecated
+    # only for older code that may have extended this.
+    def prepare_default_colors focussed, selected
+        @color_pair = get_color $datacolor
+        @attr = @row_attr || Ncurses::A_NORMAL
+
+
+        ## determine bg and fg and attr
+        if selected
+          @attr = Ncurses::A_BOLD if selected
+          @color_pair =get_color $selectedcolor, @parent.selected_color, @parent.selected_bgcolor unless @parent.nil?
+        end
+        case focussed
+        when :SOFT_FOCUS
+          @attr |= Ncurses::A_BOLD
+        when true
+          @attr |= Ncurses::A_REVERSE
+        when false
+        end
+        #if focussed 
+          #@attr |= Ncurses::A_REVERSE
+        #end
+    end
   end # class
 
 end # module
