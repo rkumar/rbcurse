@@ -32,6 +32,7 @@ module RubyCurses
     dsl_accessor :orientation 
     # min and max weight of main split. do not allow user to exceed these
     dsl_accessor :min_weight, :max_weight
+    dsl_accessor :to_print_borders
     dsl_accessor :border_attrib, :border_color
     def initialize form, config={}, &block
       if config[:width] == :EXPAND
@@ -50,8 +51,8 @@ module RubyCurses
       end
       @max_weight ||= 0.8
       @min_weight ||= 0.2
-      super
       @to_print_borders = 1
+      super
       @focusable = true
       @editable = false
       @row_offset = @col_offset = 1
@@ -86,6 +87,10 @@ module RubyCurses
       # seems it works with false also, so do we really need it to be true ?
       # whe true was giving a seg fault on increasing child window by 0.05
       @_child_buffering = false # private, internal. not to be changed by callers.
+
+      @internal_width = 2
+      @internal_width = 0 if @to_print_borders != 1
+
     end
     # uses intelligent default a vertical split would prefer stacks and
     # a horizontal split would go with flows
@@ -240,12 +245,12 @@ module RubyCurses
       else
         rc = (@height * @weight).to_i
         $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
-        @graphic.mvhline(rc+@row, @col+1, 0, @width-2)
+        @graphic.mvhline(rc+@row, @col+1, 0, @width-@internal_width)
         #@neat = true
         if @neat
           a = 1
-          @c1rc = Coord.new(@row+a,@col+a, rc-a, @width-2)
-          @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc-2, @width - 2)
+          @c1rc = Coord.new(@row+a,@col+a, rc-a, @width-@internal_width)
+          @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc-2, @width - @internal_width)
         else
           # flush
           a = 0
