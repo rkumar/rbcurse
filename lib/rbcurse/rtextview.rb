@@ -86,6 +86,8 @@ module RubyCurses
       # currently i scroll right only if  current line is longer than display width, i should use 
       # longest line on screen.
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
+      @internal_width = 2
+      @internal_width = 0 if @suppress_borders
 
     end
     def map_keys
@@ -136,7 +138,11 @@ module RubyCurses
     end
     ## ---- for listscrollable ---- ##
     def scrollatrow #:nodoc:
-      @height - 3 
+      if @suppress_borders
+        @height - 2 
+      else
+        @height - 3 
+      end
     end
     def row_count
       @list.length
@@ -155,7 +161,7 @@ module RubyCurses
       return @row+@row_offset, @col+@col_offset
     end
     def wrap_text(txt, col = @maxlen) #:nodoc:
-      col ||= @width-2
+      col ||= @width-@internal_width
       #$log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
@@ -319,7 +325,7 @@ module RubyCurses
       if @pcol+@curpos > @buffer.length
         addcol((@pcol+@buffer.length-@curpos)+1)
         @curpos = @buffer.length 
-        maxlen = (@maxlen || @width-2)
+        maxlen = (@maxlen || @width-@internal_width)
 
         # even this row is gt maxlen, i.e., scrolled right
         if @curpos > maxlen
@@ -337,7 +343,7 @@ module RubyCurses
       @cols_panned ||= 0
       @pad_offset ||= 0 # added 2010-02-11 21:54 since padded widgets get an offset.
       @curpos = col1
-      maxlen = @maxlen || @width-2
+      maxlen = @maxlen || @width-@internal_width
       #@curpos = maxlen if @curpos > maxlen
       if @curpos > maxlen
         @pcol = @curpos - maxlen
@@ -355,7 +361,7 @@ module RubyCurses
       @repaint_footer_required = true
     end
     def cursor_forward #:nodoc:
-      maxlen = @maxlen || @width-2
+      maxlen = @maxlen || @width-@internal_width
       repeatm { 
       if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
         @curpos += 1
@@ -374,7 +380,7 @@ module RubyCurses
       if @form
         @form.addcol num
       else
-        @parent_component.form.addcol num
+        @parent_component.form && @parent_component.form.addcol(num)
       end
     end
     def addrowcol row,col #:nodoc:
@@ -427,7 +433,7 @@ module RubyCurses
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
-      maxlen = @maxlen || @width-2
+      maxlen = @maxlen || @width-@internal_width
       #$log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tm = get_content
       tr = @toprow
@@ -445,7 +451,7 @@ module RubyCurses
             # rlistbox does
             sanitize content if @sanitization_required
             truncate content
-            @graphic.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
+            @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], acolor, @attr
 
             # highlighting search results.
             if @search_found_ix == tr+hh
@@ -459,7 +465,7 @@ module RubyCurses
 
         else
           # clear rows
-          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
         end
       end
       #show_caret_func
@@ -485,8 +491,8 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     def truncate content  #:nodoc:
-      _maxlen = @maxlen ||= @width-2
-      _maxlen = @width-2 if _maxlen > @width-2 # take care of decrease in width
+      _maxlen = @maxlen ||= @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width # take care of decrease in width
       if !content.nil? 
         if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
