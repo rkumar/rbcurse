@@ -715,6 +715,38 @@ module RubyCurses
       end
       return w
     end
+    # create a readonly list
+    def basiclist *args, &block
+      require 'rbcurse/rbasiclistbox'
+      config = {}
+      #TODO check these
+      events = [ :LEAVE, :ENTER, :ENTER_ROW, :LEAVE_ROW, :LIST_DATA_EVENT ]
+      # TODO how to do this so he gets selected row easily
+      block_event = :ENTER_ROW
+      _process_args args, config, block_event, events
+      # some guesses at a sensible height for listbox
+      if !config.has_key? :height
+        ll = 0
+        ll = config[:list].length + 2 if config.has_key? :list
+        config[:height] ||= ll
+        config[:height] = 15 if config[:height] > 20
+      end
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      config[:width] ||= longest_in_list(config[:list])+2
+      #config.delete :title
+      config[:default_values] = config.delete :choose
+      config[:selection_mode] = :single unless config.has_key? :selection_mode
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = BasicListbox.new useform, config # NO BLOCK GIVEN
+      if block_given?
+        field.bind(block_event, &block)
+      end
+      return w
+    end
 
     # ADD new widget above this
 
