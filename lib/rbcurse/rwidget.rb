@@ -37,6 +37,17 @@ KEY_DELETE = 330
 KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
 KEY_CC     = 3   # C-c
 
+class Object
+# thanks to terminal-table for this method
+  def yield_or_eval &block
+    return unless block
+    if block.arity > 0 
+      yield self
+    else
+      self.instance_eval(&block)
+    end 
+  end
+end
 class Module
 ## others may not want this, sets config, so there's a duplicate hash
   # also creates a attr_writer so you can use =.
@@ -364,7 +375,8 @@ module RubyCurses
     module ConfigSetup
       # private
       def variable_set var, val
-        nvar = "@#{var}"
+        #nvar = "@#{var}"
+$log.debug " variable set XXX #{var}:: #{val} "
         send("#{var}", val) #rescue send("#{var}=", val)    # 2009-01-08 01:30 BIG CHANGE calling methods too here.
         #instance_variable_set(nvar, val)   # we should not call this !!! bypassing 
       end
