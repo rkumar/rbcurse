@@ -107,7 +107,6 @@ module RubyCurses
         end
       end
       len = @display_length || value.length
-      $log.debug " CELLREND len #{len} "
       graphic.printstring r, c, @format % [len, value], @color_pair, @attr
     end # repaint
 
