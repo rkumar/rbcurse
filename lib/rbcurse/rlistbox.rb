@@ -485,6 +485,9 @@ module RubyCurses
       end
       @left_margin ||= 0
       @one_key_selection = true if @one_key_selection.nil?
+      # we reduce internal_width from width while printing
+      @internal_width = 2 # taking into account borders accounting for 2 cols
+      @internal_width = 0 if @to_print_borders != 1
 
     end
     def map_keys
@@ -530,8 +533,11 @@ module RubyCurses
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def scrollatrow
-      #@height - 2
-      @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
+      if @to_print_borders == 1
+        return @height - 3
+      else
+        return @height - 2
+      end
     end
     # provide data to List in the form of an Array or Variable or
     # ListDataModel. This will create a default ListSelectionModel.
@@ -906,7 +912,7 @@ module RubyCurses
       end
     end
     def create_default_cell_editor
-      return RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> @width-2-@left_margin}
+      return RubyCurses::CellEditor.new RubyCurses::Field.new nil, {"focusable"=>false, "visible"=>false, "display_length"=> @width-@internal_width-@left_margin}
     end
     ##
     # getter and setter for cell_renderer
@@ -918,7 +924,7 @@ module RubyCurses
       end
     end
     def create_default_cell_renderer
-      return RubyCurses::ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-2-@left_margin}
+      return RubyCurses::ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-@internal_width-@left_margin}
     end
     ##
     # this method chops the data to length before giving it to the
@@ -938,9 +944,9 @@ module RubyCurses
 
       $log.debug "rlistbox repaint  #{@name} graphic #{@graphic}"
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
-      #maxlen = @maxlen ||= @width-2
+      #maxlen = @maxlen ||= @width-@internal_width
       renderer = cell_renderer()
-      renderer.display_length(@width-2-@left_margin) # just in case resizing of listbox
+      renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
       tm = list()
       rc = row_count
       @longest_line = @width
@@ -981,7 +987,7 @@ module RubyCurses
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
           else
             # clear rows
-            @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+            @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
           end
         end
         if @cell_editing_allowed
@@ -1022,8 +1028,8 @@ module RubyCurses
     # and horizontal scrolling. MODIFIES STRING
     # if you;ve truncated the data, it could stay truncated even if lb is increased. be careful
     def truncate content
-      _maxlen = @maxlen || @width-2
-      _maxlen = @width-2 if _maxlen > @width-2
+      _maxlen = @maxlen || @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
       $log.debug "TRUNCATE: listbox maxlen #{@maxlen}, #{_maxlen} width #{@width}: #{content} "
       if !content.nil? 
         if content.length > _maxlen # only show maxlen
