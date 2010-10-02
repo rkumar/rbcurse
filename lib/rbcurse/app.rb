@@ -736,7 +736,7 @@ module RubyCurses
       config[:width] ||= @stack.last.width if @stack.last
       config[:width] ||= longest_in_list(config[:list])+2
       #config.delete :title
-      config[:default_values] = config.delete :choose
+      #config[:default_values] = config.delete :choose
       config[:selection_mode] = :single unless config.has_key? :selection_mode
       useform = nil
       useform = @form if @current_object.empty?
@@ -746,6 +746,63 @@ module RubyCurses
         field.bind(block_event, &block)
       end
       return w
+    end
+    def column_browse *args, &block
+      require 'rbcurse/extras/rcolumnbrowse'
+      config = {}
+      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
+      block_event = nil
+      _process_args args, config, block_event, events
+      config[:height] ||= 10
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      #config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = ColumnBrowse.new useform, config # NO BLOCK GIVEN
+      if block_given?
+        @current_object << w
+        #instance_eval &block if block_given?
+        yield_or_eval &block
+        @current_object.pop
+      end
+      return w
+    end
+    def tabular_widget *args, &block
+      require 'rbcurse/extras/tabularwidget'
+      config = {}
+      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ]
+      block_event = nil
+      _process_args args, config, block_event, events
+      config[:height] ||= 10
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      #config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = TabularWidget.new useform, config # NO BLOCK GIVEN
+      if block_given?
+        @current_object << w
+        yield_or_eval &block
+        @current_object.pop
+      end
+      return w
+    end
+    # scrollbar attached to the right of a parent object
+    def scrollbar *args, &block
+      require 'rbcurse/extras/scrollbar'
+      config = {}
+      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER  ] # # none really at present
+      block_event = nil
+      _process_args args, config, block_event, events
+      raise "parent needed for scrollbar" if !config.has_key? :parent
+      useform = nil
+      useform = @form if @current_object.empty?
+      sb = Scrollbar.new useform, config
     end
 
     # ADD new widget above this
