@@ -48,7 +48,7 @@ module RubyCurses
     #dsl_accessor :default_values  # array of default values
     dsl_accessor :is_popup       # if it is in a popup and single select, selection closes
     attr_accessor :current_index
-    attr_accessor :selection_mode
+    dsl_accessor :selection_mode
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     dsl_accessor :max_visible_items   # how many to display 2009-01-11 16:15 
     #dsl_accessor :cell_editing_allowed
@@ -92,6 +92,7 @@ module RubyCurses
       @selected_indices = []
       @selected_index = nil
       super
+      $log.debug "XXX to_print #{@to_print_borders} "
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @row_offset = @col_offset = 1
       @selection_mode ||= :multiple # default is multiple, anything else given becomes single
@@ -101,8 +102,6 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
 
-#x      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
-#x      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       #select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
@@ -154,7 +153,7 @@ module RubyCurses
     end
     # start scrolling when user reaches this row
     def scrollatrow #:nodoc:
-      @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
+      @height - 2 # 2010-01-04 15:30 BUFFERED HEIGHT
     end
     # provide data to List in the form of an Array or Variable or
     # ListDataModel. This will create a default ListSelectionModel.
@@ -410,6 +409,7 @@ module RubyCurses
       @left_margin ||= @row_selected_symbol.length
 
       $log.debug "basicrlistbox repaint  #{@name} graphic #{@graphic}"
+      $log.debug "XXX repaint to_print #{@to_print_borders} "
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       #maxlen = @maxlen ||= @width-2
       tm = list()
