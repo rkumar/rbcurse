@@ -30,7 +30,15 @@ module RubyCurses
     end
     # NOTE: please call super() if you override this
     def init_vars  #:nodoc:
-      @justify ||= (@parent.justify || :left)
+      # omg, some classes won't have justify !!
+      #@justify ||= (@parent.justify || :left)
+      unless @justify
+        if @parent.respond_to? :justify
+          @justify ||= (@parent.justify || :left)
+        else
+          @justify ||= :left
+        end
+      end
       @format = @justify.to_sym == :right ? "%*s" : "%-*s"  
       @display_length ||= 10
       # create color pairs once for this 2010-09-26 20:53 
@@ -84,7 +92,9 @@ module RubyCurses
 
       select_colors focussed, selected 
       # if listboxes width is reduced, display_len remains the same
-      @display_length = @parent.width - 2 - @parent.left_margin
+      # XXX FIXME parent may not be the list but a container like rfe !!
+      # maybe caller should update at start of repain loop.
+      #@display_length = @parent.width - 2 - @parent.left_margin
 
       value=value.to_s
       if !@display_length.nil?
