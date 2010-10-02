@@ -316,7 +316,7 @@ module RubyCurses
       # TODO: if an object throws a subclass of VetoException we should not catch it and throw it back for 
       # caller to catch and take care of, such as prevent LEAVE or update etc.
       def fire_handler event, object
-        $log.debug "inside def fire_handler evt:#{event}, o: #{object.to_s}, hdnler:#{@handler}"
+        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}, hdnler:#{@handler}"
         if !@handler.nil?
           if @_events
             raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
@@ -442,15 +442,12 @@ module RubyCurses
     # tired of getting the cursor wrong and guessing, i am now going to try to get absolute
     # coordinates - 2010-02-07 20:17 this should be updated by parent.
     attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
-    #attr_accessor :manages_cursor # does this widget manage cursor, or should form handle it 2010-02-07 20:54 
     attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
     attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
     # sometimes inside a container there's no way of knowing if an individual comp is in focus
     # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
     attr_accessor :focussed  # is this widget in focus, so they may paint differently
-    #@since 1.2.0 added to Tree as yet
-    #attr_accessor :key_map   # use :vim or :emacs mappings. default is :vim
 
     def initialize form, aconfig={}, &block
       @form = form
@@ -458,7 +455,7 @@ module RubyCurses
       @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
       @state = :NORMAL
       @attr = nil
-      #@handler = {}
+
       @handler = nil # we can avoid firing if nil
       @event_args = {}
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
