@@ -939,6 +939,8 @@ module RubyCurses
       $log.debug "rlistbox repaint  #{@name} graphic #{@graphic}"
       print_borders if @to_print_borders == 1 # do this once only, unless everything changes
       #maxlen = @maxlen ||= @width-2
+      renderer = cell_renderer()
+      renderer.display_length(@width-2-@left_margin) # just in case resizing of listbox
       tm = list()
       rc = row_count
       @longest_line = @width
@@ -976,7 +978,6 @@ module RubyCurses
               @graphic.printstring r+hh, c, selection_symbol, acolor,@attr
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
-            renderer = cell_renderer()
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
           else
             # clear rows
