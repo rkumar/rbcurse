@@ -64,14 +64,20 @@ module RubyCurses
 
       @ch = {}
       @weight ||= 0.50
+      # type can be :INCREASE, :DECREASE, :EXPAND, :UNEXPAND :EQUAL
       @_events.push :COMPONENT_RESIZE_EVENT
 
       init_vars
-      bind_key([?\C-w,?o], :goto_other_split)  
+      bind_key([?\C-w,?o], :expand)  
+      bind_key([?\C-w,?1], :expand)  
+      bind_key([?\C-w,?2], :unexpand)  
       bind_key([?\C-w,?\C-w], :goto_other_split)  
-      bind_key([?\C-w,?-], :decrease_weight)  
-      bind_key([?\C-w,?+], :increase_weight)  
+      bind_key([?\C-w,?-], :decrease_height)  
+      bind_key([?\C-w,?+], :increase_height)  
+      bind_key([?\C-w,?<], :decrease_width)  
+      bind_key([?\C-w,?>], :increase_width)  
       bind_key([?\C-w,?i], :increase_weight)  
+      bind_key([?\C-w,?d], :decrease_weight)  
       bind_key([?\C-w,?6], :increase_current_component)
       bind_key([?\C-w,?5], :decrease_current_component)
     end
@@ -94,7 +100,7 @@ module RubyCurses
         end
       end
       _add type, c, which, weight
-      return self
+      #return self # lets return component created for christ's sake and keep it simple
     end
     # set the weight of outer split
     def weight(*val)
@@ -122,12 +128,12 @@ module RubyCurses
     #     :AUTO will give equal weight to all
     def stack c, which, weight
       _add :STACK, c, which, weight
-      return self
+      #return self # lets return component created for christ's sake and keep it simple
     end
     # place components on right of previous. Useful in horizontal split
     def flow c, which, weight
       _add :FLOW, c, which, weight
-      return self
+      #return self # lets return component created for christ's sake and keep it simple
     end
     private
     def _add type, c, which, weight
@@ -138,6 +144,11 @@ module RubyCurses
         raise ArgumentError, "weight must be >0 and <=1.0 or nil or :AUTO"
       end
       if c.is_a? Widget
+        if c.form && c.form != @form
+          $log.debug " removing widget VIMSPLIT #{c.class} "
+          c.form.remove_widget c
+          c.form = nil
+        end
         $log.debug " XXXX VIM is a widget"
       else
         case c
@@ -201,6 +212,8 @@ module RubyCurses
       raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
+      #$log.debug " how many has form got: #{@form.widgets.size} "
+      #@form.widgets.each { |e| $log.debug e.class }
 
       #return unless @repaint_required
 
@@ -338,8 +351,10 @@ module RubyCurses
     public
     # called by parent or form, otherwise its private
     def handle_key ch
+      $log.debug " VIMSPLIT handle_key #{ch} "
       _multiplier = ($multiplier == 0 ? 1 : $multiplier )
       if ch == KEY_TAB
+        $log.debug " GOTO NEXT"
         return goto_next_component
       elsif ch == KEY_BTAB
         return goto_prev_component
@@ -491,6 +506,34 @@ module RubyCurses
       fire_handler :COMPONENT_RESIZE_EVENT, e
       #@repaint_required = true
     end
+    # fires handler to request app to resize component
+    # @param [:INCREASE, :DECREASE]
+    # @param [:HEIGHT, :WIDTH]
+    def resize_component incdec, hw  #:nodoc:
+      type = incdec.to_s + '_' + hw.to_s
+      #info = split_info_for
+      #info.add_weight = 0 if info.add_weight.nil?
+      e = ResizeEvent.new @current_component, type.to_sym
+      fire_handler :COMPONENT_RESIZE_EVENT, e
+      #@repaint_required = true
+    end
+    # fires handler to request app to resize current component
+    # 
+    def decrease_height
+      resize_component :DECREASE, :HEIGHT
+    end
+    # fires handler to request app to resize current component
+    def decrease_width
+      resize_component :DECREASE, :WIDTH
+    end
+    # fires handler to request app to resize current component
+    def increase_width
+      resize_component :INCREASE, :WIDTH
+    end
+    # fires handler to request app to resize current component
+    def increase_height
+      resize_component :INCREASE, :HEIGHT
+    end
     def increase_current_component
       info = split_info_for
       info.add_weight = 0 if info.add_weight.nil?
@@ -501,6 +544,18 @@ module RubyCurses
       e = ResizeEvent.new @current_component, :INCREASE
       fire_handler :COMPONENT_RESIZE_EVENT, e
       #@repaint_required = true
+    end
+    # calling application need to handle this, since it knows
+    # how many windows its has and what the user would mean
+    def expand # maximize 
+      e = ResizeEvent.new @current_component, :EXPAND
+      fire_handler :COMPONENT_RESIZE_EVENT, e
+    end
+    # calling application need to handle this, since it knows
+    # how many windows its has and what the user would mean
+    def unexpand
+      e = ResizeEvent.new @current_component, :UNEXPAND
+      fire_handler :COMPONENT_RESIZE_EVENT, e
     end
 
     # ADD HERE ABOVe
