@@ -72,7 +72,7 @@ module RubyCurses
     #  init_scrollable
       #print_borders
       # 2010-01-10 19:35 compute locally if not set
-      #@maxlen ||= @width-2
+      #@maxlen ||= @width-@internal_width
       @_events.push :CHANGE
       install_keys
       init_vars
@@ -89,6 +89,9 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
       @longest_line = 0
+      # if borders used, reduce 2 from width else 0
+      @internal_width = 2
+      @internal_width = 0 if @suppress_borders
       bind_key(?\M-w, :kill_ring_save)
       bind_key(?\C-y, :yank)
       bind_key(?\M-y, :yank_pop)
@@ -108,7 +111,7 @@ module RubyCurses
     end
     # private
     def wrap_text(txt, col = @maxlen)
-       col ||= @width - 2
+       col ||= @width - @internal_width
       #$log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
@@ -116,7 +119,7 @@ module RubyCurses
     ## 
     # trying to wrap and insert
     def insert off0, data
-       _maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - @internal_width
       if data.length > _maxlen
         data = wrap_text data
       #  $log.debug "after wrap text done :#{data}"
@@ -136,7 +139,7 @@ module RubyCurses
     # Typically a line is sent in. We wrap and put a hard return at end.
     def << data
       # if width if nil, either set it, or add this to a container that sets it before calling this method
-      _maxlen = @maxlen || @width - 2
+      _maxlen = @maxlen || @width - @internal_width
       if data.length > _maxlen
         #$log.debug "wrapped append for #{data}"
         data = wrap_text data
@@ -492,7 +495,7 @@ module RubyCurses
         up
         return
       end
-      _maxlen = @maxlen || @width - 2
+      _maxlen = @maxlen || @width - @internal_width
       space_left = _maxlen - prevlen
       # prev line is full exit
       return if space_left == 0
@@ -568,7 +571,7 @@ module RubyCurses
         up
         return
       end
-      _maxlen = @maxlen || @width - 2
+      _maxlen = @maxlen || @width - @internal_width
       space_left = _maxlen - prev.length
       # BUG. carry full words up, or if no space then bring down last word of prev lien and join with first
       carry_up = words_in_length @buffer, space_left #@buffer[0..space_left] # XXX
@@ -622,7 +625,7 @@ module RubyCurses
     # exceed. So i must push as many words as exceed length.
     # 2010-09-07 22:31 this must not return nil, or previous will crash. This happens if no space in line.
     def push_last_word lineno=@current_index
-       _maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - @internal_width
       #lastspace = @buffer.rindex(" ")
       #lastspace = @list[lineno].rindex(/ \w/)
       line = @list[lineno]
@@ -658,7 +661,7 @@ module RubyCurses
     # this attempts to recursively insert into a row, seeing that any stuff exceeding is pushed down further.
     # Yes, it should check for a para end and insert. Currently it could add to next para.
     def insert_wrap lineno, pos, lastchars
-       _maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - @internal_width
       @list[lineno].insert pos, lastchars 
       len = @list[lineno].length 
       if len > _maxlen
@@ -668,7 +671,7 @@ module RubyCurses
     ## 
     # add one char. careful, i shoved a string in yesterday.
     def putch char
-       _maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - @internal_width
       @buffer ||= @list[@current_index]
       return -1 if !@editable #or @buffer.length >= _maxlen
       #if @chars_allowed != nil # remove useless functionality
@@ -749,7 +752,7 @@ module RubyCurses
     def move_chars_up
       oldprow = @current_index
       oldcurpos = @curpos
-       _maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - @internal_width
       space_left = _maxlen - @buffer.length
       can_move = [space_left, next_line.length].min
       carry_up =  @list[@current_index+1].slice!(0, can_move)
@@ -775,7 +778,7 @@ module RubyCurses
       @form.modified = true if tf and !@form.nil?
     end
     def cursor_eol
-       _maxlen = @maxlen || @width - 2
+       _maxlen = @maxlen || @width - @internal_width
       $log.error "ERROR !!! bufferlen gt _maxlen #{@buffer.length}, #{_maxlen}" if @buffer.length > _maxlen
       set_form_col current_line().chomp().length()-1
     end
@@ -801,7 +804,11 @@ module RubyCurses
     #alias :get_text :to_s
     ## ---- for listscrollable ---- ##
     def scrollatrow
-      @height-3 # 2010-01-02 19:28 BUFFERED 
+      if @suppress_borders
+        @height - 2 
+      else
+        @height - 3 
+      end
     end
     def row_count
       @list.size
@@ -814,7 +821,7 @@ module RubyCurses
       @win_top = my_win.top
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
-      _maxlen = @maxlen || @width-2 # TODO fix in other branches remove ||= 
+      _maxlen = @maxlen || @width-@internal_width # TODO fix in other branches remove ||= 
       $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{_maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
@@ -843,7 +850,7 @@ module RubyCurses
             #renderer = cell_renderer()
             #renderer.repaint @form.window, r+hh, c+(colix*11), content, focussed, selected
             #renderer.repaint @form.window, r+hh, c, content, focussed, selected
-            @graphic.printstring  r+hh, c, "%-*s" % [@width-2,content], acolor, @attr
+            @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], acolor, @attr
             if @search_found_ix == tr+hh
               if !@find_offset.nil?
                 @graphic.mvchgat(y=r+hh, x=c+@find_offset, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
@@ -853,7 +860,7 @@ module RubyCurses
         else
           # clear rows
             # TODO the spaces string can be stored once outside loop
-          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
         end
       end
       show_caret_func
