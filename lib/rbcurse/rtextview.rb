@@ -156,7 +156,7 @@ module RubyCurses
     end
     def wrap_text(txt, col = @maxlen) #:nodoc:
       col ||= @width-2
-      $log.debug "inside wrap text for :#{txt}"
+      #$log.debug "inside wrap text for :#{txt}"
       txt.gsub(/(.{1,#{col}})( +|$\n?)|(.{1,#{col}})/,
                "\\1\\3\n") 
     end
@@ -214,6 +214,7 @@ module RubyCurses
     end
     # textview
     def handle_key ch #:nodoc:
+      $log.debug " textview got ch #{ch} "
       @buffer = @list[@current_index]
       if @buffer.nil? and row_count == 0
         @list << "\r"
@@ -484,12 +485,13 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     def truncate content  #:nodoc:
-      maxlen = @maxlen ||= @width-2
+      _maxlen = @maxlen ||= @width-2
+      _maxlen = @width-2 if _maxlen > @width-2 # take care of decrease in width
       if !content.nil? 
-        if content.length > maxlen # only show maxlen
+        if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
           #content = content[@pcol..@pcol+maxlen-1] 
-          content.replace content[@pcol..@pcol+maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
         else
           # can this be avoided if pcol is 0 XXX
           content.replace content[@pcol..-1] if @pcol > 0
