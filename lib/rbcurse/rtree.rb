@@ -46,6 +46,7 @@ module RubyCurses
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     dsl_accessor :max_visible_items   # how many to display 2009-01-11 16:15 
     dsl_accessor :cell_editing_allowed
+    dsl_accessor :suppress_borders
     dsl_property :show_selector
     dsl_property :row_selected_symbol # 2009-01-12 12:01 changed from selector to selected
     dsl_property :row_unselected_symbol # added 2009-01-12 12:00 
@@ -73,9 +74,10 @@ module RubyCurses
       # if value is true, then currently expanded, else once expanded
       # TODO : will need purging under some situations
       @expanded_state = {}
+      @suppress_borders = false
+      @row_offset = @col_offset = 1
       super
       @current_index ||= 0
-      @row_offset = @col_offset = 1
       #@selection_mode ||= :single # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
@@ -93,7 +95,6 @@ module RubyCurses
       @keys_mapped = false
     end
     def init_vars
-      @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
       if @show_selector
@@ -105,6 +106,7 @@ module RubyCurses
       @one_key_selection = true if @one_key_selection.nil?
       @height ||= 10
       @width  ||= 30
+      @row_offset = @col_offset = 0 if @suppress_borders
 
     end
     # maps keys to methods
@@ -421,7 +423,7 @@ module RubyCurses
       @win_top = my_win.top
 
       $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
-      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      print_borders unless @suppress_borders # do this once only, unless everything changes
       maxlen = @maxlen ||= @width-2
       tm = _list()
       rc = row_count
