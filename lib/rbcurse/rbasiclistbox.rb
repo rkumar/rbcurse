@@ -65,7 +65,7 @@ module RubyCurses
     # set to true if cell-renderer data can exceed width of listbox, default true
     # if you are absolutely sure that data is constant width, set to false.
     dsl_accessor :truncation_required
-    dsl_accessor :to_print_borders
+    dsl_accessor :suppress_borders #to_print_borders
     dsl_accessor :justify # will be picked up by renderer
     # index of selected row
     attr_accessor :selected_index
@@ -80,7 +80,7 @@ module RubyCurses
       @editable = false
       @sanitization_required = true # cleanup control and non print chars
       @truncation_required = true
-      @to_print_borders = 1
+      @suppress_borders = false #to_print_borders = 1
       @row_selected_symbol = ''
       @row = 0
       @col = 0
@@ -91,10 +91,9 @@ module RubyCurses
       @current_index = 0
       @selected_indices = []
       @selected_index = nil
-      super
-      $log.debug "XXX to_print #{@to_print_borders} "
-      @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @row_offset = @col_offset = 1
+      super
+      @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @selection_mode ||= :multiple # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
@@ -124,6 +123,7 @@ module RubyCurses
       end
       #@left_margin ||= 0
       @one_key_selection = false if @one_key_selection.nil?
+      @row_offset = @col_offset = 0 if @suppress_borders
 
     end
     def map_keys
@@ -153,7 +153,11 @@ module RubyCurses
     end
     # start scrolling when user reaches this row
     def scrollatrow #:nodoc:
-      @height - 2 # 2010-01-04 15:30 BUFFERED HEIGHT
+      if @suppress_borders
+        return @height - 1
+      else
+        return @height - 3
+      end
     end
     # provide data to List in the form of an Array or Variable or
     # ListDataModel. This will create a default ListSelectionModel.
@@ -409,8 +413,8 @@ module RubyCurses
       @left_margin ||= @row_selected_symbol.length
 
       $log.debug "basicrlistbox repaint  #{@name} graphic #{@graphic}"
-      $log.debug "XXX repaint to_print #{@to_print_borders} "
-      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      #$log.debug "XXX repaint to_print #{@to_print_borders} "
+      print_borders unless @suppress_borders # do this once only, unless everything changes
       #maxlen = @maxlen ||= @width-2
       tm = list()
       rc = row_count
