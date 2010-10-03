@@ -376,7 +376,6 @@ module RubyCurses
       # private
       def variable_set var, val
         #nvar = "@#{var}"
-$log.debug " variable set XXX #{var}:: #{val} "
         send("#{var}", val) #rescue send("#{var}=", val)    # 2009-01-08 01:30 BIG CHANGE calling methods too here.
         #instance_variable_set(nvar, val)   # we should not call this !!! bypassing 
       end
@@ -463,7 +462,8 @@ $log.debug " variable set XXX #{var}:: #{val} "
 
     def initialize form, aconfig={}, &block
       @form = form
-      @row_offset = @col_offset = 0
+      @row_offset ||= 0
+      @col_offset ||= 0
       @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
       @state = :NORMAL
       @attr = nil
