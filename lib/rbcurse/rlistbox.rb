@@ -489,7 +489,7 @@ module RubyCurses
       @one_key_selection = true if @one_key_selection.nil?
       # we reduce internal_width from width while printing
       @internal_width = 2 # taking into account borders accounting for 2 cols
-      @internal_width = 2 if @suppress_borders
+      @internal_width = 0 if @suppress_borders # should it be 0 ???
 
     end
     def map_keys
