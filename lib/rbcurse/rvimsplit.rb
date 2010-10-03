@@ -19,12 +19,16 @@
 require 'rbcurse'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rtextview'
+require 'rbcurse/extras/grabbar'
 
 include RubyCurses
 module RubyCurses
   extend self
   class Coord < Struct.new(:row, :col, :h, :w); end
-  class Split < Struct.new(:which, :type, :weight, :add_weight); end
+  # Split contains info for a component added. weight is preferred weight
+  # and can contain value :AUTO. act_weight has the weight calculated.
+  # Often, last component can be nil, remainder will be assigned to it.
+  class Split < Struct.new(:which, :type, :weight, :act_weight); end
   class ResizeEvent < Struct.new(:source, :type); end
   class VimSplit < Widget
 
@@ -52,10 +56,10 @@ module RubyCurses
       @max_weight ||= 0.8
       @min_weight ||= 0.2
       @suppress_borders = false
+      @row_offset = @col_offset = 1
       super
       @focusable = true
       @editable = false
-      @row_offset = @col_offset = 1
       @components = [] # all components
       @c1 =[] # first split's comps
       @c2 =[] # second split's comps
@@ -63,10 +67,12 @@ module RubyCurses
       @c1rc = nil # TODO create once only
       @c2rc = nil
 
+      # hash, keyed on component, contains Split (which side, flow or stack, weight)
       @ch = {}
       @weight ||= 0.50
       # type can be :INCREASE, :DECREASE, :EXPAND, :UNEXPAND :EQUAL
       @_events.push :COMPONENT_RESIZE_EVENT
+      @_events.push :DRAG_EVENT
 
       init_vars
       bind_key([?\C-w,?o], :expand)  
@@ -84,12 +90,14 @@ module RubyCurses
     end
     def init_vars
       @repaint_required = true
+      @recalculate_splits = true # convert weight to size
       # seems it works with false also, so do we really need it to be true ?
       # whe true was giving a seg fault on increasing child window by 0.05
       @_child_buffering = false # private, internal. not to be changed by callers.
+      @row_offset = @col_offset = 0 if @suppress_borders # FIXME supposed to use this !!
 
       @internal_width = 2
-      @internal_width = 2 if @suppress_borders
+      @internal_width = 1 if @suppress_borders
 
     end
     # uses intelligent default a vertical split would prefer stacks and
@@ -122,6 +130,13 @@ module RubyCurses
         end 
         oldvalue = @weight
         @weight = newval
+        # orientation can be nil, so we cannot calculate rc here
+        #if v?
+          #@rc = (@width * @weight).to_i
+        #else
+          #@rc = (@height * @weight).to_i
+        #end
+        @rc = nil # so recalculated in repaint
         fire_property_change(:weight, oldvalue, @weight)
       end
       self
@@ -144,7 +159,8 @@ module RubyCurses
     def _add type, c, which, weight
       raise ArgumentError, "Nil component passed to add" unless c
       raise ArgumentError, "which must be :FIRST or :SECOND" if which != :FIRST && which != :SECOND
-      if weight.nil? || weight == :AUTO || (weight > 0 && weight <= 1.0)
+      # trying out wt of 0 means it will see height of object and use that.
+      if weight.nil? || weight == :AUTO || (weight >= 0 && weight <= 1.0)
       else
         raise ArgumentError, "weight must be >0 and <=1.0 or nil or :AUTO"
       end
@@ -169,6 +185,40 @@ module RubyCurses
           c = lb
         when Variable
           # TODO
+        else
+          if c == :grabbar
+            side = :bottom
+            case type
+            when :STACK
+              side = :bottom
+            when :FLOW
+              side = :left
+            end
+            c = Grabbar.new nil, :parent => @components.last, :side => side
+            c.bind :DRAG_EVENT do |ev|
+              source = ev.source
+              case ev.type
+              when KEY_UP
+                # CHECK BOUNDS TODO
+                source.parent.height -= 1
+                source.next.height +=1
+                source.next.row -= 1
+                source.parent.repaint_required
+                source.next.repaint_required
+                source.parent.repaint
+                source.next.repaint
+              when KEY_DOWN
+                # CHECK BOUNDS TODO
+                source.parent.height += 1
+                source.next.height -=1
+                source.next.row += 1
+                source.parent.repaint_required
+                source.next.repaint_required
+                source.parent.repaint
+                source.next.repaint
+              end
+            end
+          end
         end
       end
       c.parent_component = self
@@ -233,17 +283,53 @@ module RubyCurses
 
 
       @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+      @gbwid ||= 0
       if v?
-        rc = (@width * @weight).to_i
+        @rc ||= (@width * @weight).to_i
+        rc = @rc
         $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
-        @graphic.mvvline(@row+1, rc+@col, 0, @height-2)
-        #@c1rc = Coord.new(@row,@col, @height -2, rc)
-        #@c2rc = Coord.new(@row,rc+@col,@height-2, @width - rc)
+        # TODO if user allows, use grabbars
+        # $log.debug " CREATING GRABBAR "
+        roffset = 1
+        loffset = 2
+        if @suppress_borders
+          loffset = roffset = 0
+        end
+        unless @vb
+          @gbwid = 1
+          @vb ||= Grabbar.new @form, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
+          @vb.parent_component = self
+          @components << @vb
+          @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
+          @vb.bind :DRAG_EVENT do |ev|
+            case ev.type
+            when KEY_RIGHT
+              if @rc < @width - 3
+                @recalculate_splits = true
+                @rc += 1
+                @repaint_required = true # WHY ! Did prop handler not fire ?
+              end
+            when KEY_LEFT
+              if @rc > 3
+                @recalculate_splits = true
+                @repaint_required = true
+                @rc -= 1 
+              end
+            end
+          end
+        else
+          @vb.row @row+roffset
+          @vb.col rc+@col
+          @vb.repaint
+        end
+        #@graphic.mvvline(@row+1, rc+@col, 0, @height-2)
         # TODO don;t keep recreating, if present, reset values
-        @c1rc = Coord.new(@row,@col, @height -0, rc)
-        @c2rc = Coord.new(@row,rc+@col,@height-0, @width - rc)
+        @c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
+        @c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
       else
-        rc = (@height * @weight).to_i
+        # TODO add gbwid
+        @rc ||= (@height * @weight).to_i
+        rc = @rc
         $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
         @graphic.mvhline(rc+@row, @col+1, 0, @width-@internal_width)
         #@neat = true
@@ -261,61 +347,9 @@ module RubyCurses
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
       @components.each { |e| e.repaint_all(true) }
       $log.debug " XXX VIM REPAINT ALL "
-      [@c1,@c2].each_with_index do |c,i| 
-        rca = @c1rc
-        if i == 1
-          $log.debug " XXX VIM moving to second"
-          rca = @c2rc
-        end
-        totalw = 0 # accumulative weight
-        totalwd = 0 # accumulative weight for width (in case someone switches)
-        totalht = 0 # accumulative weight for height (in case someone switches)
-        sz = c.size
-        auto = 1.0/sz
-        c.each do |e| 
-          r    = rca.row
-          c    = rca.col
-          info = @ch[e] 
-          type = info.type
-          wt   = info.weight
-          wt = auto if wt == :AUTO
-          if info.add_weight && wt
-            $log.debug " XXX before adding #{wt} "
-            wt += info.add_weight if info.add_weight
-            $log.debug " added XXXX #{wt}, #{info.add_weight} to #{c} "
-          end
-          #totalw += wt if wt
-          #if wt.nil?
-            #wt = 1 - totalw
-          #end
-          e.row = r
-          e.col = c
-          if type == :STACK
-            if wt.nil?
-              wt = 1 - totalht
-            end
-            $log.debug " e #{e.class}, #{e.name}  "
-#            e.width = rca.w # changed 2010 dts  
-            e.width = (rca.w * (1 - totalwd)).to_i
-            e.height = ((rca.h * wt).to_i)
-            rca.row += e.height
-            totalht += wt if wt
-          else
-            if wt.nil?
-              wt = 1 - totalwd
-            end
-            #e.height = rca.h
-            e.height = (rca.h * (1- totalht)).to_i
-            e.width = ((rca.w * wt).to_i)
-            rca.col += e.width
-            totalwd += wt if wt
-          end
-          e.set_buffering(:target_window => @target_window || @form.window, :bottom => e.height-1, :right => e.width-1, :form => @form )
-          e.set_buffering(:screen_top => e.row, :screen_left => e.col)
-          $log.debug " XXXXX VIMS R #{e.row} C #{e.col} H #{e.height} W #{e.width} "
-          e.repaint
-        end
-      end
+      # FIXME do this only once, or when major change happends, otherwise
+      # i cannot increase decrease size on user request.
+      reset_to_preferred_size if @recalculate_splits
       else
         # only repaint those that are needing repaint
         # 2010-09-22 18:09 its possible somenoe has updated an internal
@@ -335,6 +369,76 @@ module RubyCurses
     end
     def h?
       !@orientation == :VERTICAL_SPLIT
+    end
+    # convert weight to  height and length
+    # we should only do this once, or if major change
+    # otherwise changes that user may have effected in size will be lost
+    # NOTE: this resets all components to preferred weights (given when component was added. 
+    # If user has resized components
+    # then those changes in size will be lost.
+    def reset_to_preferred_size  
+      @recalculate_splits = false
+      [@c1,@c2].each_with_index do |c,i| 
+        rca = @c1rc
+        if i == 1
+          $log.debug " XXX VIM moving to second"
+          rca = @c2rc
+        end
+        totalw = 0 # accumulative weight
+        totalwd = 0 # accumulative weight for width (in case someone switches)
+        totalht = 0 # accumulative weight for height (in case someone switches)
+        sz = c.size
+        auto = 1.0/sz
+        c.each do |e| 
+          r    = rca.row
+          c    = rca.col
+          info = @ch[e] 
+          type = info.type
+          wt   = info.weight
+          wt = auto if wt == :AUTO
+          e.row = r
+          e.col = c
+          if type == :STACK
+            if wt.nil?
+              #wt = 1 - totalht # fails if i put a grabbar in between
+            end
+            # store actual weight that was calculated, so if user reduces or increases
+            # we can use this, although ... we have no method that uses actual weights
+            # NOTE: If calling program increases one comp's weight, will have to reduce other.
+            info.act_weight = wt
+            $log.debug " e #{e.class}, #{e.name}  "
+#            e.width = rca.w # changed 2010 dts  
+            e.width = (rca.w * (1 - totalwd)).to_i
+            if wt != 0
+              if wt
+                e.height = ((rca.h * wt).to_i)
+              else
+                a = 0
+                a = 1 if @suppress_borders
+                e.height = rca.h - rca.row + a # take exactly rows left
+              end
+              # else use its own height
+            end
+            rca.row += e.height
+            totalht += wt if wt
+          else
+            if wt.nil?
+              wt = 1 - totalwd
+            end
+            info.act_weight = wt
+            #e.height = rca.h
+            e.height = (rca.h * (1- totalht)).to_i
+            e.width = ((rca.w * wt).to_i)
+            rca.col += e.width
+            totalwd += wt if wt
+          end
+          e.set_buffering(:target_window => @target_window || @form.window, :bottom => e.height-1, :right => e.width-1, :form => @form )
+          e.set_buffering(:screen_top => e.row, :screen_left => e.col)
+          $log.debug " XXXXX VIMS R #{e.row} C #{e.col} H #{e.height} W #{e.width} "
+          e.repaint
+          e._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
+        end
+      end
     end
 
     private
@@ -493,17 +597,17 @@ module RubyCurses
     # decrease the weight of the split
     def decrease_weight
       _multiplier = ($multiplier == 0 ? 1 : $multiplier )
-      weight(weight - 0.1*_multiplier)
+      weight(weight - 0.05*_multiplier)
     end
     # increase the weight of the split
     def increase_weight
       _multiplier = ($multiplier == 0 ? 1 : $multiplier )
-      weight(weight + 0.1*_multiplier)
+      weight(weight + 0.05*_multiplier)
     end
     # FIXME - i can only reduce if i've increased
     def decrease_current_component
       info = split_info_for
-      info.add_weight = 0 if info.add_weight.nil?
+      #info.add_weight = 0 if info.add_weight.nil?
       #if info.add_weight > 0.0
         #info.add_weight = info.add_weight - 0.05
       #end
@@ -541,11 +645,10 @@ module RubyCurses
     end
     def increase_current_component
       info = split_info_for
-      info.add_weight = 0 if info.add_weight.nil?
+      #info.add_weight = 0 if info.add_weight.nil?
       #if info.add_weight < 0.3
         #info.add_weight = info.add_weight + 0.05
       #end
-      $log.debug " XXX modifed add_weight to #{info.add_weight} "
       e = ResizeEvent.new @current_component, :INCREASE
       fire_handler :COMPONENT_RESIZE_EVENT, e
       #@repaint_required = true
