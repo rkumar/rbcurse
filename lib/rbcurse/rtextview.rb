@@ -54,6 +54,8 @@ module RubyCurses
       @focusable = true
       @editable = false
       @sanitization_required = true
+      @suppress_borders = false
+      @row_offset = @col_offset = 1 
       @row = 0
       @col = 0
       @show_focus = false  # don't highlight row under focus
@@ -61,7 +63,6 @@ module RubyCurses
       super
       # ideally this should have been 2 to take care of borders, but that would break
       # too much stuff !
-      @row_offset = @col_offset = 1 
       @win = @graphic
 
       @_events.push :CHANGE # thru vieditable
@@ -76,7 +77,6 @@ module RubyCurses
       @repaint_all=true 
       @repaint_required=true 
       ## 2010-02-10 20:20 RFED16 taking care if no border requested
-      @suppress_borders ||= false
       @row_offset = @col_offset = 0 if @suppress_borders == true
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
@@ -87,7 +87,7 @@ module RubyCurses
       # longest line on screen.
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
       @internal_width = 2
-      @internal_width = 0 if @suppress_borders
+      @internal_width = 2 if @suppress_borders
 
     end
     def map_keys
@@ -139,7 +139,7 @@ module RubyCurses
     ## ---- for listscrollable ---- ##
     def scrollatrow #:nodoc:
       if @suppress_borders
-        @height - 2 
+        @height - 1  # should be 2 FIXME but erasing lower line. see appemail
       else
         @height - 3 
       end
@@ -420,7 +420,7 @@ module RubyCurses
     ##+ border would not be seen in splitpane unless the width coincided exactly with
     ##+ what is calculated in divider_location.
     def paint  #:nodoc:
-      # not sure where to put this, once for all or repeat 2010-02-11 15:06 RFED16
+    
       my_win = nil
       if @form
         my_win = @form.window
@@ -440,7 +440,7 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow() 
       r,c = rowcol
-      @longest_line = @width #maxlen
+      @longest_line = @width-@internal_width #maxlen
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
@@ -449,6 +449,8 @@ module RubyCurses
             content = tm[crow]
             # next call modified string. you may wanna dup the string.
             # rlistbox does
+            # scrolling fails if you do not dup, since content gets truncated
+            content = content.dup
             sanitize content if @sanitization_required
             truncate content
             @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], acolor, @attr
@@ -469,7 +471,7 @@ module RubyCurses
         end
       end
       #show_caret_func
-      @table_changed = false
+      #@table_changed = false
       @repaint_required = false
       @repaint_footer_required = true
       @buffer_modified = true # required by form to call buffer_to_screen
@@ -491,16 +493,17 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     def truncate content  #:nodoc:
-      _maxlen = @maxlen ||= @width-@internal_width
+      _maxlen = @maxlen || @width-@internal_width
       _maxlen = @width-@internal_width if _maxlen > @width-@internal_width # take care of decrease in width
       if !content.nil? 
         if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
           #content = content[@pcol..@pcol+maxlen-1] 
-          content.replace content[@pcol..@pcol+_maxlen-1] 
+          content.replace(content[@pcol..@pcol+_maxlen-1] || "")
         else
-          # can this be avoided if pcol is 0 XXX
-          content.replace content[@pcol..-1] if @pcol > 0
+          if @pcol > 0
+              content.replace(content[@pcol..-1]  || "")
+          end
         end
       end
       content
