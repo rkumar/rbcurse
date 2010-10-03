@@ -87,7 +87,7 @@ module RubyCurses
       # longest line on screen.
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
       @internal_width = 2
-      @internal_width = 2 if @suppress_borders
+      @internal_width = 0 if @suppress_borders
 
     end
     def map_keys
@@ -209,7 +209,7 @@ module RubyCurses
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
     #  raise "TV 175 graphic nil " unless @graphic
-      print_foot if @print_footer && @repaint_footer_required
+      print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
       buffer_to_window
     end
     def getvalue
