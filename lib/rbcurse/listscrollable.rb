@@ -81,8 +81,8 @@ module ListScrollable
     rc = row_count
     #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
     @current_index = 0 if @current_index < 0  # not lt 0
-    @current_index = rc-1 if @current_index >= rc and rc>0 # not gt rowcount
-    @toprow = rc-h-1 if rc > h and @toprow > rc - h - 1 # toprow shows full page if possible
+    @current_index = rc-1 if @current_index >= rc && rc>0 # not gt rowcount
+    @toprow = rc-h-1 if rc > h && @toprow > rc - h - 1 # toprow shows full page if possible
     # curr has gone below table,  move toprow forward
     if @current_index - @toprow > h
       @toprow = @current_index - h
@@ -105,15 +105,11 @@ module ListScrollable
     r,c = rowcol
     @rows_panned ||= 0
     
-    #win_row=@form.window.top
-    win_row=@win_top # 2010-02-11 15:12 RFED16
     win_row = 0 # 2010-02-07 21:44 now ext offset added by widget
-    #win_row = 0 # new approach, we have it 
-    #win_col=@form.window.left
     # added 1 ?? in copywin too 2010-02-11 18:51  RFED16 this results in extra in normal situations.
     row = win_row + r + (@current_index-@toprow) + @rows_panned 
-    $log.debug " #{@name} LIST set_form_row #{row} = ci #{@current_index} + r #{r} + winrow: #{win_row} - tr:#{@toprow} #{@toprow} + rowsp #{@rows_panned} "
-    $log.debug "  - LIST set_form_row row_offset: #{@row_offset} + r #{r} + ci - topr + rowsp: #{@rows_panned}. c= #{c}  "
+    #$log.debug " #{@name} LIST set_form_row #{row} = ci #{@current_index} + r #{r} + winrow: #{win_row} - tr:#{@toprow} #{@toprow} + rowsp #{@rows_panned} "
+    #$log.debug "  - LIST set_form_row row_offset: #{@row_offset} + r #{r} + ci - topr + rowsp: #{@rows_panned}. c= #{c}  "
 
     ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
     ## this needs to percolate up a heirarchy.
