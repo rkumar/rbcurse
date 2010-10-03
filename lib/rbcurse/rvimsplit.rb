@@ -32,7 +32,7 @@ module RubyCurses
     dsl_accessor :orientation 
     # min and max weight of main split. do not allow user to exceed these
     dsl_accessor :min_weight, :max_weight
-    dsl_accessor :to_print_borders
+    dsl_accessor :suppress_borders #to_print_borders
     dsl_accessor :border_attrib, :border_color
     def initialize form, config={}, &block
       if config[:width] == :EXPAND
@@ -51,7 +51,7 @@ module RubyCurses
       end
       @max_weight ||= 0.8
       @min_weight ||= 0.2
-      @to_print_borders = 1
+      @suppress_borders = false
       super
       @focusable = true
       @editable = false
@@ -89,7 +89,7 @@ module RubyCurses
       @_child_buffering = false # private, internal. not to be changed by callers.
 
       @internal_width = 2
-      @internal_width = 0 if @to_print_borders != 1
+      @internal_width = 2 if @suppress_borders
 
     end
     # uses intelligent default a vertical split would prefer stacks and
@@ -225,7 +225,7 @@ module RubyCurses
       # if some major change has happened then repaint everything
       if @repaint_required == true
       $log.debug " VIM repaint graphic #{@graphic} "
-      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      print_borders unless @suppress_borders # do this once only, unless everything changes
       r,c = rowcol
 
       bordercolor = @border_color || $datacolor
