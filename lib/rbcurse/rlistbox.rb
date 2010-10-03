@@ -434,7 +434,7 @@ module RubyCurses
     attr_accessor :one_key_selection # will pressing a single key select or not
     dsl_accessor :border_attrib, :border_color # 
     dsl_accessor :sanitization_required
-    dsl_accessor :to_print_borders
+    dsl_accessor :suppress_borders #to_print_borders
 
 
     def initialize form, config={}, &block
@@ -447,10 +447,11 @@ module RubyCurses
       @list = nil 
       # any special attribs such as status to be printed in col1, or color (selection)
       @list_attribs = {}
+      @suppress_borders = false
+      @row_offset = @col_offset = 1 # for borders
       super
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @current_index ||= 0
-      @row_offset = @col_offset = 1
       @selection_mode ||= :multiple # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       # moving down to repaint so that scrollpane can set should_buffered
@@ -475,9 +476,10 @@ module RubyCurses
     # this is called several times, from constructor
     # and when list data changed, so only put relevant resets here.
     def init_vars
-      @to_print_borders ||= 1
       @repaint_required = true
       @toprow = @pcol = 0
+
+      @row_offset = @col_offset = 0 if @suppress_borders
       if @show_selector
         @row_selected_symbol ||= '>'
         @row_unselected_symbol ||= ' '
@@ -487,7 +489,7 @@ module RubyCurses
       @one_key_selection = true if @one_key_selection.nil?
       # we reduce internal_width from width while printing
       @internal_width = 2 # taking into account borders accounting for 2 cols
-      @internal_width = 0 if @to_print_borders != 1
+      @internal_width = 2 if @suppress_borders
 
     end
     def map_keys
@@ -533,10 +535,10 @@ module RubyCurses
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def scrollatrow
-      if @to_print_borders == 1
-        return @height - 3
+      if @suppress_borders
+        return @height - 1
       else
-        return @height - 2
+        return @height - 3
       end
     end
     # provide data to List in the form of an Array or Variable or
@@ -943,7 +945,7 @@ module RubyCurses
       @win_top = my_win.top
 
       $log.debug "rlistbox repaint  #{@name} graphic #{@graphic}"
-      print_borders if @to_print_borders == 1 # do this once only, unless everything changes
+      print_borders unless @suppress_borders # do this once only, unless everything changes
       #maxlen = @maxlen ||= @width-@internal_width
       renderer = cell_renderer()
       renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
