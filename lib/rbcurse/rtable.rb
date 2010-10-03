@@ -82,6 +82,8 @@ module RubyCurses
         total = @_column_widths.inject(0) { |total, w| total+=w }
         @width = total+2
       end
+      @suppress_borders = false
+      @col_offset = @row_offset = 1
 
       super
       @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT)
@@ -95,14 +97,12 @@ module RubyCurses
     end
 
     def init_vars
-      @col_offset = @row_offset = 1
       @focusable= true
       @current_index = 0
       @current_column = 0
       @oldrow = @oldcol = 0
       @current_column_offset ||= 0 # added 2009-01-12 19:06 current_column's offset
       @toprow = 0
-      @to_print_borders ||= 1
       @show_grid ||= 1
       @_first_column_print = 0 # intro for horiz scrolling 2009-02-14 16:20 
       @_last_column_print = 0 # 2009-02-16 23:57 so we don't tab further etc. 
@@ -111,6 +111,7 @@ module RubyCurses
       @inter_column_spacing = 1
       # @selected_color ||= 'yellow'
       # @selected_bgcolor ||= 'black'
+      @col_offset = @row_offset = 0 if @suppress_borders
       @table_changed = true
       @repaint_required = true
     end
@@ -157,8 +158,11 @@ module RubyCurses
     end
     # added 2009-01-07 13:05 so new scrollable can use
     def scrollatrow
-      #@height -3
-      @height -4 # we forgot to remove 1 from height in border.
+      if @suppress_borders # NOT TESTED XXX
+        @height - 2 # we forgot to remove 1 from height in border.
+      else
+        @height - 4 # we forgot to remove 1 from height in border.
+      end
     end
 
     # 
@@ -888,7 +892,7 @@ module RubyCurses
       @win_left = my_win.left # unused remove TODO
       @win_top = my_win.top
 
-      print_border @graphic if @to_print_borders == 1 # do this once only, unless everything changes
+      print_border @graphic if !@suppress_borders  # do this once only, unless everything changes
       return if @table_model.nil? # added 2009-02-17 12:45 
       @_first_column_print ||= 0
       cc = @table_model.column_count
