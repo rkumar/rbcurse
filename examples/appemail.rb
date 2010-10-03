@@ -23,7 +23,7 @@ class ColumnBrowse < Widget
     if @first_time
       @first_time = nil
       [@vim, @left, @right1, @right2].each { |e|  
-        e.set_buffering(:target_window => @target_window || @form.window)
+        e.set_buffering(:target_window => @target_window || @form.window, :form => @form)
       }
     end
     @vim.repaint
@@ -34,12 +34,17 @@ class ColumnBrowse < Widget
     @left
   end
   def set_right_top_component comp
-    @right1 = @vim.add comp, :SECOND
+    @added_top = true
+    @right1 = @vim.add comp, :SECOND, 0.5
     _add_component comp
     @right1
   end
   def set_right_bottom_component comp
-    @right2 = @vim.add comp, :SECOND
+    raise "Please add top component first!" unless @added_top
+    # what if user gives in wrong order !!
+    @gb = @vim.add :grabbar, :SECOND, 0
+    @right2 = @vim.add comp, :SECOND, nil
+    @gb.next(@right2)
     _add_component comp
     @right2
   end
@@ -49,7 +54,7 @@ class ColumnBrowse < Widget
     #comp.form = @form 
   end
   def _create_vimsplit  #:nodoc:
-    @vim = VimSplit.new nil, :row => @row, :col => @col, :width => @width, :height => @height, :weight => @weight, :orientation => :VERTICAL do |s|
+    @vim = VimSplit.new nil, :row => @row, :col => @col, :width => @width, :height => @height, :weight => @weight, :orientation => :VERTICAL, :suppress_borders => true do |s|
       s.parent_component = self
       #s.target_window = @form.window
       #s.add @left, :FIRST
@@ -131,7 +136,7 @@ App.new do
   @tv = nil
   borderattrib = :reverse
   @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
-  message "Press F1 to exit"
+  message "Press F1 to exit ...................................................."
 
 
      
@@ -147,7 +152,7 @@ App.new do
     #@vim = vimsplit :height => Ncurses.LINES-2, :weight => 0.25, :orientation => :VERTICAL do |s|
       # try with new listbox
     @vim = ColumnBrowse.new @form, :row => 1, :col => 1, :width => :EXPAND
-    @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib
+    @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
     def @dirs.convert_value_to_text(text, crow) ; File.basename(text); end
     @vim.set_left_component @dirs
@@ -156,7 +161,7 @@ App.new do
     @mails = []
     # FIXME why was list required in next, should have managed. length
     # error
-    @lb2 = list_box :border_attrib => borderattrib #, :list => []
+    @lb2 = list_box :border_attrib => borderattrib, :suppress_borders => true #, :list => []
     @lb2.one_key_selection = false
     @vim.set_right_top_component @lb2
     @dirs.bind :PRESS do |e|
@@ -185,6 +190,7 @@ App.new do
     #s.add "email body comes here. Press Enter on list above", :SECOND
     @tv = @vim.set_right_bottom_component "email body comes here. "
     #@tv = s.components_for(:SECOND).last
+    @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
 end # app
