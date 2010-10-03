@@ -57,22 +57,18 @@ module RubyCurses
       @col = 0
       @curpos = 0
       @list = []
-      super
+      @suppress_borders = false
       @row_offset = @col_offset = 1 # for cursor display on first entry, so not positioned on border
+      super
       @orig_col = @col
       # this does result in a blank line if we insert after creating. That's required at 
       # present if we wish to only insert
       if @list.empty?
       #  @list << "\r"   # removed this on 2009-02-15 17:25 lets see how it goes
       end
-     # @scrollatrow = @height-2
       @content_rows = @list.length
-      #@win = @form.window
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
-    #  init_scrollable
-      #print_borders
       # 2010-01-10 19:35 compute locally if not set
-      #@maxlen ||= @width-@internal_width
       @_events.push :CHANGE
       install_keys
       init_vars
@@ -83,7 +79,6 @@ module RubyCurses
       @toprow = @current_index = @pcol = 0
       @repaint_all=true 
       ## 2010-02-12 12:20 RFED16 taking care if no border requested
-      @suppress_borders ||= false
       @row_offset = @col_offset = 0 if @suppress_borders == true
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
@@ -91,7 +86,7 @@ module RubyCurses
       @longest_line = 0
       # if borders used, reduce 2 from width else 0
       @internal_width = 2
-      @internal_width = 0 if @suppress_borders
+      @internal_width = 2 if @suppress_borders
       bind_key(?\M-w, :kill_ring_save)
       bind_key(?\C-y, :yank)
       bind_key(?\M-y, :yank_pop)
@@ -232,7 +227,7 @@ module RubyCurses
       
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print if only col move
       paint if @repaint_required
-      print_foot if @print_footer && (@repaint_footer_required || @repaint_required)
+      print_foot if @print_footer && !@suppress_borders && (@repaint_footer_required || @repaint_required)
       buffer_to_window # 2010-02-12 14:54 RFED16
     end
     def getvalue
@@ -805,7 +800,7 @@ module RubyCurses
     ## ---- for listscrollable ---- ##
     def scrollatrow
       if @suppress_borders
-        @height - 2 
+        @height - 1 
       else
         @height - 3 
       end
