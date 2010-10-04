@@ -56,6 +56,7 @@ module RubyCurses
       @max_weight ||= 0.8
       @min_weight ||= 0.2
       @suppress_borders = false
+      @_use_preferred_sizes = true
       @row_offset = @col_offset = 1
       super
       @focusable = true
@@ -297,7 +298,7 @@ module RubyCurses
         end
         unless @vb
           @gbwid = 1
-          @vb ||= Grabbar.new @form, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
+          @vb ||= Grabbar.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
           @vb.parent_component = self
           @components << @vb
           @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
@@ -349,7 +350,7 @@ module RubyCurses
       $log.debug " XXX VIM REPAINT ALL "
       # FIXME do this only once, or when major change happends, otherwise
       # i cannot increase decrease size on user request.
-      reset_to_preferred_size if @recalculate_splits
+      recalculate_splits @_use_preferred_sizes if @recalculate_splits
       else
         # only repaint those that are needing repaint
         # 2010-09-22 18:09 its possible somenoe has updated an internal
@@ -377,11 +378,14 @@ module RubyCurses
     # If user has resized components
     # then those changes in size will be lost.
     def reset_to_preferred_size  
+      recalculate_splits use_preferred_sizes=true
+    end
+    def recalculate_splits use_preferred_sizes=false 
       @recalculate_splits = false
       [@c1,@c2].each_with_index do |c,i| 
         rca = @c1rc
         if i == 1
-          $log.debug " XXX VIM moving to second"
+          #$log.debug " XXX VIM moving to second"
           rca = @c2rc
         end
         totalw = 0 # accumulative weight
@@ -399,36 +403,45 @@ module RubyCurses
           e.row = r
           e.col = c
           if type == :STACK
-            if wt.nil?
-              #wt = 1 - totalht # fails if i put a grabbar in between
-            end
             # store actual weight that was calculated, so if user reduces or increases
             # we can use this, although ... we have no method that uses actual weights
             # NOTE: If calling program increases one comp's weight, will have to reduce other.
             info.act_weight = wt
-            $log.debug " e #{e.class}, #{e.name}  "
-#            e.width = rca.w # changed 2010 dts  
+
             e.width = (rca.w * (1 - totalwd)).to_i
-            if wt != 0
-              if wt
-                e.height = ((rca.h * wt).to_i)
-              else
-                a = 0
-                a = 1 if @suppress_borders
-                e.height = rca.h - rca.row + a # take exactly rows left
+            # recaclulate height only in this case, otherwise we will overwrite changes
+            # made by user
+            if use_preferred_sizes
+              if wt != 0
+                if wt
+                  e.height = ((rca.h * wt).to_i)
+                else
+                  a = 0
+                  a = 1 if @suppress_borders
+                  e.height = rca.h - rca.row + a # take exactly rows left
+                end
+                # else use its own height
               end
-              # else use its own height
             end
             rca.row += e.height
             totalht += wt if wt
           else
-            if wt.nil?
-              wt = 1 - totalwd
-            end
+            # TODO THIS PART AS PER ABOVE CASE ,  TO TEST
+            # this is a horizontal split or flow
             info.act_weight = wt
             #e.height = rca.h
             e.height = (rca.h * (1- totalht)).to_i
-            e.width = ((rca.w * wt).to_i)
+            if use_preferred_sizes
+              if wt != 0
+                if wt
+                  e.width = ((rca.w * wt).to_i)
+                else
+                  a = 0
+                  a = 1 if @suppress_borders
+                  e.width = rca.w - rca.col + a # take exactly rows left
+                end
+              end
+            end
             rca.col += e.width
             totalwd += wt if wt
           end
@@ -439,6 +452,7 @@ module RubyCurses
           e._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
         end
       end
+      @_use_preferred_sizes = false
     end
 
     private
@@ -502,7 +516,7 @@ module RubyCurses
           # previous component outside of this.
           return goto_prev_component unless on_first_component?
         when KEY_RIGHT
-          return goto_next_component unless on_last_component?
+          return goto_next_component #unless on_last_component?
         when KEY_DOWN
           return goto_next_component #unless on_last_component?
         else 
@@ -517,12 +531,16 @@ module RubyCurses
     def on_enter
       # TODO if BTAB the last comp
       if $current_key == KEY_BTAB
+        # FIXME last is not focusable, then ??
         @current_component = @components.last
       else
         @current_component = @components.first
       end
       $log.debug " VIM came to on_enter #{@current_component} "
       set_form_row
+    end
+    def on_leave
+      super
     end
     def goto_next_component
       if @current_component != nil 
@@ -531,11 +549,17 @@ module RubyCurses
           return :UNHANDLED
         end
         @current_index = @components.index(@current_component)
-        @current_index += 1
-        @current_component = @components[@current_index] 
-        #@current_component.on_enter
+        index = @current_index + 1
+        index.upto(@components.length-1) do |i|
+          f = @components[i]
+          if f.focusable
+            @current_index = i
+            @current_component = f
+            return set_form_row
+          end
+        end
       end
-      return set_form_row
+      return :UNHANDLED
     end
     def goto_prev_component
       if @current_component != nil 
@@ -544,13 +568,17 @@ module RubyCurses
           return :UNHANDLED
         end
         @current_index = @components.index(@current_component)
-        @current_index -= 1
-        @current_component = @components[@current_index] 
-        # shoot if this this put on a form with other widgets
-        # we would never get out, should return nil -1 in handle key
+        index = @current_index -= 1
+        index.downto(0) do |i|
+          f = @components[i]
+          if f.focusable
+            @current_index = i
+            @current_component = f
+            return set_form_row
+          end
+        end
       end
-      set_form_row
-      return 0
+      return :UNHANDLED
     end
     # private
     def set_form_row
