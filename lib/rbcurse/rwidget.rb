@@ -1374,7 +1374,7 @@ module RubyCurses
       index = @active_index + 1
       index.upto(@widgets.length-1) do |i|
         f = @widgets[i]
-        $log.debug "insdie sele nxt field :  i #{i}  #{index} WL:#{@widgets.length}, field #{f}" 
+        #$log.debug "insdie sele nxt field :  i #{i}  #{index} WL:#{@widgets.length}, field #{f}" 
         if focusable?(f)
           select_field i
           return
@@ -1602,7 +1602,7 @@ module RubyCurses
           x = Ncurses.stdscr.getmaxy
           y = Ncurses.stdscr.getmaxx
           $log.debug " form RESIZE HK #{ch} #{self}, #{@name}, #{ch}  "
-          alert "WE NEED TO RECALC AND REPAINT resize #{lines}, #{cols}: #{x}, #{y} "
+          alert "SIGWINCH WE NEED TO RECALC AND REPAINT resize #{lines}, #{cols}: #{x}, #{y} "
           Ncurses.endwin
           @window.wrefresh
         else
