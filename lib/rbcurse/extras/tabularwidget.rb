@@ -219,7 +219,11 @@ module RubyCurses
     end
     ## ---- for listscrollable ---- ##
     def scrollatrow #:nodoc:
-      @height - 3 
+      if @suppress_borders
+        @height - 1 
+      else
+        @height - 3 
+      end
     end
     def row_count
       #@list.length
