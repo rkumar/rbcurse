@@ -4,6 +4,7 @@
   * Author: rk (arunachalesha)
   * file created 2010-09-28 23:37 
 TODO 
+   converting to this version, we forgot to print the COLUMN HEADINGS !!!
    * be column aware
    * expand columns
    * move columns
@@ -90,6 +91,8 @@ module RubyCurses
       @cw = {} # column widths keyed on column index
       @calign = {} # columns aligns values, on column index
       @coffsets = {}
+      @suppress_borders = false
+      @row_offset = @col_offset = 1 
       @chash = {}
       # this should have index of displayed column
       # so user can reorder columns
@@ -102,7 +105,6 @@ module RubyCurses
       super
       # ideally this should have been 2 to take care of borders, but that would break
       # too much stuff !
-      @row_offset = @col_offset = 1 
       @win = @graphic
 
       @_events.push :CHANGE # thru vieditable
@@ -116,8 +118,9 @@ module RubyCurses
       @repaint_all=true 
       @repaint_required=true 
 
-      @suppress_borders ||= false
       @row_offset = @col_offset = 0 if @suppress_borders == true
+      @internal_width = 2
+      @internal_width = 0 if @suppress_borders
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
@@ -204,7 +207,8 @@ module RubyCurses
     end
     def contract_column
     end
-    ## display this row on top
+    ## display this row number on top
+    # programmataically indicate a row to be top row
     def top_row(*val) #:nodoc:
       if val.empty?
         @toprow
@@ -218,7 +222,8 @@ module RubyCurses
       @height - 3 
     end
     def row_count
-      @list.length
+      #@list.length
+      get_content().length
     end
     ##
     # returns row of first match of given regex (or nil if not found)
@@ -260,7 +265,8 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def get_content
-      @list
+      #@list
+      [:columns, :separator,  *@list]
     end
     def get_window #:nodoc:
       @graphic
@@ -269,8 +275,8 @@ module RubyCurses
     def repaint # textview :nodoc:
       if @screen_buffer.nil?
         safe_create_buffer
-        @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
-        $log.debug " textview creates pad #{@screen_buffer} #{@name}"
+        @screen_buffer.name = "Pad::TW_PAD_#{@name}" unless @screen_buffer.nil?
+        $log.debug " tabularwid creates pad #{@screen_buffer} #{@name}"
       end
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
@@ -386,7 +392,7 @@ module RubyCurses
       if @pcol+@curpos > @buffer.length
         addcol((@pcol+@buffer.length-@curpos)+1)
         @curpos = @buffer.length 
-        maxlen = (@maxlen || @width-2)
+        maxlen = (@maxlen || @width-@internal_width)
 
         # even this row is gt maxlen, i.e., scrolled right
         if @curpos > maxlen
@@ -404,7 +410,7 @@ module RubyCurses
       @cols_panned ||= 0
       @pad_offset ||= 0 # added 2010-02-11 21:54 since padded widgets get an offset.
       @curpos = col1
-      maxlen = @maxlen || @width-2
+      maxlen = @maxlen || @width-@internal_width
       #@curpos = maxlen if @curpos > maxlen
       if @curpos > maxlen
         @pcol = @curpos - maxlen
@@ -422,7 +428,7 @@ module RubyCurses
       @repaint_footer_required = true
     end
     def cursor_forward #:nodoc:
-      maxlen = @maxlen || @width-2
+      maxlen = @maxlen || @width-@internal_width
       repeatm { 
       if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
         @curpos += 1
@@ -482,15 +488,15 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
       _guess_col_widths
+      tm = get_content
       @width ||= @preferred_width
-      @height ||= [@list.length+2, 10].min
+      @height ||= [tm.length+2, 10].min
       _prepare_format
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
-      rc = row_count
-      maxlen = @maxlen || @width-2
+      rc = tm.length
+      maxlen = @maxlen || @width-@internal_width
       #$log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
-      tm = get_content
       tr = @toprow
       acolor = get_color $datacolor
       h = scrollatrow() 
@@ -502,16 +508,29 @@ module RubyCurses
             #focussed = @current_index == crow ? true : false 
             #selected = is_row_selected crow
             content = tm[crow]
+
+            columnrow = false
+            if content == :columns
+              columnrow = true
+            end
+
             value = convert_value_to_text content, crow
+
             @buffer = value if crow == @current_index
-            truncate value
             # next call modified string. you may wanna dup the string.
             # rlistbox does
-            @graphic.printstring  r+hh, c, "%-*s" % [@width-2,value], acolor, @attr
+            truncate value
+
+            if columnrow
+              # put as separate method TODO 
+              @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], $promptcolor, @attr
+            else
+              @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
+            end
 
         else
           # clear rows
-          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
         end
       end
       @repaint_required        = false
@@ -520,9 +539,26 @@ module RubyCurses
       @repaint_all             = false
 
     end
+    # this should be called so caller can override
+    def print_column_row r, c, len, value, color, attr
+      acolor = $promptcoloe
+      @graphic.printstring  r, c, "%-*s" % [len ,value], acolor, @attr
+    end
+    def separator
+      return @separ if @separ
+      str = ""
+      if @numbering
+        rows = @list.size.to_s.length
+        str = "-"*(rows+1)+@x
+      end
+      @cw.each_pair { |k,v| str << "-" * (v+1) + @x }
+      @separ = str.chop
+    end
     def convert_value_to_text r, count
       if r == :separator
         return separator
+      elsif r == :columns
+        r = @columns
       end
       if @numbering
         r = r.dup
@@ -573,9 +609,9 @@ module RubyCurses
       }
       @fmstr = fmt.join(@y)
       if @numbering
-        rows = @list.size.to_s.length
-        @fmstr = "%#{rows}d "+ @y + @fmstr
-        @coffsets.each_pair { |name, val| @coffsets[name] = val + rows + 2 }
+        @rows ||= @list.size.to_s.length
+        @fmstr = "%#{@rows}d "+ @y + @fmstr
+        @coffsets.each_pair { |name, val| @coffsets[name] = val + @rows + 2 }
       end
       $log.debug " FMT : #{@fmstr} "
     end
