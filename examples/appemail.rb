@@ -266,30 +266,44 @@ App.new do
     def @dirs.convert_value_to_text(text, crow) ; File.basename(text); end
     @vim.set_left_component @dirs
 
-    #@tw = TabularWidget.new nil
+    #@tw = RubyCurses::TabularWidget.new nil
     @mails = []
     # FIXME why was list required in next, should have managed. length
     # error
-    @lb2 = list_box :border_attrib => borderattrib, :suppress_borders => true #, :list => []
-    @lb2.one_key_selection = false
-    def @lb2.create_default_cell_renderer
-      return MailCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-@internal_width-@left_margin}
-    end
+    #@lb2 = list_box :border_attrib => borderattrib, :suppress_borders => true #, :list => []
+    #@lb2.one_key_selection = false
+    #def @lb2.create_default_cell_renderer
+      #return MailCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-@internal_width-@left_margin}
+    #end
+    headings = %w{ Stat #  Date From Subject }
+    @lb2 = RubyCurses::TabularWidget.new nil, :suppress_borders => true
+    @lb2.columns = headings
+    @lb2.column_align 1, :right
+    @lb2.column_align 0, :right
     @vim.set_right_top_component @lb2
     @dirs.bind :PRESS do |e|
       @lines = []
       mx = Mbox.new File.expand_path(e.text)
-      mx.formatted_each do |text|
+      #mx.formatted_each do |text|
+      mx.array_each do |text|
         @lines << text
-        #@tw.add text
       end
       message " #{e.text} has #{@lines.size} messages"
-      @lb2.list @lines
+      #@lb2.list @lines
+      @lb2.set_content @lines
       @messages = mx.mails()
     end
     @lb2.bind :PRESS do |e|
       #alert " line clicked #{e.source.current_index} "
-      @tv.set_content(@messages[e.source.current_index].body, :WRAP_WORD)
+      case @lb2
+      when RubyCurses::TabularWidget
+        index = e.source.current_index - 2
+        if index >= 0
+          @tv.set_content(@messages[index].body, :WRAP_WORD)
+        end
+      else
+        @tv.set_content(@messages[e.source.current_index].body, :WRAP_WORD)
+      end
     end
     @lb2.bind :ENTER_ROW do |e|
       @header.text_right "Row #{e.current_index+1} of #{@messages.size} "
