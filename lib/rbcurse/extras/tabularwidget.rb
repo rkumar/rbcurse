@@ -18,6 +18,7 @@ TODO
 =end
 require 'rbcurse'
 require 'rbcurse/listscrollable'
+require 'rbcurse/extras/tabular'
 
 #include RubyCurses
 module RubyCurses
@@ -156,7 +157,7 @@ module RubyCurses
     # send in a list
     # 
     def set_content list
-      if list.is_a? Tabular
+      if list.is_a? RubyCurses::Tabular
         @list = list
       elsif list.is_a? Array
         @list = list
@@ -499,7 +500,7 @@ module RubyCurses
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = tm.length
-      maxlen = @maxlen || @width-@internal_width
+      _maxlen = @maxlen || @width-@internal_width
       #$log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tr = @toprow
       acolor = get_color $datacolor
@@ -523,6 +524,7 @@ module RubyCurses
             @buffer = value if crow == @current_index
             # next call modified string. you may wanna dup the string.
             # rlistbox does
+            sanitize value if @sanitization_required
             truncate value
 
             if columnrow
@@ -549,7 +551,7 @@ module RubyCurses
       @graphic.printstring  r, c, "%-*s" % [len ,value], acolor, @attr
     end
     def separator
-      return @separ if @separ
+      #return @separ if @separ
       str = ""
       if @numbering
         rows = @list.size.to_s.length
@@ -563,6 +565,7 @@ module RubyCurses
         return separator
       elsif r == :columns
         r = @columns
+        return "??" unless @columns
       end
       if @numbering
         r = r.dup
