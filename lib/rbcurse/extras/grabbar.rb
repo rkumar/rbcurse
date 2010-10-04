@@ -2,10 +2,6 @@ require 'rbcurse/app'
 include Ncurses
 include RubyCurses
 
-# This is a horizontal or vertical bar (like a scrollbar), at present attached to a
-# widget that is focusable, and allows user to press arrow keys.
-# It highlights on focus, the caller can expand and contract components in a container
-# or even screen, based on arrow movements. This allows for a visual resizing of components.
 # TODO : We can consider making it independent of objects, or allow for a margin so it does not write
 # over the object. Then it will be always visible.
 # TODO: if lists and tables, can without borders actually adjust then putting this independent
@@ -13,13 +9,25 @@ include RubyCurses
 #
 # @example
 #     lb = list_box ....
-#      rb = Grabbar.new @form, :parent => lb, :side => :right
+#     rb = Grabbar.new @form, :parent => lb, :side => :right
 #
 # At a later stage, we will integrate this with lists and tables, so it will happen automatically.
 #
-# @since 1.2.0    UNTESTED
+# @since 1.2.0
 module RubyCurses
   class DragEvent < Struct.new(:source, :type); end
+
+  # This is a horizontal or vertical bar (like a scrollbar), at present attached to a
+  # widget that is focusable, and allows user to press arrow keys.
+  # It highlights on focus, the caller can expand and contract components in a container
+  # or even screen, based on arrow movements. This allows for a visual resizing of components.
+  # @example
+  #     lb = list_box ....
+  #     rb = Grabbar.new @form, :parent => lb, :side => :right
+  #
+  # NOTE: since this can be deactivated, containers need to check focusable before passing
+  # focus in
+
   class Grabbar < Widget
     # row to start, same as listbox, required.
     dsl_property :row
@@ -50,6 +58,7 @@ module RubyCurses
       @focusable = true
       @repaint_required = true
       @_events.push(:DRAG_EVENT)
+      map_keys
       unless @parent
         raise ArgumentError, "row col and length should be provided" if !@row || !@col || !@length
       end
@@ -62,6 +71,15 @@ module RubyCurses
           ## will not be fired (due to optimization).
         #end
       #end
+    end
+    def map_keys
+      if !defined? $deactivate_grabbars
+        $deactivate_grabbars = false
+      end
+      # deactivate only this bar
+      bind_key(?f) {@focusable=false; }
+      # deactivate all bars, i've had nuff!
+      bind_key(?F) {deactivate_all(true)}
     end
 
     ##
@@ -120,6 +138,7 @@ module RubyCurses
         @graphic.mvhline(@row, @col, 1, @length)
       end
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+      _paint_marker
 
       @repaint_required = false
     end
@@ -139,7 +158,19 @@ module RubyCurses
         Ncurses::A_REVERSE
       end
     end
+    # deactivate all grabbars
+    # The application has to provide a key or button to activate all
+    # or just this one.
+    def deactivate_all  tf=true
+      $deactivate_grabbars = tf
+      @focusable = !tf
+    end
     def handle_key ch
+      # all grabbars have been deactivated
+      if $deactivate_grabbars || !@focusable
+        @focusable = false
+        return :UNHANDLED
+      end
       case @side
       when :right, :left
         case ch
@@ -148,8 +179,10 @@ module RubyCurses
         when KEY_LEFT
           fire_handler :DRAG_EVENT, DragEvent.new(self, ch)
         else
-          return :UNHANDLED
+          ret = process_key ch, self
+          return ret if ret == :UNHANDLED
         end
+        set_form_col
       when :top, :bottom
         case ch
         when KEY_UP
@@ -157,12 +190,20 @@ module RubyCurses
         when KEY_DOWN
           fire_handler :DRAG_EVENT, DragEvent.new(self, ch)
         else
-          return :UNHANDLED
+          ret = process_key ch, self
+          return ret if ret == :UNHANDLED
         end
+        set_form_col
+      else
       end
       @repaint_required = true
+      return 0
     end
     def on_enter
+      if $deactivate_grabbars || !@focusable
+        @focusable = false
+        return :UNHANDLED
+      end
       # since it is over border of component, we need to repaint
       @focussed = true
       @repaint_required = true
@@ -180,15 +221,41 @@ module RubyCurses
       end
     end
     def set_form_row
+      return unless @focusable
       r,c = rowcol
       setrowcol r, c
     end
     # set the cursor on first point of bar
     def set_form_col
+      return unless @focusable
       # need to set it to first point, otherwise it could be off the widget
       r,c = rowcol
       setrowcol r, c
       #noop
+    end
+    # is this a vertical grabbar
+    def v?
+      @side == :top || @side == :bottom
+    end
+    # is this a horizontal grabbar
+    def h?
+      @side == :right || @side == :left
+    end
+    private
+    def _paint_marker  #:nodoc:
+      r,c = rowcol
+      if @focussed
+        @graphic.mvwaddch r,c, Ncurses::ACS_DIAMOND
+        if v?
+          @graphic.mvwaddch r,c+1, Ncurses::ACS_UARROW
+          @graphic.mvwaddch r,c+2, Ncurses::ACS_DARROW
+        else
+          @graphic.mvwaddch r+1,c, Ncurses::ACS_LARROW
+          @graphic.mvwaddch r+2,c, Ncurses::ACS_RARROW
+        end
+      else
+        #@graphic.mvwaddch r,c, Ncurses::ACS_CKBOARD
+      end
     end
     ##
     ##
