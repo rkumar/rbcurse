@@ -36,6 +36,8 @@ module RubyCurses
   #
   # @since 1.1.5
   # TODO - 
+  #  - need to test horizontal, not done at all XXX
+  #  [ ] Don't print title if width less than title XXX or truncate
   #  x user specify max panes to show (beyond that hide and pan)
   #  x how many can be created
   #  - to squeeze panes and fit all or hide and pan
@@ -48,14 +50,10 @@ module RubyCurses
   #  x print more marker
   #  - allow user to specify preferred sizes and respect that
   #  x don't move to an empty list, can have a crash
-  #  - need to test horizontal, not done at all
   #  
   
   class MultiSplit < Widget
       dsl_property :orientation  # :VERTICAL_SPLIT or :HORIZONTAL_SPLIT
-      #attr_reader :divider_location  # XXX
-      #attr_reader :resize_weight     # XXX
-      #attr_writer :last_divider_location
       dsl_accessor :border_color
       dsl_accessor :border_attrib
       # if no components have been added at time of repainting
@@ -66,13 +64,18 @@ module RubyCurses
       # currently, we don't scroll, we narrow what is shown
       dsl_accessor :unlimited
       # allow user to resize components, default true
-      dsl_accessor :allow_resizing
+      dsl_accessor :allow_resizing # XXX unused
       # allow user to flip / exhange 2 components or not, default false
-      dsl_accessor :allow_exchanging
+      dsl_accessor :allow_exchanging # XXX unused
+      # when focus reenters this component, should it focus
+      # on first internal component, or last focused component.
+      # True means it will focus on first component (or last, if backtabbing)
       dsl_accessor :cyclic_behavior
       # maximum to show, if less than split_count then scrolling
       dsl_property :max_visible
       attr_reader :components
+      # should borders be suppressed or printed
+      dsl_accessor :suppress_borders
 
       #attr_accessor :one_touch_expandable # boolean, default true  # XXX
 
@@ -88,8 +91,9 @@ module RubyCurses
           # need to recalculate offsets and dimensions of all comps since new one added
           # to be done once in repaint, and whenever a new one added (in repaint)
           @recalc_required = true
-          super
           @row_offset = @col_offset = 1
+          @suppress_borders = false
+          super
           @orig_col = @col
           @use_absolute = true; # set to true if not using subwins XXX CLEAN THIS
           init_vars
@@ -107,9 +111,11 @@ module RubyCurses
           @orientation ||= :HORIZONTAL_SPLIT # added 2010-01-13 15:05 since not set
 
           # true means will request child to create a buffer, since cropping will be needed
-          @_child_buffering = true # private, internal. not to be changed by callers.
+          # FIXME: if true then increases in size are not having effect !!!
+          @_child_buffering = false # private, internal. not to be changed by callers.
           #@one_touch_expandable = true
           #@is_expanding = false
+          @row_offset = @col_offset = 0 if @suppress_borders
 
           #bind_key([?\C-w, ?o], :expand)
           #bind_key([?\C-w, ?1], :expand)
@@ -135,7 +141,7 @@ module RubyCurses
         # needed here or what. If we can postpone it, then we can compute this in a loop 
         # in repaint
         raise "split_count must be given first. How many splits there will be." unless @split_count
-        $log.debug " XXXX Adding a component #{@components.size}  "
+        $log.debug " multisplit:  Adding a component #{@components.size}  "
 
         # until we hide those outside bounds, or are able to scroll, lets not allow add if
         # exceeds
@@ -156,16 +162,6 @@ module RubyCurses
         # next 2 not sure, is it for first only
         comp.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row
         comp.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col
-        # but we've not calculated height and width !
-        #index = @components.size
-        ## temporarily just to get old code running
-        ## what if component removed XXX
-        #case index
-        #when 0
-          #@first_component = comp
-        #when 1
-          #@second_component = comp
-        #end
         # dang ! this can go out of bounds ! XXX tab goes out
         index = @components.size - 1 # expected as base 0 in compute
         #index = @max_visible - 1 if index > @max_visible - 1
@@ -235,6 +231,7 @@ module RubyCurses
           comp.height = h
           comp.row = r
           comp.col = c
+          #$log.debug " XXXX index  r c #{r} #{c} "
         end
         comp
       end
@@ -243,14 +240,20 @@ module RubyCurses
         delta = _multiplier
         c = @current_component 
         n = get_next_component
-        n = get_prev_component unless n
+        n = get_prev_component unless n 
+        return unless n
         if @orientation == :HORIZONTAL_SPLIT
-          c.height += delta
-          n.height -= delta
+          if n.height > 3 + delta
+            c.height += delta
+            n.height -= delta
+          end
         else
-          c.width += delta
-          n.width -= delta
+          if n.width > 3 + delta
+            c.width += delta
+            n.width -= delta
+          end
         end
+        @repaint_required = true
         self
       end
       # decrease size of current component. 
@@ -270,9 +273,12 @@ module RubyCurses
           n.height += delta
           # TODO
         else
-          c.width -= delta
-          n.width += delta
+          if c.width > 3 + delta
+            c.width -= delta
+            n.width += delta
+          end
         end
+        @repaint_required = true
         self
       end
       def same
@@ -280,6 +286,7 @@ module RubyCurses
           comp.height = @comp_height
           comp.width = @comp_width
         end
+        @repaint_required = true
         self
       end
       # @return [widget] next component or nil if no next
@@ -346,7 +353,6 @@ module RubyCurses
             else
               # any change in width must effect col of others too ! 2010-08-31 21:57 AUG2010
               # which is why this should be done in repaint and not here
-              rc = @divider_location
               # ## next change should only happen if sc w < ...
               # if @second_component.width < @width - (rc + @col_offset + @divider_offset + 1)
               last = @components.last
@@ -359,7 +365,7 @@ module RubyCurses
       # @return :ERROR if min sizes failed
       # You may want to check for ERROR and if so, resize_weight to 0.50
       def reset_to_preferred_sizes
-        raise "TODO THIS reset_to "
+        alert "TODO THIS reset_to "
         return if @components.nil?
         @repaint_required = true
       end
@@ -393,7 +399,7 @@ module RubyCurses
         end
         if @repaint_required
           ## paint border and divider
-          $log.debug "SPLP #{@name} repaint split H #{@height} W #{@width} "
+          $log.debug "MULTISPLP #{@name} repaint split H #{@height} W #{@width} "
           bordercolor = @border_color || $datacolor
           borderatt = @border_attrib || Ncurses::A_NORMAL
           absrow = abscol = 0
@@ -402,13 +408,12 @@ module RubyCurses
             abscol = @col
           end
           if @use_absolute
-            $log.debug " #{@graphic} #{name} calling print_border #{@row} #{@col} "
-            @graphic.print_border(@row, @col, @height-1, @width-1, bordercolor, borderatt)
+            $log.debug " #{@graphic} #{name} calling print_border #{@row} #{@col} #{@height}-1 #{@width}-1 "
+            #@graphic.print_border(@row, @col, @height-1, @width-0, bordercolor, borderatt) if !@suppress_borders
           else
             $log.debug " #{@graphic} calling print_border 0,0"
-            @graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt)
+            #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt) unless @suppress_borders
           end
-          #rc = @divider_location
           rc = -1
 
           @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
@@ -436,11 +441,14 @@ module RubyCurses
             # TODO put hlines here
           end
           @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-        end
-        ## XXX do not paint what is outside of bounds. See tabbedpane or scrollform
         update_components
         _print_more_columns_marker true
         @graphic.wrefresh # 2010-02-14 20:18 SUBWIN ONLY ??? what is this doing here ? XXX
+        else
+          # repaint only those components that may have changed
+          @components.each { |e| e.repaint }
+        end
+        ## XXX do not paint what is outside of bounds. See tabbedpane or scrollform
         #paint 
         @repaint_required = false
       end
@@ -627,7 +635,7 @@ module RubyCurses
       #+ the child has to decide where it should be displayed.
       def set_form_col
         return if @current_component.nil?
-        $log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
+        #$log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
         @current_component.set_form_col 
       end
       ## expand a split to maximum. This is the one_touch_expandable feature
@@ -636,6 +644,7 @@ module RubyCurses
       # Note: basically, i nil the component that we don't want to see
       def expand
         return unless @one_touch_expandable
+        # TODO
         #@is_expanding = true # this is required so i don't check for min_width later
         #$log.debug " callign expand "
         #if @current_component == @first_component
@@ -671,7 +680,9 @@ module RubyCurses
       end
 
       # exchange 2 splits, bound to C-w x
+      # TODO 
       def exchange
+        alert "TODO"
         #tmp = @first_component
         #@first_component = @second_component
         #@second_component = tmp
@@ -693,5 +704,5 @@ module RubyCurses
         marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
         @graphic.mvwaddch @row+@height-1, @col+@_first_column_print+1, marker
       end
-  end # class SplitPane
+  end # class 
 end # module
