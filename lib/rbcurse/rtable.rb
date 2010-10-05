@@ -86,7 +86,7 @@ module RubyCurses
       @col_offset = @row_offset = 1
 
       super
-      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT)
+      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT])
       init_vars
       install_list_keys
       install_keys_bindings
@@ -666,7 +666,6 @@ module RubyCurses
       $multiplier = 0
       bounds_check
     end
-    #def next_row
     # goto next row
     # added multipler 2010-05-12 20:51 
     def next_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
@@ -674,7 +673,6 @@ module RubyCurses
       @oldrow = @current_index
       # don't go on if rc 2009-01-16 19:55  XXX
       if @current_index < rc
-        #@current_index += 1 
         @current_index += 1*num if @current_index < rc
         bounds_check
       end
@@ -780,7 +778,7 @@ module RubyCurses
     def bounds_check
       h = scrollatrow()
       rc = row_count
-      #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+
       @current_index = 0 if @current_index < 0  # not lt 0
       @current_index = rc-1 if @current_index >= rc # not gt rowcount
       @toprow = rc-h-1 if rc > h and @toprow > rc - h - 1 # toprow shows full page if possible
@@ -791,14 +789,14 @@ module RubyCurses
         # curr has gone above table,  move toprow up
         @toprow = @current_index
       end
-      #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+
       if @oldrow != @current_index
         #$log.debug "going to call on leave and on enter"
         on_leave_row @oldrow #if respond_to? :on_leave_row     # to be defined by widget that has included this
         on_enter_row @current_index   #if respond_to? :on_enter_row  # to be defined by widget that has included this
       end
       set_form_row
-      @oldrow = @current_index # added 2009-01-16 19:43 XXX
+      @oldrow = @current_index 
       @repaint_required = true
     end
     def on_leave_row arow
