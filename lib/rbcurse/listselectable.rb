@@ -105,6 +105,17 @@ module RubyCurses
       @current_index = row
       @repaint_required = true # fire list_select XXX
     end
+    # NOTE: I HAD removed this and put in listbox, but its required by rtable also
+    # create a default list selection model and set it
+    # NOTE: I am now checking if one is not already created, since
+    # a second creation would wipe out any listeners on it.
+    # @see ListSelectable 
+    # @see DefaultListSelectionModel
+    def create_default_list_selection_model
+      if @list_selection_model.nil?
+        list_selection_model DefaultListSelectionModel.new(self)
+      end
+    end
     alias :selected_index :selected_row
     attr_accessor :row_selection_allowed
     attr_accessor :column_selection_allowed
