@@ -79,7 +79,7 @@ module ListScrollable
   def bounds_check
     h = scrollatrow()
     rc = row_count
-    #$log.debug " PRE CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+
     @current_index = 0 if @current_index < 0  # not lt 0
     @current_index = rc-1 if @current_index >= rc && rc>0 # not gt rowcount
     @toprow = rc-h-1 if rc > h && @toprow > rc - h - 1 # toprow shows full page if possible
@@ -90,9 +90,9 @@ module ListScrollable
       # curr has gone above table,  move toprow up
       @toprow = @current_index
     end
-    #$log.debug " POST CURR:#{@current_index}, TR: #{@toprow} RC: #{rc} H:#{h}"
+ 
     if @oldrow != @current_index
-      #$log.debug "going to call on leave and on enter"
+
       on_leave_row @oldrow if respond_to? :on_leave_row     # to be defined by widget that has included this
       on_enter_row @current_index   if respond_to? :on_enter_row  # to be defined by widget that has included this
     end
