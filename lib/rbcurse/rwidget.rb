@@ -866,7 +866,7 @@ module RubyCurses
      # @since 0.1.3
      #
      def width(*val)
-       $log.debug " inside XXX width() #{val}"
+       #$log.debug " inside XXX width() #{val}"
        if val.empty?
          return @width
        else
