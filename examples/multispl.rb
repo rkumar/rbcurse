@@ -7,17 +7,21 @@ App.new do
 
   stack :margin_top => 5, :margin => 15, :width => 79 do
     splp = multisplit "outer", :height => 15, :split_count => 2, :orientation => :VERTICAL_SPLIT  do |s|
+      #s.suppress_borders = false
         lb = list_box "Classes",:list => `ri -f bs`.split("\n")
         s.add lb
 
         lb2 = list_box "Methods", :list => ["highline", "sqlite3-ruby", "thor", "ncurses"], :choose => ["thor"]
+        #lb2.suppress_borders true
         s.add lb2
       #sc = textarea "Edit"
       #s.add sc
     end # splp
     c1 = splp[0]
     c2 = splp[1]
-    c1.bind_key(KEY_RETURN){ 
+    #c1.bind_key(KEY_RETURN){ 
+    # listbox now traps key ENTER and fires PRESS event
+    c1.bind(:PRESS){ 
       #m = Object::const_get(c1.text).public_instance_methods
       lines = `ri -f bs #{c1.text} | tr -d ''`.split("\n")
       i = lines.index "= CCllaassss  mmeetthhooddss::"
@@ -60,15 +64,18 @@ App.new do
       # increase split size
       button "+" do
         #splp.set_divider_location(splp.divider_location+1)
-        fc.set_divider_location(splp.divider_location+1)
+        #fc.set_divider_location(splp.divider_location+1)
+        fc.increase
       end
       # decrease split size
       button "-" do
-        fc.set_divider_location(splp.divider_location-1)
+        #fc.set_divider_location(splp.divider_location-1)
+        fc.decrease
       end
       # equalize  split size
       button "=" do
-        splp.set_resize_weight(0.50)
+        #splp.set_resize_weight(0.50)
+        fc.same
       end
     end
        
