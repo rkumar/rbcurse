@@ -3,7 +3,7 @@ require 'ncurses'
 require 'logger'
 module RubyCurses
   class TableCellRenderer
-    include DSL
+    #include DSL
     #include EventHandler
     include ConfigSetup
     include RubyCurses::Utils
