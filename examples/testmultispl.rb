@@ -1,11 +1,9 @@
 $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
-require 'rubygems'
-require 'ncurses'
-require 'logger'
 require 'rbcurse'
 require 'rbcurse/rmultisplit'
 require 'rbcurse/rlistbox'
 require 'fileutils'
+
 #
 ## this sample creates a multisplitpane with n objects
 ##+ and move divider around using - + and =.
@@ -37,7 +35,7 @@ end
 # @param [MultiSplit] msp object to add a new list to
 def bind_list(listb, lists, splitp)
   #listb.bind(:ENTER_ROW, mylist) {|lb,list| row_cmd.call(lb,list) }
-  listb.bind_key(KEY_RETURN) {     
+  listb.bind(:PRESS) {     
     #@status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}"
     item = "#{listb.get_content()[listb.current_index]}"
     fullname = File.join(listb.config[:path], item)
@@ -184,23 +182,6 @@ if $0 == __FILE__
       counter = 0
       while((ch = @window.getchar()) != KEY_F1 )
         str = keycode_tos ch
-        #case ch
-        #when ?V.getbyte(0)
-          #splitp.orientation(:VERTICAL_SPLIT)
-          ##splitp.reset_to_preferred_sizes
-        #when ?H.getbyte(0)
-          #splitp.orientation(:HORIZONTAL_SPLIT)
-          ##splitp.reset_to_preferred_sizes
-        #when ?-.getbyte(0)
-          ##splitp.set_divider_location(splitp.divider_location-1)
-        #when ?+.getbyte(0)
-          ##splitp.set_divider_location(splitp.divider_location+1)
-        #when ?=.getbyte(0)
-          ##splitp.set_resize_weight(0.50)
-        #end
-        #splitp.get_buffer().wclear
-        #splitp << "#{ch} got (#{str})"
-        #splitp.repaint # since the above keys are not being handled inside
         @form.handle_key(ch)
         @window.wrefresh
       end
