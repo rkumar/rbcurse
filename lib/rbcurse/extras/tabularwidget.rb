@@ -3,10 +3,9 @@
   * Description   A widget based on Tabular
   * Author: rk (arunachalesha)
   * file created 2010-09-28 23:37 
+FIXME:
+KNOWN BUG : if columns dispplayed or separator, then numbering is wrong since col gets numbered
 TODO 
-   converting to this version, we forgot to print the COLUMN HEADINGS !!!
-   * be column aware
-   * expand columns
    * move columns
    * hide columns
    * data truncation based on col wid XXX
@@ -103,6 +102,7 @@ module RubyCurses
       @x = '+'
       @show_focus = false  # don't highlight row under focus
       @list = []
+      @_header_adjustment = 0
       super
       # ideally this should have been 2 to take care of borders, but that would break
       # too much stuff !
@@ -144,6 +144,7 @@ module RubyCurses
       bind_key(?b, :previous_column)
     end
     def columns=(array)
+      @_header_adjustment = 1
       @columns = array
       @columns.each_with_index { |c,i| 
         @cw[i] ||= c.to_s.length
@@ -220,15 +221,16 @@ module RubyCurses
     end
     ## ---- for listscrollable ---- ##
     def scrollatrow #:nodoc:
+      # TODO account for headers
       if @suppress_borders
-        @height - 1 
+        @height - @_header_adjustment 
       else
-        @height - 3 
+        @height - (2 + @_header_adjustment) 
       end
     end
     def row_count
       #@list.length
-      get_content().length
+      get_content().length + @_header_adjustment
     end
     ##
     # returns row of first match of given regex (or nil if not found)
@@ -270,8 +272,9 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def get_content
-      #@list
-      [:columns, :separator,  *@list]
+      @list
+      #[:columns, :separator,  *@list]
+      #[:columns, *@list]
     end
     def get_window #:nodoc:
       @graphic
@@ -495,7 +498,7 @@ module RubyCurses
       _guess_col_widths
       tm = get_content
       @width ||= @preferred_width
-      @height ||= [tm.length+2, 10].min
+      @height ||= [tm.length+3, 10].min
       _prepare_format
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
@@ -506,8 +509,10 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow() 
       r,c = rowcol
+      print_header
+      r += @_header_adjustment # for column header
       @longest_line = @width #maxlen
-      0.upto(h) do |hh|
+      0.upto(h - @_header_adjustment) do |hh|
         crow = tr+hh
         if crow < rc
             #focussed = @current_index == crow ? true : false 
@@ -527,12 +532,8 @@ module RubyCurses
             sanitize value if @sanitization_required
             truncate value
 
-            if columnrow
-              # put as separate method TODO 
-              @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], $promptcolor, @attr
-            else
-              @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
-            end
+            #@graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
+            print_data_row( r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr)
 
         else
           # clear rows
@@ -545,9 +546,14 @@ module RubyCurses
       @repaint_all             = false
 
     end
-    # this should be called so caller can override
-    def print_column_row r, c, len, value, color, attr
-      acolor = $promptcoloe
+    # print data rows
+    def print_data_row r, c, len, value, color, attr
+      @graphic.printstring  r, c, "%-*s" % [len,value], color, attr
+    end
+    # print header row
+    #  allows user to override
+    def print_header_row r, c, len, value, color, attr
+      acolor = $promptcolor
       @graphic.printstring  r, c, "%-*s" % [len ,value], acolor, @attr
     end
     def separator
@@ -560,12 +566,26 @@ module RubyCurses
       @cw.each_pair { |k,v| str << "-" * (v+1) + @x }
       @separ = str.chop
     end
+    # prints the column headers
+    # Uses +convert_value_to_text+ and +print_header_row+
+    def print_header
+      r,c = rowcol
+      value = convert_value_to_text :columns, 0
+      len = @width - @internal_width
+      print_header_row r, c, len, value, nil, nil
+    end
+    # convert data object to a formatted string for print
+    # NOTE: useful for overriding and doing custom formatting
+    # @param [Array] array of column data, mostly +String+
+    #        Can also be :columns or :separator
+    # @param [Fixnum] index of row in data
     def convert_value_to_text r, count
       if r == :separator
         return separator
       elsif r == :columns
         r = @columns
-        return "??" unless @columns
+        return "??" unless @columns # column was requested but not supplied
+        return @headerfmtstr % r if @numbering
       end
       if @numbering
         r = r.dup
@@ -617,6 +637,7 @@ module RubyCurses
       @fmstr = fmt.join(@y)
       if @numbering
         @rows ||= @list.size.to_s.length
+        @headerfmtstr = " "*(@rows+1)+@y + @fmstr
         @fmstr = "%#{@rows}d "+ @y + @fmstr
         @coffsets.each_pair { |name, val| @coffsets[name] = val + @rows + 2 }
       end
@@ -676,7 +697,7 @@ module RubyCurses
     def next_column
       c = @column_pointer.next
       cp = @coffsets[c] 
-      $log.debug " next_column #{c} , #{cp} "
+      #$log.debug " next_column #{c} , #{cp} "
       @curpos = cp if cp
       next_row() if c < @column_pointer.last_index
       #addcol cp
@@ -685,7 +706,7 @@ module RubyCurses
     def previous_column
       c = @column_pointer.previous
       cp = @coffsets[c] 
-      $log.debug " prev_column #{c} , #{cp} "
+      #$log.debug " prev_column #{c} , #{cp} "
       @curpos = cp if cp
       previous_row() if c > @column_pointer.last_index
       #addcol cp FIXME
@@ -708,7 +729,7 @@ App.new do
   t.columns = ["Name ", "Age ", " Email        "]
   t.add %w{ rahul 32 r@ruby.org }
   t << %w{ _why 133 j@gnu.org }
-  t << %w{ Jane 1331 jane@gnu.org }
+  t << ["jane", "1331", "jane@gnu.org" ]
   t.column_align 1, :right
   s = TabularWidget.new @form, :row => 2, :col =>32  do |b|
     b.columns = %w{ country continent text }
