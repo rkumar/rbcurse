@@ -297,7 +297,7 @@ App.new do
       #alert " line clicked #{e.source.current_index} "
       case @lb2
       when RubyCurses::TabularWidget
-        index = e.source.current_index - 2
+        index = e.source.current_index - 1 # this should check what first data index is
         if index >= 0
           @tv.set_content(@messages[index].body, :WRAP_WORD)
         end
