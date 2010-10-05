@@ -5,6 +5,7 @@
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
   * This file started on 2009-01-13 22:18 (broken off rwidgets.rb)
+NOTE: listbox now traps RETURN/ENTER/13 so if you are trapping it, please use bind :PRESS
 TODO 
   Perhaps keep printed data created by convert_value_to_text cached, and used for searching
   cursor movement and other functions. 
@@ -793,6 +794,11 @@ module RubyCurses
       end
       $multiplier = 0
     end
+    # fire handler when user presses ENTER/RETURN
+    # @since 1.2.0
+    # listbox now traps ENTER key and fires action event
+    # to trap please bind :PRESS
+    #
     def fire_action_event
       require 'rbcurse/ractionevent'
       # should have been callled :ACTION_EVENT !!!
@@ -944,9 +950,9 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
 
-      $log.debug "rlistbox repaint  #{@name} graphic #{@graphic}"
+      #$log.debug "rlistbox repaint  #{@name} r,c, #{@row} #{@col} , width: #{@width}  "
       print_borders unless @suppress_borders # do this once only, unless everything changes
-      #maxlen = @maxlen ||= @width-@internal_width
+      #maxlen = @maxlen || @width-@internal_width
       renderer = cell_renderer()
       renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
       tm = list()
@@ -996,7 +1002,7 @@ module RubyCurses
           @cell_editor.component.repaint unless @cell_editor.nil? or @cell_editor.component.form.nil?
         end
       end # rc == 0
-      @table_changed = false
+      #@table_changed = false
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
       buffer_to_window # RFED16 2010-02-17 23:16 
@@ -1032,7 +1038,7 @@ module RubyCurses
     def truncate content
       _maxlen = @maxlen || @width-@internal_width
       _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
-      $log.debug "TRUNCATE: listbox maxlen #{@maxlen}, #{_maxlen} width #{@width}: #{content} "
+      #$log.debug "TRUNCATE: listbox maxlen #{@maxlen}, #{_maxlen} width #{@width}: #{content} "
       if !content.nil? 
         if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
@@ -1043,7 +1049,7 @@ module RubyCurses
           content.replace content[@pcol..-1] if @pcol > 0
         end
       end
-      $log.debug " content: #{content}" 
+      #$log.debug " content: #{content}" 
       content
     end
 
