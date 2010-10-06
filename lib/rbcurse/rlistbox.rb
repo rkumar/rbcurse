@@ -558,6 +558,8 @@ module RubyCurses
     
     def list *val
       return @list if val.empty?
+      clear_selection if @list # clear previous selections if any
+      @default_values = nil if @list # clear previous selections if any
       alist = val[0]
       case alist
       when Array
@@ -667,12 +669,12 @@ module RubyCurses
     end
     def print_title
       @color_pair ||= get_color($datacolor)
-      #printstring(@graphic, @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
-      # 2010-01-04 15:53 BUFFERED
-      # I notice that the old version would print a title that was longer than width,
-      #+ but the new version won't print anything if it exceeds width.
-      # TODO check title.length and truncate if exceeds width
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+      # check title.length and truncate if exceeds width
+      _title = @title
+      if @title.length > @width - 2
+        _title = @title[0..@width-2]
+      end
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
     def get_content
