@@ -198,7 +198,12 @@ module RubyCurses
     end
     # private
     def print_title
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      # truncate title if longer than width
+      _title = @title
+      if @title.length > @width - 2
+        _title = @title[0..@width-2]
+      end
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil?
     end
     # text_area print footer
     def print_foot
