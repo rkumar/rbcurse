@@ -20,9 +20,6 @@ module RubyCurses
       end
       #@list_selection_model.selection_mode = @selection_mode || :MULTIPLE
     end
-    #def create_default_list_selection_model
-      #list_selection_model DefaultListSelectionModel.new
-    #end
     def is_selected? row
       @list_selection_model.is_selected_index row
     end
