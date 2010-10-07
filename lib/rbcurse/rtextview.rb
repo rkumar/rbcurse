@@ -181,8 +181,14 @@ module RubyCurses
     end
     def print_title #:nodoc:
       raise "textview needs width" unless @width
-      $log.debug " print_title #{@row}, #{@col}, #{@width}  "
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      @color_pair ||= get_color($datacolor) # should we not use this ??? XXX
+      #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
+      # check title.length and truncate if exceeds width
+      _title = @title
+      if @title.length > @width - 2
+        _title = @title[0..@width-2]
+      end
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil?
     end
     def print_foot #:nodoc:
       @footer_attrib ||= Ncurses::A_REVERSE
