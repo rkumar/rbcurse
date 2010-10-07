@@ -747,8 +747,8 @@ module RubyCurses
       end
       return w
     end
-    def column_browse *args, &block
-      require 'rbcurse/extras/rcolumnbrowse'
+    def master_detail *args, &block
+      require 'rbcurse/extras/masterdetail'
       config = {}
       events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
       block_event = nil
@@ -866,14 +866,14 @@ module RubyCurses
     end
 
     # returns length of longest
-    def longest_in_list list
+    def longest_in_list list  #:nodoc:
       longest = list.inject(0) do |memo,word|
         memo >= word.length ? memo : word.length
       end    
       longest
     end    
     # returns longest item
-    def longest_in_list2 list
+    def longest_in_list2 list  #:nodoc:
       longest = list.inject(list[0]) do |memo,word|
         memo.length >= word.length ? memo : word
       end    
@@ -931,7 +931,7 @@ module RubyCurses
     end
     # TODO
     # process args, all widgets should call this
-    def _process_args args, config, block_event, events
+    def _process_args args, config, block_event, events  #:nodoc:
       args.each do |arg| 
         case arg
         when Array
@@ -958,7 +958,7 @@ module RubyCurses
     end # _process
     # position object based on whether in a flow or stack.
     # @app_row is prepared for next object based on this objects ht
-    def _position config
+    def _position config  #:nodoc:
       unless @current_object.empty?
         $log.debug " WWWW returning from position #{@current_object.last} "
         return
