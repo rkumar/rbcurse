@@ -20,6 +20,7 @@ require 'rbcurse'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rtextview'
 require 'rbcurse/extras/grabbar'
+require './focusmanager'
 
 include RubyCurses
 module RubyCurses
@@ -88,6 +89,8 @@ module RubyCurses
       bind_key([?\C-w,?d], :decrease_weight)  
       bind_key([?\C-w,?6], :increase_current_component)
       bind_key([?\C-w,?5], :decrease_current_component)
+      # this needs to be set at application level
+      bind_key(KEY_F3) {RubyCurses::FocusManager.toggle_focusable}
     end
     def init_vars
       @repaint_required = true
@@ -196,6 +199,8 @@ module RubyCurses
               side = :left
             end
             c = Grabbar.new nil, :parent => @components.last, :side => side
+            c.focusable(false)
+            RubyCurses::FocusManager.add c
             c.bind :DRAG_EVENT do |ev|
               source = ev.source
               case ev.type
@@ -299,6 +304,8 @@ module RubyCurses
         unless @vb
           @gbwid = 1
           @vb ||= Grabbar.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
+          @vb.focusable(false)
+          RubyCurses::FocusManager.add @vb
           @vb.parent_component = self
           @components << @vb
           @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
