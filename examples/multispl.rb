@@ -1,12 +1,14 @@
 require 'rbcurse/app'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "MultiSplit Demo", :text_right =>""
+  header = app_header "rbcurse 1.2.0", :text_center => "MultiSplit Demo", :text_right =>"ColumnBrowse pattern"
   message_row(27)
   message "<TAB> and <BTAB> "
+  oo = :HORIZONTAL_SPLIT
+  oo = :VERTICAL_SPLIT
 
   stack :margin_top => 5, :margin => 15, :width => 79 do
-    splp = multisplit "outer", :height => 15, :split_count => 2, :orientation => :VERTICAL_SPLIT  do |s|
+    splp = multisplit "outer", :height => 16, :split_count => 2, :orientation => oo  do |s|
       #s.suppress_borders = false
         lb = list_box "Classes",:list => `ri -f bs`.split("\n")
         s.add lb
@@ -39,8 +41,9 @@ App.new do
         end
       end
       if m
-      c2.remove_all
-      c2.insert 0, *m
+        c2.remove_all
+        c2.insert 0, *m
+        c2.clear_selection # since we had put default value using choose
       end
     }
 
