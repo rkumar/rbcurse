@@ -2,10 +2,11 @@
   * Name: MultiSplit
   * Description: allows user to create multiple splits
   * This diverges from the standard SplitPane which allowed one split only.
-    This is inspired by the column-browse patter as in when we view rdoc in a browser.
+    This is inspired by the column-browse pattern as in when we view rdoc in a browser.
     A user does not need to create multiple split panes embedded inside each other, we
     don't have that kind of space, and expanding can be tricky since there is no mouse 
     to select panes. Mostly, this makes creating apps with this pattern easy for user.
+
 
   * NOTE that VERTICAL_SPLIT means the *divider* is vertical.
   * Author: rkumar (arunachalesha)
@@ -31,13 +32,17 @@ module RubyCurses
   # such as 3 listboxes, each dependent on what is selected in previous.
   # This is the column-browse pattern, as in ruby's rdoc when seen in a browser.
   # Also, this can be used for directory browsing, as in OSX Finder.
-  # At some point, it should be possible to keep adding components, and to scroll
-  # back and forth, so we can have more components than are visible.
+  # One can keep adding components, and scroll
+  # back and forth, so we can have more components than are visible. See testmultispl.rb
+  # for a demo of this.
+  #
+  # This class allows for adding components in one direction, vertical or horizontal. It differs
+  # from Vimsplit in that you can have offscreen windows and scroll through. Vimsplit shows
+  # all windows but allows stacking and flowing of components.
   #
   # @since 1.1.5
   # TODO - 
-  #  - need to test horizontal, not done at all XXX
-  #  [ ] Don't print title if width less than title XXX or truncate
+  #  [ ] Don't print title if width less than title XXX or truncate - listbox
   #  x user specify max panes to show (beyond that hide and pan)
   #  x how many can be created
   #  - to squeeze panes and fit all or hide and pan
@@ -98,7 +103,7 @@ module RubyCurses
           @use_absolute = true; # set to true if not using subwins XXX CLEAN THIS
           init_vars
       end
-      def init_vars
+      def init_vars  #:nodoc:
           @_first_column_print = 0 # added 2009-10-07 11:25 
           @max_visible ||= @split_count
           @_last_column_print = @_first_column_print + @max_visible - 1
@@ -157,6 +162,7 @@ module RubyCurses
         @recalc_required = true
         @components = [] if @components.nil?
         @components << comp
+        #comp.height = nil # nuking listboxes height since it gets calculated
         comp.parent_component = self 
         comp.should_create_buffer = @_child_buffering 
         # next 2 not sure, is it for first only
@@ -198,16 +204,28 @@ module RubyCurses
       # @param [widget] a widget 
       # @param [Fixnum] offset in list of components 
       # XXX if called from outside balance can have last value !!!
+      # FIXME for last component, take as much as is left height or width
+      # otherwise odd figures will leave on row unoccupied
       def compute_component comp, index
         @balance ||= 0
         if @orientation == :HORIZONTAL_SPLIT
           # XXX NOT TESTED TODO
-          @comp_height = (@height / @split_count) - 1
+          @comp_height = (@height / @split_count) - 0
           @comp_width = @width
           h = @comp_height
-          comp.height ||= h
+          if @recalc_required
+            comp.height = h  # listboxes etal calculate a height so that will stand !! XXX
+          else
+            comp.height ||= h  # listboxes etal calculate a height so that will stand !! XXX
+          end
           w = @comp_width
-          r = @row + ( comp.height * index)
+          #r = @row + ( comp.height * index)
+          r = @row + @balance
+          if r > @row + @height
+            r = @row + @height
+          end
+          #alert "r #{@row} h #{@height} ::: comp row #{r} h #{h} bal:#{@balance} "
+          @balance += comp.height
           c = @col
           comp.width = w
           comp.row = r
@@ -217,7 +235,11 @@ module RubyCurses
           @comp_width = (@width / @split_count) - 0
           h = @comp_height 
           w = @comp_width
-          comp.width ||= w
+          if @recalc_required
+            comp.width = w
+          else
+            comp.width ||= w
+          end
           #c = @col + ( w * index) # this makes them all equal
           c = @col + @balance
           if c > @col + @width
@@ -386,6 +408,7 @@ module RubyCurses
           comp.repaint
         end
         #@balance = 0
+        @recalc_required = false
       end
       def repaint # multisplitpane  #:nodoc:
         if @graphic.nil?
@@ -409,10 +432,10 @@ module RubyCurses
           end
           if @use_absolute
             $log.debug " #{@graphic} #{name} calling print_border #{@row} #{@col} #{@height}-1 #{@width}-1 "
-            #@graphic.print_border(@row, @col, @height-1, @width-0, bordercolor, borderatt) if !@suppress_borders
+            @graphic.print_border(@row, @col, @height-1, @width-1, bordercolor, borderatt) if !@suppress_borders
           else
             $log.debug " #{@graphic} calling print_border 0,0"
-            #@graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt) unless @suppress_borders
+            @graphic.print_border(0, 0, @height-1, @width-1, bordercolor, borderatt) unless @suppress_borders
           end
           rc = -1
 
@@ -452,7 +475,7 @@ module RubyCurses
         #paint 
         @repaint_required = false
       end
-      def getvalue
+      def getvalue  #:nodoc:
           # TODO
       end
       # take focus to next pane (component in it)
@@ -541,7 +564,7 @@ module RubyCurses
       ##+ Mostly passing to child, and handling child's left-overs.
       # please use bind_key for all mappings.
       # Avoid adding code in here. Let this be generic
-      def handle_key ch
+      def handle_key ch  #:nodoc:
         _multiplier = ($multiplier == 0 ? 1 : $multiplier )
         @current_component ||= @first_component
         @current_index ||= 0
@@ -580,7 +603,7 @@ module RubyCurses
         $multiplier = 0
         return 0
       end
-      def paint
+      def paint  #:nodoc:
         #@repaint_required = false
       end
       # this is executed when the component gets focus
@@ -609,7 +632,7 @@ module RubyCurses
       end
       # sets cursor on correct row, col
       # should we raise error or throw exception if can;t enter
-      def set_form_row
+      def set_form_row  #:nodoc:
         if !@current_component.nil?
           c=@current_component 
           $log.debug "XXXXX #{@name} set_form_row calling sfr for #{@current_component.name}, #{c.row}, #{c.col}  "
@@ -633,7 +656,7 @@ module RubyCurses
       # earlier the super was being called which missed out on child's column.
       # Note: splitpane does not use the cursor, so it does not know where cursor should be displayed,
       #+ the child has to decide where it should be displayed.
-      def set_form_col
+      def set_form_col  #:nodoc:
         return if @current_component.nil?
         #$log.debug " #{@name} set_form_col calling sfc for #{@current_component.name} "
         @current_component.set_form_col 
