@@ -27,6 +27,9 @@ module RubyCurses
   #
   # NOTE: since this can be deactivated, containers need to check focusable before passing
   # focus in
+  #  2010-10-07 23:56 made focusable false by default. Add grabbar to
+  #  FocusManager when creating, so F3 can be used to set focusable
+  #  See rvimsplit.rb for example
 
   class Grabbar < Widget
     # row to start, same as listbox, required.
@@ -55,7 +58,9 @@ module RubyCurses
       @scroll_pair = get_color $bottomcolor, :green, :white
       #@window = form.window
       @editable = false
-      @focusable = true
+      # you can set to true upon creation, or use F3 on vimsplit to
+      # toggle focusable
+      @focusable = false
       @repaint_required = true
       @_events.push(:DRAG_EVENT)
       map_keys
