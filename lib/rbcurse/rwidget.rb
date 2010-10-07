@@ -721,6 +721,7 @@ module RubyCurses
     def handle_key(ch)
       ret = process_key ch, self
       return :UNHANDLED if ret == :UNHANDLED
+      0
     end
     # @since 0.1.3
     def get_preferred_size
