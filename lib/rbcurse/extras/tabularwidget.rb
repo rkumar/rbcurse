@@ -533,7 +533,8 @@ module RubyCurses
             truncate value
 
             #@graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
-            print_data_row( r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr)
+            #print_data_row( r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr)
+            print_data_row( r+hh, c, @width-@internal_width, value, acolor, @attr)
 
         else
           # clear rows
