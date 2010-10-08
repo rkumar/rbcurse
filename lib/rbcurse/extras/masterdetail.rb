@@ -56,7 +56,7 @@ class MasterDetail < Widget
   def set_right_bottom_component comp
     raise "Please add top component first!" unless @added_top
     # what if user gives in wrong order !!
-    @gb = @vim.add :grabbar, :SECOND, 0
+    @gb = @vim.add :divider, :SECOND, 0
     @right2 = @vim.add comp, :SECOND, nil
     @gb.next(@right2)
     _add_component comp

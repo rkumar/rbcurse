@@ -9,7 +9,7 @@ include RubyCurses
 #
 # @example
 #     lb = list_box ....
-#     rb = Grabbar.new @form, :parent => lb, :side => :right
+#     rb = Divider.new @form, :parent => lb, :side => :right
 #
 # At a later stage, we will integrate this with lists and tables, so it will happen automatically.
 #
@@ -23,15 +23,15 @@ module RubyCurses
   # or even screen, based on arrow movements. This allows for a visual resizing of components.
   # @example
   #     lb = list_box ....
-  #     rb = Grabbar.new @form, :parent => lb, :side => :right
+  #     rb = Divider.new @form, :parent => lb, :side => :right
   #
   # NOTE: since this can be deactivated, containers need to check focusable before passing
   # focus in
-  #  2010-10-07 23:56 made focusable false by default. Add grabbar to
+  #  2010-10-07 23:56 made focusable false by default. Add divider to
   #  FocusManager when creating, so F3 can be used to set focusable
   #  See rvimsplit.rb for example
 
-  class Grabbar < Widget
+  class Divider < Widget
     # row to start, same as listbox, required.
     dsl_property :row
     # column to start, same as listbox, required.
@@ -78,8 +78,8 @@ module RubyCurses
       #end
     end
     def map_keys
-      if !defined? $deactivate_grabbars
-        $deactivate_grabbars = false
+      if !defined? $deactivate_dividers
+        $deactivate_dividers = false
       end
       # deactivate only this bar
       bind_key(?f) {@focusable=false; }
@@ -120,7 +120,7 @@ module RubyCurses
       end
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
-      raise "graphic is nil in grabbar, perhaps form was nil when creating" unless @graphic
+      raise "graphic is nil in divider, perhaps form was nil when creating" unless @graphic
       return unless @repaint_required
 
       # first print a right side vertical line
@@ -163,16 +163,16 @@ module RubyCurses
         Ncurses::A_REVERSE
       end
     end
-    # deactivate all grabbars
+    # deactivate all dividers
     # The application has to provide a key or button to activate all
     # or just this one.
     def deactivate_all  tf=true
-      $deactivate_grabbars = tf
+      $deactivate_dividers = tf
       @focusable = !tf
     end
     def handle_key ch
-      # all grabbars have been deactivated
-      if $deactivate_grabbars || !@focusable
+      # all dividers have been deactivated
+      if $deactivate_dividers || !@focusable
         @focusable = false
         return :UNHANDLED
       end
@@ -205,7 +205,7 @@ module RubyCurses
       return 0
     end
     def on_enter
-      if $deactivate_grabbars || !@focusable
+      if $deactivate_dividers || !@focusable
         @focusable = false
         return :UNHANDLED
       end
@@ -221,7 +221,7 @@ module RubyCurses
       if @parent
         # since it is over border of component, we need to clear
         @parent.repaint_required 
-        # if we don't paint now, parent paints over other possible grabbars
+        # if we don't paint now, parent paints over other possible dividers
         @parent.repaint
       end
     end
@@ -238,11 +238,11 @@ module RubyCurses
       setrowcol r, c
       #noop
     end
-    # is this a vertical grabbar
+    # is this a vertical divider
     def v?
       @side == :top || @side == :bottom
     end
-    # is this a horizontal grabbar
+    # is this a horizontal divider
     def h?
       @side == :right || @side == :left
     end
@@ -275,7 +275,7 @@ if __FILE__ == $PROGRAM_NAME
     0.upto(100) { |v| list << "#{v} scrollable data" }
     lb = list_box "A list", :list => list, :row => 2, :col => 2
     #sb = Scrollbar.new @form, :row => r, :col => 20, :length => len, :list_length => 50, :current_index => 0
-    rb = Grabbar.new @form, :parent => lb, :side => :right
+    rb = Divider.new @form, :parent => lb, :side => :right
     rb.bind :DRAG_EVENT do |e|
       message "got an event #{e.type} "
       case e.type
@@ -286,7 +286,7 @@ if __FILE__ == $PROGRAM_NAME
       end
       lb.repaint_required
     end
-    rb1 = Grabbar.new @form, :parent => lb, :side => :left
+    rb1 = Divider.new @form, :parent => lb, :side => :left
     rb1.bind :DRAG_EVENT do |e|
       message " 2 got an event #{e.type} "
     end
