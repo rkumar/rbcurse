@@ -34,6 +34,7 @@
  we subclass this a lot.
  - Listcellrenderer: refactoring and changes, will break extending classes!!
  - Combolist - popup on spacebar
+ - replaced to_print_borders with suppress_borders in list related classes
 
 ### Bugfixes
 

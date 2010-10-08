@@ -1831,3 +1831,52 @@ This way all operations that require movement over formatted data can
 use that cache.
 
 * * * * * * * *
+
+Subject: grabbars and scrollbar focusing
+----------------------------------------
+Date: 2010-10-07 11:49
+
+
+
+* * * * * * * *
+
+Subject: grabbar and scrollbar focusing
+---------------------------------------
+Date: 2010-10-07 11:49
+
+Some objects like grabbars should not be in the way. they should be
+`focusable` on some key, or condition. I am thinking of Alt-Tab.
+Should there be some extra attrib for such since focusable will be
+false.
+
+I could register such objects with a `FocusManager` array. Upon pressing some
+key (say F2), it cycles through these and makes then focusable. Works as
+a toggle.
+Or on pressing F2, it goes to next object in its array. So it will cycle
+between these objects directly setting focus to them. So they will never
+come in the TAB order.
+
+This means i don't have to make a parallel `select_next_field` for such
+objects since they will have focusable true.
+
+* * * * * * * *
+
+Subject: grabbars and other strange things
+------------------------------------------
+Date: 2010-10-08 18:25
+
+I've added these grabbars (dividers) for forms that have many panes. These are
+borders (much like a scrollbar) that allow user to drag them left right
+or up down and re-size panes. Currently, the alternative has been to use
+keys such as C-w - and +, which may not be obvious.
+
+However, we don't want these dividers to take focus each time a user
+traverses the form. Thus, dividers are not focusable by default. But we
+add them to a module FocusManager. When F3 is pressed, the FocusManager
+toggles these dividers (or whatever it has in its list), to focusable.
+Now the user can tab into these dividers. Once the user is done, he may
+press F3 again and make them non-focusable. FocusManager can be used for
+amy objects that should only be focusable when user wants them. I may
+make scrollbars focusable in a future version.
+
+* * * * * * * *

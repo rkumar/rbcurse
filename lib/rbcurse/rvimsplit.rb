@@ -19,8 +19,8 @@
 require 'rbcurse'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rtextview'
-require 'rbcurse/extras/grabbar'
-require './focusmanager'
+require 'rbcurse/extras/divider'
+require 'rbcurse/extras/focusmanager'
 
 include RubyCurses
 module RubyCurses
@@ -190,7 +190,7 @@ module RubyCurses
         when Variable
           # TODO
         else
-          if c == :grabbar
+          if c == :grabbar || c == :divider
             side = :bottom
             case type
             when :STACK
@@ -198,7 +198,7 @@ module RubyCurses
             when :FLOW
               side = :left
             end
-            c = Grabbar.new nil, :parent => @components.last, :side => side
+            c = Divider.new nil, :parent => @components.last, :side => side
             c.focusable(false)
             RubyCurses::FocusManager.add c
             c.bind :DRAG_EVENT do |ev|
@@ -303,7 +303,7 @@ module RubyCurses
         end
         unless @vb
           @gbwid = 1
-          @vb ||= Grabbar.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
+          @vb ||= Divider.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
           @vb.focusable(false)
           RubyCurses::FocusManager.add @vb
           @vb.parent_component = self
