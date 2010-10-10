@@ -761,10 +761,9 @@ module RubyCurses
       useform = nil
       useform = @form if @current_object.empty?
 
-      w = ColumnBrowse.new useform, config # NO BLOCK GIVEN
+      w = MasterDetail.new useform, config # NO BLOCK GIVEN
       if block_given?
         @current_object << w
-        #instance_eval &block if block_given?
         yield_or_eval &block
         @current_object.pop
       end
@@ -803,6 +802,17 @@ module RubyCurses
       useform = nil
       useform = @form if @current_object.empty?
       sb = Scrollbar.new useform, config
+    end
+    # divider used to resize neighbouring components TOTEST XXX
+    def divider *args, &block
+      require 'rbcurse/extras/divider'
+      config = {}
+      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :DRAG_EVENT  ] # # none really at present
+      block_event = nil
+      _process_args args, config, block_event, events
+      useform = nil
+      useform = @form if @current_object.empty?
+      sb = Divider.new useform, config
     end
 
     # ADD new widget above this
