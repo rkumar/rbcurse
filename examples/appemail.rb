@@ -173,9 +173,16 @@ App.new do
       #alert " line clicked #{e.source.current_index} "
       case @lb2
       when RubyCurses::TabularWidget
-        index = e.source.current_index - 1 # this should check what first data index is
-        if index >= 0
-          @tv.set_content(@messages[index].body, :WRAP_WORD)
+        if e.action_command == :header
+          # sort on e.current_index
+          l = @lb2.get_content
+          l.sort! {|x,y| x[e.current_index] <=> y[e.current_index]}
+          @lb2.set_content l
+        else
+          index = e.source.current_index - 1 # this should check what first data index is
+          if index >= 0
+            @tv.set_content(@messages[index].body, :WRAP_WORD)
+          end
         end
       else
         @tv.set_content(@messages[e.source.current_index].body, :WRAP_WORD)
