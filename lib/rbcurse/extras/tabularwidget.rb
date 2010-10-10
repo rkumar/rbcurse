@@ -36,6 +36,7 @@ module RubyCurses
     # in a form, or container, or columns in a table.
     class Circular < Struct.new(:max_index, :current_index)
       attr_reader :last_index
+      attr_reader :current_index
       def initialize  m, c=0
         raise "max index cannot be nil" unless m
         @max_index = m
@@ -687,7 +688,27 @@ module RubyCurses
     #++
     def fire_action_event
       require 'rbcurse/ractionevent'
-      aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
+      # the header event must only be used if columns passed
+      visualrow = @row + (@current_index-@toprow)
+      if visualrow == 1
+        # TODO we need to fire correct even for header row, including
+        # # calculate column based on curpos since user may not have
+        # user w and b keys (:next_column)
+        x = 0
+        @coffsets.each_pair { |e,i| 
+          if @curpos < i 
+            break
+          else 
+            x += 1
+          end
+        }
+        x -= 1 # since we start offsets with 0, so first auto becoming 1
+        #alert "you are on header row: #{@columns[x]} curpos: #{@curpos}, x:#{x} "
+        #aev = TextActionEvent.new self, :PRESS, @columns[x], x, @curpos
+        aev = TextActionEvent.new self, :PRESS,:header, x, @curpos
+      else
+        aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
+      end
       fire_handler :PRESS, aev
     end
     # called by listscrollable, used by scrollbar ENTER_ROW
