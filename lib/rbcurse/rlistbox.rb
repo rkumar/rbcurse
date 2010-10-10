@@ -670,6 +670,7 @@ module RubyCurses
     def print_title
       @color_pair ||= get_color($datacolor)
       # check title.length and truncate if exceeds width
+      return unless @title
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
