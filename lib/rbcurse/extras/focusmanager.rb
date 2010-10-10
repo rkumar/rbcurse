@@ -24,7 +24,7 @@ module RubyCurses
     end
     def toggle_focusable
       return unless @focusables
-      alert "FocusManager Making #{@focusable.length} objects #{!@focusing} "
+      alert "FocusManager Making #{@focusables.length} objects #{!@focusing} "
       make_focusable !@focusing
     end
   end
