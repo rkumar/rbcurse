@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rahul Kumar"]
-  s.date = %q{2010-10-07}
+  s.date = %q{2010-10-10}
   s.description = %q{Ruby curses widgets for easy application development on text terminals (ruby 1.9, 1.8)}
   s.email = %q{sentinel1879@gmail.com}
   s.extra_rdoc_files = [
@@ -36,7 +36,6 @@ Gem::Specification.new do |s|
      "examples/atree.rb",
      "examples/data.txt",
      "examples/dirtree.rb",
-     "examples/focusmanager.rb",
      "examples/keytest.rb",
      "examples/menu1.rb",
      "examples/mpad2.rb",
@@ -97,7 +96,8 @@ Gem::Specification.new do |s|
      "lib/rbcurse/comboboxcellrenderer.rb",
      "lib/rbcurse/defaultlistselectionmodel.rb",
      "lib/rbcurse/extras/directorylist.rb",
-     "lib/rbcurse/extras/grabbar.rb",
+     "lib/rbcurse/extras/divider.rb",
+     "lib/rbcurse/extras/focusmanager.rb",
      "lib/rbcurse/extras/masterdetail.rb",
      "lib/rbcurse/extras/rlink.rb",
      "lib/rbcurse/extras/rmenulink.rb",
