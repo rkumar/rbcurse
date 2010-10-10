@@ -2,6 +2,18 @@
 
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
+* 1.2.0: many additions (See CHANGELOG for details)
+  - App class that wraps the environment and makes application development very easy
+  - New controls such as:
+    - vimsplit: allows multiple vertical and horizontal splits in one component
+    - progress bar
+    - Tree control
+    - Divider (can grab and move, so as to visually resize components)
+    - Scrollbar class that can be easily attached to lists, tables etc
+    - Tabular data widgets and data converters
+
+  Please see CHANGELOG for changes.
+
 * rbcurse 1.1.4 works with 1.9.2 and also contains some files that got missed out in gemspec.
 
 * Corrections due to 1.9.2:
