@@ -8,8 +8,8 @@ KNOWN BUG : if columns dispplayed or separator, then numbering is wrong since co
 TODO 
    * move columns
    * hide columns
-   * data truncation based on col wid XXX
-   * search -- how is it working, but curpos is wrong.
+   * data truncation based on col wid TODO
+   * TODO: search -- how is it working, but curpos is wrong.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -574,6 +574,7 @@ module RubyCurses
       r,c = rowcol
       value = convert_value_to_text :columns, 0
       len = @width - @internal_width
+      truncate value # else it can later suddenly exceed line
       print_header_row r, c, len, value, nil, nil
     end
     # convert data object to a formatted string for print
@@ -643,7 +644,7 @@ module RubyCurses
         @fmstr = "%#{@rows}d "+ @y + @fmstr
         @coffsets.each_pair { |name, val| @coffsets[name] = val + @rows + 2 }
       end
-      $log.debug " FMT : #{@fmstr} "
+      #$log.debug " FMT : #{@fmstr} "
     end
     ## this is just a test of prompting user for a string
     #+ as an alternative to the dialog.
