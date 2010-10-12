@@ -84,7 +84,7 @@ module RubyCurses
     # painting the footer does slow down cursor painting slightly if one is moving cursor fast
     dsl_accessor :print_footer
     dsl_accessor :suppress_borders 
-    attr_reader :current_index
+    attr_accessor :current_index
     dsl_accessor :border_attrib, :border_color # 
     dsl_accessor :sanitization_required
     # boolean, whether lines should be numbered
@@ -176,6 +176,9 @@ module RubyCurses
       else
         raise "set_content expects Array not #{list.class}"
       end
+      @current_index = 1 # due to header FIXME
+      @toprow = 0
+      # TODO reset current_index and top_row here to 0 ??
       @repaint_required = true
       @recalc_required = true
     end
@@ -223,7 +226,7 @@ module RubyCurses
     end
     ## display this row number on top
     # programmataically indicate a row to be top row
-    def top_row(*val) #:nodoc:
+    def top_row(*val) 
       if val.empty?
         @toprow
       else
@@ -779,6 +782,11 @@ module RubyCurses
       }
       x -= 1 # since we start offsets with 0, so first auto becoming 1
       return x
+    end
+    def on_enter
+      # so cursor positioned on correct row
+      set_form_row
+      super
     end
     # called by listscrollable, used by scrollbar ENTER_ROW
     def on_enter_row arow
