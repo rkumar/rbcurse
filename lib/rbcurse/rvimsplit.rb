@@ -31,6 +31,10 @@ module RubyCurses
   # Often, last component can be nil, remainder will be assigned to it.
   class Split < Struct.new(:which, :type, :weight, :act_weight); end
   class ResizeEvent < Struct.new(:source, :type); end
+
+  # A simpler replacement for the java-esque SplitPane. This can take multiple splits
+  # and does not require splits within splits as SplitPane does.
+  # This is less functional, but should be easier to use, setup and hack.
   class VimSplit < Widget
 
     # split orientation :V or :H
@@ -174,7 +178,7 @@ module RubyCurses
           c.form.remove_widget c
           c.form = nil
         end
-        $log.debug " XXXX VIM is a widget"
+        #$log.debug " XXXX VIM is a widget"
       else
         case c
         when Array
@@ -205,23 +209,27 @@ module RubyCurses
               source = ev.source
               case ev.type
               when KEY_UP
-                # CHECK BOUNDS TODO
-                source.parent.height -= 1
-                source.next.height +=1
-                source.next.row -= 1
-                source.parent.repaint_required
-                source.next.repaint_required
-                source.parent.repaint
-                source.next.repaint
+                # CHECK BOUNDS TODO 
+                if source.next && source.next.row > 1 && source.parent.height > 1
+                  source.parent.height -= 1
+                  source.next.height +=1
+                  source.next.row -= 1
+                  source.parent.repaint_required
+                  source.next.repaint_required
+                  source.parent.repaint
+                  source.next.repaint
+                end
               when KEY_DOWN
-                # CHECK BOUNDS TODO
-                source.parent.height += 1
-                source.next.height -=1
-                source.next.row += 1
-                source.parent.repaint_required
-                source.next.repaint_required
-                source.parent.repaint
-                source.next.repaint
+                # CHECK BOUNDS TODO check with appemail.rb
+                if source.next && source.next.height > 1
+                  source.parent.height += 1
+                  source.next.height -=1
+                  source.next.row += 1
+                  source.parent.repaint_required
+                  source.next.repaint_required
+                  source.parent.repaint
+                  source.next.repaint
+                end
               end
             end
           end
