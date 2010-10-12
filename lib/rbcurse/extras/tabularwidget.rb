@@ -10,6 +10,9 @@ TODO
    * hide columns
    * data truncation based on col wid TODO
    * TODO: search -- how is it working, but curpos is wrong.
+   * allow resize of column inside column header
+   * Now that we allow header to get focus, we should allow it to handle
+    keys, but its not an object like it was in rtable ! AARGH !
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -180,7 +183,8 @@ module RubyCurses
     alias :<< :add
     alias :add_row :add
     def column_width colindex, width
-      raise ArgumentError, "wrong width value sent" if width.nil? || !width.is_a?(Fixnum) || width < 0
+      return if width < 0
+      raise ArgumentError, "wrong width value sent: #{width} " if width.nil? || !width.is_a?(Fixnum) || width < 0
       @cw[colindex] = width
       get_column(colindex).width = width
       @repaint_required = true
@@ -281,7 +285,7 @@ module RubyCurses
       @graphic
     end
 
-    def repaint # textview :nodoc:
+    def repaint # Tabularwidget :nodoc:
       if @screen_buffer.nil?
         safe_create_buffer
         @screen_buffer.name = "Pad::TW_PAD_#{@name}" unless @screen_buffer.nil?
@@ -290,7 +294,7 @@ module RubyCurses
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
-    #  raise "TV 175 graphic nil " unless @graphic
+      #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && @repaint_footer_required
       buffer_to_window
     end
@@ -300,15 +304,12 @@ module RubyCurses
     def current_value
       @list[@current_index]
     end
-    # textview
+    # Tabularwidget
     def handle_key ch #:nodoc:
-      #$log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
-      #if @curpos > @buffer.length
-        #addcol((@buffer.length-@curpos)+1)
-        #@curpos = @buffer.length
-        #set_form_col 
-      #end
-      # We can improve later
+      if header_row?
+        ret = header_handle_key ch
+        return ret unless ret == :UNHANDLED
+      end
       case ch
       when ?\C-d.getbyte(0), 32
         scroll_forward
@@ -384,7 +385,7 @@ module RubyCurses
         rescue => err
           $error_message = err
           @form.window.print_error_message
-          $log.error " TEXTVIEW ERROR #{err} "
+          $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
         end
         return :UNHANDLED if ret == :UNHANDLED
@@ -392,6 +393,19 @@ module RubyCurses
       $multiplier = 0 # you must reset if you've handled a key. if unhandled, don't reset since parent could use
       set_form_row
       return 0 # added 2010-01-12 22:17 else down arrow was going into next field
+    end
+    def header_handle_key ch
+      col = _convert_curpos_to_column
+      width = @cw[col] 
+      case ch
+      when ?-.getbyte(0)
+        column_width col, width-1
+        return 0
+      when ?\+.getbyte(0)
+        column_width col, width+1
+        return 0
+      end
+      return :UNHANDLED
     end
     # newly added to check curpos when moving up or down
     def check_curpos #:nodoc:
@@ -505,7 +519,7 @@ module RubyCurses
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = tm.length
       _maxlen = @maxlen || @width-@internal_width
-      #$log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
+      #$log.debug " #{@name} Tabularwidget repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tr = @toprow
       acolor = get_color $datacolor
       h = scrollatrow() 
@@ -601,6 +615,8 @@ module RubyCurses
     # FIXME: what about column level truncation, if user specifies
     # colw and data in that col exceeds.
     def _guess_col_widths  #:nodoc:
+      return if @second_time
+      @second_time = true if @list.size > 0
       @list.each_with_index { |r, i| 
         break if i > 10
         next if r == :separator
@@ -645,6 +661,7 @@ module RubyCurses
         @coffsets.each_pair { |name, val| @coffsets[name] = val + @rows + 2 }
       end
       #$log.debug " FMT : #{@fmstr} "
+      #alert "format:     #{@fmstr} "
     end
     ## this is just a test of prompting user for a string
     #+ as an alternative to the dialog.
@@ -682,6 +699,11 @@ module RubyCurses
       extend Object.const_get("#{includename}")
       send("#{requirename}_init") #if respond_to? "#{includename}_init"
     end
+
+    # returns true if cursor is on header row
+    def header_row?
+      1 == @row + (@current_index-@toprow)
+    end
     # on pressing ENTER we send user some info, the calling program
     # would bind :PRESS
     #--
@@ -690,27 +712,32 @@ module RubyCurses
     def fire_action_event
       require 'rbcurse/ractionevent'
       # the header event must only be used if columns passed
-      visualrow = @row + (@current_index-@toprow)
-      if visualrow == 1
+      if header_row?
         # TODO we need to fire correct even for header row, including
-        # # calculate column based on curpos since user may not have
-        # user w and b keys (:next_column)
-        x = 0
-        @coffsets.each_pair { |e,i| 
-          if @curpos < i 
-            break
-          else 
-            x += 1
-          end
-        }
-        x -= 1 # since we start offsets with 0, so first auto becoming 1
         #alert "you are on header row: #{@columns[x]} curpos: #{@curpos}, x:#{x} "
         #aev = TextActionEvent.new self, :PRESS, @columns[x], x, @curpos
+        x = _convert_curpos_to_column
         aev = TextActionEvent.new self, :PRESS,:header, x, @curpos
       else
         aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
       end
       fire_handler :PRESS, aev
+    end
+    # Convert current cursor position to a table column
+    # calculate column based on curpos since user may not have
+    # user w and b keys (:next_column)
+    # @return [Fixnum] column index base 0
+    def _convert_curpos_to_column  #:nodoc:
+      x = 0
+      @coffsets.each_pair { |e,i| 
+        if @curpos < i 
+          break
+        else 
+          x += 1
+        end
+      }
+      x -= 1 # since we start offsets with 0, so first auto becoming 1
+      return x
     end
     # called by listscrollable, used by scrollbar ENTER_ROW
     def on_enter_row arow
