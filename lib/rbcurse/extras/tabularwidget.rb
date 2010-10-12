@@ -4,7 +4,7 @@
   * Author: rk (arunachalesha)
   * file created 2010-09-28 23:37 
 FIXME:
-KNOWN BUG : if columns dispplayed or separator, then numbering is wrong since col gets numbered
+KNOWN BUG : if columns displayed or separator, then numbering is wrong since col gets numbered
 TODO 
    * move columns
    * hide columns
@@ -13,6 +13,8 @@ TODO
    * allow resize of column inside column header
    * Now that we allow header to get focus, we should allow it to handle
     keys, but its not an object like it was in rtable ! AARGH !
+   * NOTE: header could become an object in near future, but then why did we break
+   away from rtable ?
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -25,12 +27,16 @@ require 'rbcurse/extras/tabular'
 #include RubyCurses
 module RubyCurses
   extend self
+  # used when firing a column resize, so calling application can perhaps
+  # resize other columns.
+  class ColumnResizeEvent < Struct.new(:source, :index, :type); end
 
   ##
   # A viewable read only, scrollable table. This is supposed to be a
-  # minimal, and fast version of Table (@see rtable.rb).
+  # +minimal+, and (hopefully) fast version of Table (@see rtable.rb).
   class TabularWidget < Widget
 
+    # what about is_resizable XXX
     class ColumnInfo < Struct.new(:name, :width, :align, :hidden)
     end
     # a strcuture that maintains position and gives
@@ -92,7 +98,7 @@ module RubyCurses
       @sanitization_required = true
       @row = 0
       @col = 0
-      @cw = {} # column widths keyed on column index
+      @cw = {} # column widths keyed on column index - why not array ??
       @calign = {} # columns aligns values, on column index
       @coffsets = {}
       @suppress_borders = false
@@ -115,6 +121,7 @@ module RubyCurses
       @_events.push :CHANGE # thru vieditable
       @_events << :PRESS # new, in case we want to use this for lists and allow ENTER
       @_events << :ENTER_ROW # new, should be there in listscrollable ??
+      @_events << :COLUMN_RESIZE_EVENT # new, should be there in listscrollable ??
       install_keys
       init_vars
     end
@@ -394,15 +401,28 @@ module RubyCurses
       set_form_row
       return 0 # added 2010-01-12 22:17 else down arrow was going into next field
     end
-    def header_handle_key ch
+    #
+    # allow header to handle keys
+    # NOTE: header could become an object in near future
+    # We are calling a resize event and passing column index but do we really
+    # have a column object that user can access and do something with ?? XXX
+    #
+    def header_handle_key ch   #:nodoc:
+      # TODO pressing = should revert to calculated size ?
       col = _convert_curpos_to_column
       width = @cw[col] 
       case ch
       when ?-.getbyte(0)
         column_width col, width-1
+        # if this event has not been used in a sample it could change in near future
+        e = ColumnResizeEvent.new self, col,  :DECREASE
+        fire_handler :COLUMN_RESIZE_EVENT, e
+        # can fire_hander so user can resize another column
         return 0
       when ?\+.getbyte(0)
         column_width col, width+1
+        # if this event has not been used in a sample it could change in near future
+        e = ColumnResizeEvent.new self, col,  :INCREASE
         return 0
       end
       return :UNHANDLED
@@ -608,7 +628,28 @@ module RubyCurses
         r = r.dup
         r.insert 0, count+1
       end
-      return @fmstr % r;  
+      # unroll r, get width and align
+      # This is to truncate column to requested width
+      fmta = []
+      r.each_with_index { |e, i| 
+        w = @cw[i]
+        l = e.to_s.length
+        fmt = "%-#{w}s "
+        if l > w
+          fmt = "%.#{w}s "
+        else
+          # ack we don;t need to recalc this we can pull out of hash FIXME
+          case @calign[i]
+          when :right
+            fmt = "%#{w}s "
+          else
+            fmt = "%-#{w}s "
+          end
+        end
+        fmta << fmt
+      }
+      fmstr = fmta.join(@y)
+      return fmstr % r;  
     end
     # NOTE = this should only work if user has not specified
     # widths for cols ? What if has ?
