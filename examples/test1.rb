@@ -189,11 +189,13 @@ if $0 == __FILE__
           title_attrib 'bold'
         end
         #listb.list.bind(:ENTER_ROW) { field.set_buffer listb.selected_item }
+        # if you find that cursor goes into listbox while typing, then
+        # i've put set_form_row in listbox list_data_changed
         field.bind(:CHANGE) do |f|   
           flist = Dir.glob(f.getvalue+"*")
           l = listb.list
           l.remove_all
-          l.insert 0, *flist
+          l.insert( 0, *flist) if flist
         end
         @mb = RubyCurses::MessageBox.new @form do
           title "Sample File Selector"
