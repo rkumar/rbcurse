@@ -1060,7 +1060,9 @@ module RubyCurses
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
         init_vars
         @current_index = 0
-        set_form_row
+        # I had placed this at some time to get cursor correct. But if this listbox is updated
+        # during entry in another field, then this steals the row. e.g. test1.rb 5
+        #set_form_row
       end
       @repaint_required = true
     end
