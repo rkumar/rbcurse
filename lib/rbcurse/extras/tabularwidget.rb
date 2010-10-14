@@ -41,7 +41,7 @@ module RubyCurses
     dsl_accessor :title   # set this on top
     dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :footer_attrib   # bold, reverse, normal
-    dsl_accessor :list    # the array of arrays of data to be sent by user
+    dsl_accessor :list    # the array of arrays of data to be sent by user XXX RISKY bypasses set_content
     dsl_accessor :maxlen    # max len to be displayed
     attr_reader :toprow    # the toprow in the view (offsets are 0)
     attr_reader :winrow   # the row in the viewport/window
@@ -50,11 +50,12 @@ module RubyCurses
     dsl_accessor :suppress_borders 
     attr_accessor :current_index
     dsl_accessor :border_attrib, :border_color # 
+    # boolean, whether lines should be cleaned (if containing tabs/newlines etc)
     dsl_accessor :sanitization_required
     # boolean, whether lines should be numbered
     attr_accessor :numbering
-    # FIXME - first time lands on 0, should it not ?
-    # after that it only lands in fields.
+    # default or custom sorter
+    attr_reader :table_row_sorter
 
     def initialize form = nil, config={}, &block
       @focusable = true
@@ -101,8 +102,6 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
       @current_column = 0
-      $error_message_row ||= 23 # FIXME
-      $error_message_col ||= 1 # FIXME
       # currently i scroll right only if  current line is longer than display width, i should use 
       # longest line on screen.
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
@@ -692,6 +691,8 @@ module RubyCurses
     end
     # this is just a test of the simple "most" menu
     def disp_menu  #:nodoc:
+      $error_message_row ||= 23 # FIXME
+      $error_message_col ||= 1 # FIXME
       menu = PromptMenu.new self 
       menu.add( menu.create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} ))
       menu.add(menu.create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right ))
@@ -722,6 +723,8 @@ module RubyCurses
     end
     # on pressing ENTER we send user some info, the calling program
     # would bind :PRESS
+    # Added a call to sort, should i still call PRESS
+    # or just do a sort in here and not call PRESS ???
     #--
     # FIXME we can create this once and reuse
     #++
