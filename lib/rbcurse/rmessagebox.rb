@@ -297,9 +297,15 @@ module RubyCurses
           name   "input" 
           row  r 
           col  c 
-#         attr 'reverse'
+
           color 'black'
           bgcolor 'white'
+          # now listcellrenderer only uses BOLD for selected, with a white bgcolor
+          # so here it won't show up on white bg
+          selected_color 'red'
+          selected_bgcolor 'black'
+          # just added 2010-10-14 21:24 
+          border_attrib :reverse
           width 30
           height 6
           list  list
