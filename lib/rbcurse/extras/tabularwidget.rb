@@ -36,42 +36,6 @@ module RubyCurses
   # +minimal+, and (hopefully) fast version of Table (@see rtable.rb).
   class TabularWidget < Widget
 
-    # what about is_resizable XXX
-    class ColumnInfo < Struct.new(:name, :width, :align, :hidden)
-    end
-    # a strcuture that maintains position and gives
-    # next and previous taking max index into account.
-    # it also circles. Can be used for traversing next component
-    # in a form, or container, or columns in a table.
-    class Circular < Struct.new(:max_index, :current_index)
-      attr_reader :last_index
-      attr_reader :current_index
-      def initialize  m, c=0
-        raise "max index cannot be nil" unless m
-        @max_index = m
-        @current_index = c
-        @last_index = c
-      end
-      def next
-        @last_index = @current_index
-        if @current_index + 1 > @max_index
-          @current_index = 0
-        else
-          @current_index += 1
-        end
-      end
-      def previous
-        @last_index = @current_index
-        if @current_index - 1 < 0
-          @current_index = @max_index
-        else
-          @current_index -= 1
-        end
-      end
-      def is_last?
-        @current_index == @max_index
-      end
-    end
 
     include ListScrollable
     dsl_accessor :title   # set this on top
@@ -106,11 +70,11 @@ module RubyCurses
       @chash = {}
       # this should have index of displayed column
       # so user can reorder columns
-      @column_position = []
+      #@column_position = [] # TODO
       @separ = @columns = @numbering =  nil
       @y = '|'
       @x = '+'
-      @show_focus = false  # don't highlight row under focus
+      @show_focus = false  # don't highlight row under focus TODO
       @list = []
       @_header_adjustment = 0
       super
@@ -121,7 +85,7 @@ module RubyCurses
       @_events.push :CHANGE # thru vieditable
       @_events << :PRESS # new, in case we want to use this for lists and allow ENTER
       @_events << :ENTER_ROW # new, should be there in listscrollable ??
-      @_events << :COLUMN_RESIZE_EVENT # new, should be there in listscrollable ??
+      @_events << :COLUMN_RESIZE_EVENT 
       install_keys
       init_vars
     end
@@ -168,6 +132,7 @@ module RubyCurses
     ## 
     # send in a list
     # 
+    # @param [Array / Tabular] data to be displayed
     def set_content list
       if list.is_a? RubyCurses::Tabular
         @list = list
@@ -176,7 +141,12 @@ module RubyCurses
       else
         raise "set_content expects Array not #{list.class}"
       end
-      @current_index = 1 # due to header FIXME
+      if @table_row_sorter
+        @table_row_sorter.model=@list
+      else
+        @table_row_sorter = TableRowSorter.new @list
+      end
+      @current_index = @_header_adjustment
       @toprow = 0
       # TODO reset current_index and top_row here to 0 ??
       @repaint_required = true
@@ -211,6 +181,7 @@ module RubyCurses
       @repaint_required = true
       #@recalc_required = true
     end
+    # Set a column to hidden  TODO we are not actually doing that
     def column_hidden colindex, tf
       #raise ArgumentError, "wrong alignment value sent" if ![:right, :left, :center].include? lrc
       get_column(colindex).hidden = tf
@@ -746,6 +717,7 @@ module RubyCurses
 
     # returns true if cursor is on header row
     def header_row?
+      return false if @columns.nil?
       1 == @row + (@current_index-@toprow)
     end
     # on pressing ENTER we send user some info, the calling program
@@ -761,6 +733,9 @@ module RubyCurses
         #alert "you are on header row: #{@columns[x]} curpos: #{@curpos}, x:#{x} "
         #aev = TextActionEvent.new self, :PRESS, @columns[x], x, @curpos
         x = _convert_curpos_to_column
+        @table_row_sorter.toggle_sort_order x
+        @table_row_sorter.sort
+        @repaint_required = true
         aev = TextActionEvent.new self, :PRESS,:header, x, @curpos
       else
         aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
@@ -815,6 +790,118 @@ module RubyCurses
     def get_column index   #:nodoc:
       return @chash[index] if @chash.has_key? index
       @chash[index] = ColumnInfo.new
+    end
+
+    # Some supporting classes
+    
+    # This is our default table row sorter.
+    # It does a multiple sort and allows for reverse sort also.
+    # It's a pretty simple sorter and uses sort, not sort_by.
+    # Improvements welcome.
+    # Usage: provide model in constructor or using model method
+    # Call toggle_sort_order(column_index) 
+    # Call sort. 
+    # Currently, this sorts the provided model in-place. Future versions
+    # may maintain a copy, or use a table that provides a mapping of model to result.
+    # # TODO check if column_sortable
+    class TableRowSorter
+      attr_reader :sort_keys
+      def initialize model=nil
+        self.model = model
+        @columns_sort = []
+        @sort_keys = nil
+      end
+      def model=(model)
+        @model = model
+        @sort_keys = nil
+      end
+      def sortable colindex, tf
+        @columns_sort[colindex] = tf
+      end
+      def sortable? colindex
+        return false if @columns_sort[colindex]==false
+        return true
+      end
+      # should to_s be used for this column
+      def use_to_s colindex
+        return true # TODO
+      end
+      # sorts the model based on sort keys and reverse flags
+      # @sort_keys contains indices to sort on
+      # @reverse_flags is an array of booleans, true for reverse, nil or false for ascending
+      def sort
+        return unless @model
+        return if @sort_keys.empty?
+        @model.sort!{|x,y| 
+          res = 0
+          @sort_keys.each { |ee| 
+            e = ee.abs-1 # since we had offsetted by 1 earlier
+            abse = e.abs
+            if ee < 0
+              res = y[abse] <=> x[abse]
+            else
+              res = x[e] <=> y[e]
+            end
+            break if res != 0
+          }
+          res
+        }
+      end
+      # toggle the sort order if given column offset is primary sort key
+      # Otherwise, insert as primary sort key, ascending.
+      def toggle_sort_order index
+        index += 1 # increase by 1, since 0 won't multiple by -1
+        # internally, reverse sort is maintained by multiplying number by -1
+        @sort_keys ||= []
+        if @sort_keys.first && index == @sort_keys.first.abs
+          @sort_keys[0] *= -1 
+        else
+          @sort_keys.delete index # in case its already there
+          @sort_keys.delete(index*-1) # in case its already there
+          @sort_keys.unshift index
+          # TODO delete beyond a max, default 3
+        end
+      end
+      def set_sort_keys list
+        @sort_keys = list
+      end
+    end #class
+    # what about is_resizable XXX
+    class ColumnInfo < Struct.new(:name, :width, :align, :hidden)
+    end
+
+    # a structure that maintains position and gives
+    # next and previous taking max index into account.
+    # it also circles. Can be used for traversing next component
+    # in a form, or container, or columns in a table.
+    class Circular < Struct.new(:max_index, :current_index)
+      attr_reader :last_index
+      attr_reader :current_index
+      def initialize  m, c=0
+        raise "max index cannot be nil" unless m
+        @max_index = m
+        @current_index = c
+        @last_index = c
+      end
+      def next
+        @last_index = @current_index
+        if @current_index + 1 > @max_index
+          @current_index = 0
+        else
+          @current_index += 1
+        end
+      end
+      def previous
+        @last_index = @current_index
+        if @current_index - 1 < 0
+          @current_index = @max_index
+        else
+          @current_index -= 1
+        end
+      end
+      def is_last?
+        @current_index == @max_index
+      end
     end
 
   end # class tabluarw
