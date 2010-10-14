@@ -37,7 +37,7 @@ if $0 == __FILE__
        type :list
        button_type :ok_cancel
        list %w[john tim lee wong rahul edward why chad andy]
-       list_selection_mode 'multiple'
+       list_selection_mode :multiple
        default_values %w[ lee why ]
   
         default_button 0
