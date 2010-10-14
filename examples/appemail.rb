@@ -170,14 +170,13 @@ App.new do
       @messages = mx.mails()
     end
     @lb2.bind :PRESS do |e|
-      #alert " line clicked #{e.source.current_index} "
       case @lb2
       when RubyCurses::TabularWidget
         if e.action_command == :header
           # sort on e.current_index
-          l = @lb2.get_content
-          l.sort! {|x,y| x[e.current_index] <=> y[e.current_index]}
-          @lb2.set_content l
+          #l = @lb2.get_content
+          #l.sort! {|x,y| x[e.current_index] <=> y[e.current_index]}
+          #@lb2.set_content l
         else
           index = e.source.current_index - 1 # this should check what first data index is
           if index >= 0
@@ -189,7 +188,7 @@ App.new do
       end
     end
     @lb2.bind :ENTER_ROW do |e|
-      @header.text_right "Row #{e.current_index+1} of #{@messages.size} "
+      @header.text_right "Row #{e.current_index} of #{@messages.size} "
     end
 
     #s.add @dirs, :FIRST
