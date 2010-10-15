@@ -49,7 +49,9 @@ module RubyCurses
     dsl_accessor :print_footer
     dsl_accessor :suppress_borders 
     attr_accessor :current_index
-    dsl_accessor :border_attrib, :border_color # 
+    dsl_accessor :border_attrib, :border_color #  color pair for border
+    dsl_accessor :header_attrib, :header_fgcolor, :header_bgcolor  #  2010-10-15 13:21 
+
     # boolean, whether lines should be cleaned (if containing tabs/newlines etc)
     dsl_accessor :sanitization_required
     # boolean, whether lines should be numbered
@@ -555,15 +557,17 @@ module RubyCurses
       @repaint_all             = false
 
     end
+
     # print data rows
     def print_data_row r, c, len, value, color, attr
       @graphic.printstring  r, c, "%-*s" % [len,value], color, attr
     end
+
     # print header row
     #  allows user to override
     def print_header_row r, c, len, value, color, attr
-      acolor = $promptcolor
-      @graphic.printstring  r, c, "%-*s" % [len ,value], acolor, @attr
+      #acolor = $promptcolor
+      @graphic.printstring  r, c, "%-*s" % [len ,value], color, attr
     end
     def separator
       #return @separ if @separ
@@ -582,7 +586,9 @@ module RubyCurses
       value = convert_value_to_text :columns, 0
       len = @width - @internal_width
       truncate value # else it can later suddenly exceed line
-      print_header_row r, c, len, value, nil, nil
+      @header_color_pair ||= get_color $promptcolor, @header_fgcolor, @header_bgcolor
+      @header_attrib ||= @attr
+      print_header_row r, c, len, value, @header_color_pair, @header_attrib
     end
     # convert data object to a formatted string for print
     # NOTE: useful for overriding and doing custom formatting
