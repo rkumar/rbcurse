@@ -1972,6 +1972,9 @@ module RubyCurses
     when KEY_ENTER, 10, 13
       if respond_to? :fire
         fire
+      else
+        # added else since it was consuming ENTER and form would not be able to bind
+        return :UNHANDLED
       end
     when 330
       delete_curr_char if @editable
@@ -1987,7 +1990,7 @@ module RubyCurses
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
     when 27 # escape
-      $log.debug " ADDED FIELD ESCAPE on 2009-01-18 12:27 XXX #{@original_value}"
+      #$log.debug " ADDED FIELD ESCAPE on 2009-01-18 12:27 XXX #{@original_value}"
       set_buffer @original_value 
     else
       ret = super
