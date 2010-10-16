@@ -1953,6 +1953,7 @@ module RubyCurses
   end
 
   # field
+  # # TODO bind these keys so they can be overridden
   def handle_key ch
     case ch
     when KEY_LEFT
@@ -1969,13 +1970,11 @@ module RubyCurses
     #  $log.debug " FIELD GOT KEY_DOWN, NOW IGNORING 2009-01-16 17:52 "
       #@form.select_next_field # in a table this should not happen 2009-01-16 17:47 
     #  return :UNHANDLED
-    when KEY_ENTER, 10, 13
-      if respond_to? :fire
-        fire
-      else
-        # added else since it was consuming ENTER and form would not be able to bind
-        return :UNHANDLED
-      end
+      # user cannot bind here or on form if i eat up
+    #when KEY_ENTER, 10, 13
+      #if respond_to? :fire
+        #fire
+      #end
     when 330
       delete_curr_char if @editable
     when ?\C-a.getbyte(0)
