@@ -156,6 +156,8 @@ App.new do
     @lb2.columns = headings
     @lb2.column_align 1, :right
     @lb2.column_align 0, :right
+    @lb2.header_fgcolor :white
+    @lb2.header_bgcolor :cyan
     @vim.set_right_top_component @lb2
     @dirs.bind :PRESS do |e|
       @lines = []
