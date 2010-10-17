@@ -118,6 +118,7 @@ App.new do
   # this is for tree to get only directories
   ht = 24
   @messages = nil
+  $unread_hash = {}
   @tv = nil
   borderattrib = :reverse
   @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
@@ -136,10 +137,20 @@ App.new do
     model.push *boxes
     #@vim = vimsplit :height => Ncurses.LINES-2, :weight => 0.25, :orientation => :VERTICAL do |s|
     # try with new listbox
+    # # TODO use App so row and col not required
     @vim = MasterDetail.new @form, :row => 1, :col => 1, :width => :EXPAND
     @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
-    def @dirs.convert_value_to_text(text, crow) ; File.basename(text); end
+    
+    # we override so as to only print basename. Also, print unread count 
+    def @dirs.convert_value_to_text(text, crow)
+      str = File.basename(text)
+      if $unread_hash.has_key?(str)
+        str << " (#{$unread_hash[str]})"
+      else
+        str 
+      end
+    end
     @vim.set_left_component @dirs
 
     #@tw = RubyCurses::TabularWidget.new nil
@@ -167,6 +178,7 @@ App.new do
         @lines << text
       end
       message " #{e.text} has #{@lines.size} messages"
+      $unread_hash[File.basename(e.text)] = mx.unread_count
       #@lb2.list @lines
       @lb2.set_content @lines
       @messages = mx.mails()
