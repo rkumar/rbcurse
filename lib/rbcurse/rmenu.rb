@@ -412,7 +412,11 @@ module RubyCurses
       end
       case ch
       when KEY_DOWN
-          cmenu.select_next_item
+        cmenu.select_next_item
+        #return cmenu.fire # XXX 2010-10-16 21:39 trying out
+        if cmenu.is_a? RubyCurses::Menu 
+          #alert "is a menu"
+        end
       when KEY_UP
         cmenu.select_prev_item
       when KEY_ENTER, 10, 13, 32 # added 32 2008-11-27 23:50 
