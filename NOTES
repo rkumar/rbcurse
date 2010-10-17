@@ -1880,3 +1880,16 @@ amy objects that should only be focusable when user wants them. I may
 make scrollbars focusable in a future version.
 
 * * * * * * * *
+
+Subject: stacks and flows - thoughts
+------------------------------------
+Date: 2010-10-17 22:40
+
+It should be possible to maintain stacks and flows within the app class.
+this way, the app can be asked to reposition the widgets and it can do
+so. This is required for when we get into using KEY_RESIZE (window
+resizing). So this will only be available within App, but then that's
+where stacks and flows are, anyway.
+Can we liberate S and F from App and make them independent ?
+
+* * * * * * * *
