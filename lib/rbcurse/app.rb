@@ -227,13 +227,7 @@ module RubyCurses
           config[:name] = title
         end
       end
-      if @instack
-        # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last.margin
-        config[:row] = @app_row
-        config[:col] = col
-        @app_row += 1
-      end
+      _position config
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
@@ -266,13 +260,7 @@ module RubyCurses
         end
       end
       config[:height] ||= 1
-      if @instack
-        # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last.margin
-        config[:row] = @app_row
-        config[:col] = col
-        @app_row += config[:height]
-      end
+      _position(config)
       label = Label.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       return label
@@ -812,6 +800,29 @@ module RubyCurses
       useform = @form if @current_object.empty?
       sb = Divider.new useform, config
     end
+    # creates a simple readonly table, that allows users to click on rows
+    # and also on the header. Header clicking is for column-sorting.
+    def combo *args, &block
+      require 'rbcurse/rcombo'
+      config = {}
+      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ] # XXX
+      block_event = nil
+      _process_args args, config, block_event, events
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      #config.delete :title
+      useform = nil
+      useform = @form if @current_object.empty?
+
+      w = ComboBox.new useform, config # NO BLOCK GIVEN
+      if block_given?
+        @current_object << w
+        yield_or_eval &block
+        @current_object.pop
+      end
+      return w
+    end
 
     # ADD new widget above this
 
@@ -976,7 +987,11 @@ module RubyCurses
         config[:row] = @app_row
         config[:col] = @flowcol
         $log.debug " YYYY config #{config} "
-        @flowcol += config[:text].length + 5 # 5 came from buttons
+        if config[:text]
+          @flowcol += config[:text].length + 5 # 5 came from buttons
+        else
+          @flowcol += (config[:length] || 10) + 5 # trying out for combo
+        end
       elsif @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last.margin
