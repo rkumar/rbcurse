@@ -1,3 +1,4 @@
+require 'rbcurse/rvimsplit'
 require 'forwardable'
 # A convenience class that implements a 3 way Master Detail like form
 # as in some email clients. See appemail.rb for usage.
