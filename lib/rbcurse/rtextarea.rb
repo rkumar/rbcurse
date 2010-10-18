@@ -199,6 +199,7 @@ module RubyCurses
     # private
     def print_title
       # truncate title if longer than width
+      return unless @title
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
