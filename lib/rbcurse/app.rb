@@ -22,9 +22,9 @@ module RubyCurses
 
   ##
   #
-  # @since 1.1.6
+  # @since 1.2.0
   # TODO - 
-  # - combo
+  # / combo
   # - popup
   # - promptmenu
   # - stack and flow should be objects in Form/App?, put in widget when creating
@@ -208,25 +208,8 @@ module RubyCurses
       events = [ :CHANGED,  :LEAVE, :ENTER, :CHANGE ]
       block_event = :CHANGED # LEAVE, ENTER, CHANGE
 
-      args.each do |arg| 
-        case arg
-        when Array
-          #puts "row, col #{arg[0]} #{arg[1]} "
-          # we can use r,c, w, h
-          row, col, display_length = arg
-          config[:row] = row
-          config[:col] = col
-          config[:display_length] = display_length if display_length
-        when Hash
-          config.merge!(arg)
-          block_event = config.delete(:block_event){ block_event }
-          raise "Invalid event. Use #{events}" unless events.include? block_event
-          #puts "hash #{config}"
-        when String
-          title = arg
-          config[:name] = title
-        end
-      end
+      _process_args args, config, block_event, events
+      config.delete(:title)
       _position config
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
@@ -242,24 +225,12 @@ module RubyCurses
       #var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
 
     def label *args
-      block_event = nil
+      events = block_event = nil
       config = {}
-
-      args.each do |arg| 
-        case arg
-        when Array
-          row, col, display_length, height = arg
-          config[:row] = row
-          config[:col] = col
-          config[:display_length] = display_length if display_length
-          config[:height] = height || 1
-        when Hash
-          config.merge!(arg)
-        when String
-          config[:text] = arg
-        end
-      end
+      _process_args args, config, block_event, events
+      config[:text] ||= config[:name]
       config[:height] ||= 1
+      config.delete(:title)
       _position(config)
       label = Label.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
@@ -271,27 +242,9 @@ module RubyCurses
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
 
-      #process_args args, config, block_event, events
-      args.each do |arg| 
-        case arg
-        when Array
-          #puts "row, col #{arg[0]} #{arg[1]} "
-          # we can use r,c, w, h
-          row, col, display_length, height = arg
-          config[:row] = row
-          config[:col] = col
-          config[:display_length] = display_length if display_length
-          config[:height] = height if height
-        when Hash
-          config.merge!(arg)
-          block_event = config.delete(:block_event){ block_event }
-          raise "Invalid event. Use #{events}" unless events.include? block_event
-          #puts "hash #{config}"
-        when String
-          config[:text] = arg
-          config[:name] = arg
-        end
-      end
+      _process_args args, config, block_event, events
+      config[:text] ||= config[:name]
+      config.delete(:title)
       # flow gets precedence over stack
       _position(config)
       button = Button.new @form, config
@@ -314,27 +267,7 @@ module RubyCurses
       # TODO how to do this so he gets selected row easily
       block_event = :ENTER_ROW
 
-      # TODO abstract this into a new method so no copying
-      args.each do |arg| 
-        case arg
-        when Array
-          #puts "row, col #{arg[0]} #{arg[1]} "
-          # we can use r,c, w, h
-          row, col, display_length, height = arg
-          config[:row] = row
-          config[:col] = col
-          config[:display_length] = display_length if display_length
-          config[:height] = height if height
-        when Hash
-          config.merge!(arg)
-          block_event = config.delete(:block_event){ block_event }
-          raise "Invalid event. Use #{events}" unless events.include? block_event
-          #puts "hash #{config}"
-        when String
-          config[:name] = arg
-          config[:title] = arg
-        end
-      end
+      _process_args args, config, block_event, events
       # naive defaults, since list could be large or have very long items
       # usually user will provide
       if !config.has_key? :height
