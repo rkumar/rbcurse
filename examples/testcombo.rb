@@ -33,12 +33,12 @@ if $0 == __FILE__
         name "combo"
         row r
         col c
-        bgcolor 'magenta'
+        bgcolor :magenta
         display_length 10
         editable false
         list mylist
         set_label Label.new @form, {'text' => "Non-edit Combo"}
-        list_config 'color' => 'yellow', 'bgcolor'=>'magenta', 'max_visible_items' => 6
+        list_config 'color' => 'black', 'bgcolor'=>'magenta', 'max_visible_items' => 6
       end
       r+=1
       $results = Variable.new
