@@ -560,11 +560,12 @@ module RubyCurses
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
         value = getvalue_for_paint
         len = @display_length || value.length
-        if @bgcolor.is_a? String and @color.is_a? String
-          acolor = ColorMap.get_color(@color, @bgcolor)
-        else
-          acolor = $datacolor
-        end
+        acolor = get_color $datacolor, @color, @bgcolor
+        #if @bgcolor.is_a? String and @color.is_a? String
+          #acolor = ColorMap.get_color(@color, @bgcolor)
+        #else
+          #acolor = $datacolor
+        #end
         @graphic.printstring r, c, "%-*s" % [len, value], acolor, @attr
         # next line should be in same color but only have @att so we can change att is nec
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
@@ -1925,7 +1926,7 @@ module RubyCurses
   ##+ currently I've not implemented events with these widgets. 2010-01-03 15:00 
 
   def repaint
-    $log.debug("repaint FIELD: #{id}, #{name},  #{focusable}")
+    #$log.debug("repaint FIELD: #{id}, #{name},  #{focusable}")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
     @display_length = 1 if display_length == 0
@@ -1939,11 +1940,12 @@ module RubyCurses
       end
     end
     #printval = printval[0..display_length-1] if printval.length > display_length
-    if @bgcolor.is_a? String and @color.is_a? String
-      acolor = ColorMap.get_color(@color, @bgcolor)
-    else
-      acolor = $datacolor
-    end
+    acolor = get_color $datacolor, @color, @bgcolor
+    #if @bgcolor.is_a? String and @color.is_a? String
+      #acolor = ColorMap.get_color(@color, @bgcolor)
+    #else
+      #acolor = $datacolor
+    #end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
     $log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
     @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
