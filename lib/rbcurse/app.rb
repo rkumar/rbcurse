@@ -24,22 +24,18 @@ module RubyCurses
   #
   # @since 1.1.6
   # TODO - 
-  # - stack and flow should be objects in Form, put in widget when creating
-  # - box / rect
-  # - animate(n) |i|
-  # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - combo
-  # - textview
   # - popup
+  # - promptmenu
+  # - stack and flow should be objects in Form/App?, put in widget when creating
+  # - box / rect
+  # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - multicontainer
   # - multitextview, multisplit
   # - tabbedpane
   # / table - more work regarding vim keys, also editable
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
-  # - promptmenu
-  # x tree
-  # - vimsplit
   #  
   
   class Widget
@@ -753,7 +749,7 @@ module RubyCurses
       events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
       block_event = nil
       _process_args args, config, block_event, events
-      config[:height] ||= 10
+      #config[:height] ||= 10
       _position(config)
       # if no width given, expand to flows width
       config[:width] ||= @stack.last.width if @stack.last
@@ -769,13 +765,15 @@ module RubyCurses
       end
       return w
     end
+    # creates a simple readonly table, that allows users to click on rows
+    # and also on the header. Header clicking is for column-sorting.
     def tabular_widget *args, &block
       require 'rbcurse/extras/tabularwidget'
       config = {}
       events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ]
       block_event = nil
       _process_args args, config, block_event, events
-      config[:height] ||= 10
+      config[:height] ||= 10 # not sure if this should be here
       _position(config)
       # if no width given, expand to flows width
       config[:width] ||= @stack.last.width if @stack.last
