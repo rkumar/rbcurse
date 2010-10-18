@@ -425,6 +425,7 @@ module RubyCurses
     dsl_accessor :focusable, :enabled # boolean
     dsl_property :row, :col            # location of object
     dsl_property :color, :bgcolor      # normal foreground and background
+    dsl_property :color_pair           # instead of colors give just color_pair
     dsl_property :attr                 # attribute bold, normal, reverse
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id #, :zorder
@@ -560,7 +561,7 @@ module RubyCurses
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
         value = getvalue_for_paint
         len = @display_length || value.length
-        acolor = get_color $datacolor, @color, @bgcolor
+        acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
         #if @bgcolor.is_a? String and @color.is_a? String
           #acolor = ColorMap.get_color(@color, @bgcolor)
         #else
@@ -655,14 +656,6 @@ module RubyCurses
       if @form.validate_field != -1
         @form.select_field @id
       end
-    end
-    def OLDget_color default=$datacolor, _color=@color, _bgcolor=@bgcolor
-      if _bgcolor.is_a? String and _color.is_a? String
-        acolor = ColorMap.get_color(_color, _bgcolor)
-      else
-        acolor = default
-      end
-      return acolor
     end
     ##
     # bind an action to a key, required if you create a button which has a hotkey
@@ -1915,6 +1908,12 @@ module RubyCurses
     end
   
   def set_label label
+    # added case for user just using a string
+    case label
+    when String
+      # what if no form at this point
+      label = Label.new @form, {:text => label}
+    end
     @label = label
     label.row  @row if label.row == -1
     label.col  @col-(label.name.length+1) if label.col == -1
@@ -1940,7 +1939,7 @@ module RubyCurses
       end
     end
     #printval = printval[0..display_length-1] if printval.length > display_length
-    acolor = get_color $datacolor, @color, @bgcolor
+    acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
     #if @bgcolor.is_a? String and @color.is_a? String
       #acolor = ColorMap.get_color(@color, @bgcolor)
     #else
