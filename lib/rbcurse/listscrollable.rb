@@ -106,16 +106,20 @@ module ListScrollable
     @rows_panned ||= 0
     
     win_row = 0 # 2010-02-07 21:44 now ext offset added by widget
-    # added 1 ?? in copywin too 2010-02-11 18:51  RFED16 this results in extra in normal situations.
-    row = win_row + r + (@current_index-@toprow) + @rows_panned 
-    #$log.debug " #{@name} LIST set_form_row #{row} = ci #{@current_index} + r #{r} + winrow: #{win_row} - tr:#{@toprow} #{@toprow} + rowsp #{@rows_panned} "
-    #$log.debug "  - LIST set_form_row row_offset: #{@row_offset} + r #{r} + ci - topr + rowsp: #{@rows_panned}. c= #{c}  "
 
-    ## 2009-12-28 23:05 TRYING OUT but i really can't do this everywhere. BUFFERED
-    ## this needs to percolate up a heirarchy.
-    ## 2010-01-05 21:09 changed c to nil, since c is not cursor col pos but where printing starts, i think
-    #@form.setrowcol row, nil
-    #setformrowcol row, nil
+    # when the toprow is set externally then cursor can be mispositioned since 
+    # bounds_check has not been called
+    if @current_index < @toprow
+      # cursor is outside table
+      @current_index = @toprow # ??? only if toprow 2010-10-19 12:56 
+    end
+
+    row = win_row + r + (@current_index-@toprow) + @rows_panned 
+    #$log.debug " #{@name} set_form_row #{row} = ci #{@current_index} + r #{r} + winrow: #{win_row} - tr:#{@toprow} #{@toprow} + rowsp #{@rows_panned} "
+    # row should not be < r or greater than r+height TODO FIXME
+
+   
+    
     setrowcol row, nil
     #show_caret_func
   end
