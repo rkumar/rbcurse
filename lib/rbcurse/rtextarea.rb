@@ -239,8 +239,32 @@ module RubyCurses
     def getvalue
       @list
     end
+
+    def map_keys
+      return if @keys_mapped
+      bind_key(KEY_LEFT){ cursor_backward }
+      bind_key(KEY_RIGHT){ cursor_forward }
+      bind_key(KEY_UP){ up }
+      bind_key(KEY_DOWN){ down }
+      bind_key(?\C-a){ cursor_bol }
+      bind_key(?\C-e){ cursor_eol }
+      bind_key(?\C-n) { scroll_forward }
+      bind_key(?\C-p) { scroll_backward }
+      bind_key(?\C-[) { goto_start }
+      bind_key(?\C-]) { goto_end }
+
+      bind_key(KEY_BACKSPACE){ delete_prev_char if @editable }
+      bind_key(KEY_BSPACE){ delete_prev_char if @editable}
+
+      #bind_key(127){ delete_prev_char }
+      bind_key(330){ delete_curr_char if @editable }
+      #bind_key(?\C-k){ delete_eol }
+      bind_key(?\C-_){ undo_delete_eol }
+      bind_key(27){ set_buffer @original_value }
+      @keys_mapped = true
+    end
+
     # textarea
-    
     def handle_key ch
       @current_key = ch # I need some funcs to know what key they were mapped to
       @buffer = @list[@current_index]
@@ -256,35 +280,22 @@ module RubyCurses
       # in sqlc on pressing Clear.
       # if buffer is nil and user wants to enter something -- added UNHANDLED
       return :UNHANDLED if @buffer.nil?
-      $log.debug "TA: before: curpos #{@curpos} blen: #{@buffer.length}"
+      #$log.debug "TA: before: curpos #{@curpos} blen: #{@buffer.length}"
       # on any line if the cursor is ahead of buffer length, ensure its on last position
       # what if the buffer is somehow gt maxlen ??
       if @curpos > @buffer.length
         addcol(@buffer.length-@curpos)+1
         @curpos = @buffer.length
       end
-      $log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}, w: #{@width} max #{@maxlen}"
-      #pre_key
+      #$log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}, w: #{@width} max #{@maxlen}"
+      
       case ch
-      when ?\C-n.getbyte(0)
-        scroll_forward
-      when ?\C-p.getbyte(0)
-        scroll_backward
-      when ?\C-[.getbyte(0)
-        goto_start #cursor_start of buffer
-      when ?\C-].getbyte(0)
-        goto_end # cursor_end of buffer
-      when KEY_UP
-        #select_prev_row
-        ret = up
-      when KEY_DOWN
-        ret = down
       when KEY_ENTER, 10, KEY_RETURN
         insert_break
-      when KEY_LEFT
-        cursor_backward
-      when KEY_RIGHT
-        cursor_forward
+      #when KEY_LEFT
+        #cursor_backward
+      #when KEY_RIGHT
+        #cursor_forward
       when KEY_BACKSPACE, KEY_BSPACE
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
@@ -298,7 +309,7 @@ module RubyCurses
         # Earlier behavior was based on alpine which leaves a blank line
         if @editable
           #if @buffer == ""
-          if @buffer.chomp == "" or @curpos == 0
+          if @buffer.chomp == "" || @curpos == 0
             delete_line
           else
             delete_eol 
@@ -318,11 +329,11 @@ module RubyCurses
       when ?\C-r.getbyte(0) # redo if UndoHandler installed
         return unless @undo_handler
         @undo_handler.redo
-      when ?\C-a.getbyte(0)
-        cursor_bol
-      when ?\C-e.getbyte(0)
-        cursor_eol
-        #set_form_col @buffer.length
+      #when ?\C-a.getbyte(0)
+        #cursor_bol
+      #when ?\C-e.getbyte(0)
+        #cursor_eol
+        
       #when @KEY_ASK_FIND_FORWARD
       #  ask_search_forward
       #when @KEY_ASK_FIND_BACKWARD
@@ -341,7 +352,7 @@ module RubyCurses
         if ret == :UNHANDLED
           # check for bindings, these cannot override above keys since placed at end
           ret = process_key ch, self
-          $log.debug "TA process_key #{ch} got ret #{ret} in #{@name} "
+          #$log.debug "TA process_key #{ch} got ret #{ret} in #{@name} "
           return :UNHANDLED if ret == :UNHANDLED
         end
       end
