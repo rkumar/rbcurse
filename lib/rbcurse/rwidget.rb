@@ -1907,6 +1907,10 @@ module RubyCurses
       end
     end
   
+    # create a label linked to this field
+    # Typically one passes a Label, but now we can pass just a String, a label 
+    # is created
+    # @param [Label, String] label object to be associated with this field
   def set_label label
     # added case for user just using a string
     case label
@@ -1918,6 +1922,7 @@ module RubyCurses
     label.row  @row if label.row == -1
     label.col  @col-(label.name.length+1) if label.col == -1
     label.label_for(self)
+    label
   end
 
   ## Note that some older widgets like Field repaint every time the form.repaint
