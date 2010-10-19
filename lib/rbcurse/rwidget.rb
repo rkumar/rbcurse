@@ -1781,15 +1781,26 @@ module RubyCurses
       @form = form
       @buffer = String.new
       #@type=config.fetch("type", :varchar)
-      @display_length = config.fetch("display_length", 20)
-      @maxlen=config.fetch("maxlen", @display_length) 
-      @row = config.fetch("row", 0)
-      @col = config.fetch("col", 0)
-      @bgcolor = config.fetch("bgcolor", $def_bg_color)
-      @color = config.fetch("color", $def_fg_color)
-      @name = config.fetch("name", nil)
-      @editable = config.fetch("editable", true)
-      @focusable = config.fetch("focusable", true)
+      # 2010-10-19 12:26 slight change, hopefully won't bomb
+      @display_length = 20
+      @maxlen = @display_length
+      @row = 0
+      @col = 0
+      @bgcolor = $def_bg_color
+      @color = $def_fg_color
+      #@name = config.fetch("name", nil)
+      @editable = true
+      @focusable = true
+      # are these redundant ?
+      #@display_length = config.fetch("display_length", 20)
+      #@maxlen=config.fetch("maxlen", @display_length) 
+      #@row = config.fetch("row", 0)
+      #@col = config.fetch("col", 0)
+      #@bgcolor = config.fetch("bgcolor", $def_bg_color)
+      #@color = config.fetch("color", $def_fg_color)
+      #@name = config.fetch("name", nil)
+      #@editable = config.fetch("editable", true)
+      #@focusable = config.fetch("focusable", true)
       @event_args = {}             # arguments passed at time of binding, to use when firing event
       init_vars
       super
