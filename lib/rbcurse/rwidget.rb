@@ -1968,17 +1968,32 @@ module RubyCurses
   def set_focusable(tf)
     @focusable = tf
   end
+  def map_keys
+    return if @keys_mapped
+    bind_key(KEY_LEFT){ cursor_backward }
+    bind_key(KEY_RIGHT){ cursor_forward }
+    bind_key(KEY_BACKSPACE){ delete_prev_char }
+    bind_key(127){ delete_prev_char }
+    bind_key(330){ delete_curr_char }
+    bind_key(?\C-a){ cursor_home }
+    bind_key(?\C-e){ cursor_end }
+    bind_key(?\C-k){ delete_eol }
+    bind_key(?\C-_){ undo_delete_eol }
+    bind_key(27){ set_buffer @original_value }
+    @keys_mapped = true
+  end
 
   # field
   # # TODO bind these keys so they can be overridden
   def handle_key ch
+    map_keys
     case ch
-    when KEY_LEFT
-      cursor_backward
-    when KEY_RIGHT
-      cursor_forward
-    when KEY_BACKSPACE, 127
-      delete_prev_char if @editable
+    #when KEY_LEFT
+      #cursor_backward
+    #when KEY_RIGHT
+      #cursor_forward
+    #when KEY_BACKSPACE, 127
+      #delete_prev_char if @editable
     #when KEY_UP
     #  $log.debug " FIELD GOT KEY_UP, NOW IGNORING 2009-01-16 17:52 "
       #@form.select_prev_field # in a table this should not happen 2009-01-16 17:47 
@@ -1992,22 +2007,21 @@ module RubyCurses
       #if respond_to? :fire
         #fire
       #end
-    when 330
-      delete_curr_char if @editable
-    when ?\C-a.getbyte(0)
-      cursor_home 
-    when ?\C-e.getbyte(0)
-      cursor_end 
-    when ?\C-k.getbyte(0)
-      delete_eol if @editable
-    when ?\C-_.getbyte(0) # changed on 2010-02-26 14:44 so C-u can be used as numeric arg
-      undo_delete_eol
+    #when 330
+      #delete_curr_char if @editable
+    #when ?\C-a.getbyte(0)
+      #cursor_home 
+    #when ?\C-e.getbyte(0)
+      #cursor_end 
+    #when ?\C-k.getbyte(0)
+      #delete_eol if @editable
+    #when ?\C-_.getbyte(0) # changed on 2010-02-26 14:44 so C-u can be used as numeric arg
+      #undo_delete_eol
     when 32..126
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
-    when 27 # escape
-      #$log.debug " ADDED FIELD ESCAPE on 2009-01-18 12:27 XXX #{@original_value}"
-      set_buffer @original_value 
+    #when 27 # escape
+      #set_buffer @original_value 
     else
       ret = super
       return ret
