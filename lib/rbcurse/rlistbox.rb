@@ -507,7 +507,6 @@ module RubyCurses
       bind_key(10){ fire_action_event }
       bind_key(13){ fire_action_event }
       @keys_mapped = true
-
     end
 
     ##
