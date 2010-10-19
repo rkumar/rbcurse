@@ -91,8 +91,7 @@ module RubyCurses
       bind_key(?\C-y, :yank)
       bind_key(?\M-y, :yank_pop)
       bind_key(?\M-\C-w, :append_next_kill)
-      bind_key(?\M-d, :delete_word)
-      bind_key(?\M-f, :forward_word)
+      map_keys
     end
     def rowcol
     #  $log.debug "textarea rowcol : #{@row+@row_offset+@winrow}, #{@col+@col_offset}"
@@ -255,12 +254,14 @@ module RubyCurses
 
       bind_key(KEY_BACKSPACE){ delete_prev_char if @editable }
       bind_key(KEY_BSPACE){ delete_prev_char if @editable}
+      bind_key(?\M-d, :delete_word)
+      bind_key(?\M-f, :forward_word)
 
       #bind_key(127){ delete_prev_char }
       bind_key(330){ delete_curr_char if @editable }
       #bind_key(?\C-k){ delete_eol }
-      bind_key(?\C-_){ undo_delete_eol }
-      bind_key(27){ set_buffer @original_value }
+      #bind_key(?\C-_){ undo_delete_eol }
+      #bind_key(27){ set_buffer @original_value }
       @keys_mapped = true
     end
 
