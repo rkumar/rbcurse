@@ -149,6 +149,8 @@ module RubyCurses
       end
       @current_index = @_header_adjustment
       @toprow = 0
+      # but what if user has done some resizing, should we respect that ???
+      @second_time = false # so that reestimation of column_widths
       # TODO reset current_index and top_row here to 0 ??
       @repaint_required = true
       @recalc_required = true
