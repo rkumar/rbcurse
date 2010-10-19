@@ -696,7 +696,7 @@ module RubyCurses
       _process_args args, config, block_event, events
       config[:height] ||= 10 # not sure if this should be here
       _position(config)
-      # if no width given, expand to flows width
+      # if no width given, expand to stack width
       config[:width] ||= @stack.last.width if @stack.last
       #config.delete :title
       useform = nil
