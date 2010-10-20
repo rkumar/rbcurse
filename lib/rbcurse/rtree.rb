@@ -107,6 +107,8 @@ module RubyCurses
       @height ||= 10
       @width  ||= 30
       @row_offset = @col_offset = 0 if @suppress_borders
+      @internal_width = 2 # taking into account borders accounting for 2 cols
+      @internal_width = 0 if @suppress_borders # should it be 0 ???
 
     end
     # maps keys to methods
@@ -152,10 +154,13 @@ module RubyCurses
       return 0 if @list.nil?
       @list.length
     end
-    # added 2009-01-07 13:05 so new scrollable can use
+    # 
     def scrollatrow
-      #@height - 2
-      @height - 3 # 2010-01-04 15:30 BUFFERED HEIGHT
+      if @suppress_borders
+        return @height - 1
+      else
+        return @height - 3
+      end
     end
     # this allows a user to use this 2 times !! XXX
     def root node, asks_allow_children=false, &block
@@ -403,13 +408,14 @@ module RubyCurses
       end
     end
     def create_default_cell_renderer
-      return RubyCurses::TreeCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-2-@left_margin}
+      return RubyCurses::TreeCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-@internal_width-@left_margin}
     end
     ##
     # this method chops the data to length before giving it to the
     # renderer, this can cause problems if the renderer does some
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
+    # FIXME: tree may not be clearing till end see appdirtree after divider movement
     def repaint
       safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
@@ -424,7 +430,7 @@ module RubyCurses
 
       $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
       print_borders unless @suppress_borders # do this once only, unless everything changes
-      maxlen = @maxlen ||= @width-2
+      maxlen = @maxlen ||= @width-@internal_width
       tm = _list()
       rc = row_count
       tr = @toprow
@@ -481,11 +487,12 @@ module RubyCurses
               @graphic.printstring r+hh, c, selection_symbol, acolor,@attr
             end
             renderer = cell_renderer()
+            renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
             #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, object, content, leaf,  focus_type, selected, expanded
         else
           # clear rows
-          @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
         end
       end
       @table_changed = false
