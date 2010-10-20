@@ -4,8 +4,10 @@
   * Author: rk (arunachalesha)
   * file created 2010-09-28 23:37 
 FIXME:
-KNOWN BUG : if columns displayed or separator, then numbering is wrong since col gets numbered
+
 TODO 
+   * guess_c : have some config : NEVER, FIRST_TIME, EACH_TIME
+     if user has specified widths then we don't wanna guess. guess_size 20, ALL.
    * move columns
    * hide columns
    * data truncation based on col wid TODO
@@ -66,6 +68,7 @@ module RubyCurses
       @row = 0
       @col = 0
       @cw = {} # column widths keyed on column index - why not array ??
+      @pw = [] # preferred column widths 2010-10-20 12:58 
       @calign = {} # columns aligns values, on column index
       @coffsets = {}
       @suppress_borders = false
@@ -168,7 +171,8 @@ module RubyCurses
     def column_width colindex, width
       return if width < 0
       raise ArgumentError, "wrong width value sent: #{width} " if width.nil? || !width.is_a?(Fixnum) || width < 0
-      @cw[colindex] = width
+      #@cw[colindex] = width
+      @pw[colindex] = width # XXXXX
       get_column(colindex).width = width
       @repaint_required = true
       @recalc_required = true
@@ -387,7 +391,8 @@ module RubyCurses
     def header_handle_key ch   #:nodoc:
       # TODO pressing = should revert to calculated size ?
       col = _convert_curpos_to_column
-      width = @cw[col] 
+      #width = @cw[col] 
+      width = @pw[col] || @cw[col] 
       case ch
       when ?-.getbyte(0)
         column_width col, width-1
@@ -507,7 +512,8 @@ module RubyCurses
       @graphic = my_win unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
-      _guess_col_widths
+      #_guess_col_widths
+      estimate_column_widths
       tm = get_content
       @width ||= @preferred_width
       @height ||= [tm.length+3, 10].min
@@ -655,9 +661,34 @@ module RubyCurses
       #$log.debug " SUM is #{sum} "
       total = 0
       @cw.each_pair { |name, val| total += val }
-      #$log.debug " total is #{total} "
       @preferred_width = total + (@cw.size() *2)
       @preferred_width += 4 if @numbering # FIXME this 4 is rough
+    end
+    def estimate_column_widths
+      @columns.each_with_index { |c, i|  
+        if @pw[i]
+          @cw[i] = @pw[i]
+        else
+          @cw[i] = calculate_column_width(i)
+        end
+      }
+      total = 0
+      @cw.each_pair { |name, val| total += val }
+      @preferred_width = total + (@cw.size() *2)
+      @preferred_width += 4 if @numbering # FIXME this 4 is rough
+    end
+    # if user has not specified preferred_width for a column
+    # then we can calculate the same based on data
+    def calculate_column_width col
+      ret = @cw[col] || 2
+      @list.each_with_index { |r, i| 
+        break if i > 10
+        next if r == :separator
+        c = r[col]
+        x = c.to_s.length
+        ret = x if x > ret
+      }
+      ret
     end
     def _prepare_format  #:nodoc:
       @fmtstr = nil
