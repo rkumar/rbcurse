@@ -180,6 +180,7 @@ module RubyCurses
       print_title
     end
     def print_title #:nodoc:
+      return unless @title
       raise "textview needs width" unless @width
       @color_pair ||= get_color($datacolor) # should we not use this ??? XXX
       #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
