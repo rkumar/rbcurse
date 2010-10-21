@@ -430,7 +430,7 @@ module RubyCurses
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id #, :zorder
     attr_accessor :curpos              # cursor position inside object - column, not row.
-    attr_reader  :config             # COULD GET AXED SOON NOTE
+    attr_reader  :config             # can be used for popping user objects too
     attr_accessor  :form              # made accessor 2008-11-27 22:32 so menu can set
     attr_accessor :state              # normal, selected, highlighted
     attr_reader  :row_offset, :col_offset # where should the cursor be placed to start with
@@ -644,6 +644,7 @@ module RubyCurses
     def remove
       @form.remove_widget(self)
     end
+    # is this required can we remove
     def move row, col
       @row = row
       @col = col
