@@ -15,7 +15,8 @@ module RubyCurses
     def initialize form, config={}, &block
       super
       #@_events.push(*[:EVENT, :EVENT2])
-      @current_path ||= Dir.getwd
+      #@current_path ||= Dir.getwd # setting it causes selection not to fire if same one
+      # is selected first
       @_header_array = [ "Attr", "Size", "Modified" , "Name" , "<Order_by_Extension>" ]
       @_header = " %s %8s  %19s %s   %s " % @_header_array
       @curpos = 0
@@ -92,7 +93,7 @@ module RubyCurses
       end
     end
 
-    def create_default_cell_renderer
+    def ___create_default_cell_renderer
       cell_renderer( RubyCurses::DirectoryListCellRenderer.new "", {:color=>@color, :bgcolor=>@bgcolor, :parent => self, :display_length=> @width-2-@left_margin})
     end
     def _get_word_under_cursor line=@_header, pos=@curpos
@@ -350,20 +351,6 @@ module RubyCurses
       else
         $log.debug " CELL XXX GTETING  #{row_index} ,#{value}"
 
-        #fullname = File.join(parent.current_path, value)
-        #fname = value
-        #stat = File::Stat.new fullname
-        #time = stat.mtime.to_s[0..18]
-        ## TODO K M etc
-        #attr = stat.directory? ? "d" : "-"
-        #attr << (stat.writable? ? "w" : "-")
-        #attr << (stat.readable? ? "r" : "-")
-        #attr << (stat.executable? ? "x" : "-")
-        #fname << "/" if stat.directory?
-        #value = " %s %8d  %s %s" % [attr, stat.size, time, fname]
-        #if value.length > @parent.longest_line
-          #@parent.longest_line = value.length
-        #end
 
         # ensure we do not exceed
         if !@display_length.nil?
