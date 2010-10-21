@@ -60,6 +60,7 @@ App.new do
       message " #{e.text} has #{@lines.size} messages"
       $unread_hash[File.basename(e.text)] = mx.unread_count
       @lb2.set_content @lines
+      @lb2.estimate_column_widths=true
       @messages = mx.mails()
     end
     @lb2.bind :PRESS do |e|
