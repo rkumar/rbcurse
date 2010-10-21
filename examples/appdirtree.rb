@@ -2,10 +2,12 @@ require 'rbcurse/app'
 require 'fileutils'
 require 'rbcurse/tree/treemodel'
 require 'rbcurse/extras/directorylist'
+require 'rbcurse/extras/directorytree'
 
 # TODO - tree expand - also populate list
 # TODO - startup     = populate list
 App.new do 
+  this = self
   # this is for tree to get only directories
   def _directories wd
     $log.debug " directories got XXX: #{wd} "
@@ -17,7 +19,7 @@ App.new do
   end
   ht = 24
   borderattrib = :reverse
-    dl = RubyCurses::DirectoryList.new nil, :width=>40, :height => ht, :border_attrib => borderattrib, :selection_mode => :multiple
+    dl = RubyCurses::DirectoryList.new nil, :width=>40, :height => ht, :border_attrib => borderattrib, :selection_mode => :multiple, :suppress_borders => true
     dl.title_attrib = "reverse"
     #@l.bind :LIST_SELECTION_EVENT  do |ev|
     dl.bind :PRESS  do |ev|
@@ -25,9 +27,6 @@ App.new do
       #TODO when selecting, sync tree with this
     end
   pwd = Dir.getwd
-  #d = Dir.new(pwd)
-  #entries = d.entries.reject{|e| !File.directory? e}
-  #entries.delete(".");entries.delete("..")
   entries = _directories pwd
   patharray = pwd.split("/")
   # we have an array of path, to add recursively, one below the other`
@@ -44,44 +43,29 @@ App.new do
   message "Press Enter to expand/collapse"
 
 
-     
-
 
   stack :margin_top => 1, :margin => 0, :width => :EXPAND do
-    vimsplit :height => Ncurses.LINES-2, :weight => 0.4, :orientation => :VERTICAL do |s|
-    @t = tree :data => model, :height => ht, :border_attrib => borderattrib
-    @t.one_key_selection = false
-    @t.bind :TREE_WILL_EXPAND_EVENT do |node|
-      path = File.join(*node.user_object_path)
-      dirs = _directories path
-      ch = node.children
-      ch.each do |e| 
-        o = e.user_object
-        if dirs.include? o
-          dirs.delete o
-        else
-          # delete this child since its no longer present TODO
-        end
-      end
-      message " #{node} will expand: #{path}, #{dirs} "
-      node.add dirs
+    vimsplit :height => Ncurses.LINES-2, :weight => 0.4, :orientation => :VERTICAL, :suppress_borders => true do |s|
+      # TODO make this into a separate class in extras DirectoryTree
+    #@t = tree :data => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
+    @t = RubyCurses::DirectoryTree.new nil, :data => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true, :default_values => last
+    # store for later use
+    @t.config[:dl] = dl
+    @t.config[:app] = this
+    def @t.selected_path_changed path
+      dl = @config[:dl]
+      dl.current_path path
     end
-    
-    @t.bind :TREE_SELECTION_EVENT do |ev|
-      if ev.state == :SELECTED
-        node = ev.node
-        path = File.join(*node.user_object_path)
-        #TODO show all details in filelist
-        dl.current_path path
-        $log.debug " XXX selected afterseeting lb: #{dl} "
-        message " #{ev.state}:  #{ev.node.user_object}   " 
-      end
-    end # select
+    def @t.path_expanded path
+      o = @config[:app]
+      o.message " #{path} will be expanded "
+    end
     @t.expand_node last # 
-    @t.mark_parents_expanded last # make parents visible
+    #@t.mark_parents_expanded last # make parents visible
+    @t.expand_parents last # make parents visible and expand
     s.add @t, :FIRST
     #@l = list_box :height => ht, :border_attrib => borderattrib, :selection_mode => :multiple
     s.add dl, :SECOND
-    end
+    end # vimsplit
   end # flow
 end # app
