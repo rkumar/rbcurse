@@ -41,20 +41,17 @@ module RubyCurses
     attr_reader :toprow
   #  attr_reader :prow
   #  attr_reader :winrow
-    dsl_accessor :default_values  # array of default values
+    dsl_accessor :default_value  # node to show as selected - what if user doesn't have it?
     attr_accessor :current_index
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     dsl_accessor :max_visible_items   # how many to display 2009-01-11 16:15 
-    dsl_accessor :cell_editing_allowed
+    dsl_accessor :cell_editing_allowed # obsolete
     dsl_accessor :suppress_borders
     dsl_property :show_selector
     dsl_property :row_selected_symbol # 2009-01-12 12:01 changed from selector to selected
     dsl_property :row_unselected_symbol # added 2009-01-12 12:00 
     dsl_property :left_margin
-    # please set these in he constructor block. Settin them later will have no effect
-    # since i would have bound them to actions
-    # FIXME this is crap, remove it.
-    dsl_accessor :valign  # 2009-01-17 18:32  XXX ???
+    #dsl_accessor :valign  # popup related
     #
     # will pressing a single key move to first matching row. setting it to false lets us use vim keys
     attr_accessor :one_key_selection # will pressing a single key move to first matching row
@@ -76,16 +73,15 @@ module RubyCurses
       @expanded_state = {}
       @suppress_borders = false
       @row_offset = @col_offset = 1
+      @current_index = 0
       super
-      @current_index ||= 0
       #@selection_mode ||= :single # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
-      # moving down to repaint so that scrollpane can set should_buffered
-      # added 2010-02-17 23:05  RFED16 so we don't need a form.
+      
+     
       @win_left = 0
       @win_top = 0
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
-      select_default_values #TODO
 
       init_vars
 
@@ -154,7 +150,7 @@ module RubyCurses
       return 0 if @list.nil?
       @list.length
     end
-    # 
+    #  at what row should scrolling begin
     def scrollatrow
       if @suppress_borders
         return @height - 1
@@ -241,13 +237,20 @@ module RubyCurses
     end
     alias :text :current_row  # thanks to shoes, not sure how this will impact since widget has text.
 
+    # show default value as selected and fire handler for it
+    # This is called in repaint, so can raise an error if called on creation
+    # or before repaint. Just set @default_value, and let us handle the rest.
+    # Suggestions are welcome.
     def select_default_values
-      return if @default_values.nil?
-      @default_values.each do |val|
-        row = @list.index val
-        #do_select(row) unless row.nil?
-        add_row_selection_interval row, row unless row.nil?
-      end
+      return if @default_value.nil?
+      # NOTE list not yet created
+      raise "list has not yet been created" unless @list
+      index = node_to_row @default_value
+      raise "could not find node #{@default_value}, #{@list}  " unless index
+      return unless index
+      @current_index = index
+      toggle_row_selection
+      @default_value = nil
     end
     def print_borders
       width = @width
@@ -432,6 +435,7 @@ module RubyCurses
       print_borders unless @suppress_borders # do this once only, unless everything changes
       maxlen = @maxlen ||= @width-@internal_width
       tm = _list()
+      select_default_values
       rc = row_count
       tr = @toprow
       acolor = get_color $datacolor
@@ -568,6 +572,17 @@ module RubyCurses
     def row_to_node row=@current_index
       @list[row]
     end
+    # convert a given node to row
+    def node_to_row node
+      crow = nil
+      @list.each_with_index { |e,i| 
+        if e == node
+          crow = i
+          break
+        end
+      }
+      crow
+    end
     # private
     # related to index in representation, not tree
     def row_selected? row
@@ -588,7 +603,7 @@ module RubyCurses
       _structure_changed true
     end
     def expand_node(node)
-      $log.debug " expand called on #{node.user_object} "
+      #$log.debug " expand called on #{node.user_object} "
       state = true
       fire_handler :TREE_WILL_EXPAND_EVENT, node
       set_expanded_state(node, state)
@@ -610,6 +625,17 @@ module RubyCurses
       _path.each do |e| 
         # if already expanded parent then break we should break
         set_expanded_state(e, true) 
+      end
+    end
+    # goes up to root of this node, and expands down to this node
+    # this is often required to make a specific node visible such 
+    # as in a dir listing when current dir is deep in heirarchy.
+    def expand_parents node
+      _path = node.tree_path
+      _path.each do |e| 
+        # if already expanded parent then break we should break
+        #set_expanded_state(e, true) 
+        expand_node(e)
       end
     end
     # this expands all the children of a node, recursively
