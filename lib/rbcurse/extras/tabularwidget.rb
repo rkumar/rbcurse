@@ -56,6 +56,9 @@ module RubyCurses
 
     # boolean, whether lines should be cleaned (if containing tabs/newlines etc)
     dsl_accessor :sanitization_required
+    # boolean, whether column widths should be estimated based on data. If you want this,
+    # set to true each time you do a set_content
+    dsl_accessor :estimate_column_widths
     # boolean, whether lines should be numbered
     attr_accessor :numbering
     # default or custom sorter
@@ -65,6 +68,7 @@ module RubyCurses
       @focusable = true
       @editable = false
       @sanitization_required = true
+      @estimate_column_widths = true
       @row = 0
       @col = 0
       @cw = {} # column widths keyed on column index - why not array ??
@@ -152,9 +156,7 @@ module RubyCurses
       end
       @current_index = @_header_adjustment
       @toprow = 0
-      # but what if user has done some resizing, should we respect that ???
       @second_time = false # so that reestimation of column_widths
-      # TODO reset current_index and top_row here to 0 ??
       @repaint_required = true
       @recalc_required = true
     end
@@ -513,7 +515,7 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
       #_guess_col_widths
-      estimate_column_widths
+      _estimate_column_widths
       tm = get_content
       @width ||= @preferred_width
       @height ||= [tm.length+3, 10].min
@@ -638,10 +640,8 @@ module RubyCurses
       fmstr = fmta.join(@y)
       return fmstr % r;  
     end
-    # NOTE = this should only work if user has not specified
-    # widths for cols ? What if has ?
-    # FIXME: what about column level truncation, if user specifies
-    # colw and data in that col exceeds.
+    # perhaps we can delete this since it does not respect @pw
+    # @deprecated  (see _estimate_column_widths)
     def _guess_col_widths  #:nodoc:
       return if @second_time
       @second_time = true if @list.size > 0
@@ -664,7 +664,9 @@ module RubyCurses
       @preferred_width = total + (@cw.size() *2)
       @preferred_width += 4 if @numbering # FIXME this 4 is rough
     end
-    def estimate_column_widths
+    def _estimate_column_widths  #:nodoc:
+      return unless @estimate_column_widths
+      @estimate_column_widths = false
       @columns.each_with_index { |c, i|  
         if @pw[i]
           @cw[i] = @pw[i]
