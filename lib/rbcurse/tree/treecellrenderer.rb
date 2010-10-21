@@ -5,8 +5,8 @@ module RubyCurses
 
   ## 
   # This is a basic list cell renderer that will render the to_s value of anything.
-  # Using alignment one can use for numbers too.
-  # However, for booleans it will print true and false. If editing, you may want checkboxes
+  # 
+  # TODO upgrade as per new listcellrenderer
   class TreeCellRenderer
     PLUS_PLUS = "++"
     PLUS_MINUS = "+-"
