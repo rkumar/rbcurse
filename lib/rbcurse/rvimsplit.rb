@@ -210,6 +210,7 @@ module RubyCurses
               case ev.type
               when KEY_UP
                 # CHECK BOUNDS TODO 
+                # TODO what about KEY_LEFT and RIGHT ?
                 if source.next && source.next.row > 1 && source.parent.height > 1
                   source.parent.height -= 1
                   source.next.height +=1
@@ -281,91 +282,92 @@ module RubyCurses
       raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
-      #$log.debug " how many has form got: #{@form.widgets.size} "
-      #@form.widgets.each { |e| $log.debug e.class }
 
       #return unless @repaint_required
+      @recalculate_splits = true if @rc.nil?
 
       # if some major change has happened then repaint everything
-      if @repaint_required == true
-      $log.debug " VIM repaint graphic #{@graphic} "
-      print_borders unless @suppress_borders # do this once only, unless everything changes
-      r,c = rowcol
+      if @repaint_required
+        $log.debug " VIM repaint graphic #{@graphic} "
+        print_borders unless @suppress_borders # do this once only, unless everything changes
+        r,c = rowcol
 
-      bordercolor = @border_color || $datacolor
-      borderatt = @border_attrib || Ncurses::A_NORMAL
+        bordercolor = @border_color || $datacolor
+        borderatt = @border_attrib || Ncurses::A_NORMAL
 
 
-      @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-      @gbwid ||= 0
-      if v?
-        @rc ||= (@width * @weight).to_i
-        rc = @rc
-        $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
-        # TODO if user allows, use grabbars
-        # $log.debug " CREATING GRABBAR "
-        roffset = 1
-        loffset = 2
-        if @suppress_borders
-          loffset = roffset = 0
-        end
-        unless @vb
-          @gbwid = 1
-          @vb ||= Divider.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
-          @vb.focusable(false)
-          RubyCurses::FocusManager.add @vb
-          @vb.parent_component = self
-          @components << @vb
-          @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
-          @vb.bind :DRAG_EVENT do |ev|
-            case ev.type
-            when KEY_RIGHT
-              if @rc < @width - 3
-                @recalculate_splits = true
-                @rc += 1
-                @repaint_required = true # WHY ! Did prop handler not fire ?
-              end
-            when KEY_LEFT
-              if @rc > 3
-                @recalculate_splits = true
-                @repaint_required = true
-                @rc -= 1 
+        @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+        @gbwid ||= 0
+        if v?
+          @rc ||= (@width * @weight).to_i
+          rc = @rc
+          $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
+          # TODO if user allows, use grabbars
+          # $log.debug " CREATING GRABBAR "
+          roffset = 1
+          loffset = 2
+          if @suppress_borders
+            loffset = roffset = 0
+          end
+          unless @vb
+            @gbwid = 1
+            @vb ||= Divider.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
+            @vb.focusable(false)
+            RubyCurses::FocusManager.add @vb
+            @vb.parent_component = self
+            @components << @vb
+            @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
+            @vb.bind :DRAG_EVENT do |ev|
+              case ev.type
+              when KEY_RIGHT
+                if @rc < @width - 3
+                  @recalculate_splits = true
+                  @rc += 1
+                  @repaint_required = true # WHY ! Did prop handler not fire ?
+                end
+              when KEY_LEFT
+                if @rc > 3
+                  @recalculate_splits = true
+                  @repaint_required = true
+                  @rc -= 1 
+                end
               end
             end
+          else
+            @vb.row @row+roffset
+            @vb.col rc+@col
+            @vb.repaint
           end
+          #@graphic.mvvline(@row+1, rc+@col, 0, @height-2)
+          # TODO don;t keep recreating, if present, reset values
+          @c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
+          @c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
         else
-          @vb.row @row+roffset
-          @vb.col rc+@col
-          @vb.repaint
+          # TODO add gbwid
+          @rc ||= (@height * @weight).to_i
+          rc = @rc
+          $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
+          # TODO create divider here
+          #@graphic.mvhline(rc+@row, @col+1, 0, @width-@internal_width)
+          #@neat = true
+          if @neat
+            a = 1
+            @c1rc = Coord.new(@row+a,@col+a, rc-a, @width-@internal_width)
+            @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc-2, @width - @internal_width)
+          else
+            # flush
+            a = 0
+            @c1rc = Coord.new(@row+a,@col+a, rc, @width-0)
+            @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc, @width - 0)
+          end
         end
-        #@graphic.mvvline(@row+1, rc+@col, 0, @height-2)
-        # TODO don;t keep recreating, if present, reset values
-        @c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
-        @c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
-      else
-        # TODO add gbwid
-        @rc ||= (@height * @weight).to_i
-        rc = @rc
-        $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
-        @graphic.mvhline(rc+@row, @col+1, 0, @width-@internal_width)
-        #@neat = true
-        if @neat
-          a = 1
-          @c1rc = Coord.new(@row+a,@col+a, rc-a, @width-@internal_width)
-          @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc-2, @width - @internal_width)
-        else
-          # flush
-          a = 0
-          @c1rc = Coord.new(@row+a,@col+a, rc, @width-0)
-          @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc, @width - 0)
-        end
-      end
-      @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-      @components.each { |e| e.repaint_all(true) }
-      $log.debug " XXX VIM REPAINT ALL "
-      # FIXME do this only once, or when major change happends, otherwise
-      # i cannot increase decrease size on user request.
-      recalculate_splits @_use_preferred_sizes if @recalculate_splits
+        @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
+        @components.each { |e| e.repaint_all(true) }
+        $log.debug " XXX VIM REPAINT ALL "
+        # FIXME do this only once, or when major change happends, otherwise
+        # i cannot increase decrease size on user request.
+        recalculate_splits @_use_preferred_sizes if @recalculate_splits
+        #@components.each { |e| e.repaint }
       else
         # only repaint those that are needing repaint
         # 2010-09-22 18:09 its possible somenoe has updated an internal
