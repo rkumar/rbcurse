@@ -30,6 +30,7 @@ module RubyCurses
       $log.debug " def add_row_selection_interval #{ix0}, ix1"
       # if row_selection_allowed
       @list_selection_model.add_selection_interval ix0, ix1
+      @repaint_required = true
     end
     def remove_row_selection_interval ix0, ix1
       @list_selection_model.remove_selection_interval ix0, ix1
@@ -47,6 +48,7 @@ module RubyCurses
 
     def clear_selection
       @list_selection_model.clear_selection
+      @repaint_required = true
     end
     # why is this commented off XXX could it override listscrollable
     def selected_item
