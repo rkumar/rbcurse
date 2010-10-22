@@ -91,6 +91,10 @@ module RubyCurses
     # repaint the scrollbar
     # Taking the data from parent as late as possible in case parent resized, or 
     # moved around by a container.
+    # NOTE: sometimes if this is inside another object, the divider repaints but then
+    # is wiped out when that objects print_border is called. So such an obkect (e.g.
+    # vimsplit) should call repaint after its has done its own repaint. that does mean
+    # the repaint happens twice during movement
     def repaint
       woffset = 2
       coffset = 1
@@ -100,7 +104,7 @@ module RubyCurses
         case @side
         when :right
           @row = @parent.row+1
-          @col = @parent.col + @parent.width - 1
+          @col = @parent.col + @parent.width - 0
           @length = @parent.height - woffset
         when :left
           @row = @parent.row+1
@@ -135,7 +139,7 @@ module RubyCurses
       borderatt = convert_attrib_to_sym(borderatt) if borderatt.is_a? Symbol
 
       @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-      $log.debug " XXX SCROLL #{@row} #{@col} #{@length} "
+      $log.debug " XXX DIVIDER #{@row} #{@col} #{@length} "
       case @side
       when :right, :left
         @graphic.mvvline(@row, @col, 1, @length)
@@ -144,6 +148,7 @@ module RubyCurses
       end
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
       _paint_marker
+      #alert "divider repaint at #{row} #{col} "
 
       @repaint_required = false
     end
@@ -218,6 +223,7 @@ module RubyCurses
       @focussed = false
       @repaint_required = true
       repaint
+      # TODO: we should review this since its not over the parent any longer
       if @parent
         # since it is over border of component, we need to clear
         @parent.repaint_required 
@@ -236,7 +242,6 @@ module RubyCurses
       # need to set it to first point, otherwise it could be off the widget
       r,c = rowcol
       setrowcol r, c
-      #noop
     end
     # is this a vertical divider
     def v?
@@ -286,7 +291,9 @@ if __FILE__ == $PROGRAM_NAME
       end
       lb.repaint_required
     end
-    rb1 = Divider.new @form, :parent => lb, :side => :left
+    rb1 = Divider.new @form, :parent => lb, :side => :bottom
+    rb.focusable(true)
+    rb1.focusable(true)
     rb1.bind :DRAG_EVENT do |e|
       message " 2 got an event #{e.type} "
     end
