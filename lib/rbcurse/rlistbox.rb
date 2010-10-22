@@ -424,12 +424,12 @@ module RubyCurses
     dsl_property :left_margin
     # please set these in he constructor block. Settin them later will have no effect
     # since i would have bound them to actions
-    dsl_accessor :KEY_ROW_SELECTOR
-    dsl_accessor :KEY_GOTO_TOP
-    dsl_accessor :KEY_GOTO_BOTTOM
-    dsl_accessor :KEY_CLEAR_SELECTION
-    dsl_accessor :KEY_NEXT_SELECTION
-    dsl_accessor :KEY_PREV_SELECTION
+    dsl_accessor :KEY_ROW_SELECTOR          # this is going to go XXX TODO
+    dsl_accessor :KEY_GOTO_TOP          # this is going to go
+    dsl_accessor :KEY_GOTO_BOTTOM          # this is going to go
+    dsl_accessor :KEY_CLEAR_SELECTION          # this is going to go
+    dsl_accessor :KEY_NEXT_SELECTION          # this is going to go
+    dsl_accessor :KEY_PREV_SELECTION          # this is going to go
     dsl_accessor :valign  # 2009-01-17 18:32  vertical alignment used in combos
     dsl_accessor :justify  #  2010-09-27 12:41 used by renderer
     attr_accessor :one_key_selection # will pressing a single key select or not
@@ -648,7 +648,6 @@ module RubyCurses
       return if @default_values.nil?
       @default_values.each do |val|
         row = @list.index val
-        #do_select(row) unless row.nil?
         add_row_selection_interval row, row unless row.nil?
       end
     end
