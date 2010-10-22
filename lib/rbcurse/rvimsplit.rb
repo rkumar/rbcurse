@@ -298,56 +298,40 @@ module RubyCurses
 
         @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
         @gbwid ||= 0
+        roffset = 1
+        loffset = 2
+        if @suppress_borders
+          loffset = roffset = 0
+        end
         if v?
           @rc ||= (@width * @weight).to_i
           rc = @rc
           $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
-          # TODO if user allows, use grabbars
-          # $log.debug " CREATING GRABBAR "
-          roffset = 1
-          loffset = 2
-          if @suppress_borders
-            loffset = roffset = 0
-          end
           unless @vb
             @gbwid = 1
-            @vb ||= Divider.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
-            @vb.focusable(false)
-            RubyCurses::FocusManager.add @vb
-            @vb.parent_component = self
-            @components << @vb
-            @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
-            @vb.bind :DRAG_EVENT do |ev|
-              case ev.type
-              when KEY_RIGHT
-                if @rc < @width - 3
-                  @recalculate_splits = true
-                  @rc += 1
-                  @repaint_required = true # WHY ! Did prop handler not fire ?
-                end
-              when KEY_LEFT
-                if @rc > 3
-                  @recalculate_splits = true
-                  @repaint_required = true
-                  @rc -= 1 
-                end
-              end
-            end
+            _create_divider
           else
             @vb.row @row+roffset
             @vb.col rc+@col
-            @vb.repaint
+            #@vb.repaint
           end
           #@graphic.mvvline(@row+1, rc+@col, 0, @height-2)
           # TODO don;t keep recreating, if present, reset values
           @c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
           @c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
         else
-          # TODO add gbwid
           @rc ||= (@height * @weight).to_i
           rc = @rc
           $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
-          # TODO create divider here
+          unless @vb
+            @gbwid = 1
+            _create_divider
+          else
+            #@vb = Divider.new nil, :row => @row+rc-1, :col => @col+1, :length => @width-loffset, :side => :bottom
+            @vb.row @row+@rc-1
+            @vb.col @col+roffset
+            #@vb.repaint # getting wiped out by vimsplit ?
+          end
           #@graphic.mvhline(rc+@row, @col+1, 0, @width-@internal_width)
           #@neat = true
           if @neat
@@ -356,9 +340,11 @@ module RubyCurses
             @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc-2, @width - @internal_width)
           else
             # flush
+          #@c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
+          #@c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
             a = 0
-            @c1rc = Coord.new(@row+a,@col+a, rc, @width-0)
-            @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc, @width - 0)
+            @c1rc = Coord.new(@row,@col, rc-@gbwid, @width)
+            @c2rc = Coord.new(@row+rc, @col, @height-rc-@gbwid, @width)
           end
         end
         @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
@@ -367,7 +353,9 @@ module RubyCurses
         # FIXME do this only once, or when major change happends, otherwise
         # i cannot increase decrease size on user request.
         recalculate_splits @_use_preferred_sizes if @recalculate_splits
-        #@components.each { |e| e.repaint }
+        # vimsplit often overwrites this while divider is being moved so we must
+        # again call it.
+        @vb.repaint if @vb
       else
         # only repaint those that are needing repaint
         # 2010-09-22 18:09 its possible somenoe has updated an internal
@@ -709,6 +697,61 @@ module RubyCurses
     def unexpand
       e = ResizeEvent.new @current_component, :UNEXPAND
       fire_handler :COMPONENT_RESIZE_EVENT, e
+    end
+
+    private
+    def _create_divider
+      return if @vb
+      roffset = 1
+      loffset = 2
+      if @suppress_borders
+        loffset = roffset = 0
+      end
+      rc = @rc
+      if v?
+        @vb = Divider.new nil, :row => @row+roffset, :col => rc+@col-1, :length => @height-loffset, :side => :right
+      else
+        @vb = Divider.new nil, :row => @row+rc-1, :col => @col+1, :length => @width-loffset, :side => :bottom
+      end
+      @vb.focusable(false)
+      RubyCurses::FocusManager.add @vb
+      @vb.parent_component = self
+      @components << @vb
+      @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
+      @vb.bind :DRAG_EVENT do |ev|
+        if v?
+          case ev.type
+          when KEY_RIGHT
+            if @rc < @width - 3
+              @recalculate_splits = true
+              @rc += 1
+              @repaint_required = true # WHY ! Did prop handler not fire ?
+            end
+          when KEY_LEFT
+            if @rc > 3
+              @recalculate_splits = true
+              @repaint_required = true
+              @rc -= 1 
+            end
+          end
+        else
+          # horizontal
+          case ev.type
+          when KEY_DOWN
+            if @rc < @height - 3
+              @recalculate_splits = true
+              @rc += 1
+              @repaint_required = true # WHY ! Did prop handler not fire ?
+            end
+          when KEY_UP
+            if @rc > 3
+              @recalculate_splits = true
+              @repaint_required = true
+              @rc -= 1 
+            end
+          end
+        end # v?
+      end
     end
 
     # ADD HERE ABOVe
