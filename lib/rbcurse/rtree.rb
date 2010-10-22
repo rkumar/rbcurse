@@ -7,8 +7,8 @@
   * This file started on 2010-09-18 12:03 (copied from rlistbox)
 TODO:
    [x] load on tree will expand
-   [ ] selected row on startup
-   [/] open up a node and make current on startup
+   [x] selected row on startup
+   [x] open up a node and make current on startup
    [ ] find string
    [/] expand all descendants
    ++ +- and +?
@@ -16,9 +16,7 @@ TODO:
 require 'rbcurse'
 require 'rbcurse/tree/treemodel'
 require 'rbcurse/tree/treecellrenderer'
-#require 'forwardable'
 
-TreeArrayNode = Struct.new(:node, :level) # knock off TODO
 TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
 
 include Ncurses
@@ -213,11 +211,8 @@ module RubyCurses
     end
     def convert_to_list tree
       @list = get_expanded_descendants(tree.root)
-      $log.debug "XXX convert #{tree.root.children.size} "
-      #traverse tree.root, 0 do |n, level|
-        #@list << TreeArrayNode.new(n,level)
-      #end
-      $log.debug " converted tree to list. #{@list.size} "
+      #$log.debug "XXX convert #{tree.root.children.size} "
+      #$log.debug " converted tree to list. #{@list.size} "
     end
     def traverse node, level=0, &block
       raise "disuse"
@@ -265,11 +260,13 @@ module RubyCurses
       print_title
     end
     def print_title
-      # I notice that the old version would print a title that was longer than width,
-      #+ but the new version won't print anything if it exceeds width.
-      # TODO check title.length and truncate if exceeds width
+      return unless @title
+      _title = @title
+      if @title.length > @width - 2
+        _title = @title[0..@width-2]
+      end
       @color_pair = get_color($datacolor)
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
     def get_content
@@ -451,14 +448,7 @@ module RubyCurses
             focus_type = :SOFT_FOCUS if _focussed && !@focussed
             selected = row_selected? crow 
             content = tm[crow]   # 2009-01-17 18:37 chomp giving error in some cases says frozen
-            if content.is_a? TreeArrayNode
-              raise "deprecate !"
-              node = content.node
-              object = content
-              leaf = node.is_leaf?
-              content = node.user_object.to_s # may need to trim or truncate
-              expanded = row_expanded? crow 
-            elsif content.is_a? TreeNode
+            if content.is_a? TreeNode
               node = content
               object = content
               leaf = node.is_leaf?
@@ -513,18 +503,9 @@ module RubyCurses
       @repaint_required = true
     end
     def set_form_col col1=0
-      # TODO BUFFERED use setrowcol @form.row, col
-      # TODO BUFFERED use cols_panned
       @cols_panned ||= 0 # RFED16 2010-02-17 23:40 
-      # editable listboxes will involve changing cursor and the form issue
-      ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
-      #win_col=@form.window.left
-      win_col = 0 # 2010-02-17 23:19 RFED16
-      #col = win_col + @orig_col + @col_offset + @curpos + @form.cols_panned
+      win_col = 0 
       col2 = win_col + @col + @col_offset + col1 + @cols_panned + @left_margin
-      $log.debug " set_form_col in rlistbox #{@col}+ left_margin #{@left_margin} ( #{col2} ) "
-      #super col+@left_margin
-      #@form.setrowcol @form.row, col2   # added 2009-12-29 18:50 BUFFERED
       setrowcol nil, col2 # 2010-02-17 23:19 RFED16
     end
     def selected_row
