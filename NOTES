@@ -1893,3 +1893,32 @@ where stacks and flows are, anyway.
 Can we liberate S and F from App and make them independent ?
 
 * * * * * * * *
+
+Subject: color_pair added to widget
+-----------------------------------
+Date: 2010-10-18 23:04
+
+Now we may directly pass a color_pair to a widget when creating. This
+way we can create one color_pair and pass it to multiple widgets, rather
+than passing actual colors to each. Also, this is a tad more efficient
+since the color won't be calculated each time a repaint is done.
+
+* * * * * * * *
+
+Subject: Usage of preferred_size
+--------------------------------
+Date: 2010-10-20 13:02
+
+when the user may resize a component, or columns in a components, or
+user may specify widths or heights, we should use a `preferred_width`
+field. 
+When we calculate width, use `preferred_width` if present, else calculate
+it. Program never updates `preferred_width`.
+
+However, the question is what when a user resizes a component or
+sub-component. We want to respect that and not overwrite. So currently,
+i suggest that we update preferred_width on resizing, dragging etc. This
+does mean that the original specified width is lost, so a
+`reset_to_preferred_sizes` is not possible.
+
+* * * * * * * *
