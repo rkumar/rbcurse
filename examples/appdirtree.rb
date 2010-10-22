@@ -48,7 +48,7 @@ App.new do
     vimsplit :height => Ncurses.LINES-2, :weight => 0.4, :orientation => :VERTICAL, :suppress_borders => true do |s|
       # TODO make this into a separate class in extras DirectoryTree
     #@t = tree :data => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
-    @t = RubyCurses::DirectoryTree.new nil, :data => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true, :default_values => last
+    @t = RubyCurses::DirectoryTree.new nil, :data => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true, :default_value => last
     # store for later use
     @t.config[:dl] = dl
     @t.config[:app] = this
@@ -57,6 +57,8 @@ App.new do
       dl.current_path path
     end
     def @t.path_expanded path
+      dl = @config[:dl]
+      dl.current_path path
       o = @config[:app]
       o.message " #{path} will be expanded "
     end
