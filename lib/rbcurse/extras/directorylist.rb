@@ -8,6 +8,8 @@ require 'rbcurse/undomanager'
 # (c) rkumar (arunachalesha)
 #
 module RubyCurses
+  # Display a directory listing, allowing user to drill down on pressing Enter
+  # on a directory, or sort when pressing enter on header row.
   class DirectoryList < Listbox
     #dsl_accessor :xxx
     include ViEditable
@@ -35,6 +37,11 @@ module RubyCurses
       bind_key(?$, :end_of_line)
       bind_key(?\C-e, :end_of_line)
       bind_key(?\C-a, :start_of_line)
+      bind_key(?a, :select_all)
+      bind_key(?*, :invert_selection)
+      bind_key(?u, :clear_selection)
+      bind_key(?+, :ask_select)
+      bind_key(?-, :ask_unselect)
       super
     end
     # changing the current path, refreshes files
@@ -294,9 +301,12 @@ module RubyCurses
     def longest_line
       @longest_line 
     end
+    # modify a file name. 
+    # call using 'C'
   def edit_line lineno=@current_index
     line = @list[lineno]
-    prompt = "Edit NAme: "
+    fullname = File.join(@current_path, line)
+    prompt = "Rename file [#{line}] to: "
     maxlen = 80
     config={}; 
     oldline = line.dup
@@ -305,9 +315,58 @@ module RubyCurses
     $log.debug " rbgetstr returned #{ret} , #{str} "
     return if ret != 0
     @list[lineno].replace(str)
-    fire_handler :CHANGE, InputDataEvent.new(0,oldline.length, self, :DELETE_LINE, lineno, oldline)     #  2008-12-24 18:34 
+    FileUtils.mv fullname, File.join(@current_path, str)
+    fire_handler :CHANGE, InputDataEvent.new(0,oldline.length, self, :DELETE_LINE, lineno, oldline)
     fire_handler :CHANGE, InputDataEvent.new(0,str.length, self, :INSERT_LINE, lineno, str)
     @repaint_required = true
+  end
+  def ask_select
+    prompt = "Select Files: "
+    maxlen = 80
+    config={}
+    config[:default] = @file_pattern if @file_pattern
+    ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+    return if ret != 0
+    @file_pattern = str
+    values = Dir.glob(str)
+    select_values values unless values.empty?
+    @repaint_required = true
+  end
+  def ask_unselect
+    prompt = "Unselect Files: "
+    maxlen = 80
+    config={}
+    config[:default] = @file_pattern if @file_pattern
+    ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+    return if ret != 0
+    @file_pattern = str
+    values = Dir.glob(str)
+    unselect_values values unless values.empty?
+    @repaint_required = true
+  end
+  def select_all
+    # don't select header row
+    add_row_selection_interval 1, row_count()
+  end
+  def invert_selection
+    1.upto(row_count()){|i| toggle_row_selection i }
+  end
+  # selects all rows with the values given, leaving existing selections
+  # intact
+  def select_values values
+    return unless values
+    values.each do |val|
+      row = @list.index val
+      add_row_selection_interval row, row unless row.nil?
+    end
+  end
+  # unselects all rows with the values given, leaving all other rows intact
+  def unselect_values values
+    return unless values
+    values.each do |val|
+      row = @list.index val
+      remove_row_selection_interval row, row unless row.nil?
+    end
   end
     ##
   end # class
