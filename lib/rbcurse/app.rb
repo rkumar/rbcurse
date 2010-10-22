@@ -70,6 +70,8 @@ module RubyCurses
     attr_reader :form
     attr_reader :window
     attr_writer :quit_key
+    # the row on which to prompt user for any inputs
+    attr_accessor :prompt_row
 
 
     # TODO: i should be able to pass window coords here in config
@@ -94,6 +96,8 @@ module RubyCurses
         init_ncurses
       end
       $lastline = Ncurses.LINES - 1
+      @message_row = Ncurses.LINES-1
+      @prompt_row = @message_row # hope to use for ask etc
       unless $log
         $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
         $log.level = Logger::DEBUG
