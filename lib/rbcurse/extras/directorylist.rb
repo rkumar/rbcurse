@@ -11,22 +11,25 @@ module RubyCurses
   # Display a directory listing, allowing user to drill down on pressing Enter
   # on a directory, or sort when pressing enter on header row.
   class DirectoryList < Listbox
-    #dsl_accessor :xxx
+
     include ViEditable
 
     def initialize form, config={}, &block
+      @hide_dot_files = false
+      @hide_others = false
+      @curpos = 0
       super
-      #@_events.push(*[:EVENT, :EVENT2])
+
       #@current_path ||= Dir.getwd # setting it causes selection not to fire if same one
       # is selected first
       @_header_array = [ "Attr", "Size", "Modified" , "Name" , "<Order_by_Extension>" ]
       @_header = " %s %8s  %19s %s   %s " % @_header_array
-      @curpos = 0
     end
     def init_vars
       # which rows are not data, thus don't fire, or give error
       @_non_data_indices = []
       @_header_row_index   = 0
+      @_first_data_index = 1
       @one_key_selection = false # this allows us to map keys to methods
       vieditable_init_listbox
       undom = SimpleUndo.new self
@@ -42,6 +45,7 @@ module RubyCurses
       bind_key(?u, :clear_selection)
       bind_key(?+, :ask_select)
       bind_key(?-, :ask_unselect)
+      bind_key(?I) { @hide_dot_files = !@hide_dot_files; prune_entries; }
       super
     end
     # changing the current path, refreshes files
@@ -59,14 +63,18 @@ module RubyCurses
       end
       self
     end
-    # populate the list with full information of file 
-    # XXX THIS BECOMES A PAIN TO UPDATE !
+    # populate the list with file names
+    # @param [String, Array] string is the path name to populate with
+    #               Array is a list of files 
     def populate path
       case path
       when String
         @current_path = path
         @entries = Dir.new(path).entries
         @entries.delete(".")
+        # isn;t it a bit late here. it needs to happen to what's already there
+        @entries.delete_if {|x| x =~ /^\./} if @hide_dot_files
+        @entries.delete_if {|x| x =~ /\.bak$/ ||  x=~/\.swp$/} if @hide_others
       when Array
         path = @current_path
         # we've been passed @entries so we don't need to put it again ??? XXX
@@ -75,6 +83,7 @@ module RubyCurses
       list @entries
       @list.insert 0, @_header
       @title = @current_path
+      @current_index = @_first_data_index
     end
     # called by parent's repaint
     def convert_value_to_text file, crow
@@ -367,6 +376,15 @@ module RubyCurses
       row = @list.index val
       remove_row_selection_interval row, row unless row.nil?
     end
+  end
+  private
+  # was meant to filter rows, but no point. since we can't undo the delete
+  # so we just call populate again. this method could get axed
+  def prune_entries
+    #@entries.delete_if {|x| x =~ /^\./} if @hide_dot_files
+    #@entries.delete_if {|x| x =~ /\.bak$/ ||  x=~/\.swp$/} if @hide_others
+    populate @current_path
+    set_form_row
   end
     ##
   end # class
