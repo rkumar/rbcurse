@@ -53,6 +53,9 @@ module RubyCurses
       bind :PRESS, *args, &block
     end
   end
+  require 'forwardable'
+  require 'rbcurse/extras/bottomline'
+  $tt = Bottomline.new
   class CheckBox
     # a little dicey XXX 
     def text(*val)
@@ -73,6 +76,11 @@ module RubyCurses
     # the row on which to prompt user for any inputs
     attr_accessor :prompt_row
 
+    extend Forwardable
+    def_delegators :$tt, :ask, :say, :agree, :choose
+    #@tt = Bottomline.new @window, @message_row
+    #extend Forwardable
+    #def_delegators :@tt, :ask, :say, :agree, :choose
 
     # TODO: i should be able to pass window coords here in config
     # :title
@@ -102,8 +110,10 @@ module RubyCurses
         $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
         $log.level = Logger::DEBUG
         colors = Ncurses.COLORS
-        $log.debug "START #{colors} colors  --------- #{$0}"
+        $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
+      # window created in run !!!
+      $tt.window = @window; $tt.message_row = @message_row
     end
     def logger; return $log; end
     def close
@@ -148,6 +158,14 @@ module RubyCurses
     end
     def message_row row
       @message_label.row = row
+    end
+    # during a process, when you wish to update status, since ordinarily the thread is busy
+    # and form does not get control back, so the window won't refresh.
+    # NOTE: use this only if +message+ is not working
+    def message_immediate text
+      message text
+      @message_label.repaint
+      @window.refresh
     end
     #
     # suspends curses so you can play around on the shell
@@ -840,6 +858,7 @@ module RubyCurses
 
         # check if user has passed window coord in config, else root window
         @window = VER::Window.root_window
+        $tt.window = @window; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
           @form.bind_key([?\C-x, ?c]) { suspend(false) do
