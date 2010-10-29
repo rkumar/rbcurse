@@ -8,13 +8,14 @@
    Also it will not notify children of changes in size. it avoids all complexity and tries
  to be as simple as possible.
   * NOTE that VERTICAL_SPLIT means the *divider* is vertical.
+  * Recommend you move to rvimsplit.rb
+  * If you insist on using this, please copy it off into your own
+  * application folder in case i deprecate it.
   * Author: rkumar (arunachalesha)
   * file created 2010-09-14 10:31 
   * major change: Feb 2010, removed buffers
 Todo: 
-  * TODO remove components
 
-  * XXX Does SPLP need to listen for changes in children
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
