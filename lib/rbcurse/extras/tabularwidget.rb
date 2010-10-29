@@ -9,14 +9,18 @@ TODO
    * guess_c : have some config : NEVER, FIRST_TIME, EACH_TIME
      if user has specified widths then we don't wanna guess. guess_size 20, ALL.
    * move columns
-   * hide columns
-   * data truncation based on col wid TODO
+   * hide columns - importnat since with sorting we may need to store an identifier which 
+     should not be displayed
+   x data truncation based on col wid TODO
    * TODO: search -- how is it working, but curpos is wrong.
    * allow resize of column inside column header
    * Now that we allow header to get focus, we should allow it to handle
     keys, but its not an object like it was in rtable ! AARGH !
    * NOTE: header could become an object in near future, but then why did we break
    away from rtable ?
+   * TODO FIXME : after converting to convert_value_to_text and truncation etc, numbering is broken
+   * we are checking widths of columsn and we have added a column, so columns widths refer to wrong col
+   TODO : tabbing with w to take care of hidden columns and numbering. FIXME
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -170,6 +174,21 @@ module RubyCurses
     end
     alias :<< :add
     alias :add_row :add
+    alias :append :add
+    def remove_all
+      @list = []
+    end
+    def delete_at off0
+      ret=@list.delete_at off0
+      return ret
+    end
+    def []=(off0, data)
+      @list[off0] = data
+    end
+    def [](off0)
+      @list[off0]
+    end
+    # TODO more methods like in listbox so interchangeable, delete_at etc
     def column_width colindex, width
       return if width < 0
       raise ArgumentError, "wrong width value sent: #{width} " if width.nil? || !width.is_a?(Fixnum) || width < 0
@@ -191,7 +210,7 @@ module RubyCurses
       #@recalc_required = true
     end
     # Set a column to hidden  TODO we are not actually doing that
-    def column_hidden colindex, tf
+    def column_hidden colindex, tf=true
       #raise ArgumentError, "wrong alignment value sent" if ![:right, :left, :center].include? lrc
       get_column(colindex).hidden = tf
       @repaint_required = true
@@ -278,7 +297,7 @@ module RubyCurses
     def repaint # Tabularwidget :nodoc:
       if @screen_buffer.nil?
         safe_create_buffer
-        @screen_buffer.name = "Pad::TW_PAD_#{@name}" unless @screen_buffer.nil?
+        @screen_buffer.name = "Pad::TABW_PAD_#{@name}" unless @screen_buffer.nil?
         $log.debug " tabularwid creates pad #{@screen_buffer} #{@name}"
       end
 
@@ -524,7 +543,7 @@ module RubyCurses
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = tm.length
       _maxlen = @maxlen || @width-@internal_width
-      #$log.debug " #{@name} Tabularwidget repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
+      $log.debug " #{@name} Tabularwidget repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tr = @toprow
       acolor = get_color $datacolor
       h = scrollatrow() 
@@ -609,18 +628,27 @@ module RubyCurses
       if r == :separator
         return separator
       elsif r == :columns
-        r = @columns
         return "??" unless @columns # column was requested but not supplied
+        # FIXME putting entire header into this, take care of hidden
+        r = []
+        @columns.each_with_index { |e, i| r << e unless get_column(i).hidden  }
         return @headerfmtstr % r if @numbering
       end
+      str = ""
+
       if @numbering
-        r = r.dup
-        r.insert 0, count+1
+        #r = r.dup
+        #r.insert 0, count+1
+        # TODO get the width
+        str << "%*d |"%  [2, count + 1]
       end
       # unroll r, get width and align
       # This is to truncate column to requested width
       fmta = []
       r.each_with_index { |e, i| 
+        next if get_column(i).hidden == true
+        #w = @pw[i] || @cw[i]  # XXX
+        #$log.debug "WIDTH XXX  #{i} w= #{w} , #{@pw[i]}, #{@cw[i]} :: #{e} " if $log.debug? 
         w = @cw[i]
         l = e.to_s.length
         fmt = "%-#{w}s "
@@ -635,10 +663,12 @@ module RubyCurses
             fmt = "%-#{w}s "
           end
         end
+        str << fmt % e
         fmta << fmt
       }
-      fmstr = fmta.join(@y)
-      return fmstr % r;  
+      #fmstr = fmta.join(@y)
+      #return fmstr % r; # FIXME hidden column still goes int 
+      return str
     end
     # perhaps we can delete this since it does not respect @pw
     # @deprecated  (see _estimate_column_widths)
@@ -697,6 +727,7 @@ module RubyCurses
       fmt = []
       total = 0
       @cw.each_with_index { |c, i| 
+        next if get_column(i).hidden == true # added 2010-10-28 19:08 
         w = @cw[i]
         @coffsets[i] = total
         total += w + 2
@@ -982,7 +1013,8 @@ App.new do
     b << ["new york","USA","a fun place" ] 
     b.column_width 0, 12
     b.column_width 1, 12
-    b.numbering = true
+    b.column_hidden 1, true
+    b.numbering = true ## FIXME BROKEN
   end
   require 'rbcurse/extras/scrollbar'
   sb = Scrollbar.new @form, :parent => s
