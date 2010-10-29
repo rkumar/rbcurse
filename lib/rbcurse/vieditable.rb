@@ -6,8 +6,8 @@
 # or a menu. made originally for textview and multitextview
 #
 #**************************************************************
-    #hscrollcols = $multiplier > 0 ? $multiplier : @width/2
-  #def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
+
+
 require 'rbcurse/listeditable'
 module ViEditable
   include ListEditable
