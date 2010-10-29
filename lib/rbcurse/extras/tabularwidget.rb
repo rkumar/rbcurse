@@ -21,6 +21,8 @@ TODO
    * TODO FIXME : after converting to convert_value_to_text and truncation etc, numbering is broken
    * we are checking widths of columsn and we have added a column, so columns widths refer to wrong col
    TODO : tabbing with w to take care of hidden columns and numbering. FIXME
+   TODO: we forgot about selection altogether. we need multiple select !!! as in gmail
+         subject list.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -29,6 +31,7 @@ TODO
 require 'rbcurse'
 require 'rbcurse/listscrollable'
 require 'rbcurse/extras/tabular'
+require 'rbcurse/extras/listselectable'
 
 #include RubyCurses
 module RubyCurses
@@ -44,6 +47,7 @@ module RubyCurses
 
 
     include ListScrollable
+    include NewListSelectable
     dsl_accessor :title   # set this on top
     dsl_accessor :title_attrib   # bold, reverse, normal
     dsl_accessor :footer_attrib   # bold, reverse, normal
@@ -67,6 +71,19 @@ module RubyCurses
     attr_accessor :numbering
     # default or custom sorter
     attr_reader :table_row_sorter
+     
+    # @group select related
+    dsl_accessor :selection_mode
+    dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+    
+    dsl_property :show_selector # boolean
+    dsl_property :row_selected_symbol 
+    dsl_property :row_unselected_symbol 
+    attr_accessor :selected_index # should we use only indices ??
+    # index of selected rows, if multiple selection asked for
+    attr_reader :selected_indices
+    attr_reader :_header_adjustment # we need to adjust when using current_index !!! UGH
+    # @endgroup select related
 
     def initialize form = nil, config={}, &block
       @focusable = true
@@ -88,9 +105,12 @@ module RubyCurses
       @separ = @columns = @numbering =  nil
       @y = '|'
       @x = '+'
-      @show_focus = false  # don't highlight row under focus TODO
       @list = []
       @_header_adjustment = 0
+      @show_focus = false  # don't highlight row under focus TODO
+      @selection_mode = :multiple # default is multiple, anything else given becomes single
+      @row_selected_symbol = '*'
+      @show_selector = true
       super
       # ideally this should have been 2 to take care of borders, but that would break
       # too much stuff !
@@ -118,6 +138,7 @@ module RubyCurses
       # currently i scroll right only if  current line is longer than display width, i should use 
       # longest line on screen.
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
+      list_init_vars
 
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
@@ -129,6 +150,7 @@ module RubyCurses
       bind_key(?m, :disp_menu)
       bind_key(?w, :next_column)
       bind_key(?b, :previous_column)
+      list_bindings
     end
     def columns=(array)
       @_header_adjustment = 1
@@ -310,17 +332,21 @@ module RubyCurses
     def getvalue
       @list
     end
+    # returns value of current row.
+    # NOTE: you may need to adjust it with _header_adjustment - actually you can't
+    # this may give wrong row -- depends what you want.
     def current_value
       @list[@current_index]
     end
     # Tabularwidget
+    # TODO multiple selection
     def handle_key ch #:nodoc:
       if header_row?
         ret = header_handle_key ch
         return ret unless ret == :UNHANDLED
       end
       case ch
-      when ?\C-d.getbyte(0), 32
+      when ?\C-d.getbyte(0) #, 32
         scroll_forward
       when ?\C-b.getbyte(0)
         scroll_backward
@@ -536,6 +562,7 @@ module RubyCurses
       #_guess_col_widths
       _estimate_column_widths
       tm = get_content
+      @left_margin ||= @row_selected_symbol.length
       @width ||= @preferred_width
       @height ||= [tm.length+3, 10].min
       _prepare_format
@@ -555,7 +582,6 @@ module RubyCurses
         crow = tr+hh
         if crow < rc
             #focussed = @current_index == crow ? true : false 
-            #selected = is_row_selected crow
             content = tm[crow]
 
             columnrow = false
@@ -570,14 +596,16 @@ module RubyCurses
             # rlistbox does
             sanitize value if @sanitization_required
             truncate value
+            ## set the selector symbol if requested
+            paint_selector crow, r+hh, c, acolor, @attr
 
             #@graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
             #print_data_row( r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr)
-            print_data_row( r+hh, c, @width-@internal_width, value, acolor, @attr)
+            print_data_row( r+hh, c+@left_margin, @width-@internal_width-@left_margin, value, acolor, @attr)
 
         else
           # clear rows
-          @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
+          @graphic.printstring r+hh, c, " " * (@width-@internal_width-@left_margin), acolor,@attr
         end
       end
       @repaint_required        = false
@@ -813,6 +841,7 @@ module RubyCurses
         @repaint_required = true
         aev = TextActionEvent.new self, :PRESS,:header, x, @curpos
       else
+        # please check this again current_value due to _header_adjustment XXX test
         aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
       end
       fire_handler :PRESS, aev
@@ -843,6 +872,8 @@ module RubyCurses
       fire_handler :ENTER_ROW, self
       @repaint_required = true
     end
+    # move cursor to next column
+    # FIXME need to account for hidden columns and numbering
     def next_column
       c = @column_pointer.next
       cp = @coffsets[c] 
@@ -988,7 +1019,7 @@ require 'rbcurse/app'
 App.new do
   t = TabularWidget.new @form, :row => 2, :col => 2, :height => 20, :width => 30
   t.columns = ["Name ", "Age ", " Email        "]
-  t.add %w{ rahul 32 r@ruby.org }
+  t.add %w{ rahul 33 r@ruby.org }
   t << %w{ _why 133 j@gnu.org }
   t << ["jane", "1331", "jane@gnu.org" ]
   t.column_align 1, :right
