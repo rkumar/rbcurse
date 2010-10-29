@@ -37,10 +37,10 @@ module RubyCurses
     end
     def toggle_row_selection row=@current_index
       if is_selected? row
-        $log.debug " deleting row #{row}"
+        #$log.debug " deleting row #{row}"
         remove_row_selection_interval(row, row)
       else
-        $log.debug " adding row #{row}"
+        #$log.debug " adding row #{row}"
         add_row_selection_interval(row, row) 
       end
       @repaint_required = true 
