@@ -801,6 +801,7 @@ module RubyCurses
     # to trap please bind :PRESS
     #
     def fire_action_event
+      # this does not select the row ???? FIXME ??
       require 'rbcurse/ractionevent'
       # should have been callled :ACTION_EVENT !!!
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
