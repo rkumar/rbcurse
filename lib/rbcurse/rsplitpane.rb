@@ -1,15 +1,17 @@
 =begin
   * Name: SplitPane
-  * $Id$
+
   * Description: allows user to split 2 components vertically or horizontally
   * NOTE that VERTICAL_SPLIT means the *divider* is vertical.
+  * I have simplified this somewhat in rsplitpane2
+  * but would recommend you move to rvimsplit.rb
+  * If you insist on using this, please copy it off into your own
+  * application folder in case i deprecate it.
   * Author: rkumar (arunachalesha)
   * file created 2009-10-27 19:20 
   * major change: Feb 2010, removed buffers
 Todo: 
-  * TODO remove components
 
-  * XXX Does SPLP need to listen for changes in children
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
