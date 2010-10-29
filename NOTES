@@ -1922,3 +1922,26 @@ does mean that the original specified width is lost, so a
 `reset_to_preferred_sizes` is not possible.
 
 * * * * * * * *
+
+Subject: single and multiple selection and keys
+-----------------------------------------------
+Date: 2010-10-28 23:07
+
+If single selection (by spacebar) then pressing spacebar and pressing
+Enter should typically have same action. i.e. select current row and
+fire_event.(*)
+
+If multiple selection, then Enter typically fires an action for current
+row such as opening an item or giving more details for that item.
+Spacebar selects multiple items (or Ctrl-Spacebar), and other keys will
+execute some action on selected rows (like delete, flag, move etc).
+
+(*) Exceptions: in tree, Enter collapses or expands, and selects current
+row, whereas spacebar only selects and displays in other window.
+Spacebar does not expand or collapse tree node.
+
+Typically in multiple select, spacebar selects first row (deselecting
+others) and Ctrl-Spacebar continues selection. Have to check this out
+with Listbox. including `ListSelectable` should take care of most of this.
+
+* * * * * * * *
