@@ -37,8 +37,6 @@ module RubyCurses
     #require 'rbcurse/listselectable'
     #require 'rbcurse/defaultlistselectionmodel'
     include ListScrollable
-    #include ListSelectable
-    #include RubyCurses::ListKeys
     extend Forwardable
     dsl_accessor :height
     dsl_accessor :title
@@ -206,6 +204,11 @@ module RubyCurses
     # @since 1.2.0  2010-09-06 14:33 making life easier for others.
     def current_value
       @list[@current_index]
+    end
+    def remove_all
+      return if @list.nil? || @list.empty? 
+      @list = []
+      init_vars
     end
     # avoid using "row", i'd rather stick with "index" and "value".
     alias :current_row :current_value
