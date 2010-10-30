@@ -102,6 +102,7 @@ module RubyCurses
       return if @list.nil? || @list.empty? # 2010-09-21 13:25 
       lde = ListDataEvent.new(0, @list.size, self, :INTERVAL_REMOVED)
       @list = []
+      @current_index = 0
       fire_handler :LIST_DATA_EVENT, lde
     end
     def delete obj
@@ -476,6 +477,7 @@ module RubyCurses
     end
     # this is called several times, from constructor
     # and when list data changed, so only put relevant resets here.
+    # why can't current_index be set to 0 here
     def init_vars
       @repaint_required = true
       @toprow = @pcol = 0
