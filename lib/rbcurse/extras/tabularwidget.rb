@@ -120,8 +120,9 @@ module RubyCurses
       @_events << :PRESS # new, in case we want to use this for lists and allow ENTER
       @_events << :ENTER_ROW # new, should be there in listscrollable ??
       @_events << :COLUMN_RESIZE_EVENT 
-      install_keys
+      install_keys # << almost jnuk now, clean off TODO
       init_vars
+      map_keys
     end
     def init_vars #:nodoc:
       @curpos = @pcol = @toprow = @current_index = 0
@@ -140,14 +141,17 @@ module RubyCurses
       @longest_line = 0 # the longest line printed on this page, used to determine if scrolling shd work
       list_init_vars
 
+    end
+    def map_keys
+      # remove bindings from here. we call repeatedly
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
       bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
-      bind_key(?/, :ask_search)
-      bind_key(?n, :find_more)
+      bind_key(?/, :ask_search) # XXX TESTME
+      bind_key(?n, :find_more) # XXX TESTME
       bind_key([?\C-x, ?>], :scroll_right)
       bind_key([?\C-x, ?<], :scroll_left)
-      bind_key(?r) { getstr("Enter a word: ") }
-      bind_key(?m, :disp_menu)
+      #bind_key(?r) { getstr("Enter a word: ") }
+      bind_key(?m, :disp_menu) # enhance this or cut it out - how can app leverage this. TODO
       bind_key(?w, :next_column)
       bind_key(?b, :previous_column)
       list_bindings
@@ -199,6 +203,7 @@ module RubyCurses
     alias :append :add
     def remove_all
       @list = []
+      init_vars
     end
     def delete_at off0
       ret=@list.delete_at off0
@@ -560,7 +565,6 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
       #_guess_col_widths
-      _estimate_column_widths
       tm = get_content
       @left_margin ||= @row_selected_symbol.length
       @width ||= @preferred_width
@@ -569,6 +573,7 @@ module RubyCurses
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = tm.length
+      _estimate_column_widths if rc > 0
       _maxlen = @maxlen || @width-@internal_width
       $log.debug " #{@name} Tabularwidget repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tr = @toprow
@@ -724,7 +729,7 @@ module RubyCurses
     end
     def _estimate_column_widths  #:nodoc:
       return unless @estimate_column_widths
-      @estimate_column_widths = false
+      @estimate_column_widths = false # XXX testing why its failing in gmail
       @columns.each_with_index { |c, i|  
         if @pw[i]
           @cw[i] = @pw[i]
@@ -741,8 +746,11 @@ module RubyCurses
     # then we can calculate the same based on data
     def calculate_column_width col
       ret = @cw[col] || 2
+      ctr = 0
       @list.each_with_index { |r, i| 
-        break if i > 10
+        #next if i < @toprow # this is also a possibility, it checks visible rows
+        break if ctr > 10
+        ctr += 1
         next if r == :separator
         c = r[col]
         x = c.to_s.length
