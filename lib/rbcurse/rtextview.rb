@@ -127,6 +127,11 @@ module RubyCurses
       end
       init_vars
     end
+    def remove_all
+      @list = []
+      init_vars
+      @repaint_required = true
+    end
     ## display this row on top
     def top_row(*val) #:nodoc:
       if val.empty?
