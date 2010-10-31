@@ -427,6 +427,7 @@ module RubyCurses
           @form.window.print_error_message
           $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
+          # XXX caller app has no idea error occurred so can't do anything !
         end
         return :UNHANDLED if ret == :UNHANDLED
       end
