@@ -583,6 +583,32 @@ module RubyCurses
       super
       true
     end
+    def pipe_file
+      # TODO ask process name from user
+      output = pipe_output 'munpack', @list
+      if output && !output.empty?
+        set_content output
+      end
+    end
+    # returns array of lines after running command on string passed
+    def pipe_output (pipeto, str)
+      case str
+      when String
+        #str = str.split "\n"
+        # okay
+      when Array
+        str = str.join "\n"
+      end
+      #pipeto = '/usr/sbin/sendmail -t'
+      #pipeto = %q{mail -s "my title" rahul}
+      if pipeto != nil  # i was taking pipeto from a hash, so checking
+        proc = IO.popen(pipeto, "w+")
+        proc.puts str
+        proc.close_write
+        proc.readlines
+      end
+    end
+ 
 
   end # class textview
 
