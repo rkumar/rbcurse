@@ -18,14 +18,16 @@ module RubyCurses
     # current_index is not account for header_adjustment
     # if current row is selected in mulitple we should deselect ?? FIXME
     def toggle_row_selection crow=@current_index-@_header_adjustment
+      @last_clicked = crow
       @repaint_required = true
       case @selection_mode 
       when :multiple
         if @selected_indices.include? crow
           @selected_indices.delete crow
         else
-          clear_selection
-          @selected_indices[0] = crow 
+          #clear_selection
+          #@selected_indices[0] = crow 
+          @selected_indices << crow
         end
       else
         if @selected_index == crow 
@@ -43,12 +45,17 @@ module RubyCurses
     # @example
     #     bind_key(0) { add_to_selection }
     def add_to_selection crow=@current_index-@_header_adjustment
+      @last_clicked ||= crow
+      min = [@last_clicked, crow].min
+      max = [@last_clicked, crow].max
       case @selection_mode 
       when :multiple
         if @selected_indices.include? crow
-          @selected_indices.delete crow
+          # delete from last_clicked until this one in any direction
+          min.upto(max){ |i| @selected_indices.delete i }
         else
-          @selected_indices << crow
+          # add to selection from last_clicked until this one in any direction
+          min.upto(max){ |i| @selected_indices << i unless @selected_indices.include?(i) }
         end
       else
       end
