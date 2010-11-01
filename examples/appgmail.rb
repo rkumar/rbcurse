@@ -2,6 +2,9 @@ require 'rbcurse/app'
 require 'fileutils'
 require 'gmail'
 # You need gmail gem. (one of them depends on i18n gem).
+# TODO start putting commands in a popup or menu bar
+# TODO: compose a message  - what of contacts ? check sup, how to call vim fomr inside ncurses
+# TODO: reply.
 # FIXME: reconnect gave allmain count as inbox count, clicking on lb2 gave nilclass
 # TODO : x  highlight / select if pressing enter, so we know which one is being shwon
 #        _  should work with select also. Now we have a kind of mismatch between select
@@ -16,18 +19,16 @@ require 'gmail'
 # TODO: handling of packed (munpack) - temporary fix in place
 # TODO : catch connectionreset and relogin : Connection reset by peer (Errno::ECONNRESET)
 # TODO: unread on top, or only unread
-# TODO: compose a message  - what of contacts ? check sup, how to call vim fomr inside ncurses
-# TODO: reply.
 # TODO: offline, download all mails (body too)
 # TODO: select read, unread, by same author, starred, unstarred
-# TODO: can do_selected_rows collect message objects and do operation in a thread
-#       so user immediately gets control back. Delete of visual to happen first.
 
 def remove_current_label m
   label = @current_label
   m.remove_label! label
 end
 # return message object for a UID
+# m.envelope
+# m.header   # < take a little time
 def uid_to_message uid
   m = @uid_message[uid]
 end
@@ -44,6 +45,14 @@ def do_selected_rows(w) # :yield: row, msg
     messages << message
   }
   return indices, messages
+end
+def get_current_uid w
+  row = w.current_value
+  uid = row[5] # UID_OFFSET
+end
+def get_current_message w
+  uid = get_current_uid w
+  message = uid_to_message uid
 end
 # for each selected row, execute the yield row indices to block
 # typically for deleting from table, or updating visual status.
@@ -126,7 +135,6 @@ def get_envelopes text
           uid = ee.attr["UID"]
           @message_uids << uid
           flag = unreaduids.include?(uid) ? "N " : " "
-          $log.debug "XXX STARRED #{@starred_uids} :: #{uid} " if $log.debug? 
           if @starred_uids.include?(uid)
             flag[1]="+"
           end
@@ -136,6 +144,7 @@ def get_envelopes text
           #$log.debug "name: XXX  #{e.from[0].class} " unless e.from[0].nil?
           # name returns an Array, which crashes sort - therefore to_s, but says String
           from = e.from[0].name.to_s # why blank some times FIXME
+          from = e.from[0].mailbox.to_s if from == ""
           #@lb2.append([ flag, ctr+1 , from, e.subject ,date])
           lines << [ flag, ctr+1 , from, e.subject ,date, uid]
           ctr+=1
@@ -211,7 +220,8 @@ def refresh_labels
   message_immediate " Ready"
 end
 
-App.new do 
+# START start
+@app = App.new do 
   #begin
   ht = 24
   @max_to_read = 100
@@ -307,6 +317,17 @@ App.new do
     # will only work in Thread mode
     @dirs.bind_key(?q) { $break_fetch = true }
     @dirs.bind_key(27) { $break_fetch = true }
+    @form.bind_key(?\M-p){
+      require 'live_console'
+
+      lc = LiveConsole.new :socket, :port => 4000, :bind => self.get_binding
+      lc.start            # Starts the LiveConsole thread
+      alert "started console on 4000 #{self} "
+      # you would connect using "nc localhost 4000"
+      # if you use pp then it shows here too and mucks the screen.
+      # i think it writes on STDSCR - do not use pp and puts, just enter the variable
+    }
+
     @form.bind_key(?\M-m){
       @max_to_read = ask("How many mails to retrieve? ", Integer) { |q| q.in = 1..1000 }
     }
@@ -340,7 +361,9 @@ App.new do
             #uid = @message_uids[index]
             #body = @gmail.connection.uid_fetch(uid, "BODY[TEXT]")[0].attr['BODY[TEXT]']
             body = uid_to_message( uid ).body # this uses gmail gem's cache
-            @tv.set_content(body.to_s, :WRAP_WORD)
+            body = body.decoded.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+            @tv.set_content(body, :WRAP_WORD)
+            #@tv.set_content(body.to_s, :WRAP_WORD)
             @current_body = body
             row[0] = "" if row[0] == "N"
 
@@ -358,14 +381,20 @@ App.new do
     @lb2.bind :ENTER_ROW do |e|
       @header.text_right "Row #{e.current_index} of #{@messages.size} "
     end
-    @lb2.bind_key(?u){ |e| 
+    @lb2.bind_key(?\M-a) do |e| 
+      env = get_current_message e
+      $log.debug "XXX ENV #{env} " if $log.debug? 
+      alert " #{env.from[0].name} :: #{env.from[0].mailbox}@#{env.from[0].host} "
+      $log.debug "XXX ENV HEADER #{env.header} " if $log.debug? 
+    end
+    @lb2.bind_key(?U){ |e| 
       aproc = lambda {|m| m.mark(:unread) }
       for_selected_rows(e, aproc) { |i| 
         row = @lb2[i]
         row[0][0] = "N" if row[0][0] == " "
       }
     }
-    @lb2.bind_key(?r){ |e| 
+    @lb2.bind_key(?I){ |e| 
       aproc = lambda {|m| m.mark(:read) }
       for_selected_rows(e, aproc) { |i| 
         row = @lb2[i]
@@ -400,15 +429,15 @@ App.new do
       inds, ms = for_selected_rows(e, aproc) { |e| @lb2.delete_at e; @messages.delete_at e }
       @lb2.clear_selection
     }
-    #@lb2.bind_key(?r){ |e| m = @messages[e.current_index-1];
-      ## these all need to point to message now not envelope
-      #i = e.current_index - 1
-      #m = @message_uids[i]
-      #m = @uid_message[m]
-      #m.mark(:read) 
-    #}
+    @lb2.bind_key(?!){ |e| 
+      aproc = lambda {|m| m.spam! }
+      inds, ms = for_selected_rows(e, aproc) { |e| @lb2.delete_at e; @messages.delete_at e }
+      @lb2.clear_selection
+    }
     # archive
-    @lb2.bind_key(?\M-a){ |e| 
+    # this way of defining does not allow user to reassign this method to a key.
+    # we should put into a method in a class, so user can reassign
+    @lb2.bind_key(?\e){ |e| 
       inds, ms = do_selected_rows(e)
       inds = inds.sort.reverse
       inds.each { |e| @lb2.delete_at e; @messages.delete_at e }
@@ -421,26 +450,6 @@ App.new do
 
     }
     @lb2.bind_key(?\M-u){ @lb2.clear_selection }
-    #@lb2.bind_key(?#){ |e| 
-      #inds = []
-    #do_selected_rows(e) do |i, m|
-      #m.delete!
-      #inds << i
-    #end
-    #inds = inds.sort.reverse
-    #inds.each { |e| @lb2.delete_at e; @messages.delete_at e }
-      #@lb2.clear_selection
-    #}
-    @lb2.bind_key(?!){ |e| i= e.current_index - 1
-      inds = []
-      do_selected_rows(e) do |i, m|
-        m.spam!
-        inds << i
-      end
-      inds = inds.sort.reverse
-      inds.each { |e| @lb2.delete_at e; @messages.delete_at e }
-      @lb2.clear_selection
-    }
 
     @tv = @vim.set_right_bottom_component "Email body comes here. "
     @tv.bind_key(?\M-m){ o = @tv.pipe_output('munpack', @current_body)
