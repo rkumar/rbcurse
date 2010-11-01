@@ -341,7 +341,7 @@ module RubyCurses
     # NOTE: you may need to adjust it with _header_adjustment - actually you can't
     # this may give wrong row -- depends what you want.
     def current_value
-      @list[@current_index]
+      @list[@current_index-@_header_adjustment] # XXX added header_adju 2010-11-01 11:14 
     end
     # Tabularwidget
     # TODO multiple selection
