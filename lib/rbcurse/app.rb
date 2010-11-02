@@ -167,6 +167,9 @@ module RubyCurses
       @message_label.repaint
       @window.refresh
     end
+    def get_binding
+      return binding()
+    end
     #
     # suspends curses so you can play around on the shell
     # or in cooked mode like Vim does. Expects a block to be passed.
@@ -201,6 +204,8 @@ module RubyCurses
       @window.wrefresh
       Ncurses::Panel.update_panels
     end
+    # prompts user for a command. we need to get this back to the calling app
+    # or have some block stuff TODO
     def get_command_from_user
       code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
       return unless code == 0
@@ -210,11 +215,14 @@ module RubyCurses
         suspend(false) { system(str); 
           system("echo ");
           system("echo Press Enter to continue.");
-          system("read"); }
+          system("read"); 
+        }
+        return nil # i think
       else
         # TODO
         # here's where we can take internal commands
-        alert "[#{str}] string did not match :!"
+        #alert "[#{str}] string did not match :!"
+        str = str[1..-1]
       end
 
     end
@@ -870,7 +878,22 @@ module RubyCurses
           end
           }
           @form.bind_key(?:) { 
-            get_command_from_user
+            # take care of full string. should command itself parse or what
+            str = get_command_from_user
+            if str
+              # take first string FIXME
+              cmdline = str.split
+              cmd = cmdline.shift #.to_sym
+              if respond_to?(cmd, true)
+                send cmd, *cmdline
+              else
+                if Module.respond_to?(cmd, true)
+                  Module.send cmd, *cmdline
+                else
+                  alert "#{self.class} does not respond to #{cmd} "
+                end
+              end
+            end
           }
 
           @message = Variable.new
