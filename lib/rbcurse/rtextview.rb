@@ -591,6 +591,8 @@ module RubyCurses
       end
     end
     # returns array of lines after running command on string passed
+    # TODO: need to close pipe other's we'll have a process lying
+    # around forever.
     def pipe_output (pipeto, str)
       case str
       when String
@@ -608,7 +610,21 @@ module RubyCurses
         proc.readlines
       end
     end
- 
+    def saveas name=nil, config={}
+      $terminal.window = @graphic
+      $terminal.message_row = 27  # FIXME where should this be initialized, one place
+      unless name
+        name = ask "File to save as: "
+      end
+      exists = File.exists? name
+      return if exists # need to prompt
+      l = getvalue
+      File.open(name, "w"){ |f|
+        l.each { |line| f.write line }
+        #l.each { |line| f.write line.gsub(/\r/,"\n") }
+      }
+    end
+
 
   end # class textview
 
