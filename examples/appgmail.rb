@@ -22,6 +22,12 @@ require 'gmail'
 # TODO: offline, download all mails (body too)
 # TODO: select read, unread, by same author, starred, unstarred
 
+
+#module RubyCurses
+#class App
+  def saveas *args
+    @tv.saveas *args
+  end
 def remove_current_label m
   label = @current_label
   m.remove_label! label
@@ -46,11 +52,11 @@ def do_selected_rows(w) # :yield: row, msg
   }
   return indices, messages
 end
-def get_current_uid w
+def get_current_uid w=@lb2
   row = w.current_value
   uid = row[5] # UID_OFFSET
 end
-def get_current_message w
+def get_current_message w=@lb2
   uid = get_current_uid w
   message = uid_to_message uid
 end
@@ -219,6 +225,8 @@ def refresh_labels
   @dirs.repaint_required(true)
   message_immediate " Ready"
 end
+#end
+#end
 
 # START start
 @app = App.new do 
@@ -460,6 +468,7 @@ end
       @tv.set_content o
       # this leaves a file in current directory
     }
+    @tv.bind_key(?\M-A) { |s| @tv.saveas }
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
