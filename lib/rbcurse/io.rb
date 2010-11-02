@@ -8,6 +8,17 @@
 #    * rbgetstr (and those it calls)
 #    * display_cmenu and create_mitem
 #*******************************************************#
+##
+# added RK 2010-11-02 18:11 so can be used in widgets too
+# maybe can be removed from app, if accessible there too.
+require 'forwardable'
+require 'rbcurse/extras/bottomline'
+$terminal = RubyCurses::Bottomline.new
+module Kernel
+  extend Forwardable
+  def_delegators :$terminal, :agree, :ask, :choose, :say
+end
+#$tt.window = @window; $tt.message_row = @message_row # <<-- TODO somewhere
 module Io
 
   # from which line to print in footer_win
