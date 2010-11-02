@@ -293,6 +293,7 @@ module RubyCurses
         end
         #0
       end
+      # view a file or array of strings
       def view what, config={} # :yields: textview for further configuration
         require 'rbcurse/extras/viewer'
         RubyCurses::Viewer.view what, config
