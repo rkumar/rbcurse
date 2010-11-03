@@ -497,6 +497,10 @@ module RubyCurses
     @completion_proc = @question.completion_proc
     @default = @question.default
     @helptext = @question.helptext
+    @answer_type = @question.answer_type
+    if @question.answer_type.is_a? Array
+      @completion_proc = Proc.new{|str| @answer_type.dup.grep Regexp.new("^#{str}") }
+    end
 
     begin
       @answer = @question.answer_or_default(get_response) 
@@ -617,6 +621,7 @@ module RubyCurses
   def rbgetstr
     r = @message_row
     c = 0
+    #@current_index = 0
     win = @window
     @limit = @question.limit
     maxlen = @limit || 100 # fixme
@@ -705,6 +710,10 @@ module RubyCurses
               if !entries.nil? and !entries.empty?
                 olen = str.length
                 str = entries.delete_at(0)
+                str = str.dup
+                #str = entries[@current_index].dup
+                #@current_index += 1
+                #@current_index = 0 if @current_index == entries.length
                 curpos = str.length
                 len += str.length - olen
                 clear_line len+maxlen+1, @prompt_length
@@ -717,13 +726,18 @@ module RubyCurses
                 prevchar = ch = nil # so it can start again completing
               end
             else
+              #@current_index = 0
               tabc = @completion_proc unless tabc
               next unless tabc
               oldstr = str.dup
               olen = str.length
-              entries = tabc.call(str)
-              $log.debug " tab got #{entries} "
+              entries = tabc.call(str).dup
+              $log.debug "XXX tab [#{str}] got #{entries} "
               str = entries.delete_at(0) unless entries.nil? or entries.empty?
+              #str = entries[@current_index].dup unless entries.nil? or entries.empty?
+              #@current_index += 1
+              #@current_index = 0 if @current_index == entries.length
+              str = str.dup
               if str
                 curpos = str.length
                 len += str.length - olen
@@ -810,6 +824,7 @@ module RubyCurses
       q.responses[:not_valid]    = 'Please enter "yes" or "no".'
       q.responses[:ask_on_error] = :question
       q.character                = character
+      q.limit                    = 1 if character
       
       yield q if block_given?
     end
@@ -840,6 +855,8 @@ if __FILE__ == $PROGRAM_NAME
     #end # stack
     #-----------------#------------------
     entry = {}
+    entry[:command]     = ask("Command?  ", %w{archive delete read refresh delete!}) 
+    exit unless agree("Wish to continue? ", false)
     entry[:address]     = ask("Address?  ") { |q| q.color_pair = $promptcolor }
     entry[:company]     = ask("Company?  ") { |q| q.default = "none" }
     entry[:password]        = ask("password?  ") { |q|
