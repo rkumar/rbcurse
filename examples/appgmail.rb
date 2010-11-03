@@ -25,6 +25,24 @@ require 'gmail'
 
 #module RubyCurses
 #class App
+# putting some commands here so we can call from command_line
+def archive
+  inds, ms = do_selected_rows(@lb2)
+  inds = inds.sort.reverse
+  inds.each { |e| @lb2.delete_at e; @messages.delete_at e }
+  @lb2.clear_selection
+  Thread.new {
+    ms.each { |m| 
+    m.archive!
+  }
+  }
+end
+def delete
+  e = @lb2
+  aproc = lambda {|m| m.delete! }
+  inds, ms = for_selected_rows(e, aproc) { |e| @lb2.delete_at e; @messages.delete_at e }
+  @lb2.clear_selection
+end
   def saveas *args
     @tv.saveas *args
   end
