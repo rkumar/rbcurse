@@ -614,10 +614,12 @@ module RubyCurses
       $terminal.window = @graphic
       $terminal.message_row = 27  # FIXME where should this be initialized, one place
       unless name
-        name = ask "File to save as: "
+        name = @graphic.ask "File to save as: "
       end
       exists = File.exists? name
-      return if exists # need to prompt
+      if exists # need to prompt
+        return unless agree("Overwrite existing file? ", true)
+      end
       l = getvalue
       File.open(name, "w"){ |f|
         l.each { |line| f.write line }
