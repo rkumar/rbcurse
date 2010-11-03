@@ -55,7 +55,7 @@ module RubyCurses
   end
   require 'forwardable'
   require 'rbcurse/extras/bottomline'
-  $tt = Bottomline.new
+  $tt ||= Bottomline.new
   class CheckBox
     # a little dicey XXX 
     def text(*val)
@@ -206,12 +206,16 @@ module RubyCurses
     end
     # prompts user for a command. we need to get this back to the calling app
     # or have some block stuff TODO
+    # Actually, this is naive, you would want to pass some values in like current data value
+    # or lines ??
+    # Also may want command completion, or help so all commands can be displayed
     def get_command_from_user
-      code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
-      return unless code == 0
+      #code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
+      #return unless code == 0
+      str = ask ("Cmd: ") 
       # shell the command
-      if str =~ /^:!/
-        str = str[2..-1]
+      if str =~ /^!/
+        str = str[1..-1]
         suspend(false) { system(str); 
           system("echo ");
           system("echo Press Enter to continue.");
@@ -222,7 +226,7 @@ module RubyCurses
         # TODO
         # here's where we can take internal commands
         #alert "[#{str}] string did not match :!"
-        str = str[1..-1]
+        str #= str[1..-1]
       end
 
     end
