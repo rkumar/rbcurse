@@ -29,6 +29,7 @@ module VER
       @name ||="#{self}"
       @modified = true
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
+      init_bottomlline
     end
     ##
     # this is an alternative constructor
@@ -484,36 +485,47 @@ module VER
     def rb_mvaddch row, col, char
       mvaddch row, col, char
     end
-  end
-  ##
-  # added RK 2009-10-08 23:57 for tabbedpanes
-  # THIS IS EXPERIMENTAL - 
-  # I have not called super in the initializer so any methods you try on subwin
-  # that exist in the superclass which use @window will bomb
-  # @since 0.1.3
-  class SubWindow  < VER::Window
-    attr_reader :width, :height, :top, :left
-    attr_accessor :layout
-    attr_reader   :panel   # XXX reader requires so he can del it in end
-    attr_reader   :subwin   # 
-    attr_reader   :parent   # 
-
-    def initialize(parent, layout)
-      @visible = true
-      reset_layout(layout)
-
-      @parent = parent
-      #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
-      @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
-      $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
-      #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
-      @panel = Ncurses::Panel.new_panel(@subwin)
-
-      @window = @subwin # makes more mthods available
-      init_vars
-
+    def init_bottomlline
+      unless @bottomline
+        require 'forwardable'
+        require 'rbcurse/extras/bottomline'
+        @bottomline = Bottomline.new
+        @Bottomline.window = @window
+        @Bottomline.message_row = $error_message_row
+        extend Forwardable
+        def_delegators :@bottomline, :ask, :say, :agree, :choose
+      end
     end
-    # no need really now 
+  end
+      ##
+      # added RK 2009-10-08 23:57 for tabbedpanes
+      # THIS IS EXPERIMENTAL - 
+      # I have not called super in the initializer so any methods you try on subwin
+      # that exist in the superclass which use @window will bomb
+      # @since 0.1.3
+      class SubWindow  < VER::Window
+        attr_reader :width, :height, :top, :left
+        attr_accessor :layout
+        attr_reader   :panel   # XXX reader requires so he can del it in end
+        attr_reader   :subwin   # 
+        attr_reader   :parent   # 
+
+        def initialize(parent, layout)
+          @visible = true
+          reset_layout(layout)
+
+          @parent = parent
+          #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
+          @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
+          $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
+          #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
+          @panel = Ncurses::Panel.new_panel(@subwin)
+
+          @window = @subwin # makes more mthods available
+          init_vars
+
+        end
+        # no need really now 
     def reset_layout layout
       @layout = layout # 2010-02-13 22:23 
       @height = layout[:height]
