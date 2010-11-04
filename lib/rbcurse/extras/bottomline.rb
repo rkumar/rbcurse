@@ -345,7 +345,8 @@ module RubyCurses
           raise NoAutoCompleteMatch
         end
         if @answer_type.is_a?(Array)
-          answer.last
+          #answer.last  # we don't need this anylonger
+          answer_string # we have already selected
         elsif @answer_type == File
           File.open(File.join(@directory.to_s, answer.last))
         else
@@ -490,7 +491,7 @@ module RubyCurses
   end # class
 
   def ask(question, answer_type=String, &details)
-    clear_line 80
+    #clear_line 80
     @question ||= Question.new(question, answer_type, &details)
     say(@question) #unless @question.echo == true
 
@@ -586,6 +587,7 @@ module RubyCurses
     #puts statement
     @prompt_length = statement.length # required by ask since it prints after 
     @statement = statement # 
+    clear_line
     print_str statement, config
   end
   # A helper method for sending the output stream and error and repeat
@@ -605,7 +607,7 @@ module RubyCurses
     x = config.fetch :x, @message_row # Ncurses.LINES-1
     y = config.fetch :y, 0
     color = config[:color_pair] || $datacolor
-    raise "no window for ask print" unless win
+    raise "no window for ask print in #{self.class} " unless win
     color=Ncurses.COLOR_PAIR(color);
     win.attron(color);
     #win.mvprintw(x, y, "%-40s" % text);
@@ -710,7 +712,7 @@ module RubyCurses
               if !entries.nil? and !entries.empty?
                 olen = str.length
                 str = entries.delete_at(0)
-                str = str.dup
+                str = str.to_s.dup
                 #str = entries[@current_index].dup
                 #@current_index += 1
                 #@current_index = 0 if @current_index == entries.length
@@ -737,7 +739,7 @@ module RubyCurses
               #str = entries[@current_index].dup unless entries.nil? or entries.empty?
               #@current_index += 1
               #@current_index = 0 if @current_index == entries.length
-              str = str.dup
+              str = str.to_s.dup
               if str
                 curpos = str.length
                 len += str.length - olen
