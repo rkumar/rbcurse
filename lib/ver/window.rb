@@ -7,6 +7,7 @@ module VER
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     attr_accessor :modified # has it been modified and may need a refresh
+    attr_reader   :bottomline  # experimental here 2010-11-03 22:19 
 
     def initialize(layout)
       @visible = true
@@ -14,11 +15,11 @@ module VER
 
       @window = Ncurses::WINDOW.new(height, width, top, left)
       @panel = Ncurses::Panel.new_panel(@window)
-      init_vars
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1
+      init_vars
 
 
     end
@@ -29,7 +30,7 @@ module VER
       @name ||="#{self}"
       @modified = true
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
-      init_bottomlline
+      init_bottomline
     end
     ##
     # this is an alternative constructor
@@ -485,13 +486,14 @@ module VER
     def rb_mvaddch row, col, char
       mvaddch row, col, char
     end
-    def init_bottomlline
+    # experimentally
+    # Add a bottomline to window when creating root_window
+    # this way its available even when App is not used.
+    def init_bottomline
       unless @bottomline
         require 'forwardable'
         require 'rbcurse/extras/bottomline'
-        @bottomline = Bottomline.new
-        @Bottomline.window = @window
-        @Bottomline.message_row = $error_message_row
+        @bottomline = Bottomline.new self, $error_message_row
         extend Forwardable
         def_delegators :@bottomline, :ask, :say, :agree, :choose
       end
