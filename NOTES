@@ -1945,3 +1945,36 @@ others) and Ctrl-Spacebar continues selection. Have to check this out
 with Listbox. including `ListSelectable` should take care of most of this.
 
 * * * * * * * *
+
+Subject: rmessagewindow
+-----------------------
+Date: 2010-11-04 12:23
+
+Regarding bottomline and rmessagewindow
+
+I was thinking that if i try to do bottomline in a separate window that
+just pops up and goes off, then i don't have to worry about having a
+window handle (since a new window is created with each call). I tried
+out this approach with rmessagewindow.
+
+However, first of all one has to press a key to make the message go off.
+Secondly, when the window goes off, so does the message. Whatever was
+there before remains. Which is great if that's what you need. (But we
+already have alert() and rdialog for that).
+
+This is fine for accepting input at screen bottom, but after ask() we
+still want to display some message like "file written" and let it be
+there. Which means i still have to write to existing window, so my
+problem remains. I need to have handle of existing window.
+
+I've added a bottomline object in each window when we create so we can
+use it as `@window.ask`,  `@window.agree`.
+
+When you use App, you automatically get `ask()` connected to the root
+window, but what happens when one App calls another App!!
+
+However, i really like how i can do a 'M-x' (taken from memacs), and
+then tab to see available commands. This way user does not need to
+remember key combinations.
+
+* * * * * * * *
