@@ -167,6 +167,44 @@ module RubyCurses
       @message_label.repaint
       @window.refresh
     end
+    # print directly onto stdscr so that form or window does not require repainting
+    # and cursor not messed. however, once form paints then this will be overwritten
+    # so at end of printing raw_messages, use message() for final status.
+    # Usage: application is inside a long processing loop and wishes to print ongoing status
+    # (similar to message_immediate) but faster and less involved
+    def raw_message text
+      # experimentally trying stdscr instead of label
+      scr = Ncurses.stdscr
+      stext = "%80s" % text
+      Ncurses.mvprintw @message_label.row ,0, text
+      scr.refresh()
+    end
+    # shows a simple progress bar on last row, using stdscr
+    # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
+    # If Array of two numbers is given then also print part/total on left of bar
+    def raw_progress arg
+      s = nil
+      case arg
+      when Array
+        #calculate percentage
+        pc = (arg[0]*1.0)/arg[1]
+        # print items/total also
+        s = "%-10s" % "(#{arg[0]}/#{arg[1]})"
+      when
+        Float
+        pc = arg
+      end
+      scr = Ncurses.stdscr
+      endcol = Ncurses.COLS-1
+      startcol = endcol - 12
+      stext = ("=" * (pc*10).to_i) 
+      text = "[" + "%-10s" % stext + "]"
+      Ncurses.mvprintw( @message_label.row ,startcol-10, s) if s
+      Ncurses.mvprintw @message_label.row ,startcol, text
+      scr.refresh()
+
+    end
+    # used only by LiveConsole, if enables in an app, usually only during testing.
     def get_binding
       return binding()
     end
@@ -209,10 +247,10 @@ module RubyCurses
     # Actually, this is naive, you would want to pass some values in like current data value
     # or lines ??
     # Also may want command completion, or help so all commands can be displayed
-    def get_command_from_user
+    def get_command_from_user choices=nil
       #code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
       #return unless code == 0
-      str = ask ("Cmd: ") 
+      str = ask("Cmd: ", choices) 
       # shell the command
       if str =~ /^!/
         str = str[1..-1]
@@ -226,7 +264,14 @@ module RubyCurses
         # TODO
         # here's where we can take internal commands
         #alert "[#{str}] string did not match :!"
-        str #= str[1..-1]
+        str = str.to_s #= str[1..-1]
+        cmdline = str.split
+        cmd = cmdline.shift #.to_sym
+        if respond_to?(cmd, true)
+          send cmd, *cmdline
+        else
+          alert "#{self.class} does not respond to #{cmd} "
+        end
       end
 
     end
@@ -884,24 +929,20 @@ module RubyCurses
           @form.bind_key(?:) { 
             # take care of full string. should command itself parse or what
             str = get_command_from_user
-            if str
-              # take first string FIXME
-              cmdline = str.split
-              cmd = cmdline.shift #.to_sym
-              if respond_to?(cmd, true)
-                send cmd, *cmdline
-              else
-                if Module.respond_to?(cmd, true)
-                  Module.send cmd, *cmdline
-                else
-                  alert "#{self.class} does not respond to #{cmd} "
-                end
-              end
-            end
+            #if str
+              ## take first string FIXME
+              #cmdline = str.split
+              #cmd = cmdline.shift #.to_sym
+              #if respond_to?(cmd, true)
+                #send cmd, *cmdline
+              #else
+                #alert "#{self.class} does not respond to #{cmd} "
+              #end
+            #end
           }
 
           @message = Variable.new
-          @message.value = "Message Comes Here"
+          @message.value = ""
           @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
           $error_message.update_command { @message.set_value($error_message.value) }
           if block
