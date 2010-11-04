@@ -533,7 +533,9 @@ module RubyCurses
       return str
     end
     # this is just a test of the simple "most" menu
+    # How can application add to this, or override
     def disp_menu  #:nodoc:
+
       menu = PromptMenu.new self 
       menu.add( menu.create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} ))
       menu.add(menu.create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right ))
@@ -611,20 +613,19 @@ module RubyCurses
       end
     end
     def saveas name=nil, config={}
-      $terminal.window = @graphic
-      $terminal.message_row = 27  # FIXME where should this be initialized, one place
       unless name
         name = @graphic.ask "File to save as: "
       end
       exists = File.exists? name
       if exists # need to prompt
-        return unless agree("Overwrite existing file? ", true)
+        return unless @graphic.agree("Overwrite existing file? ", true)
       end
       l = getvalue
       File.open(name, "w"){ |f|
-        l.each { |line| f.write line }
+        l.each { |line| f.puts line }
         #l.each { |line| f.write line.gsub(/\r/,"\n") }
       }
+      @graphic.say "#{name} written."
     end
 
 
