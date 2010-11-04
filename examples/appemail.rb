@@ -5,6 +5,33 @@ require './rmail'
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
 
+def test
+  #require 'rbcurse/rcommandwindow'
+  #rc = CommandWindow.new
+  scr = Ncurses.stdscr
+  scr.color_set $promptcolor, nil
+  Ncurses.mvprintw 27,0,"helllllo theeeerE                  "
+  scr.refresh()
+end
+def saveas1
+  @tv.saveas 
+end
+
+# experimental. 
+# if components have some commands, can we find a way of passing the command to them
+# method_missing gave a stack overflow.
+def execute_this(meth, *args)
+  $log.debug "app email got #{meth}  " if $log.debug? 
+  cc = @vim.current_component
+  [cc, @lb2, @tv].each do |c|  
+    if c.respond_to?(meth, true)
+      c.send(meth, *args)
+      return true
+    end
+  end
+  false
+end
+
 App.new do 
   ht = 24
   @messages = nil
@@ -57,7 +84,7 @@ App.new do
       mx.array_each do |text|
         @lines << text
       end
-      message " #{e.text} has #{@lines.size} messages"
+      message_immediate " #{e.text} has #{@lines.size} messages"
       $unread_hash[File.basename(e.text)] = mx.unread_count
       @lb2.set_content @lines
       @lb2.estimate_column_widths=true
@@ -80,10 +107,16 @@ App.new do
     end
     @lb2.bind :ENTER_ROW do |e|
       @header.text_right "Row #{e.current_index} of #{@messages.size} "
+      message_immediate "Row #{e.current_index} of #{@messages.size} "
+      x = e.current_index
+      y = @messages.size
+      #raw_progress((x*1.0)/y)
+      raw_progress([x,y])
     end
 
     @tv = @vim.set_right_bottom_component "Email body comes here. "
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
+  @form.bind_key(?\M-x) { test() }
 end # app
