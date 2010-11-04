@@ -43,6 +43,7 @@ module RubyCurses
     dsl_accessor :min_weight, :max_weight
     dsl_accessor :suppress_borders #to_print_borders
     dsl_accessor :border_attrib, :border_color
+    attr_reader :current_component
     def initialize form, config={}, &block
       if config[:width] == :EXPAND
         config[:width] = Ncurses.COLS - config[:col]
