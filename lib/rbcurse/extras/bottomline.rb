@@ -571,7 +571,7 @@ module RubyCurses
   def say statement, config={}
     case statement
     when Question
-      $log.debug "INSIDE QUESTION  1" if $log.debug? 
+  
       if config.has_key? :color_pair
         $log.debug "INSIDE QUESTION 2 " if $log.debug? 
       else
