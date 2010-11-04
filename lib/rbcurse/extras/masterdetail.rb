@@ -9,7 +9,7 @@ require 'forwardable'
 # that could take place.
 class MasterDetail < Widget
   extend Forwardable
-  def_delegators :@vim, :on_enter, :on_leave, :handle_key
+  def_delegators :@vim, :on_enter, :on_leave, :handle_key, :current_component
   def initialize form, config={}, &block
     @focusable = true
     @height = Ncurses.LINES-2
