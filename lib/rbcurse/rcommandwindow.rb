@@ -42,8 +42,8 @@ module RubyCurses
       #else
         #@form.window = @window
       #end
-      acolor = get_color $reversecolor
-      color = get_color $datacolor
+      #acolor = get_color $reversecolor
+      #color = get_color $datacolor
       @window.printstring 0,0,"hello there", $normalcolor, 'normal'
       #@window.bkgd(Ncurses.COLOR_PAIR(acolor));
       @window.wrefresh
