@@ -113,7 +113,7 @@ module RubyCurses
         $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
       # window created in run !!!
-      $tt.window = @window; $tt.message_row = @message_row
+      #$tt.window = @window; $tt.message_row = @message_row
     end
     def logger; return $log; end
     def close
@@ -167,12 +167,15 @@ module RubyCurses
       @message_label.repaint
       @window.refresh
     end
+    # NOTE XXX using stdscr results in the screen going black if a dialog
+    # or other window is popped up, this was great but has not worked out.
     # print directly onto stdscr so that form or window does not require repainting
     # and cursor not messed. however, once form paints then this will be overwritten
     # so at end of printing raw_messages, use message() for final status.
     # Usage: application is inside a long processing loop and wishes to print ongoing status
     # (similar to message_immediate) but faster and less involved
     def raw_message text
+      return
       # experimentally trying stdscr instead of label
       scr = Ncurses.stdscr
       stext = "%80s" % text
@@ -271,9 +274,12 @@ module RubyCurses
           send cmd, *cmdline
         else
           alert "#{self.class} does not respond to #{cmd} "
+          ret = false
+          ret = execute_this(cmd, *cmdline) if respond_to?(:execute_this, true)
+          say("#{self.class} does not respond to #{cmd} ", :color_pair => $promptcolor) unless ret
+          # should be able to say in red as error
         end
       end
-
     end
     #
     # @group methods to create widgets easily
@@ -915,7 +921,11 @@ module RubyCurses
 
         # check if user has passed window coord in config, else root window
         @window = VER::Window.root_window
-        $tt.window = @window; $tt.message_row = @message_row
+        #$tt.window = @window; $tt.message_row = @message_row
+        awin = @window
+        #require 'rbcurse/extras/stdscrwindow'
+        #awin = StdscrWindow.new
+        $tt.window = awin; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
           @form.bind_key([?\C-x, ?c]) { suspend(false) do
@@ -926,19 +936,11 @@ module RubyCurses
             system(ENV['SHELL']);
           end
           }
+          # this is a very rudimentary default command executer, it does not 
+          # allow tab completion. App should use M-x with names of commands
+          # as in appgmail
           @form.bind_key(?:) { 
-            # take care of full string. should command itself parse or what
             str = get_command_from_user
-            #if str
-              ## take first string FIXME
-              #cmdline = str.split
-              #cmd = cmdline.shift #.to_sym
-              #if respond_to?(cmd, true)
-                #send cmd, *cmdline
-              #else
-                #alert "#{self.class} does not respond to #{cmd} "
-              #end
-            #end
           }
 
           @message = Variable.new
