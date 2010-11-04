@@ -97,6 +97,7 @@ module RubyCurses
       bind_key(?n, :find_more)
       bind_key([?\C-x, ?>], :scroll_right)
       bind_key([?\C-x, ?<], :scroll_left)
+      bind_key([?\C-x, ?\C-s], :saveas)
       bind_key(?r) { getstr("Enter a word: ") }
       bind_key(?m, :disp_menu)
     end
@@ -615,6 +616,7 @@ module RubyCurses
     def saveas name=nil, config={}
       unless name
         name = @graphic.ask "File to save as: "
+        return if name.nil? || name == ""
       end
       exists = File.exists? name
       if exists # need to prompt
