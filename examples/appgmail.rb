@@ -1,10 +1,12 @@
 require 'rbcurse/app'
 require 'fileutils'
+require 'yaml'
 require 'gmail'
 # You need gmail gem. (one of them depends on i18n gem).
 # TODO start putting commands in a popup or menu bar
 # TODO: compose a message  - what of contacts ? check sup, how to call vim fomr inside ncurses
 # TODO: reply.
+# TODO refresh, perhaps get unread and compare UIDS
 # FIXME: reconnect gave allmain count as inbox count, clicking on lb2 gave nilclass
 # TODO : x  highlight / select if pressing enter, so we know which one is being shwon
 #        _  should work with select also. Now we have a kind of mismatch between select
@@ -26,11 +28,98 @@ require 'gmail'
 #module RubyCurses
 #class App
 # putting some commands here so we can call from command_line
+def compose
+  # TODO make a separate screen damn you !
+  name = ask("To: ") # choices should be names from contacts
+  subject = ask("Subject: ")
+  # shell vim from here using temporary file
+  body = edit_text nil
+  message_immediate "sending message ... "
+  if body
+    @gmail.deliver do
+      to name
+      subject subject
+      body body
+    end
+  end
+  message "sent message to #{name} "
+end
+
+def edit_text text
+  # 2010-06-29 10:24 
+  require 'fileutils'
+  require 'tempfile'
+  ed = ENV['EDITOR'] || "vim"
+  temp = Tempfile.new "tmp"
+  File.open(temp,"w"){ |f| f.write text } if text
+  mtime =  File.mtime(temp.path)
+  #system("#{ed} #{temp.path}")
+  suspend() do
+    system(ed, temp.path)
+  end
+
+  newmtime = File.mtime(temp.path)
+  newstr = nil
+  if mtime < newmtime
+    # check timestamp, if updated ..
+    newstr = File.read(temp)
+  else
+    #puts "user quit without saving"
+    return nil
+  end
+  return newstr.chomp if newstr
+  return nil
+end
+def header
+  e = @lb2
+  env = get_current_message e
+  message_immediate "Fetching header ..."
+  header = env.header.to_s
+  case header
+  when String
+    header = header.split "\n"
+  end
+  view(header)
+end
+def savecontact
+  e = @lb2
+  env = get_current_message e
+  $log.debug "XXX ENV #{env} " if $log.debug? 
+  name = env.from[0].name
+  id = "#{env.from[0].mailbox}@#{env.from[0].host}"
+
+  obj = nil
+  filename = "contacts.yml"
+  if File.exists? filename
+    obj = YAML::load_file( filename )
+  end
+  obj ||=[]
+  obj << [name, id]
+  File.open(filename, 'w' ) do |f|
+    f << obj.to_yaml
+   end
+  message "Written #{name} #{id} to #{filename} "
+end
+def connectas
+  user = ask "Emailid: "
+  return unless user
+  pass = ask("Password", String){ |q| q.echo = '*' }
+  return unless pass
+  gmail_connect(user, pass)
+end
+def connect
+  gmail_connect
+end
+def test
+  require 'rbcurse/rcommandwindow'
+  rc = CommandWindow.new
+end
 def archive
   inds, ms = do_selected_rows(@lb2)
   inds = inds.sort.reverse
   inds.each { |e| @lb2.delete_at e; @messages.delete_at e }
   @lb2.clear_selection
+  say " #{inds.size} messages archived"
   Thread.new {
     ms.each { |m| 
     m.archive!
@@ -42,6 +131,7 @@ def delete
   aproc = lambda {|m| m.delete! }
   inds, ms = for_selected_rows(e, aproc) { |e| @lb2.delete_at e; @messages.delete_at e }
   @lb2.clear_selection
+  say " #{inds.size} messages deleted" if inds
 end
   def saveas *args
     @tv.saveas *args
@@ -84,6 +174,8 @@ end
 # operations take a little time.
 # indices are given in reverse order, so delete of rows in table
 # works correctly.
+#@return [false] if no selected rows
+#@return [Array<Fixnum>, Array<messages>] visual indices in listbox, and related messages (envelopes)
 def for_selected_rows(w, messageproc=nil)
   indices = []
   messages = []
@@ -94,7 +186,7 @@ def for_selected_rows(w, messageproc=nil)
     indices << row
     messages << message
   }
-  return unless indices
+  return false unless indices
   indices = indices.sort.reverse
   indices.each { |i| yield i if block_given? }
   if messageproc
@@ -114,6 +206,7 @@ def for_selected_rows(w, messageproc=nil)
     }
     thr.abort_on_exception = true
   end
+  return indices, messages
 end
 # fetch envelopes for a label name
 # and populates the right table
@@ -353,6 +446,19 @@ end
       # if you use pp then it shows here too and mucks the screen.
       # i think it writes on STDSCR - do not use pp and puts, just enter the variable
     }
+    @form.bind_key(?\M-x){
+      # TODO previous command to be default
+      opts = %w{ saveas test archive delete markread markunread spam star unstar open header savecontact connect connectas compose}
+      cmd = ask("Command: ", opts){ |q| q.default = @previous_command }
+      cmdline = cmd.split
+      cmd = cmdline.shift
+      if respond_to?(cmd, true)
+        @previous_command = cmd
+        send cmd, *cmdline
+      else
+        say("Command [#{cmd}] not supported by #{self.class} ")
+      end
+    }
 
     @form.bind_key(?\M-m){
       @max_to_read = ask("How many mails to retrieve? ", Integer) { |q| q.in = 1..1000 }
@@ -368,9 +474,7 @@ end
       gmail_connect
     }
     @form.bind_key(?\M-C){
-      user = ask "Emailid: "
-      pass = ask("Password", String){ |q| q.echo = '*' }
-      gmail_connect(user, pass)
+      connectas
     }
     @lb2.bind :PRESS do |e|
       message_immediate "Fetching body from server ..."
