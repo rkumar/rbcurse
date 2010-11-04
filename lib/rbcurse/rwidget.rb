@@ -2340,7 +2340,8 @@ module RubyCurses
     def repaint
       return unless @repaint_required
         r,c = rowcol
-        value = getvalue_for_paint
+        # value often nil so putting blank, but usually some application error
+        value = getvalue_for_paint || ""
         lablist = []
         if @height && @height > 1
           lablist = wrap_text(value, @display_length).split("\n")
