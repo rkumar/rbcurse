@@ -20,7 +20,7 @@ module RubyCurses
     include RubyCurses::Utils
     dsl_accessor :layout
     attr_reader :config
-    attr_reader :window     # required for keyboard
+    attr_reader :window     # required for keyboard or printing
     dsl_accessor :height, :width, :top, :left  #  2009-01-06 00:05 after removing meth missing
 
     def initialize form=nil, aconfig={}, &block
@@ -31,6 +31,8 @@ module RubyCurses
       if @layout.nil? 
           layout(1,80, 27, 0) 
       end
+      @height = @layout[:height]
+      @width = @layout[:width]
       @window = VER::Window.new(@layout)
       require 'forwardable'
       require 'rbcurse/extras/bottomline'
@@ -44,20 +46,21 @@ module RubyCurses
       #end
       #acolor = get_color $reversecolor
       #color = get_color $datacolor
-      @window.printstring 0,0,"hello there", $normalcolor, 'normal'
+      #@window.printstring 0,0,"hello there", $normalcolor, 'normal'
       #@window.bkgd(Ncurses.COLOR_PAIR(acolor));
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
       #@form.repaint
       @window.wrefresh
-      handle_keys
+      #handle_keys
     end
     ##
     ## message box
     def stopping?
       @stop
     end
+    # todo handle mappings, so user can map keys TODO
     def handle_keys
       begin
         while((ch = @window.getchar()) != 999 )
@@ -109,12 +112,41 @@ module RubyCurses
 
     def layout(height=0, width=0, top=0, left=0)
       @layout = { :height => height, :width => width, :top => top, :left => left } 
+      @height = height
+      @width = width
     end
     def destroy
       $log.debug "DESTROY : widget"
       panel = @window.panel
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
+    end
+    def display_menu list, options={}
+      lh = list.size
+      if lh < @layout[:height]-2
+        $log.debug "DDD inside one window" if $log.debug? 
+        list.each_with_index { |e, i| @window.printstring i+1, 1, e, $normalcolor  }
+      else
+        $log.debug "DDD inside two window" if $log.debug? 
+        row = 0
+        h = @height-2
+        cols = (list.size / h).ceil
+        adv = (@width/cols).to_i
+        colct = 0
+        col = 1
+        $log.debug "cols #{cols}, adv #{adv} size: #{lh} #{@height} w #{@width} " if $log.debug? 
+        list.each_with_index { |e, i| 
+          @window.printstring row+1, col, e, $normalcolor  
+          colct += 1
+          if colct == cols
+            col = 1
+            row += 1
+            colct = 0
+          else
+            col += adv
+          end
+        }
+      end
     end
   end
 end
