@@ -1215,6 +1215,7 @@ module RubyCurses
        if @window.window_type == :WINDOW
          $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
+         Ncurses::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
        end
     end
     ## 
