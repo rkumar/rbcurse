@@ -175,11 +175,14 @@ module RubyCurses
     # Usage: application is inside a long processing loop and wishes to print ongoing status
     # (similar to message_immediate) but faster and less involved
     def raw_message text
-      return
       # experimentally trying stdscr instead of label
       scr = Ncurses.stdscr
-      stext = "%80s" % text
-      Ncurses.mvprintw @message_label.row ,0, text
+      #@_stext = "%-80s" % text
+      @_stext ||= ""
+      @_stext <<  text
+      # appending is quite a pain, maybe we should make it separate.
+      stext = "%-80s" % @_stext
+      Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
       scr.refresh()
     end
     # shows a simple progress bar on last row, using stdscr
@@ -923,8 +926,8 @@ module RubyCurses
         @window = VER::Window.root_window
         #$tt.window = @window; $tt.message_row = @message_row
         awin = @window
-        #require 'rbcurse/extras/stdscrwindow'
-        #awin = StdscrWindow.new
+        require 'rbcurse/extras/stdscrwindow'
+        awin = StdscrWindow.new
         $tt.window = awin; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
