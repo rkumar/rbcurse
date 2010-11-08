@@ -215,6 +215,9 @@ module RubyCurses
     def [](off0)
       @list[off0]
     end
+    def insert off0, *data
+      @list.insert off0, *data
+    end
     # TODO more methods like in listbox so interchangeable, delete_at etc
     def column_width colindex, width
       return if width < 0
@@ -343,8 +346,10 @@ module RubyCurses
     def current_value
       @list[@current_index-@_header_adjustment] # XXX added header_adju 2010-11-01 11:14 
     end
+    def real_index
+      @current_index-@_header_adjustment # XXX added header_adju 2010-11-06 19:38 
+    end
     # Tabularwidget
-    # TODO multiple selection
     def handle_key ch #:nodoc:
       if header_row?
         ret = header_handle_key ch
