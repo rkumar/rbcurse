@@ -8,6 +8,8 @@ require 'forwardable'
 # quite a bit. Users may want to copy this to prevent from major changes
 # that could take place.
 class MasterDetail < Widget
+  dsl_property :weight
+  attr_reader :vim # the vimsplit for any further configuration such as min_weight etc
   extend Forwardable
   def_delegators :@vim, :on_enter, :on_leave, :handle_key, :current_component
   def initialize form, config={}, &block
@@ -36,17 +38,17 @@ class MasterDetail < Widget
   # manipulation.
   # @param [Widget] component to set on left
   # @return [Widget] component added
-  def set_left_component comp
-    @left = @vim.add comp, :FIRST
+  def set_left_component comp, weight=nil
+    @left = @vim.add comp, :FIRST, weight
     _add_component comp
     @left
   end
   # set the first component on the right side/pane, typically a +Listbox+.
   # @param [Widget] component to set on right
   # @return [Widget] component added
-  def set_right_top_component comp
+  def set_right_top_component comp, weight=0.5
     @added_top = true
-    @right1 = @vim.add comp, :SECOND, 0.5
+    @right1 = @vim.add comp, :SECOND, weight
     _add_component comp
     @right1
   end
@@ -54,14 +56,26 @@ class MasterDetail < Widget
   # +TextView+
   # @param [Widget] component to set on right
   # @return [Widget] component added
-  def set_right_bottom_component comp
+  def set_right_bottom_component comp, weight=nil
     raise "Please add top component first!" unless @added_top
     # what if user gives in wrong order !!
     @gb = @vim.add :divider, :SECOND, 0
-    @right2 = @vim.add comp, :SECOND, nil
+    @right2 = @vim.add comp, :SECOND, weight
     @gb.next(@right2)
     _add_component comp
     @right2
+  end
+  def focus comp
+    case comp
+    when :left
+      @vim.goto_component @left
+    when :top_right
+      @vim.goto_component @right1
+    when :bottom_right
+      @vim.goto_component @right2
+    else
+      @vim.goto_component comp
+    end
   end
   private
   # does nothing at present
