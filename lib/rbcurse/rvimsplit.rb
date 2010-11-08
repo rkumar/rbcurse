@@ -60,7 +60,7 @@ module RubyCurses
         end
       end
       @max_weight ||= 0.8
-      @min_weight ||= 0.2
+      @min_weight ||= 0.1 # earlier 0.2 but i wanted 0.15, someone may want 0.05 ??
       @suppress_borders = false
       @_use_preferred_sizes = true
       @row_offset = @col_offset = 1
@@ -626,6 +626,14 @@ module RubyCurses
       c = components_for(other_split)
       leave_current_component
       @current_component = c.first
+      set_form_row
+    end
+    # set focus on given component
+    # Sometimes you have the handle to component, and you want to move focus to it
+    def goto_component comp
+      return if comp == @current_component
+      leave_current_component
+      @current_component = comp
       set_form_row
     end
     # decrease the weight of the split
