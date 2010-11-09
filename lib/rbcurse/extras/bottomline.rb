@@ -222,6 +222,13 @@ module RubyCurses
       #    q.completion_proc = Proc.new {|str| Dir.glob(str +"*") }
       #
       attr_accessor :completion_proc
+
+      #
+      # Called when any character is pressed with the string.
+      #
+      #    q.change_proc = Proc.new {|str| Dir.glob(str +"*") }
+      #
+      attr_accessor :change_proc
       #
       # text to be shown if user presses M-h
       #
@@ -880,6 +887,7 @@ module RubyCurses
       say(@question) #unless @question.echo == true
 
       @completion_proc = @question.completion_proc
+      @change_proc = @question.change_proc
       @default = @question.default
       @helptext = @question.helptext
       @answer_type = @question.answer_type
@@ -923,7 +931,7 @@ module RubyCurses
       rescue QuestionError
         retry
       rescue ArgumentError, NameError => error
-        raise
+        #raise
         raise if error.is_a?(NoMethodError)
         if error.message =~ /ambiguous/
           # the assumption here is that OptionParser::Completion#complete
@@ -974,11 +982,17 @@ module RubyCurses
       clear_line
       print_str statement, config
     end
+    def say_with_pause statement, config={}
+      say statement, config
+      ch=@window.getchar()
+    end
     # A helper method for sending the output stream and error and repeat
     # of the question.
     #
+    # FIXME: since we write on one line in say, this often gets overidden
+    # by next say or ask
     def explain_error( error )
-      say(@question.responses[error]) unless error.nil?
+      say_with_pause(@question.responses[error]) unless error.nil?
       if @question.responses[:ask_on_error] == :question
         say(@question)
       elsif @question.responses[:ask_on_error]
@@ -1004,10 +1018,10 @@ module RubyCurses
     # completion proc, and some control characters such as C-a, C-e, C-k
     # Taken from io.rb, has some improvements to it. However, does not print the prompt
     # any longer
+    # Completion proc is vim style, on pressing tab it cycles through options
     def rbgetstr
       r = @message_row
       c = 0
-      #@current_index = 0
       win = @window
       @limit = @question.limit
       maxlen = @limit || 100 # fixme
@@ -1134,14 +1148,7 @@ module RubyCurses
             end
           when ?\C-a.getbyte(0) .. ?\C-z.getbyte(0)
             Ncurses.beep
-            #clear_line len+maxlen+1, @prompt_length
-            #clear
-            #next
           else
-            #if validints.include?ch
-            #print_status("Found in validints")
-            #return ch, nil
-            #else
             if ch < 0 || ch > 255
               Ncurses.beep
               next
@@ -1152,8 +1159,6 @@ module RubyCurses
               next
             end
             # we need to trap KEY_LEFT and RIGHT and what of UP for history ?
-            #end
-            #str << ch.chr
             if ins_mode
               str[curpos] = ch.chr
             else
@@ -1165,6 +1170,7 @@ module RubyCurses
           end
           case @question.echo
           when true
+            @change_proc.call(str) if @change_proc # added 2010-11-09 23:28 
             print_str(str, :y => @prompt_length+0)
           when false
             # noop
@@ -1177,7 +1183,6 @@ module RubyCurses
         str = default if str == ""
       ensure
         Ncurses.noecho();
-        #x restore_application_key_labels # must be done after using print_key_labels
       end
       return 0, str
     end
@@ -1216,6 +1221,26 @@ module RubyCurses
       end
     end
 
+    # presents given list in numbered format in a window above last line
+    # and accepts input on last line
+    # @return selected option from list
+    def numbered_menu list1, config={}
+      if list1.nil? || list1.empty?
+        say_with_pause "empty list passed to numbered_menu" 
+        return nil
+      end
+      prompt = config[:prompt] || "Select one: "
+      require 'rbcurse/rcommandwindow'
+      layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
+      w = rc.window
+      # should we yield rc, so user can bind keys or whatever
+      rc.display_menu list1, :indexing => :number
+      ret = ask(prompt, Integer ) { |q| q.in = 1..list1.size }
+      rc.destroy
+      rc = nil
+      list1[ret-1]
+    end
     #
     # This method is HighLine's menu handler.  For simple usage, you can just
     # pass all the menu items you wish to display.  At that point, choose() will
@@ -1342,7 +1367,7 @@ if __FILE__ == $PROGRAM_NAME
   $tt = Bottomline.new
   module Kernel
     extend Forwardable
-    def_delegators :$tt, :ask, :say, :agree, :choose
+    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu
   end
   App.new do 
     header = app_header "rbcurse 1.2.0", :text_center => "**** Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
