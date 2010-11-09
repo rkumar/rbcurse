@@ -19,6 +19,8 @@ module RubyCurses
   class CommandWindow
     include RubyCurses::Utils
     dsl_accessor :layout
+    dsl_accessor :box
+    dsl_accessor :title
     attr_reader :config
     attr_reader :window     # required for keyboard or printing
     dsl_accessor :height, :width, :top, :left  #  2009-01-06 00:05 after removing meth missing
@@ -48,12 +50,25 @@ module RubyCurses
       #color = get_color $datacolor
       #@window.printstring 0,0,"hello there", $normalcolor, 'normal'
       #@window.bkgd(Ncurses.COLOR_PAIR(acolor));
+      if @box
+        #@window.box 0,0
+        @window.attron(Ncurses.COLOR_PAIR($normalcolor) | Ncurses::A_REVERSE)
+        @window.mvhline 0,0,1,@width
+        @window.printstring 0,0,@title, $normalcolor #, 'normal' if @title
+        @window.attroff(Ncurses.COLOR_PAIR($normalcolor) | Ncurses::A_REVERSE)
+      else
+        @window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
+      end
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
       #@form.repaint
       @window.wrefresh
       #handle_keys
+      @row_offset = 0
+      if @box
+        @row_offset = 1
+      end
     end
     ##
     ## message box
@@ -116,27 +131,51 @@ module RubyCurses
       @width = width
     end
     def destroy
-      $log.debug "DESTROY : widget"
+      #$log.debug "DESTROY : rcommandwindow"
       panel = @window.panel
       Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
+    # do not go more than 3 columns and do not print more than window TODO FIXME
     def display_menu list, options={}
+      indexing = options[:indexing]
+      max_cols = 3
+      l_succ = "`"
+      act_height = @height
+      if @box
+        act_height = @height - 2
+      end
       lh = list.size
-      if lh < @layout[:height]-2
+      if lh < act_height
         $log.debug "DDD inside one window" if $log.debug? 
-        list.each_with_index { |e, i| @window.printstring i+1, 1, e, $normalcolor  }
+        list.each_with_index { |e, i| 
+          text = e
+          if indexing == :number
+            text = "%d. %s" % [i+1, e] 
+          elsif indexing == :letter
+            text = "%s. %s" % [l_succ.succ!, e] 
+          end
+          @window.printstring i+@row_offset, 1, text, $normalcolor  
+        }
       else
         $log.debug "DDD inside two window" if $log.debug? 
         row = 0
-        h = @height-2
-        cols = (list.size / h).ceil
+        h = act_height
+        cols = (lh*1.0 / h).ceil
+        cols = max_cols if cols > max_cols
         adv = (@width/cols).to_i
         colct = 0
         col = 1
-        $log.debug "cols #{cols}, adv #{adv} size: #{lh} #{@height} w #{@width} " if $log.debug? 
+        $log.debug "DDDcols #{cols}, adv #{adv} size: #{lh} h: #{act_height} w #{@width} " if $log.debug? 
         list.each_with_index { |e, i| 
-          @window.printstring row+1, col, e, $normalcolor  
+          # check that row + @row_offset < @top + @height or whatever TODO
+          text = e
+          if indexing == :number
+            text = "%d. %s" % [i+1, e] 
+          elsif indexing == :letter
+            text = "%s. %s" % [l_succ.succ!, e] 
+          end
+          @window.printstring row+@row_offset, col, text, $normalcolor  
           colct += 1
           if colct == cols
             col = 1
@@ -147,6 +186,9 @@ module RubyCurses
           end
         }
       end
+      Ncurses::Panel.update_panels();
+      Ncurses.doupdate();
+      @window.wrefresh
     end
   end
 end
