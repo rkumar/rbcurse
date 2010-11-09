@@ -5,12 +5,37 @@ require './rmail'
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
 
+def testme
+  list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
+  str = numbered_menu nil, { :title => "Languages: ", :prompt => "Select :" }
+  say "We got #{str} "
+end
+def test1
+  # creating a scratch window. should be put a textview in it ? or label ?
+  require 'rbcurse/rcommandwindow'
+  @layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
+  rc = CommandWindow.new nil, :layout => @layout, :box => true
+  w = rc.window
+  list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken jython jango rako rubcurse }
+  rc.display_menu list1 #, :indexing => :letter
+  ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove 1,1 ; w.wclrtobot; rc.display_menu list1.grep Regexp.new("^#{str}") } }
+  # need some validation here that its in the list TODO
+  rc.destroy
+  rc = nil
+  #@rc = rc
+end
+def testend
+  @rc.destroy if @rc
+  @rc = nil
+end
 def test
   #require 'rbcurse/rcommandwindow'
   #rc = CommandWindow.new
   scr = Ncurses.stdscr
-  scr.color_set $promptcolor, nil
+  #scr.color_set $promptcolor, nil
+  Ncurses.attron(Ncurses.COLOR_PAIR($promptcolor))
   Ncurses.mvprintw 27,0,"helllllo theeeerE                  "
+  Ncurses.attroff(Ncurses.COLOR_PAIR($promptcolor))
   scr.refresh()
 end
 def saveas1
@@ -107,7 +132,8 @@ App.new do
     end
     @lb2.bind :ENTER_ROW do |e|
       @header.text_right "Row #{e.current_index} of #{@messages.size} "
-      message_immediate "Row #{e.current_index} of #{@messages.size} "
+      #message_immediate "Row #{e.current_index} of #{@messages.size} "
+      raw_message "Row #{e.current_index} of #{@messages.size} "
       x = e.current_index
       y = @messages.size
       #raw_progress((x*1.0)/y)
@@ -118,5 +144,5 @@ App.new do
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
-  @form.bind_key(?\M-x) { test() }
+  @form.bind_key(?\M-x) { test1() }
 end # app
