@@ -5,12 +5,28 @@ require './rmail'
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
 
+def test1
+  str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
+end
 def testme
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
-  str = numbered_menu nil, { :title => "Languages: ", :prompt => "Select :" }
+  str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
   say "We got #{str} "
 end
-def test1
+def test2
+  require 'rbcurse/rcommandwindow'
+  layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
+  rc = CommandWindow.new nil, :layout => layout, :box => true
+  w = rc.window
+  list1 = Dir.glob("*")
+  rc.display_menu list1 #, :indexing => :letter
+  str = ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+  #str = ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = Dir.glob(str+"*") ; rc.display_menu l; l} }
+  # need some validation here that its in the list TODO
+  rc.destroy
+  rc = nil
+end
+def test11
   # creating a scratch window. should be put a textview in it ? or label ?
   require 'rbcurse/rcommandwindow'
   @layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
@@ -18,7 +34,7 @@ def test1
   w = rc.window
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken jython jango rako rubcurse }
   rc.display_menu list1 #, :indexing => :letter
-  ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove 1,1 ; w.wclrtobot; rc.display_menu list1.grep Regexp.new("^#{str}") } }
+  str = ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove 1,1 ; w.wclrtobot; rc.display_menu list1.grep Regexp.new("^#{str}") } }
   # need some validation here that its in the list TODO
   rc.destroy
   rc = nil
