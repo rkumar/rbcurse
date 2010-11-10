@@ -1037,6 +1037,7 @@ module RubyCurses
       # clear the area of len+maxlen
       color = $datacolor
       str = default
+      cpentries = nil
       #clear_line len+maxlen+1
       #print_str(prompt+str)
       print_str(str, :y => @prompt_length+0) if @default
@@ -1145,6 +1146,19 @@ module RubyCurses
                   alert "NO MORE 2"
                 end
               end
+            else
+              # there's another type of completion that bash does, which is irritating
+              # compared to what vim does, it does partial completion 
+              if cpentries
+                olen = str.length
+                if cpentries.size == 1
+                  str = cpentries.first.dup
+                else
+                  str = shortest_match(cpentries).dup
+                end
+                curpos = str.length
+                len += str.length - olen
+              end
             end
           when ?\C-a.getbyte(0) .. ?\C-z.getbyte(0)
             Ncurses.beep
@@ -1162,7 +1176,7 @@ module RubyCurses
             if ins_mode
               str[curpos] = ch.chr
             else
-              str.insert(curpos, ch.chr)
+              str.insert(curpos, ch.chr) # FIXME index out of range due to changeproc
             end
             len += 1
             curpos += 1
@@ -1170,10 +1184,14 @@ module RubyCurses
           end
           case @question.echo
           when true
-            @change_proc.call(str) if @change_proc # added 2010-11-09 23:28 
+            begin
+              cpentries = @change_proc.call(str) if @change_proc # added 2010-11-09 23:28 
+            rescue => exc
+              $log.debug "bottomline: change_proc EXC #{exc} " if $log.debug? 
+            end
             print_str(str, :y => @prompt_length+0)
           when false
-            # noop
+            # noop, no echoing what is typed
           else
             print_str(@question.echo * str.length, :y => @prompt_length+0)
           end
@@ -1185,6 +1203,24 @@ module RubyCurses
         Ncurses.noecho();
       end
       return 0, str
+    end
+
+    # compares entries in array and returns longest common starting string
+    # as happens in bash when pressing tab
+    # abc abd abe will return ab
+    def shortest_match a
+
+      l = a.inject do |memo,word|
+        str = nil
+        0.upto(memo.size) do |i|
+          if memo[0..i] == word[0..i]
+            str = memo[0..i]
+          else
+            break
+          end
+        end
+        str
+      end
     end
     # clears line from 0, not okay in some cases
     def clear_line len=100, from=0
@@ -1241,6 +1277,33 @@ module RubyCurses
       rc = nil
       list1[ret-1]
     end
+    # Allows a selection in which options are shown over prompt. As user types
+    # options are narrowed down.
+    # FIXME we can put remarks in fron as in memacs such as [No matches] or [single completion]
+    # @param [Array]  a list of items to select from
+    def choose list1, config={}
+      case list1
+      when NilClass
+        list1 = Dir.glob("*")
+      when String
+        list1 = Dir.glob(list1)
+      when Array
+        # let it be, that's how it should come
+      else
+        # I don't know how to handle this
+        list1 = Dir.glob("*")
+      end
+      require 'rbcurse/rcommandwindow'
+      prompt = config[:prompt] || "Choose: "
+      layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
+      w = rc.window
+      rc.display_menu list1
+      str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+      # need some validation here that its in the list TODO
+      rc.destroy
+      rc = nil
+    end
     #
     # This method is HighLine's menu handler.  For simple usage, you can just
     # pass all the menu items you wish to display.  At that point, choose() will
@@ -1256,7 +1319,7 @@ module RubyCurses
     # 
     # Raises EOFError if input is exhausted.
     # 
-    def choose( *items, &details )
+    def XXXchoose( *items, &details )
       @menu = @question = Menu.new(&details)
       @menu.choices(*items) unless items.empty?
 
@@ -1381,15 +1444,15 @@ if __FILE__ == $PROGRAM_NAME
     #end # stack
     #-----------------#------------------
 
-choose do |menu|
-  menu.prompt = "Please choose your favorite programming language?  "
-  #menu.layout = :one_line
-
-  menu.choice :ruby do say("Good choice!") end
-  menu.choice(:python) do say("python Not from around here, are you?") end
-  menu.choice(:perl) do say("perl Not from around here, are you?") end
-  menu.choice(:rake) do say("rake Not from around here, are you?") end
-end
+#choose do |menu|
+  #menu.prompt = "Please choose your favorite programming language?  "
+  ##menu.layout = :one_line
+#
+  #menu.choice :ruby do say("Good choice!") end
+  #menu.choice(:python) do say("python Not from around here, are you?") end
+  #menu.choice(:perl) do say("perl Not from around here, are you?") end
+  #menu.choice(:rake) do say("rake Not from around here, are you?") end
+#end
     entry = {}
     entry[:command]     = ask("Command?  ", %w{archive delete read refresh delete!}) 
     exit unless agree("Wish to continue? ", false)
