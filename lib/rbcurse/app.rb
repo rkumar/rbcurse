@@ -77,7 +77,7 @@ module RubyCurses
     attr_accessor :prompt_row
 
     extend Forwardable
-    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list_interactive
+    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list
     #@tt = Bottomline.new @window, @message_row
     #extend Forwardable
     #def_delegators :@tt, :ask, :say, :agree, :choose
