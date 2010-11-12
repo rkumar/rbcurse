@@ -77,7 +77,7 @@ module RubyCurses
     attr_accessor :prompt_row
 
     extend Forwardable
-    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu
+    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list_interactive
     #@tt = Bottomline.new @window, @message_row
     #extend Forwardable
     #def_delegators :@tt, :ask, :say, :agree, :choose
@@ -177,12 +177,13 @@ module RubyCurses
     def raw_message text
       # experimentally trying stdscr instead of label
       scr = Ncurses.stdscr
-      #@_stext = "%-80s" % text
-      @_stext ||= ""
-      @_stext <<  text
-      # appending is quite a pain, maybe we should make it separate.
-      stext = "%-80s" % @_stext
-      Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
+      text = "%-80s" % text
+      Ncurses.mvprintw @message_label.row ,0, text
+      #@_stext ||= ""
+      #@_stext <<  text
+      ## appending is quite a pain, maybe we should make it separate.
+      #stext = "%-80s" % @_stext
+      #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
       scr.refresh()
     end
     # shows a simple progress bar on last row, using stdscr
