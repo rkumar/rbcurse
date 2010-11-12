@@ -1314,17 +1314,20 @@ module RubyCurses
       rc = CommandWindow.new nil, :layout => layout, :box => true
       w = rc.window
       #rc.text "There was a quick  brown fox who ran over the lazy dog and then went over the moon over and over again and again"
-      rc.display_text_interactive text
+      rc.display_interactive(text) { |l|
+        l.focussed_attrib = 'bold' # Ncurses::A_UNDERLINE
+        l.focussed_symbol = '>'
+      }
       rc = nil
     end
-    def display_list_interactive text, config={}
+    #def display_list_interactive text, config={}
+    def display_list text, config={}
       require 'rbcurse/rcommandwindow'
       ht = config[:height] || 15
       layout = { :height => ht, :width => Ncurses.COLS-1, :top => Ncurses.LINES-ht+1, :left => 0 }
       rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
       w = rc.window
-      #rc.text "There was a quick  brown fox who ran over the lazy dog and then went over the moon over and over again and again"
-      ret = rc.display_list_interactive text
+      ret = rc.display_interactive text
       rc = nil
       ret
     end
