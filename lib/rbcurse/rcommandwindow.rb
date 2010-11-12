@@ -225,140 +225,32 @@ module RubyCurses
       @window.wmove 1,1
       @window.wclrtobot
     end
-    def display_text_interactive text
-      to = TextObject.new self, text
-      to.display_text_interactive
-    end
-    class TextObject
-      #attr_reader :text
-      attr_reader :cw
-      def initialize cw, _text
-           @cw  = cw
-           layout = @cw.layout
-           $log.debug "XXX TextOb layout #{layout.class} #{layout}  " if $log.debug? 
-           text(_text)
-           @window = @cw.window
-           @height = layout[:height]
-           @width = layout[:width]
-      end
-      def text txt, config={}
-        case txt
-        when String
-          txt = wrap_text(txt, @width-2).split("\n")
-        when Array
-          # okay
-        end
-        @list = txt
-      end
-      alias :content :text
-      # maybe we should just use a textview or label rather than try to 
-      # do it all voer again !
-      def display_text
-        @start ||= 0
-        @start = 0 if @start < 0
-        $log.debug "XXX display_text #{@start} " if $log.debug? 
-        row_offset = 1
-        col = 1
-        size = @list.size-1
-        row = 0
-        @start.upto(@start+@height-1) do |i|
-          break if i > size
-          #$log.debug " XXX      #{i}  " if $log.debug? 
-          line = "#{i} #{@list[i]} "
-          line ||= ""
-          @window.printstring row+row_offset, col, line, $datacolor
-          row += 1
-          #break if start+i > @height
-        end
-        @cw.refresh
-      end
-      def display_text_interactive
-        display_text
-        while !@stop
-          handle_keys { |ch| @cw.clear; display_text }
-        end
-      end
-      def press ch
-        ch = ch.getbyte(0) if ch.class==String ## 1.9
-        $log.debug " XXX press #{ch} " if $log.debug? 
-        case ch
-        when -1
-          return
-        when KEY_F1, 27, ?\C-q.getbyte(0)   
-          @stop = true
-          return
-        when KEY_ENTER, 10, 13
-          #$log.debug "popup ENTER : #{@selected_index} "
-          #$log.debug "popup ENTER :  #{field.name}" if !field.nil?
-          @stop = true
-          return
-        when 32, ?\C-d.getbyte(0)
-          @start += @height-1
-          bounds_check
-        when KEY_UP
-          @start -= 1
-          @start = 0 if @start < 0
-        when KEY_DOWN
-          @start += 1
-          bounds_check
-        when ?\C-b.getbyte(0)
-          @start -= @height-1
-          @start = 0 if @start < 0
-        when 0
-          @start = 0
-        end
-        #@form.repaint
-        Ncurses::Panel.update_panels();
-        Ncurses.doupdate();
-        @window.wrefresh
-      end
-      def bounds_check
-        @start = 0 if @start < 0
-        row_offset = 1
-        last = (@list.length)-(@height-row_offset-1)
-        if @start > last
-          @start = last
-        end
-      end # bounds_check
-      def handle_keys
-        begin
-          while((ch = @window.getchar()) != 999 )
-            case ch
-            when -1
-              next
-            else
-              press ch
-              break if @stop
-              yield ch if block_given?
-            end
-          end
-        ensure
-          @cw.destroy  
-        end
-        return #@selected_index
-      end
-    end # class TextObject
-    def display_list_interactive text
-      to = ListObject.new self, text
-      to.display_list_interactive
+    def display_interactive text, config={}
+      to = ListObject.new self, text, config
+      yield to if block_given?
+      to.display_interactive
     end
     class ListObject
       attr_reader :cw
-      def initialize cw, _list
+      attr_reader :list
+      attr_accessor :focussed_attrib
+      attr_accessor :focussed_symbol
+      def initialize cw, _list, config={}
            @cw  = cw
            layout = @cw.layout
-           list(_list)
            @window = @cw.window
            @height = layout[:height]
            @width = layout[:width]
-           @selected_index = 2
+           content(_list)
+           @selected_index = nil
            @current_index = 0
            @row_offset = 1
       @toprow = 0
            $multiplier = 0 # till we can do something
 
+           @focussed_symbol = ''
            @row_selected_symbol = ''
-           @show_selector = true
+           #@show_selector = true
            if @show_selector
              @row_selected_symbol ||= '*'
              @row_unselected_symbol ||= ' '
@@ -368,41 +260,22 @@ module RubyCurses
            #@row_selected_symbol = '*'
            #@row_unselected_symbol = ' '
       end
-      def list txt, config={}
-        #case txt
-        #when String
-          #txt = wrap_text(txt, @width-2).split("\n")
-        #when Array
-          ## okay
-        #end
+      def content txt, config={}
+        case txt
+        when String
+          txt = wrap_text(txt, @width-2).split("\n")
+        when Array
+          # okay
+        end
         @list = txt
       end
-      alias :content :list
       # maybe we should just use a textview or label rather than try to 
       # do it all voer again !
-      def _display_text
-        @start ||= 0
-        $log.debug "XXX display_text #{@start} " if $log.debug? 
-        row_offset = 1
-        col = 1
-        size = @list.size-1
-        row = 0
-        @start.upto(@start+@height-1) do |i|
-          #break if i > size
-          $log.debug " XXX      #{i}  " if $log.debug? 
-          line = "#{i} #{@list[i]} "
-          line ||= ""
-          @window.printstring row+row_offset, col, line, $datacolor
-          row += 1
-          #break if start+i > @height
-        end
-        @cw.refresh
-      end
-      def display_list_interactive
-        display_list
+      def display_interactive
+        display_content
         while !@stop
           # FIXME only clear and redisplay if change has happened (repaint_require)
-          handle_keys { |ch| @cw.clear; display_list }
+          handle_keys { |ch| @cw.clear; display_content }
         end
         return @list[@current_index]
       end
@@ -419,12 +292,12 @@ module RubyCurses
       def rowcol
         return @row_offset, @col_offset
       end
-      def display_list #:nodoc:
+      def display_content #:nodoc:
         # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
         @graphic = @window
         @start ||= 0
         @toprow ||= 0
-        @left_margin ||= @row_selected_symbol.length
+        @left_margin ||= @row_selected_symbol.length + @focussed_symbol.length
 
         #print_borders unless @suppress_borders # do this once only, unless everything changes
         #maxlen = @maxlen ||= @width-2
@@ -457,7 +330,10 @@ module RubyCurses
               end
               #renderer = get_default_cell_renderer_for_class content.class.to_s
               if focussed
-                @graphic.printstring r+hh, c+@left_margin, content, acolor,'reverse'
+                if @focussed_symbol
+                  @graphic.printstring r+hh, c, @focussed_symbol, acolor,@attr
+                end
+                @graphic.printstring r+hh, c+@left_margin, content, acolor, @focussed_attrib || 'reverse'
               else
                 @graphic.printstring r+hh, c+@left_margin, content, acolor,@attr
               end
@@ -488,13 +364,13 @@ module RubyCurses
           scroll_forward
           #@start += @height-1
           #bounds_check
-        when KEY_UP
+        when KEY_UP, ?k.getbyte(0)
           previous_row
           #@start -= 1
           #@current_index -= 1
           #@current_index = 0 if @current_index < 0
           #@start = 0 if @start < 0
-        when KEY_DOWN
+        when KEY_DOWN, ?j.getbyte(0)
           next_row
           #@start += 1
           #@current_index += 1
@@ -503,8 +379,10 @@ module RubyCurses
           scroll_backward
           #@start -= @height-1
           #@start = 0 if @start < 0
-        when 0
-          @start = 0
+        when 0, ?g.getbyte(0)
+          goto_top
+        when ?G.getbyte(0)
+          goto_bottom
         end
         #@form.repaint
         Ncurses::Panel.update_panels();
@@ -632,6 +510,6 @@ module RubyCurses
         end
         return @current_index
       end
-    end # class TextObject
+    end # class ListObject
   end # class CommandWindow
 end # module
