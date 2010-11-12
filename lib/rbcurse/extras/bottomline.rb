@@ -1281,6 +1281,9 @@ module RubyCurses
     # options are narrowed down.
     # FIXME we can put remarks in fron as in memacs such as [No matches] or [single completion]
     # @param [Array]  a list of items to select from
+    # NOTE: if you use this please copy it to your app. This does not conform to highline's
+    # choose, and I'd like to somehow get it to be identical.
+    #
     def choose list1, config={}
       case list1
       when NilClass
@@ -1303,6 +1306,27 @@ module RubyCurses
       # need some validation here that its in the list TODO
       rc.destroy
       rc = nil
+    end
+    def display_text_interactive text, config={}
+      require 'rbcurse/rcommandwindow'
+      ht = config[:height] || 15
+      layout = { :height => ht, :width => Ncurses.COLS-1, :top => Ncurses.LINES-ht+1, :left => 0 }
+      rc = CommandWindow.new nil, :layout => layout, :box => true
+      w = rc.window
+      #rc.text "There was a quick  brown fox who ran over the lazy dog and then went over the moon over and over again and again"
+      rc.display_text_interactive text
+      rc = nil
+    end
+    def display_list_interactive text, config={}
+      require 'rbcurse/rcommandwindow'
+      ht = config[:height] || 15
+      layout = { :height => ht, :width => Ncurses.COLS-1, :top => Ncurses.LINES-ht+1, :left => 0 }
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
+      w = rc.window
+      #rc.text "There was a quick  brown fox who ran over the lazy dog and then went over the moon over and over again and again"
+      ret = rc.display_list_interactive text
+      rc = nil
+      ret
     end
     #
     # This method is HighLine's menu handler.  For simple usage, you can just
