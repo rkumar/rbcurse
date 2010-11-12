@@ -13,32 +13,12 @@ def testme
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
   say "We got #{str} "
 end
-def test2
-  require 'rbcurse/rcommandwindow'
-  layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
-  rc = CommandWindow.new nil, :layout => layout, :box => true
-  w = rc.window
-  list1 = Dir.glob("*")
-  rc.display_menu list1 #, :indexing => :letter
-  str = ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
-  #str = ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = Dir.glob(str+"*") ; rc.display_menu l; l} }
-  # need some validation here that its in the list TODO
-  rc.destroy
-  rc = nil
-end
 def test11
-  # creating a scratch window. should be put a textview in it ? or label ?
-  require 'rbcurse/rcommandwindow'
-  @layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
-  rc = CommandWindow.new nil, :layout => @layout, :box => true
-  w = rc.window
-  list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken jython jango rako rubcurse }
-  rc.display_menu list1 #, :indexing => :letter
-  str = ask("Select one: ") { |q| q.change_proc = Proc.new { |str| w.wmove 1,1 ; w.wclrtobot; rc.display_menu list1.grep Regexp.new("^#{str}") } }
-  # need some validation here that its in the list TODO
-  rc.destroy
-  rc = nil
-  #@rc = rc
+  str = display_list_interactive Dir.glob("app*.rb"), :title => "Select a file"
+  message "We got #{str} "
+end
+def test2
+  str = display_text_interactive Dir.glob("test*.rb"), :title => "Select a file"
 end
 def testend
   @rc.destroy if @rc
@@ -160,5 +140,8 @@ App.new do
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
-  @form.bind_key(?\M-x) { test1() }
+  @form.bind_key(?\M-x) { test11() }
+  @form.bind_key(?\M-X) { testme() }
+  @form.bind_key(?\M-c) { test1() }
+  @form.bind_key(?\M-C) { test2() }
 end # app
