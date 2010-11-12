@@ -14,11 +14,11 @@ def testme
   say "We got #{str} "
 end
 def test11
-  str = display_list_interactive Dir.glob("app*.rb"), :title => "Select a file"
+  str = display_list Dir.glob("app*.rb"), :title => "Select a file"
   message "We got #{str} "
 end
 def test2
-  str = display_text_interactive Dir.glob("test*.rb"), :title => "Select a file"
+  str = display_text_interactive File.read($0), :title => "Select a file"
 end
 def testend
   @rc.destroy if @rc
