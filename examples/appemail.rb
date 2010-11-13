@@ -6,6 +6,7 @@ require './rmail'
 # You need to fix paths of local mbox files
 
 def test1
+  $log.debug "called test1 " if $log.debug? 
   str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
 end
 def testme
@@ -78,6 +79,11 @@ App.new do
     @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
     
+    # commands that can be mapped to or executed using M-x
+    # however, commands of components aren't yet accessible.
+    def get_commands
+      %w{ test1 testme test11 test2 saveas1 }
+    end
     # we override so as to only print basename. Also, print unread count 
     def @dirs.convert_value_to_text(text, crow)
       str = File.basename(text)
@@ -86,6 +92,10 @@ App.new do
       else
         str 
       end
+    end
+    def test1XX
+      $log.debug "called test1 " if $log.debug? 
+      str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
     end
     @vim.set_left_component @dirs
 
@@ -140,8 +150,8 @@ App.new do
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
-  @form.bind_key(?\M-x) { test11() }
-  @form.bind_key(?\M-X) { testme() }
+  @form.bind_key(?\M-v) { test11() }
+  @form.bind_key(?\M-V) { testme() }
   @form.bind_key(?\M-c) { test1() }
   @form.bind_key(?\M-C) { test2() }
 end # app
