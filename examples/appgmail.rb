@@ -43,6 +43,17 @@ end
 #class App
 # putting some commands here so we can call from command_line
 # ADD
+def get_commands
+  opts = %w{ test testend archive delete markread markunread spam star unstar open header savecontact connect connectas compose refresh }
+  current_component = @vim.current_component
+  case current_component
+  when @lb2
+    opts.push *%w{ select nextm prev nextunread prevunread savecontact header }
+  when @tv
+    opts.push *%w{ saveas reply replyall nextm prev nextunread prevunread munpack }
+  end
+  opts
+end
 # indices can be array or range
 # can pass one row as array, @lb2.selected_indices or range 20..25
 # . delete
@@ -747,7 +758,7 @@ App.new do
       # if you use pp then it shows here too and mucks the screen.
       # i think it writes on STDSCR - do not use pp and puts, just enter the variable
     }
-    @form.bind_key(?\M-x){
+    @form.bind_key(?\M-y){
       # TODO previous command to be default
       opts = %w{ test testend archive delete markread markunread spam star unstar open header savecontact connect connectas compose refresh }
       current_component = @vim.current_component
