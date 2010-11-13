@@ -41,6 +41,7 @@ module RubyCurses
       require 'forwardable'
       require 'rbcurse/extras/bottomline'
       @bottomline = Bottomline.new @window, 0
+      @bottomline.name = "rcommandwindow's bl"
       extend Forwardable
       def_delegators :@bottomline, :ask, :say, :agree, :choose #, :display_text_interactive
       #if @form.nil?
