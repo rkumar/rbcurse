@@ -13,6 +13,14 @@ require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
+require 'rbcurse/extras/bottomline'
+$tt ||= RubyCurses::Bottomline.new 
+$tt.name = "$tt"
+require 'forwardable'
+module Kernel
+  extend Forwardable
+  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause
+end
 include Ncurses
 include RubyCurses
 include RubyCurses::Utils
@@ -53,9 +61,6 @@ module RubyCurses
       bind :PRESS, *args, &block
     end
   end
-  require 'forwardable'
-  require 'rbcurse/extras/bottomline'
-  $tt ||= Bottomline.new
   class CheckBox
     # a little dicey XXX 
     def text(*val)
@@ -93,6 +98,8 @@ module RubyCurses
       @variables = {}
       # if we are creating child objects then we will not use outer form. this object will manage
       @current_object = [] 
+      @_system_commands = %w{ bind_global bind_component }
+
       init_vars
       run &block
     end
@@ -112,6 +119,9 @@ module RubyCurses
         colors = Ncurses.COLORS
         $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
+        require 'rbcurse/extras/stdscrwindow'
+        awin = StdscrWindow.new
+        $tt.window = awin; $tt.message_row = @message_row
       # window created in run !!!
       #$tt.window = @window; $tt.message_row = @message_row
     end
@@ -248,6 +258,57 @@ module RubyCurses
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
+    end
+    def get_all_commands
+      opts = @_system_commands.dup
+      if respond_to? :get_commands
+        opts.push(*get_commands())
+      end
+      opts
+    end
+    # bind a key to a method at global (form) level
+    # Note that individual component may be overriding this.
+    def bind_global
+      opts = get_all_commands
+      cmd = ask("Select a command (TAB for choices) : ", opts)
+      if cmd.nil? || cmd == ""
+        raw_message "Aborted."
+        return
+      end
+      key = []
+      str = ""
+      raw_message "Enter one or 2 keys. Finish with ENTER:"
+      raw_message "Enter first key:"
+      ch = @window.getchar()
+      if [KEY_ENTER, 10, 13, ?\C-g.getbyte(0)].include? ch
+        raw_message "Aborted."
+        return
+      end
+      key << ch
+      str << keycode_tos(ch)
+      raw_message "Enter second key or hit return:"
+      ch = @window.getchar()
+      if ch == 3 || ch == ?\C-g.getbyte(0)
+        raw_message "Aborted."
+        return
+      end
+      if ch == 10 || ch == KEY_ENTER || ch == 13
+      else
+        key << ch
+        str << keycode_tos(ch)
+      end
+      if !key.empty?
+        raw_message "Binding #{cmd} to #{str} "
+        key = key[0] if key.size == 1
+        @form.bind_key(key, cmd.to_sym)
+      end
+      #message "Bound #{str} to #{cmd} "
+    end
+    def bind_component
+      # the idea here is to get the current component
+      # and bind some keys to some methods.
+      # however, how do we divine the methods we can map to
+      # and also in some cases the components itself has multiple components
     end
     # prompts user for a command. we need to get this back to the calling app
     # or have some block stuff TODO
@@ -920,6 +981,12 @@ module RubyCurses
       end    
       longest
     end    
+
+    # if partial command entered then returns matches
+    def _resolve_command opts, cmd
+      return cmd if opts.include? cmd
+      matches = opts.grep Regexp.new("^#{cmd}")
+    end
     def run &block
       begin
 
@@ -927,9 +994,9 @@ module RubyCurses
         @window = VER::Window.root_window
         #$tt.window = @window; $tt.message_row = @message_row
         awin = @window
-        require 'rbcurse/extras/stdscrwindow'
-        awin = StdscrWindow.new
-        $tt.window = awin; $tt.message_row = @message_row
+        #require 'rbcurse/extras/stdscrwindow'
+        #awin = StdscrWindow.new
+        #$tt.window = awin; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
           @form.bind_key([?\C-x, ?c]) { suspend(false) do
@@ -947,6 +1014,46 @@ module RubyCurses
             str = get_command_from_user
           }
 
+          @form.bind_key(?\M-x){
+            # TODO previous command to be default
+            opts = get_all_commands()
+            @_command_history ||= Array.new
+            @_command_history << "test1" unless @_command_history.include? "test1"
+            # previous command should be in opts, otherwise it is not in this context
+            cmd = ask("Command: ", opts){ |q| q.default = @_previous_command; q.history = @_command_history }
+            if cmd == ""
+            else
+              @_command_history << cmd
+              @_command_history << cmd unless @_command_history.include? cmd
+              cmdline = cmd.split
+              cmd = cmdline.shift
+              # check if command is a substring of a larger command
+              if !opts.include?(cmd)
+                rcmd = _resolve_command(opts, cmd) if !opts.include?(cmd)
+                if rcmd.size == 1
+                  cmd = rcmd.first
+                else
+                  say_with_pause "Cannot resolve #{cmd}. Matches are: #{rcmd} "
+                end
+              end
+              if respond_to?(cmd, true)
+                @_previous_command = cmd
+                raw_message "calling #{cmd} "
+                begin
+                  send cmd, *cmdline
+                rescue => exc
+                  $log.debug "ERR EXC: send throwing an exception now. Duh. IMAP keeps crashing haha !! #{exc}  " if $log.debug? 
+                  if exc
+                    $log.debug( exc) 
+                    $log.debug(exc.backtrace.join("\n")) 
+                    say_with_pause exc.to_s
+                  end
+                end
+              else
+                say("Command [#{cmd}] not supported by #{self.class} ")
+              end
+            end
+          }
           @message = Variable.new
           @message.value = ""
           @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
