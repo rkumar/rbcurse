@@ -232,6 +232,7 @@ module RubyCurses
       #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
       #  TODO add symbol so easy to map from config file or mapping file
       def bind_key keycode, *args, &blk
+          $log.debug " #{@name} bind_key received #{keycode} "
         @key_handler ||= {}
         if !block_given?
           blk = args.pop
@@ -252,7 +253,9 @@ module RubyCurses
           a1 = keycode[1].getbyte(0) if keycode[1].class == String
           @key_handler[a0] ||= OrderedHash.new
           @key_handler[a0][a1] = blk
+          $log.debug "XXX XX assigning #{keycode} to  key_handler " if $log.debug? 
         else
+          $log.debug "XXX assigning #{keycode} to  key_handler " if $log.debug? 
           @key_handler[keycode] = blk
         end
         @key_args ||= {}
@@ -271,6 +274,7 @@ module RubyCurses
       def _process_key keycode, object, window
         return :UNHANDLED if @key_handler.nil?
         blk = @key_handler[keycode]
+        $log.debug " #{self.class} XXX got nothing for kc #{keycode} " if blk.nil?
         return :UNHANDLED if blk.nil?
         if blk.is_a? OrderedHash
           ch = window.getch
@@ -286,9 +290,12 @@ module RubyCurses
           blk = blk1
         end
         #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
+        $log.debug " XXX called process_key #{object}, kc: #{keycode}, "
         if blk.is_a? Symbol
+          $log.debug "SYMBOL " if $log.debug? 
           return send(blk, *@key_args[keycode])
         else
+          $log.debug "BLOCJ " if $log.debug? 
           return blk.call object,  *@key_args[keycode]
         end
         #0
@@ -1642,6 +1649,7 @@ module RubyCurses
             #when ?\M-K.getbyte(0)
               #field.height -= 1
             else
+              $log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
               $log.debug " process_key #{ch} got ret #{ret} in #{self} "
               return :UNHANDLED if ret == :UNHANDLED
