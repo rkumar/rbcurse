@@ -13,11 +13,12 @@
 # maybe can be removed from app, if accessible there too.
 require 'forwardable'
 require 'rbcurse/extras/bottomline'
-$terminal = RubyCurses::Bottomline.new
-module Kernel
-  extend Forwardable
-  def_delegators :$terminal, :agree, :ask, :choose, :say
-end
+#$terminal = RubyCurses::Bottomline.new
+#$terminal.name = "$terminal io.rb"
+#module Kernel
+  #extend Forwardable
+  #def_delegators :$terminal, :agree, :ask, :choose, :say
+#end
 #$tt.window = @window; $tt.message_row = @message_row # <<-- TODO somewhere
 module Io
 
