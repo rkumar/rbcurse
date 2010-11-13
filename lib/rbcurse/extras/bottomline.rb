@@ -17,11 +17,70 @@ require 'pathname'
 
 =end
 module RubyCurses
+
+  # just so the program does not bomb due to a tiny feature
+  # I do not raise error on nil array, i create a dummy array
+  # which you likely will not be able to use, in any case it will have only one value
+  class History < Struct.new(:array, :current_index)
+    attr_reader :last_index
+    attr_reader :current_index
+    attr_reader :array
+    def initialize  a=nil, c=0
+      #raise "Array passed to History cannot be nil" unless a
+      #@max_index = a.size
+      @array = a  || []
+      @current_index = c
+      @last_index = c
+    end
+    def last
+      @current_index = max_index
+      @array.last
+    end
+    def first
+      @current_index = 0
+      @array.first
+    end
+    def max_index
+      @array.size - 1
+    end
+    def up
+      item = @array[@current_index]
+      previous
+      return item
+    end
+    def next
+      @last_index = @current_index
+      if @current_index + 1 > max_index
+        @current_index = 0
+      else
+        @current_index += 1
+      end
+      @array[@current_index]
+    end
+    def previous
+      @last_index = @current_index
+      if @current_index - 1 < 0
+        @current_index = max_index()
+      else
+        @current_index -= 1
+      end
+      @array[@current_index]
+    end
+    def is_last?
+      @current_index == max_index()
+    end
+    def push item
+      $log.debug " XXX history push #{item} " if $log.debug? 
+      @array.push item
+      @current_index = max_index
+    end
+  end # class
   # some variables are polluting space of including app,
   # we should make this a class.
-  attr_accessor :window
-  attr_accessor :message_row
   class Bottomline 
+    attr_accessor :window
+    attr_accessor :message_row
+    attr_accessor :name # for debugging
     def initialize win=nil, row=nil
       @window = win
       @message_row = row
@@ -66,9 +125,13 @@ module RubyCurses
         @glob         = "*"
         @responses    = Hash.new
         @overwrite    = false
+        @history      = nil
 
         # allow block to override settings
         yield self if block_given?
+
+        $log.debug " XXX default #{@default}" if $log.debug? 
+        $log.debug " XXX history #{@history}" if $log.debug? 
 
         # finalize responses based on settings
         build_responses
@@ -234,6 +297,7 @@ module RubyCurses
       #
       attr_accessor :helptext
       attr_accessor :color_pair
+      attr_accessor :history
 
       #
       # Returns the provided _answer_string_ or the default answer for this
@@ -1005,7 +1069,7 @@ module RubyCurses
       x = config.fetch :x, @message_row # Ncurses.LINES-1
       y = config.fetch :y, 0
       color = config[:color_pair] || $datacolor
-      raise "no window for ask print in #{self.class} " unless win
+      raise "no window for ask print in #{self.class} name: #{name} " unless win
       color=Ncurses.COLOR_PAIR(color);
       win.attron(color);
       #win.mvprintw(x, y, "%-40s" % text);
@@ -1024,6 +1088,8 @@ module RubyCurses
       c = 0
       win = @window
       @limit = @question.limit
+      @history = @question.history
+      @history_list = History.new(@history) 
       maxlen = @limit || 100 # fixme
 
 
@@ -1031,12 +1097,16 @@ module RubyCurses
       ins_mode = false
       oldstr = nil # for tab completion, origal word entered by user
       default = @default || ""
+      if @default && !@history.include?(default)
+        @history_list.push default 
+      end
 
       len = @prompt_length
 
       # clear the area of len+maxlen
       color = $datacolor
-      str = default
+      str = ""
+      #str = default
       cpentries = nil
       #clear_line len+maxlen+1
       #print_str(prompt+str)
@@ -1056,6 +1126,7 @@ module RubyCurses
           when ?\C-g.getbyte(0)                              # ABORT, emacs style
             return -1, nil
           when 10, 13 # hits ENTER, complete entry and return
+            @history_list.push str
             break
           when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE # delete previous character/backspace
             len -= 1 if len > @prompt_length
@@ -1162,6 +1233,37 @@ module RubyCurses
             end
           when ?\C-a.getbyte(0) .. ?\C-z.getbyte(0)
             Ncurses.beep
+          when KEY_UP
+            if !@history.empty?
+              olen = str.length
+              str = if prevchar == KEY_UP
+                       @history_list.previous
+                     elsif prevchar == KEY_DOWN
+                       @history_list.previous
+                     else
+                       @history_list.last
+                     end
+              str = str.dup
+              curpos = str.length
+              len += str.length - olen
+              clear_line len+maxlen+1, @prompt_length
+            end
+          when KEY_DOWN
+            if !@history.empty?
+              olen = str.length
+              str = if prevchar == KEY_UP
+                       @history_list.next
+                     elsif prevchar == KEY_DOWN
+                       @history_list.next
+                     else
+                       @history_list.first
+                     end
+              str = str.dup
+              curpos = str.length
+              len += str.length - olen
+              clear_line len+maxlen+1, @prompt_length
+            end
+
           else
             if ch < 0 || ch > 255
               Ncurses.beep
