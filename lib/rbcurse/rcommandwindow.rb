@@ -175,10 +175,14 @@ module RubyCurses
         $log.debug "DDD inside one window" if $log.debug? 
         list.each_with_index { |e, i| 
           text = e
+          case e
+          when Array
+            text = e.first + " ..."
+          end
           if indexing == :number
-            text = "%d. %s" % [i+1, e] 
+            text = "%d. %s" % [i+1, text] 
           elsif indexing == :letter
-            text = "%s. %s" % [l_succ.succ!, e] 
+            text = "%s. %s" % [l_succ.succ!, text] 
           end
           @window.printstring i+@row_offset, 1, text, $normalcolor  
         }
@@ -195,10 +199,15 @@ module RubyCurses
         list.each_with_index { |e, i| 
           # check that row + @row_offset < @top + @height or whatever TODO
           text = e
+          # signify that there's a deeper level
+          case e
+          when Array
+            text = e.first + "..."
+          end
           if indexing == :number
-            text = "%d. %s" % [i+1, e] 
+            text = "%d. %s" % [i+1, text] 
           elsif indexing == :letter
-            text = "%s. %s" % [l_succ.succ!, e] 
+            text = "%s. %s" % [l_succ.succ!, text] 
           end
           @window.printstring row+@row_offset, col, text, $normalcolor  
           colct += 1
