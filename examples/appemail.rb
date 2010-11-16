@@ -7,23 +7,28 @@ require './rmail'
 
 def test1
   $log.debug "called test1 " if $log.debug? 
-  str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
+  str = choose "*", :title => "Files", :prompt => "Choose a file: "
 end
 def testme
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
+  list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
   say "We got #{str} "
 end
 def test11
-  str = display_list Dir.glob("app*.rb"), :title => "Select a file"
+  str = display_list Dir.glob("t*.rb"), :title => "Select a file"
   message "We got #{str} "
 end
 def test2
   str = display_text_interactive File.read($0), :title => "Select a file"
 end
-def testend
-  @rc.destroy if @rc
-  @rc = nil
+def testdir
+  # this behaves like vim's file selector, it fills in values
+  str = ask("File?  ", Pathname)  do |q| 
+    q.completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
+    q.helptext = "Enter start of filename and tab to get completion"
+  end
+  message "We got #{str} "
 end
 def test
   #require 'rbcurse/rcommandwindow'
@@ -82,7 +87,7 @@ App.new do
     # commands that can be mapped to or executed using M-x
     # however, commands of components aren't yet accessible.
     def get_commands
-      %w{ test1 testme test11 test2 saveas1 }
+      %w{ test1 testme test11 test2 testdir saveas1 }
     end
     # we override so as to only print basename. Also, print unread count 
     def @dirs.convert_value_to_text(text, crow)
