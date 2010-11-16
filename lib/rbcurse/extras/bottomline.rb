@@ -1224,7 +1224,7 @@ module RubyCurses
                 olen = str.length
                 if cpentries.size == 1
                   str = cpentries.first.dup
-                else
+                elsif cpentries.size > 1
                   str = shortest_match(cpentries).dup
                 end
                 curpos = str.length
@@ -1234,7 +1234,7 @@ module RubyCurses
           when ?\C-a.getbyte(0) .. ?\C-z.getbyte(0)
             Ncurses.beep
           when KEY_UP
-            if !@history.empty?
+            if @history && !@history.empty?
               olen = str.length
               str = if prevchar == KEY_UP
                        @history_list.previous
@@ -1249,7 +1249,7 @@ module RubyCurses
               clear_line len+maxlen+1, @prompt_length
             end
           when KEY_DOWN
-            if !@history.empty?
+            if @history && !@history.empty?
               olen = str.length
               str = if prevchar == KEY_UP
                        @history_list.next
@@ -1311,9 +1311,11 @@ module RubyCurses
     # as happens in bash when pressing tab
     # abc abd abe will return ab
     def shortest_match a
+     #return "" if a.nil? || a.empty? # should not be called in such situations
+     raise "shortest_match should not be called with nil or empty array" if a.nil? || a.empty? # should not be called in such situations as caller program will err.
 
       l = a.inject do |memo,word|
-        str = nil
+        str = ""
         0.upto(memo.size) do |i|
           if memo[0..i] == word[0..i]
             str = memo[0..i]
@@ -1361,7 +1363,18 @@ module RubyCurses
 
     # presents given list in numbered format in a window above last line
     # and accepts input on last line
-    # @return selected option from list
+    # The list is a list of strings. e.g.
+    #      %w{ ruby perl python haskell }
+    # Multiple levels can be given as:
+    #      list = %w{ ruby perl python haskell }
+    #      list[0] = %w{ ruby ruby1.9 ruby 1.8 rubinius jruby }
+    # In this case, "ruby" is the first level option. The others are used
+    # in the second level. This might make it clearer. first3 has 2 choices under it.
+    #      [ "first1" , "first2", ["first3", "second1", "second2"], "first4"]
+    #
+    # Currently, we return an array containing each selected level
+    #
+    # @return [Array] selected option/s from list
     def numbered_menu list1, config={}
       if list1.nil? || list1.empty?
         say_with_pause "empty list passed to numbered_menu" 
@@ -1373,11 +1386,28 @@ module RubyCurses
       rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
       w = rc.window
       # should we yield rc, so user can bind keys or whatever
-      rc.display_menu list1, :indexing => :number
-      ret = ask(prompt, Integer ) { |q| q.in = 1..list1.size }
-      rc.destroy
-      rc = nil
-      list1[ret-1]
+      # attempt a loop so we do levels.
+      retval = []
+      begin
+        while true
+          rc.display_menu list1, :indexing => :number
+          ret = ask(prompt, Integer ) { |q| q.in = 1..list1.size }
+          val = list1[ret-1]
+          if val.is_a? Array
+            retval << val[0]
+            list1 = val[1..-1]
+            rc.clear
+          else
+            retval << val
+            break
+          end
+        end
+      ensure
+        rc.destroy
+        rc = nil
+      end
+      #list1[ret-1]
+      retval
     end
     # Allows a selection in which options are shown over prompt. As user types
     # options are narrowed down.
@@ -1402,12 +1432,15 @@ module RubyCurses
       prompt = config[:prompt] || "Choose: "
       layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
       rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
+      begin
       w = rc.window
       rc.display_menu list1
       str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
       # need some validation here that its in the list TODO
+      ensure
       rc.destroy
       rc = nil
+      end
     end
     def display_text_interactive text, config={}
       require 'rbcurse/rcommandwindow'
@@ -1583,6 +1616,10 @@ if __FILE__ == $PROGRAM_NAME
   #menu.choice(:rake) do say("rake Not from around here, are you?") end
 #end
     entry = {}
+    entry[:file]       = ask("File?  ", Pathname)  do |q| 
+      q.completion_proc = Proc.new {|str| Dir.glob(str +"*") }
+      q.helptext = "Enter start of filename and tab to get completion"
+    end
     entry[:command]     = ask("Command?  ", %w{archive delete read refresh delete!}) 
     exit unless agree("Wish to continue? ", false)
     entry[:address]     = ask("Address?  ") { |q| q.color_pair = $promptcolor }
@@ -1591,10 +1628,6 @@ if __FILE__ == $PROGRAM_NAME
       q.echo = '*'
       q.limit = 4
     }
-    entry[:file]       = ask("File?  ", Pathname)  do |q| 
-      q.completion_proc = Proc.new {|str| Dir.glob(str +"*") }
-      q.helptext = "Enter start of filename and tab to get completion"
-    end
 =begin
     entry[:state]       = ask("State?  ") do |q|
       q._case     = :up
