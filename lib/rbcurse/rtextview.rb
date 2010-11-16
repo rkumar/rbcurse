@@ -536,7 +536,17 @@ module RubyCurses
     # this is just a test of the simple "most" menu
     # How can application add to this, or override
     def disp_menu  #:nodoc:
+      require 'rbcurse/extras/menutree'
+      # we need to put this into data-structure so that i can be manipulated by calling apps
+      # This should not be at the widget level, too many types of menus. It should be at the app
+      # level only if the user wants his app to use this kind of menu.
 
+      @menu = RubyCurses::MenuTree.new "Main", { s: :goto_start, r: :scroll_right, l: :scroll_left, m: :submenu }
+      @menu.submenu :m, "submenu", {s: :noignorecase, t: :goto_last_position, f: :next3 }
+      menu = PromptMenu.new self 
+      menu.menu_tree @menu
+
+=begin
       menu = PromptMenu.new self 
       menu.add( menu.create_mitem( 's', "Goto start ", "Going to start", Proc.new { goto_start} ))
       menu.add(menu.create_mitem( 'r', "scroll right", "I have scrolled ", :scroll_right ))
@@ -549,6 +559,7 @@ module RubyCurses
       menu.add(item)
       # how do i know what's available. the application or window should know where to place
       #menu.display @form.window, 23, 1, $datacolor #, menu
+=end
       menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
     end
     ##
