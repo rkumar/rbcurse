@@ -616,11 +616,35 @@ module Io
       @text = text
       @options = []
     end
-    def add menuitem
-      @options << menuitem
+    def add *menuitem
+      item = nil
+      case menuitem.first
+      when CMenuItem
+        item = menuitem.first
+        @options << item
+      else
+        item = CMenuItem.new(*menuitem.flatten)
+        @options << item
+      end
+      return item
     end
     def create_mitem *args
       item = CMenuItem.new(*args.flatten)
+    end
+    # create the whole thing using a MenuTree which has minimal information.
+    # It uses a hotkey and a code only. We are supposed to resolve the display text
+    # and actual proc from the caller using this code.
+    def menu_tree mt, pm = self
+      mt.each_pair { |ch, code| 
+        if code.is_a? RubyCurses::MenuTree
+          item = pm.add(ch, code.value, "") 
+          current = PromptMenu.new @caller, code.value
+          item.action = current
+          menu_tree code, current
+        else
+          item = pm.add(ch, code.to_s, "", code) 
+        end
+      }
     end
     # Display the top level menu and accept user input
     # Calls actions or symbols upon selection, or traverses submenus
@@ -638,9 +662,10 @@ module Io
         h = {}
         valid = []
         menu.each{ |item|
-          str << "(%c) %s " % [ item.hotkey, item.label ]
-          h[item.hotkey] = item
-          valid << item.hotkey
+          hk = item.hotkey.to_s
+          str << "(%c) %s " % [ hk, item.label ]
+          h[hk] = item
+          valid << hk
         }
         #$log.debug " valid are #{valid} "
         color = $datacolor
@@ -648,6 +673,11 @@ module Io
         ch=win.getchar()
         #$log.debug " got ch #{ch} "
         next if ch < 0 or ch > 255
+        if ch == 3 || ch == ?\C-g.getbyte(0)
+          clear_this win, r, c, color, str.length
+          print_this(win, "Aborted.", color, r,c)
+          break
+        end
         ch = ch.chr
         index = valid.index ch
         if index.nil?
