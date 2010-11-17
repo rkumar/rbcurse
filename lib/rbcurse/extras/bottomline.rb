@@ -1171,9 +1171,27 @@ module RubyCurses
           when ?\M-i.getbyte(0) 
             ins_mode = !ins_mode
             next
-          when ?\C-k.getbyte(0)
-            str.slice!(curpos..-1) #rescue next
+          when ?\C-k.getbyte(0) # delete forward
+            @delete_buffer = str.slice!(curpos..-1) #rescue next
             clear_line len+maxlen+1, @prompt_length
+          #when ?\C-u.getbyte(0) # clear entire line
+            #@delete_buffer = str
+            #str = ""
+            #curpos = 0
+            #clear_line len+maxlen+1, @prompt_length
+            #len = @prompt_length
+          when ?\C-u.getbyte(0) # delete to the left of cursor till start of line
+            @delete_buffer = str.slice!(0..curpos-1) #rescue next
+            curpos = 0
+            clear_line len+maxlen+1, @prompt_length
+            len = @prompt_length
+          when ?\C-y.getbyte(0) # paste what's in delete buffer
+            if @delete_buffer
+              olen = str.length
+              str << @delete_buffer if @delete_buffer
+              curpos = str.length
+              len += str.length - olen
+            end
           when KEY_TAB # TAB
             if !@completion_proc.nil?
               # place cursor at end of completion
