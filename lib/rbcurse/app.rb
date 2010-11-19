@@ -101,6 +101,7 @@ module RubyCurses
       @_system_commands = %w{ bind_global bind_component }
 
       init_vars
+      $log.debug "XXX APP CONFIG: #{@config}  " if $log.debug? 
       run &block
     end
     def init_vars
@@ -153,6 +154,26 @@ module RubyCurses
         @form.handle_key ch
         @form.repaint
         @window.wrefresh
+      end
+    end
+    # if calling loop separately better to call this, since it will shut off ncurses
+    # and print error on screen.
+    def safe_loop &block
+      begin
+        loop &block
+      rescue => ex
+        $log.debug( "APP.rb rescue reached ")
+        $log.debug( ex) if ex
+        $log.debug(ex.backtrace.join("\n")) if ex
+      ensure
+        close
+        # putting it here allows it to be printed on screen, otherwise it was not showing at all.
+        if ex
+          puts "========== EXCEPTION =========="
+          p ex 
+          puts "==============================="
+          puts(ex.backtrace.join("\n")) 
+        end
       end
     end
     # returns a symbol of the key pressed
@@ -318,12 +339,20 @@ module RubyCurses
     def get_command_from_user choices=nil
       #code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
       #return unless code == 0
-      str = ask("Cmd: ", choices) 
+            @_command_history ||= Array.new
+      str = ask("Cmd: ", choices) { |q| q.default = @_previous_command; q.history = @_command_history }
+              @_command_history << str unless @_command_history.include? str
       # shell the command
       if str =~ /^!/
         str = str[1..-1]
-        suspend(false) { system(str); 
-          system("echo ");
+        suspend(false) { 
+          #system(str); 
+          $log.debug "XXX STR #{str}  " if $log.debug? 
+
+          output=`#{str}`
+          system("echo ' ' ");
+          $log.debug "XXX output #{output} " if $log.debug? 
+          system("echo '#{output}' ");
           system("echo Press Enter to continue.");
           system("read"); 
         }
@@ -361,6 +390,8 @@ module RubyCurses
       _process_args args, config, block_event, events
       config.delete(:title)
       _position config
+      # hope next line doesn't bonk anything
+      config[:display_length] ||= @stack.last.width if @stack.last # added here not sure 2010-11-17 18:43 
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
@@ -932,7 +963,8 @@ module RubyCurses
       mr += @stack.last.margin if @stack.last
       #@stack << mr
       @stack << s
-      instance_eval &block if block_given?
+      #instance_eval &block if block_given?
+              yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
       @stack.pop
       @instack = false if @stack.empty?
       @app_row = 0 if @stack.empty?
@@ -951,7 +983,8 @@ module RubyCurses
       col += config[:margin] || 0
       @flowstack << col
       @flowcol = col
-      instance_eval &block if block_given?
+      #instance_eval &block if block_given?
+      yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
       @flowstack.pop
       @inflow = false if @flowstack.empty?
     end
@@ -1018,12 +1051,10 @@ module RubyCurses
             # TODO previous command to be default
             opts = get_all_commands()
             @_command_history ||= Array.new
-            @_command_history << "test1" unless @_command_history.include? "test1"
             # previous command should be in opts, otherwise it is not in this context
             cmd = ask("Command: ", opts){ |q| q.default = @_previous_command; q.history = @_command_history }
             if cmd == ""
             else
-              @_command_history << cmd
               @_command_history << cmd unless @_command_history.include? cmd
               cmdline = cmd.split
               cmd = cmdline.shift
@@ -1061,7 +1092,8 @@ module RubyCurses
           if block
             begin
               #yield(self, @window, @form)
-              instance_eval &block if block_given?
+              #instance_eval &block if block_given?
+              yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
               loop
             rescue => ex
               $log.debug( "APP.rb rescue reached ")
