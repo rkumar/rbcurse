@@ -5,21 +5,23 @@ require './rmail'
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
 
-def test1
+def testchoose
+  # list filters as you type
   $log.debug "called test1 " if $log.debug? 
   str = choose "*", :title => "Files", :prompt => "Choose a file: "
 end
-def testme
+def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
   say "We got #{str} "
 end
-def test11
+def testdisplay_list
+  # scrollable list
   str = display_list Dir.glob("t*.rb"), :title => "Select a file"
   message "We got #{str} "
 end
-def test2
+def testdisplay_text
   str = display_text_interactive File.read($0), :title => "Select a file"
 end
 def testdir
@@ -87,7 +89,7 @@ App.new do
     # commands that can be mapped to or executed using M-x
     # however, commands of components aren't yet accessible.
     def get_commands
-      %w{ test1 testme test11 test2 testdir saveas1 }
+      %w{ testchoose testnumberedmenu testdisplay_list testdisplay_text testdir saveas1 }
     end
     # we override so as to only print basename. Also, print unread count 
     def @dirs.convert_value_to_text(text, crow)
