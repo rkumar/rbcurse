@@ -1,4 +1,4 @@
-require './app'
+require 'rbcurse/app'
 
 if $0 == __FILE__
   #app = App.new
