@@ -253,9 +253,9 @@ module RubyCurses
           a1 = keycode[1].getbyte(0) if keycode[1].class == String
           @key_handler[a0] ||= OrderedHash.new
           @key_handler[a0][a1] = blk
-          $log.debug "XXX XX assigning #{keycode} to  key_handler " if $log.debug? 
+          #$log.debug "XXX XX assigning #{keycode} to  key_handler " if $log.debug? 
         else
-          $log.debug "XXX assigning #{keycode} to  key_handler " if $log.debug? 
+          #$log.debug "XXX assigning #{keycode} to  key_handler " if $log.debug? 
           @key_handler[keycode] = blk
         end
         @key_args ||= {}
@@ -274,7 +274,6 @@ module RubyCurses
       def _process_key keycode, object, window
         return :UNHANDLED if @key_handler.nil?
         blk = @key_handler[keycode]
-        $log.debug " #{self.class} XXX got nothing for kc #{keycode} " if blk.nil?
         return :UNHANDLED if blk.nil?
         if blk.is_a? OrderedHash
           ch = window.getch
@@ -290,7 +289,6 @@ module RubyCurses
           blk = blk1
         end
         #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
-        $log.debug " XXX called process_key #{object}, kc: #{keycode}, "
         if blk.is_a? Symbol
           $log.debug "SYMBOL " if $log.debug? 
           return send(blk, *@key_args[keycode])
@@ -819,7 +817,7 @@ module RubyCurses
       ##+ so i put current window here.
       if screen == nil
         #$log.debug " XXX calling graphic.wrefresh 2010-01-03 12:27 (parent_buffer was nil) "
-        $log.debug " XXX 2010-01-03 20:47 now copying pad #{@graphic} onto form.window"
+        #$log.debug " XXX 2010-01-03 20:47 now copying pad #{@graphic} onto form.window"
         ret = @graphic.wrefresh
        ## 2010-01-03 20:45 rather than writing to phys screen, i write to forms window
        ##+ so later updates to that window do not overwrite this widget.
@@ -1259,7 +1257,7 @@ module RubyCurses
       elsif @active_index != ix
         f = @widgets[@active_index]
         begin
-          $log.debug " XXX select first field, calling on_leave of #{f} #{@active_index} "
+          #$log.debug " XXX select first field, calling on_leave of #{f} #{@active_index} "
           on_leave f
         rescue => err
          $log.error " Caught EXCEPTION req_first_field on_leave #{err}"
@@ -1649,7 +1647,7 @@ module RubyCurses
             #when ?\M-K.getbyte(0)
               #field.height -= 1
             else
-              $log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
+              #$log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
               $log.debug " process_key #{ch} got ret #{ret} in #{self} "
               return :UNHANDLED if ret == :UNHANDLED
@@ -1817,6 +1815,7 @@ module RubyCurses
       #@editable = config.fetch("editable", true)
       #@focusable = config.fetch("focusable", true)
       @event_args = {}             # arguments passed at time of binding, to use when firing event
+      map_keys 
       init_vars
       super
       @_events.push(:CHANGE)
@@ -2001,7 +2000,7 @@ module RubyCurses
   # field
   # # TODO bind these keys so they can be overridden
   def handle_key ch
-    map_keys
+    #map_keys unless @keys_mapped # moved to init
     case ch
     #when KEY_LEFT
       #cursor_backward
@@ -2180,11 +2179,13 @@ module RubyCurses
       if val.empty?
         return getvalue()
       else
+        return unless val # added 2010-11-17 20:11, dup will fail on nil
         s = val[0].dup
         set_buffer(s)
       end
     end
     def text=(val)
+      return unless val # added 2010-11-17 20:11, dup will fail on nil
       set_buffer(val.dup)
     end
   # ADD HERE FIELD
