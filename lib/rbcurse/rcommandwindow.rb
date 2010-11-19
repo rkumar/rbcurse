@@ -96,7 +96,8 @@ module RubyCurses
       end
       return #@selected_index
     end
-    def press ch
+    # handles a key, commandline
+    def press ch 
       ch = ch.getbyte(0) if ch.class==String ## 1.9
       $log.debug " XXX press #{ch} " if $log.debug? 
       case ch
@@ -236,13 +237,31 @@ module RubyCurses
       @window.wclrtobot
     end
     def display_interactive text, config={}
-      to = ListObject.new self, text, config
-      yield to if block_given?
-      to.display_interactive
+      if @to
+        @to.content text
+      else
+        @to = ListObject.new self, text, config
+      end
+      yield @to if block_given?
+      @to.display_interactive
+      @to
+    end
+    # non interactive list display - EACH CALL IS CREATING A LIST OBJECT
+    def udisplay_list text, config={}
+      if @to
+        @to.content text
+      else
+        @to = ListObject.new self, text, config
+      end
+      #@to ||= ListObject.new self, text, config
+      yield @to if block_given?
+      @to.display_content
+      @to
     end
     class ListObject
       attr_reader :cw
       attr_reader :list
+      attr_reader :current_index
       attr_accessor :focussed_attrib
       attr_accessor :focussed_symbol
       def initialize cw, _list, config={}
@@ -271,6 +290,7 @@ module RubyCurses
            #@row_unselected_symbol = ' '
       end
       def content txt, config={}
+        @current_index = 0 # sometimes it gets left at a higher value than there are rows to show
         case txt
         when String
           txt = wrap_text(txt, @width-2).split("\n")
@@ -303,7 +323,7 @@ module RubyCurses
         return @row_offset, @col_offset
       end
       def display_content #:nodoc:
-        # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
+
         @graphic = @window
         @start ||= 0
         @toprow ||= 0
@@ -356,6 +376,7 @@ module RubyCurses
         end # rc == 0
         set_form_row
       end
+      # listobject
       def press ch # list TODO copy from rbasiclist
         ch = ch.getbyte(0) if ch.class==String ## 1.9
         $log.debug " XXX press #{ch} " if $log.debug? 
