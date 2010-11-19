@@ -130,8 +130,8 @@ module RubyCurses
         # allow block to override settings
         yield self if block_given?
 
-        $log.debug " XXX default #{@default}" if $log.debug? 
-        $log.debug " XXX history #{@history}" if $log.debug? 
+        #$log.debug " XXX default #{@default}" if $log.debug? 
+        #$log.debug " XXX history #{@history}" if $log.debug? 
 
         # finalize responses based on settings
         build_responses
@@ -419,9 +419,10 @@ module RubyCurses
             #answer.last  # we don't need this anylonger
             answer_string # we have already selected
           elsif @answer_type == File
-            File.open(File.join(@directory.to_s, answer.last))
+            File.open(File.join(@directory.to_s, answer_string))
           else
-            Pathname.new(File.join(@directory.to_s, answer.last))
+            #Pathname.new(File.join(@directory.to_s, answer.last))
+            Pathname.new(File.join(@directory.to_s, answer_string))
           end
         elsif [Date, DateTime].include?(@answer_type) or @answer_type.is_a?(Class)
           @answer_type.parse(answer_string)
@@ -1097,8 +1098,10 @@ module RubyCurses
       ins_mode = false
       oldstr = nil # for tab completion, origal word entered by user
       default = @default || ""
-      if @default && !@history.include?(default)
-        @history_list.push default 
+      if @default && @history
+        if !@history.include?(default)
+          @history_list.push default 
+        end
       end
 
       len = @prompt_length
@@ -1443,7 +1446,7 @@ module RubyCurses
       when Array
         # let it be, that's how it should come
       else
-        # I don't know how to handle this
+        # Dir listing as default
         list1 = Dir.glob("*")
       end
       require 'rbcurse/rcommandwindow'
@@ -1451,13 +1454,13 @@ module RubyCurses
       layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
       rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
       begin
-      w = rc.window
-      rc.display_menu list1
-      str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
-      # need some validation here that its in the list TODO
+        w = rc.window
+        rc.display_menu list1
+        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+        # need some validation here that its in the list TODO
       ensure
-      rc.destroy
-      rc = nil
+        rc.destroy
+        rc = nil
       end
     end
     def display_text_interactive text, config={}
@@ -1607,15 +1610,15 @@ if __FILE__ == $PROGRAM_NAME
   require 'forwardable'
   #include Bottomline
 
-  $tt = Bottomline.new
-  module Kernel
-    extend Forwardable
-    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu
-  end
+  #$tt = Bottomline.new
+  #module Kernel
+    #extend Forwardable
+    #def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu
+  #end
   App.new do 
     header = app_header "rbcurse 1.2.0", :text_center => "**** Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
     message "Press F1 to exit from here"
-    $tt.window = @window; $tt.message_row = @message_row
+  ########  $tt.window = @window; $tt.message_row = @message_row
     #@tt = Bottomline.new @window, @message_row
     #extend Forwardable
     #def_delegators :@tt, :ask, :say, :agree, :choose
@@ -1638,6 +1641,8 @@ if __FILE__ == $PROGRAM_NAME
       q.completion_proc = Proc.new {|str| Dir.glob(str +"*") }
       q.helptext = "Enter start of filename and tab to get completion"
     end
+    alert "file: #{entry[:file]} "
+    $log.debug "FILE: #{entry[:file]} "
     entry[:command]     = ask("Command?  ", %w{archive delete read refresh delete!}) 
     exit unless agree("Wish to continue? ", false)
     entry[:address]     = ask("Address?  ") { |q| q.color_pair = $promptcolor }
