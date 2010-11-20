@@ -1763,6 +1763,9 @@ module RubyCurses
   # TODO - test text_variable
   # TODO: some methods should return self, so chaining can be done. Not sure if the return value of the 
   #   fire_handler is being checked.
+  #   NOTE: i have just added repain_required check in Field before repaint
+  #   this may mean in some places field does not paint. repaint_require will have to be set
+  #   to true in those cases. this was since field was overriding a popup window that was not modal.
   #  
   class Field < Widget
     dsl_accessor :maxlen             # maximum length allowed into field
@@ -1824,6 +1827,7 @@ module RubyCurses
       @pcol = 0   # needed for horiz scrolling
       @curpos = 0                  # current cursor position in buffer
       @modified = false
+      @repaint_required = true
     end
     def text_variable tv
       @text_variable = tv
@@ -1907,6 +1911,7 @@ module RubyCurses
     ## 
     # should this do a dup ?? YES
     def set_buffer value
+      @repaint_required = true
       @datatype = value.class
       #$log.debug " FIELD DATA #{@datatype}"
       @delete_buffer = @buffer.dup
@@ -1955,6 +1960,7 @@ module RubyCurses
   ##+ currently I've not implemented events with these widgets. 2010-01-03 15:00 
 
   def repaint
+    return unless @repaint_required  # 2010-11-20 13:13 its writing over a window i think TESTING
     #$log.debug("repaint FIELD: #{id}, #{name},  #{focusable}")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
@@ -1976,8 +1982,9 @@ module RubyCurses
       #acolor = $datacolor
     #end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
-    $log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
+    #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
     @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
+    @repaint_required = false # 2010-11-20 13:13 
   end
   def set_focusable(tf)
     @focusable = tf
@@ -2000,6 +2007,7 @@ module RubyCurses
   # field
   # # TODO bind these keys so they can be overridden
   def handle_key ch
+    @repaint_required = true # added 2010-11-20 13:21 
     #map_keys unless @keys_mapped # moved to init
     case ch
     #when KEY_LEFT
