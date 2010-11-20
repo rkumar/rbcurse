@@ -53,8 +53,9 @@ module RubyCurses
       #color = get_color $datacolor
       #@window.printstring 0,0,"hello there", $normalcolor, 'normal'
       #@window.bkgd(Ncurses.COLOR_PAIR(acolor));
-      if @box
-        #@window.box 0,0
+      if @box == :border
+        @window.box 0,0
+      elsif @box
         @window.attron(Ncurses.COLOR_PAIR($normalcolor) | Ncurses::A_REVERSE)
         @window.mvhline 0,0,1,@width
         @window.printstring 0,0,@title, $normalcolor #, 'normal' if @title
@@ -235,11 +236,15 @@ module RubyCurses
     def clear
       @window.wmove 1,1
       @window.wclrtobot
+      @window.box 0,0 if @box == :border
+      # lower line of border will get erased currently since we are writing to 
+      # last line FIXME
     end
     def display_interactive text, config={}
       if @to
         @to.content text
       else
+        config[:box] = @box
         @to = ListObject.new self, text, config
       end
       yield @to if block_given?
@@ -251,6 +256,7 @@ module RubyCurses
       if @to
         @to.content text
       else
+        config[:box] = @box
         @to = ListObject.new self, text, config
       end
       #@to ||= ListObject.new self, text, config
@@ -258,6 +264,7 @@ module RubyCurses
       @to.display_content
       @to
     end
+    # displays a list
     class ListObject
       attr_reader :cw
       attr_reader :list
@@ -265,29 +272,30 @@ module RubyCurses
       attr_accessor :focussed_attrib
       attr_accessor :focussed_symbol
       def initialize cw, _list, config={}
-           @cw  = cw
-           layout = @cw.layout
-           @window = @cw.window
-           @height = layout[:height]
-           @width = layout[:width]
-           content(_list)
-           @selected_index = nil
-           @current_index = 0
-           @row_offset = 1
-      @toprow = 0
-           $multiplier = 0 # till we can do something
+        @cw  = cw
+        layout = @cw.layout
+        @window = @cw.window
+        @height = layout[:height]
+        @width = layout[:width]
+        content(_list)
+        @height_adjust = config.fetch(:box, true) == :border ? 3 : 2
+        @selected_index = nil
+        @current_index = 0
+        @row_offset = 1
+        @toprow = 0
+        $multiplier = 0 # till we can do something
 
-           @focussed_symbol = ''
-           @row_selected_symbol = ''
-           #@show_selector = true
-           if @show_selector
-             @row_selected_symbol ||= '*'
-             @row_unselected_symbol ||= ' '
-             @left_margin ||= @row_selected_symbol.length
-           end
-           #@show_selector = true
-           #@row_selected_symbol = '*'
-           #@row_unselected_symbol = ' '
+        @focussed_symbol = ''
+        @row_selected_symbol = ''
+        #@show_selector = true
+        if @show_selector
+          @row_selected_symbol ||= '*'
+          @row_unselected_symbol ||= ' '
+          @left_margin ||= @row_selected_symbol.length
+        end
+        #@show_selector = true
+        #@row_selected_symbol = '*'
+        #@row_unselected_symbol = ' '
       end
       def content txt, config={}
         @current_index = 0 # sometimes it gets left at a higher value than there are rows to show
@@ -339,7 +347,8 @@ module RubyCurses
           #tr = @start #@toprow
           tr = @toprow
           acolor = get_color $datacolor
-          h = @height - 2
+          #h = @height - 3 #2
+          h = @height - @height_adjust
           r,c = @row_offset, @col_offset
           0.upto(h) do |hh|
             crow = tr+hh
