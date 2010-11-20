@@ -1978,3 +1978,24 @@ then tab to see available commands. This way user does not need to
 remember key combinations.
 
 * * * * * * * *
+
+Subject: gmail style email completion
+-------------------------------------
+Date: 2010-11-20 13:26
+
+I've just implemented some gmail style email completion.
+As you type in a field, values are shown in a window. You can key UP or
+DOWN, or keep typing. Pressing ENTER selects highilghted value. You can
+enter multiple emails in one field and get help on each.
+
+However, in this case, the window is not modal, so the form below is
+painting itself. There are still some old widgets like Label and Field
+(perhaps button) that keep repainting redgarldess of whether changed.
+This overrides the non-modal window. I've just fixed field but putting a
+@repaint_required == true check in repaint.
+
+Also, i think its possible, that rcommandwindow does a repaint and panel
+update more often than required. its called in different ways,
+interactive and non-interactive. Need to look into that at some time.
+
+* * * * * * * *
