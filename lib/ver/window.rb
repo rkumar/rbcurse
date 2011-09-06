@@ -343,7 +343,7 @@ module VER
       $log.debug "win destroy start"
 
       #@panel = @window.panel if @window
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
+      Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
       @window.delwin if !@window.nil?
       $log.debug "win destroy end"
     end
