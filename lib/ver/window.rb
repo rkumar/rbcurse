@@ -100,6 +100,12 @@ module VER
        end"
       )
     end
+    # ADDED DUE TO FFI 
+    def wrefresh
+      Ncurses.wrefresh(@window)
+    end
+    #
+    # ## END FFI
 
     def resize
       resize_with(@layout)
