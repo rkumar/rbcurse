@@ -1,6 +1,7 @@
 require 'rbcurse/colormap'
 module VER
 include ColorMap
+include FFI::NCurses
   module_function
 
   # Setup ncurses, nicely documented by the curses manpages
