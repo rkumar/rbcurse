@@ -104,7 +104,7 @@ module VER
     def wrefresh
       Ncurses.wrefresh(@window)
     end
-    def delwin
+    def delwin # 2011-09-7 
       Ncurses.delwin(@window)
     end
     #
