@@ -1,4 +1,3 @@
-require 'rubygems'
 require 'ver/ncurses'
 module ColorMap
   # 2010-09-20 12:22 changed colors from string to symbol

@@ -10,6 +10,13 @@ module Ncurses # added FFI 2011-09-6
     def LINES
       FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
     end
+    # this allows me to refer to them as Ncurses::A_REVERSE as is the case everywhere
+    A_REVERSE = FFI::NCurses::A_REVERSE
+    A_STANDOUT = FFI::NCurses::A_STANDOUT
+    A_BOLD = FFI::NCurses::A_BOLD
+    A_UNDERLINE = FFI::NCurses::UNDERLINE
+    A_BLINK = FFI::NCurses::A_BLINK
+    A_NORMAL = FFI::NCurses::A_NORMAL
   end
   include NCX
   extend NCX
