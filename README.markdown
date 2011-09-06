@@ -1,5 +1,14 @@
 # rbcurse (for ruby 1.9.x)
 
+* Migrating from ncurses-ruby to ffi-ncurses
+  I am hoping to dump ncurses-ruby which is infernally hard to install
+  for ffi-ncurses. Hopefully that will make adoption of rbcurse easier.
+  Most likely this will be released as a separate gem named "rbcurse-ffi".
+
+  This is going to be a slow process since there are small things missing in ffi but 
+  hopefully we should benefit in the long run. I hope to run this on ruby 1.9.3 without
+  installing ncurses-ruby at all.
+
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
 * 1.2.0: many additions (See CHANGELOG for details)

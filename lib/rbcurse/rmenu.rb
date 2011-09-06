@@ -21,7 +21,7 @@ NOTE on 2010-09-10 11:40 : this interface is based on Java's and is not block fr
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 

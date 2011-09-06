@@ -13,7 +13,7 @@ TODO:
     Add select_one (message, values, default)
 =end
 require 'rubygems'
-require 'ncurses'
+##require 'ncurses'
 require 'logger'
 require 'rbcurse/rwidget'
 require 'rbcurse/rmessagebox'

@@ -1,4 +1,4 @@
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 

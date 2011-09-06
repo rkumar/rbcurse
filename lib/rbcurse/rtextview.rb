@@ -16,7 +16,7 @@ TODO
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'

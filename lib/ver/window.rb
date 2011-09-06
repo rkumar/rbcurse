@@ -1,4 +1,19 @@
 require 'ver/ncurses'
+require 'ver/panel'
+module Ncurses # added FFI 2011-09-6 
+  FALSE = 0
+  TRUE = 1
+  module NCX
+    def COLS
+      FFI::NCurses.getmaxx(FFI::NCurses.stdscr)
+    end
+    def LINES
+      FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
+    end
+  end
+  include NCX
+  extend NCX
+end
 module VER
   class Window 
     attr_reader :width, :height, :top, :left
@@ -13,8 +28,10 @@ module VER
       @visible = true
       reset_layout(layout)
 
-      @window = Ncurses::WINDOW.new(height, width, top, left)
-      @panel = Ncurses::Panel.new_panel(@window)
+      #@window = Ncurses::WINDOW.new(height, width, top, left)
+      @window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
+      #@panel = Ncurses::Panel.new_panel(@window)
+      @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1

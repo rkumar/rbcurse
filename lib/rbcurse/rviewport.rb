@@ -17,7 +17,7 @@ Major change 2010-02-11 23:32
 
 =end
 #require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rchangeevent'

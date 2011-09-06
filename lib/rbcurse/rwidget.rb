@@ -21,7 +21,7 @@ TODO
 
 =end
 require 'rubygems'
-require 'ncurses'
+##require 'ncurses'
 require 'logger'
 #require 'rbcurse/mapper'
 require 'rbcurse/colormap'
