@@ -104,6 +104,9 @@ module VER
     def wrefresh
       Ncurses.wrefresh(@window)
     end
+    def delwin
+      Ncurses.delwin(@window)
+    end
     #
     # ## END FFI
 
