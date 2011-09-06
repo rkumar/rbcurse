@@ -19,7 +19,7 @@ area but finish outside, or vice versa.
     What if we wish some static text to be displayed at top or bottom of ScrollForm
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 

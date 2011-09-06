@@ -16,7 +16,7 @@ Todo:
 
 =end
 require 'rubygems'
-require 'ncurses'
+##require 'ncurses' # FFI removed
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'

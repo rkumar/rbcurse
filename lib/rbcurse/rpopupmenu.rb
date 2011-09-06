@@ -21,7 +21,7 @@ a user friendly string to identifiy the action, as well as a disabled option.
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/action'

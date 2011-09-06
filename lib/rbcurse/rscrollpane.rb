@@ -31,7 +31,7 @@ Major changes 2010-02-11 19:51 to simplify version RFED16
 
 =end
 #require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rviewport'

@@ -9,7 +9,7 @@ Todo:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
