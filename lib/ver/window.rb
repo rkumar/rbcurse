@@ -10,6 +10,10 @@ module Ncurses # added FFI 2011-09-6
     def LINES
       FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
     end
+    # supposed to be picked up at runtime
+    def COLORS
+      8
+    end
 
     # jsut trying this so i can do Ncurses.stdscr.getmax
     def stdscr
