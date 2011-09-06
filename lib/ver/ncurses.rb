@@ -29,7 +29,8 @@ include ColorMap
     # (made to work locally), turning on this option causes the terminal keypad
     # to be turned on when wgetch is called.
     # The default value for keypad is false.
-    Ncurses.keypad(stdscr, bf = true)
+    #Ncurses.keypad(stdscr, bf = true)
+    Ncurses.keypad(stdscr, bf = 1)
 
     # The nl and nonl routines control whether the underlying display device
     # translates the return key into newline on input, and whether it
