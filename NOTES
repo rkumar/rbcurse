@@ -1999,3 +1999,25 @@ update more often than required. its called in different ways,
 interactive and non-interactive. Need to look into that at some time.
 
 * * * * * * * *
+
+Subject: calcurse
+-----------------
+Date: 2010-12-01 18:49
+
+Just installed calcurse (port) and was checking the UI. Neat. Some salient
+points:
+
+1. Windows or panels. Standard with title, title border, border color
+   changes when focus in panel or box (that's because it keeps updating
+   time and thereofre cursor remains on status bar)
+2. 2 bottom lines for keys like we have (keylabels)
+3. 3rd last row is a sort of status bar like emacs and vim have
+4. Data entry in last 2 rows. 2nd last has prompt, last has entry or
+   edit
+5. Similarly menu options selected in last row. A page comes with
+   options, letter indexed.
+6. Allows layout change of panels.
+7. Allows color change, immediate change. Displays colors rather than
+   name. Color chooser for BG and FG.
+
+* * * * * * * *
