@@ -10,6 +10,7 @@ Todo:
 
 =end
 #require 'ncurses'
+require 'ffi-ncurses'
 require 'logger'
 require 'rbcurse'
 
