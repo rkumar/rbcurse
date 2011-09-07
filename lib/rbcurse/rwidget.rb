@@ -1461,7 +1461,7 @@ module RubyCurses
     def addcol num
       return if @col.nil? or @col == -1
       @col += num
-      @window.wmove @window.get_window, @row, @col
+      @window.wmove @row, @col
       ## 2010-01-30 23:45 exchange calling parent with calling this forms setrow
       # since in tabbedpane with table i am not gietting this forms offset. 
         setrowcol nil, col
