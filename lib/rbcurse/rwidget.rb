@@ -1603,7 +1603,8 @@ module RubyCurses
         case ch
         when -1
           return
-        when Ncurses::KEY_RESIZE # SIGWINCH
+        #when Ncurses::KEY_RESIZE # SIGWINCH
+        when KEY_RESIZE # SIGWINCH #  FFI
           lines = Ncurses.LINES
           cols = Ncurses.COLS
           x = Ncurses.stdscr.getmaxy
