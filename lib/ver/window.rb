@@ -485,7 +485,7 @@ module VER
         att = Ncurses::A_REVERSE    
       end
       attron(Ncurses.COLOR_PAIR(color) | att)
-      mvwaddch row, col, ACS_ULCORNER
+      mvwaddch @window, row, col, ACS_ULCORNER
       mvwhline( row, col+1, ACS_HLINE, width-2)
       mvwaddch row, col+width-1, Ncurses::ACS_URCORNER
       mvwvline( row+1, col, ACS_VLINE, height-1)
