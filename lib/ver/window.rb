@@ -487,12 +487,12 @@ module VER
       attron(Ncurses.COLOR_PAIR(color) | att)
       mvwaddch @window, row, col, ACS_ULCORNER
       mvwhline(@window, row, col+1, ACS_HLINE, width-2)
-      mvwaddch @window,row, col+width-1, Ncurses::ACS_URCORNER
+      mvwaddch @window,row, col+width-1, ACS_URCORNER
       mvwvline( @window,row+1, col, ACS_VLINE, height-1)
 
-      mvwaddch @window,row+height-0, col, Ncurses::ACS_LLCORNER
+      mvwaddch @window,row+height-0, col, ACS_LLCORNER
       mvwhline(@window,row+height-0, col+1, ACS_HLINE, width-2)
-      mvwaddch @window,row+height-0, col+width-1, Ncurses::ACS_LRCORNER
+      mvwaddch @window,row+height-0, col+width-1, ACS_LRCORNER
       mvwvline( @window,row+1, col+width-1, ACS_VLINE, height-1)
       wattroff(@window,Ncurses.COLOR_PAIR(color) | att)
     end
