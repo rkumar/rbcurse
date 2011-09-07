@@ -9,7 +9,7 @@ module Ncurses # added FFI 2011-09-6
     end
     def LINES
       #FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
-      Ncurses.LINES
+      FFI::NCurses.LINES
     end
 #    # supposed to be picked up at runtime
 #    def COLORS
