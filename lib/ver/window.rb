@@ -141,7 +141,6 @@ module VER
       @window.move(y, x)
     end
     def wmove y,x
-      $log.debug " WWWW wmove "
       @window.wmove @window, y, x
     end
 
