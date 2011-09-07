@@ -1330,7 +1330,7 @@ module RubyCurses
         @active_index = ix0
         @row, @col = f.rowcol
        #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
-        @window.wmove @window.get_window, @row, @col # added RK FFI 2011-09-7 
+        @window.wmove @row, @col # added RK FFI 2011-09-7 
         on_enter f
         f.curpos = 0
         repaint
@@ -1461,7 +1461,7 @@ module RubyCurses
     def addcol num
       return if @col.nil? or @col == -1
       @col += num
-      @window.wmove @row, @col
+      @window.wmove @window.get_window, @row, @col
       ## 2010-01-30 23:45 exchange calling parent with calling this forms setrow
       # since in tabbedpane with table i am not gietting this forms offset. 
         setrowcol nil, col

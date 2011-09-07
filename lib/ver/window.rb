@@ -141,7 +141,13 @@ module VER
       @window.move(y, x)
     end
 
+    # while moving from ncurses-ruby to FFI need to pass window pointer
+    # for w methods as well as mvw
     def method_missing(meth, *args)
+      if meth[0,1]=="w"
+        return @window.send(meth, @window, *args)
+      else
+      end
       @window.send(meth, *args)
     end
 
