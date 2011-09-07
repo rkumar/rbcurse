@@ -141,7 +141,7 @@ module VER
       @window.move(y, x)
     end
     def wmove y,x
-      wmove @window, y, x
+      @window.wmove @window, y, x
     end
 
     # while moving from ncurses-ruby to FFI need to pass window pointer
