@@ -1,6 +1,15 @@
 require 'ver/ncurses'
 require 'ver/panel'
 module Ncurses # added FFI 2011-09-6 
+    def method_missing(meth, *args)
+      $log.debug " WWWW method missing #{meth} "
+      if meth[0,1]=="w" || meth[0,3] == "mvw"
+        $log.debug " WWWW method missing #{meth} adding window in call "
+        return @window.send(meth, @window, *args)
+      else
+      end
+      @window.send(meth, *args)
+    end
   FALSE = 0
   TRUE = 1
   module NCX
@@ -140,15 +149,17 @@ module VER
 #       Log.debug([y, x] => caller[0,4])
       @window.move(y, x)
     end
+    # since include FFI is taking over, i need to force it here. not going into
+    # method_missing
     def wmove y,x
       Ncurses.wmove @window, y, x
     end
 
     # while moving from ncurses-ruby to FFI need to pass window pointer
-    # for w methods as well as mvw
+    # for w methods as well as mvw - NOT COMING HERE due to include FFI
     def method_missing(meth, *args)
       $log.debug " WWWW method missing #{meth} "
-      if meth[0,1]=="w"
+      if meth[0,1]=="w" || meth[0,3] == "mvw"
         $log.debug " WWWW method missing #{meth} adding window in call "
         return @window.send(meth, @window, *args)
       else
