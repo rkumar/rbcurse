@@ -486,15 +486,15 @@ module VER
       end
       attron(Ncurses.COLOR_PAIR(color) | att)
       mvwaddch @window, row, col, ACS_ULCORNER
-      mvwhline( row, col+1, ACS_HLINE, width-2)
-      mvwaddch row, col+width-1, Ncurses::ACS_URCORNER
-      mvwvline( row+1, col, ACS_VLINE, height-1)
+      mvwhline(@window, row, col+1, ACS_HLINE, width-2)
+      mvwaddch @window,row, col+width-1, Ncurses::ACS_URCORNER
+      mvwvline( @window,row+1, col, ACS_VLINE, height-1)
 
-      mvwaddch row+height-0, col, Ncurses::ACS_LLCORNER
-      mvwhline(row+height-0, col+1, ACS_HLINE, width-2)
-      mvwaddch row+height-0, col+width-1, Ncurses::ACS_LRCORNER
-      mvwvline( row+1, col+width-1, ACS_VLINE, height-1)
-      attroff(Ncurses.COLOR_PAIR(color) | att)
+      mvwaddch @window,row+height-0, col, Ncurses::ACS_LLCORNER
+      mvwhline(@window,row+height-0, col+1, ACS_HLINE, width-2)
+      mvwaddch @window,row+height-0, col+width-1, Ncurses::ACS_LRCORNER
+      mvwvline( @window,row+1, col+width-1, ACS_VLINE, height-1)
+      wattroff(@window,Ncurses.COLOR_PAIR(color) | att)
     end
   # added RK 2009-10-08 23:57 for tabbedpanes
   # THIS IS EXPERIMENTAL - 
