@@ -1,6 +1,7 @@
 require 'ver/ncurses'
 require 'ver/panel'
 module Ncurses # added FFI 2011-09-6 
+  extend self
   FALSE = 0
   TRUE = 1
   module NCX
