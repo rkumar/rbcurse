@@ -1,6 +1,7 @@
 require 'ver/ncurses'
 require 'ver/panel'
 module Ncurses # added FFI 2011-09-6 
+  extend self
   def method_missing meth, *args
     FFI::NCurses.send meth, *args
   end
