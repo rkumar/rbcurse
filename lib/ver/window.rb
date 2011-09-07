@@ -4,13 +4,13 @@ module Ncurses # added FFI 2011-09-6
   FALSE = 0
   TRUE = 1
   module NCX
-    def COLS
-      FFI::NCurses.getmaxx(FFI::NCurses.stdscr)
-    end
-    def LINES
-      #FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
-      FFI::NCurses.LINES
-    end
+#    def COLS
+#      FFI::NCurses.getmaxx(FFI::NCurses.stdscr)
+#    end
+#    def LINES
+#      #FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
+#      FFI::NCurses.LINES
+#    end
 #    # supposed to be picked up at runtime
 #    def COLORS
 #      8
@@ -27,6 +27,9 @@ module Ncurses # added FFI 2011-09-6
     A_UNDERLINE = FFI::NCurses::A_UNDERLINE
     A_BLINK = FFI::NCurses::A_BLINK
     A_NORMAL = FFI::NCurses::A_NORMAL
+    COLORS = FFI::NCurses.COLORS
+    LINES = FFI::NCurses.LINES
+    COLS = FFI::NCurses.COLS
   end
   include NCX
   extend NCX
