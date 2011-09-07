@@ -58,8 +58,8 @@ module VER
     end
     def init_vars
       @window_type = :WINDOW
-      #Ncurses::keypad(@window, true)
-      Ncurses::keypad(@window, 1)
+      Ncurses::keypad(@window, true)
+      #Ncurses::keypad(@window, 1)
       @stack = []
       @name ||="#{self}"
       @modified = true
