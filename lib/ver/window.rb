@@ -8,7 +8,7 @@ module Ncurses # added FFI 2011-09-6
           if meth[0,1]=="w" || meth[0,3] == "mvw"
     #        $log.debug " WWWW method missing #{meth} adding window in call "
             if FFI::NCurses.respond_to? meth
-              FFI::NCurses.send(meth, self, *args)
+              #FFI::NCurses.send(meth, self, *args)
             end
             return
           else
