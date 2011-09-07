@@ -1,5 +1,5 @@
 require 'ffi-ncurses'
-include FFI::NCurses
+#include FFI::NCurses
 require 'rbcurse/colormap'
 module VER
 include ColorMap
