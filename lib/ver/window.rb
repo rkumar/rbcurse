@@ -4,16 +4,16 @@ module Ncurses # added FFI 2011-09-6
   FALSE = 0
   TRUE = 1
   module NCX
-    def COLS
-      FFI::NCurses.getmaxx(FFI::NCurses.stdscr)
-    end
-    def LINES
-      FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
-    end
-    # supposed to be picked up at runtime
-    def COLORS
-      8
-    end
+#    def COLS
+#      FFI::NCurses.getmaxx(FFI::NCurses.stdscr)
+#    end
+#    def LINES
+#      FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
+#    end
+#    # supposed to be picked up at runtime
+#    def COLORS
+#      8
+#    end
 
     # jsut trying this so i can do Ncurses.stdscr.getmax
     def stdscr
