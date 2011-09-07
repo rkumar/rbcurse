@@ -1,4 +1,12 @@
 require 'ffi-ncurses'
+module Ncurses
+  extend self
+  def method_missing meth, *args
+    if (FFI::NCurses.respond_to? meth)
+      FFI::NCurses.send meth, *args
+    end
+  end
+end
 #include FFI::NCurses
 require 'rbcurse/colormap'
 module VER
