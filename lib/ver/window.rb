@@ -392,7 +392,7 @@ module VER
       # the next line won't ensure we don't write outside some bounds like table
       #string = string[0..(width-c)] if c + string.length > width
       #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
-      mvprintw(r, c, "%s", string);
+      mvwprintw(r, c, "%s", :string, string);
       attroff(Ncurses.COLOR_PAIR(color) | att)
     end
     # added by rk 2008-11-29 19:01 
