@@ -140,6 +140,9 @@ module VER
 #       Log.debug([y, x] => caller[0,4])
       @window.move(y, x)
     end
+    def wmove y,x
+      @window.wmove y, x
+    end
 
     # while moving from ncurses-ruby to FFI need to pass window pointer
     # for w methods as well as mvw
