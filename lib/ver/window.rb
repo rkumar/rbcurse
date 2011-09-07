@@ -5,10 +5,10 @@ module Ncurses # added FFI 2011-09-6
       $log.debug " WWWW method missing #{meth} "
       if meth[0,1]=="w" || meth[0,3] == "mvw"
         $log.debug " WWWW method missing #{meth} adding window in call "
-        return @window.send(meth, @window, *args)
+        return FFI::NCurses.send(meth, @window, *args)
       else
       end
-      @window.send(meth, *args)
+      return FFI::NCurses.send(meth, *args)
     end
   FALSE = 0
   TRUE = 1
