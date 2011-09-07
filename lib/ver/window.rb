@@ -42,6 +42,7 @@ module Ncurses # added FFI 2011-09-6
     A_UNDERLINE = FFI::NCurses::A_UNDERLINE
     A_BLINK = FFI::NCurses::A_BLINK
     A_NORMAL = FFI::NCurses::A_NORMAL
+    KEY_F1 = FFI::NCurses::KEY_F1
   end
   include NCX
   extend NCX
