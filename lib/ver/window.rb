@@ -1,7 +1,8 @@
 require 'ver/ncurses'
 require 'ver/panel'
 module Ncurses # added FFI 2011-09-6 
-  def method_missing(meth, *args)
+  # results in a stack overflow
+  #def method_missing(meth, *args)
     #      $log.debug " WWWW method missing #{meth} "
     #      if meth[0,1]=="w" || meth[0,3] == "mvw"
     #        $log.debug " WWWW method missing #{meth} adding window in call "
@@ -14,7 +15,7 @@ module Ncurses # added FFI 2011-09-6
     #        if FFI::NCurses.respond_to? meth
     #          #FFI::NCurses.send(meth, *args)
     #        end
-  end
+  #end
   FALSE = 0
   TRUE = 1
   module NCX
