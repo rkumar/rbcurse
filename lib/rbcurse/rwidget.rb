@@ -1330,7 +1330,7 @@ module RubyCurses
         @active_index = ix0
         @row, @col = f.rowcol
        #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
-        @window.wmove @window @row, @col # added RK FFI 2011-09-7 
+        @window.wmove @window, @row, @col # added RK FFI 2011-09-7 
         on_enter f
         f.curpos = 0
         repaint
