@@ -105,7 +105,7 @@ module RubyCurses
       run &block
     end
     def init_vars
-      @quit_key ||= Ncurses.KEY_F1
+      @quit_key ||= FFI::NCurses.KEY_F1
       # actually this should be maintained inside ncurses pack, so not loaded 2 times.
       # this way if we call an app from existing program, App won't start ncurses.
       unless $ncurses_started
