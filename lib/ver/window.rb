@@ -15,7 +15,8 @@ module VER
       reset_layout(layout)
 
       #@window = Ncurses::WINDOW.new(height, width, top, left)
-      @window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
+      #@window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
+      @window = FFI::NCurses.newwin(height, width, top, left) # added FFI 2011-09-6 
       #@panel = Ncurses::Panel.new_panel(@window)
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
