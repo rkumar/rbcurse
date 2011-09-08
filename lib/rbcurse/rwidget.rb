@@ -594,7 +594,7 @@ module RubyCurses
     def destroy
       $log.debug "DESTROY : widget #{@name} "
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
     # @deprecated pls call windows method
