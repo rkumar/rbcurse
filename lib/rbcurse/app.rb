@@ -215,7 +215,7 @@ module RubyCurses
       ## appending is quite a pain, maybe we should make it separate.
       #stext = "%-80s" % @_stext
       #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
-      scr.refresh() # NW w FFI
+      #scr.refresh() # NW w FFI
       FFI::NCurses.refresh
     end
     # shows a simple progress bar on last row, using stdscr
