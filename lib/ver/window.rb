@@ -428,15 +428,15 @@ module VER
     ##
     # CAUTION : FOR MESSAGEBOXES ONLY !!!! XXX
     def print_border_mb row, col, height, width, color, attr
-      mvwaddch row, col, ACS_ULCORNER
-      mvwhline( row, col+1, ACS_HLINE, width-6)
+      mvwaddch row, col, Ncurses.ACS_ULCORNER
+      mvwhline( row, col+1, Ncurses.ACS_HLINE, width-6)
       mvwaddch row, col+width-5, Ncurses::ACS_URCORNER
-      mvwvline( row+1, col, ACS_VLINE, height-4)
+      mvwvline( row+1, col, Ncurses.ACS_VLINE, height-4)
 
       mvwaddch row+height-3, col, Ncurses::ACS_LLCORNER
-      mvwhline(row+height-3, col+1, ACS_HLINE, width-6)
+      mvwhline(row+height-3, col+1, Ncurses.ACS_HLINE, width-6)
       mvwaddch row+height-3, col+width-5, Ncurses::ACS_LRCORNER
-      mvwvline( row+1, col+width-5, ACS_VLINE, height-4)
+      mvwvline( row+1, col+width-5, Ncurses.ACS_VLINE, height-4)
     end
     ##
     # prints a border around a widget, CLEARING the area.
@@ -481,15 +481,15 @@ module VER
         att = Ncurses::A_REVERSE    
       end
       attron(Ncurses.COLOR_PAIR(color) | att)
-      mvwaddch @window, row, col, ACS_ULCORNER
-      mvwhline(@window, row, col+1, ACS_HLINE, width-2)
-      mvwaddch @window,row, col+width-1, ACS_URCORNER
-      mvwvline( @window,row+1, col, ACS_VLINE, height-1)
+      mvwaddch @window, row, col, Ncurses.ACS_ULCORNER
+      mvwhline(@window, row, col+1, Ncurses.ACS_HLINE, width-2)
+      mvwaddch @window,row, col+width-1, Ncurses.ACS_URCORNER
+      mvwvline( @window,row+1, col, Ncurses.ACS_VLINE, height-1)
 
-      mvwaddch @window,row+height-0, col, ACS_LLCORNER
-      mvwhline(@window,row+height-0, col+1, ACS_HLINE, width-2)
-      mvwaddch @window,row+height-0, col+width-1, ACS_LRCORNER
-      mvwvline( @window,row+1, col+width-1, ACS_VLINE, height-1)
+      mvwaddch @window,row+height-0, col, Ncurses.ACS_LLCORNER
+      mvwhline(@window,row+height-0, col+1, Ncurses.ACS_HLINE, width-2)
+      mvwaddch @window,row+height-0, col+width-1, Ncurses.ACS_LRCORNER
+      mvwvline( @window,row+1, col+width-1, Ncurses.ACS_VLINE, height-1)
       wattroff(@window,Ncurses.COLOR_PAIR(color) | att)
     end
   # added RK 2009-10-08 23:57 for tabbedpanes
