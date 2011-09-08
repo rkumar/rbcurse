@@ -339,7 +339,7 @@ module RubyCurses
     def destroy
       $log.debug "DESTROY : messagebox"
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      #Ncurses::Panel.del_panel(panel) if !panel.nil?   
       panel.del_panel if !panel.nil?
       @window.delwin if !@window.nil?
     end
