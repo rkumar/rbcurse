@@ -17,7 +17,7 @@ module Ncurses
     end
 
     # jsut trying this so i can do Ncurses.stdscr.getmax
-    def stdscr
+    def _stdscr
       FFI::NCurses.stdscr
     end
     # this allows me to refer to them as Ncurses::A_REVERSE as is the case everywhere
