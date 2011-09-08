@@ -449,10 +449,10 @@ module RubyCurses
       r = @row #+ @ext_row_offset # 2010-02-11 11:57 RFED16
       c = @col #+ @ext_col_offset # 2010-02-11 11:57 RFED16
       $log.debug " h_scroll_bar start #{start}, r #{r} c #{c} h:#{@height} "
-      @graphic.rb_mvwhline(r+@height-1, c+1, ACS_HLINE, @width-2)
+      @graphic.rb_mvwhline(r+@height-1, c+1, FFI::NCurses::ACS_HLINE, @width-2)
       # draw scroll bar
-      #sz.times{ |i| @graphic.mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
-      sz.times{ |i| @graphic.rb_mvaddch(r+@height-1, c+start+1+i, ACS_CKBOARD) }
+      #sz.times{ |i| @graphic.mvaddch(r+@height-1, c+start+1+i, FFI::NCurses::ACS_CKBOARD) }
+      sz.times{ |i| @graphic.rb_mvaddch(r+@height-1, c+start+1+i, FFI::NCurses::ACS_CKBOARD) }
     end
     def v_scroll_bar
         return if @viewport.nil?
@@ -470,11 +470,11 @@ module RubyCurses
       # # the problem with next 2 lines is that attributes of border could be overwritten
       # draw verti line
       # this is needed to erase previous bar when shrinking
-      #@graphic.mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
-      @graphic.rb_mvwvline(r+1,c+@width-1, ACS_VLINE, @height-2)
+      #@graphic.mvwvline(r+1,c+@width-1, FFI::NCurses::ACS_VLINE, @height-2)
+      @graphic.rb_mvwvline(r+1,c+@width-1, FFI::NCurses::ACS_VLINE, @height-2)
       # draw scroll bar
-      #sz.times{ |i| @graphic.mvaddch(r+start+1+i, c+@width-1, ACS_CKBOARD) }
-      sz.times{ |i| @graphic.rb_mvaddch(r+start+1+i, c+@width-1, ACS_CKBOARD) }
+      #sz.times{ |i| @graphic.mvaddch(r+start+1+i, c+@width-1, FFI::NCurses::ACS_CKBOARD) }
+      sz.times{ |i| @graphic.rb_mvaddch(r+start+1+i, c+@width-1, FFI::NCurses::ACS_CKBOARD) }
     end
     # set height
     # a container must pass down changes in size to it's children
