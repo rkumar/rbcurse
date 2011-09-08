@@ -73,6 +73,12 @@ module RubyCurses
       install_keys
       init_vars
     end
+    # testing FFI since we've used KEYS without qualifying module
+    def const_missing name
+      val = FFI::NCurses.const_get(name)
+      #const_set(name, val)
+      return val
+    end
     def init_vars
       @repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
