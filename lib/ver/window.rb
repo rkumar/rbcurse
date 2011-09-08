@@ -570,7 +570,7 @@ module VER
       unless @bottomline
         require 'forwardable'
         require 'rbcurse/extras/bottomline'
-        @bottomline = Bottomline.new self, $error_message_row
+        @bottomline = RubyCurses::Bottomline.new self, $error_message_row
         @bottomline.name = "window.rb"
         extend Forwardable
         def_delegators :@bottomline, :ask, :say, :agree, :choose
