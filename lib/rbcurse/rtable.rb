@@ -86,7 +86,7 @@ module RubyCurses
       @col_offset = @row_offset = 1
 
       super
-      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT])
+      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT, :LIST_SELECTION_EVENT])
       init_vars
       install_list_keys
       install_keys_bindings
