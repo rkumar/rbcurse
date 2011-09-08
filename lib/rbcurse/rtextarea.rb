@@ -36,6 +36,7 @@ module RubyCurses
   #   TODO don't set maxlen if nil. compute it as a local in methods. Else splitpane will not
   #   work correctly.
   class TextArea < Widget
+    KEY_LEFT = 0
     include ListScrollable
     include ListEditable
     dsl_accessor :title
