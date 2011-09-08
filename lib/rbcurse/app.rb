@@ -216,7 +216,7 @@ module RubyCurses
       #stext = "%-80s" % @_stext
       #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
       #scr.refresh()
-      FFI::NCurses.refresh(scr)
+      FFI::NCurses.stdscr.refresh()
     end
     # shows a simple progress bar on last row, using stdscr
     # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
