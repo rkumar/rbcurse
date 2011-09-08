@@ -157,7 +157,7 @@ module RubyCurses
       if @window
         begin
           panel = @window.panel
-          Ncurses::Panel.del_panel(panel) if panel
+          Ncurses::Panel.del_panel(panel.pointer) if panel
           @window.delwin
         rescue => exc
         end

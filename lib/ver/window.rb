@@ -618,8 +618,9 @@ module VER
       # or should window do it for all subwins, or would we want to wait that long ?
       $log.debug "subwin destroy"
 
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-      @window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?    # FFI
+      #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
+      delwin if !@window.nil? # added FFI 2011-09-7 
     end
   end
   
