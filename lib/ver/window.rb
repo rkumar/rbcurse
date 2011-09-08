@@ -124,7 +124,11 @@ module VER
         return @window.send(meth, @window, *args)
       else
       end
-      @window.send(meth, *args)
+      if @window
+        @window.send(meth, *args)
+      else
+        FFI::NCurses.send( meth, *args)
+      end
     end
 
     def print(string, width = width)
