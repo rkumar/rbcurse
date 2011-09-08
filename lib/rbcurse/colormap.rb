@@ -4,7 +4,7 @@ module ColorMap
   ## private
   # returns a color constant for a human color string
   def ColorMap.get_color_const colorstring
-    Ncurses.const_get "COLOR_#{colorstring.upcase}"
+    FFI::NCurses.const_get "COLOR_#{colorstring.upcase}"
   end
   ## private
   # creates a new color pair, puts in color map and returns color_pair
@@ -14,7 +14,7 @@ module ColorMap
       @color_id += 1
     fg = ColorMap.get_color_const fgc
     bg = ColorMap.get_color_const bgc
-    Ncurses.init_pair(@color_id, fg, bg);
+    FFI::NCurses.init_pair(@color_id, fg, bg);
     $color_map[[fgc, bgc]] = @color_id
     return @color_id
   end
@@ -57,7 +57,7 @@ module ColorMap
   def ColorMap.setup
     @color_id = 0
     $color_map = {}
-    Ncurses.start_color();
+    FFI::NCurses.start_color();
     # Initialize few color pairs 
     $def_fg_color = :white   # pls set these 2 for your application
     $def_bg_color = :black
