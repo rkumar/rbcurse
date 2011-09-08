@@ -472,7 +472,7 @@ if $0 == __FILE__
       savemenu2.add(item)
       savemenu.add(savemenu2)
       # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
-      @mb.toggle_key = KEY_F2
+      @mb.toggle_key = FFI::NCurses::KEY_F2
       @form.set_menu_bar  @mb
       #@cell = CellRenderer.new "Hello", {"col" => 1, "row"=>29, "justify"=>:right, "display_length" => 30}
       # END

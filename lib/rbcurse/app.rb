@@ -679,7 +679,7 @@ module RubyCurses
       @color_pair = config[:color_pair] || $datacolor
       @attrib = config[:attrib] || Ncurses::A_NORMAL
       @window.attron(Ncurses.COLOR_PAIR(@color_pair) | @attrib)
-      @window.mvwhline( row, col, ACS_HLINE, width)
+      @window.mvwhline( row, col, FFI::NCurses::ACS_HLINE, width)
       @window.attron(Ncurses.COLOR_PAIR(@color_pair) | @attrib)
       @app_row += 1
     end

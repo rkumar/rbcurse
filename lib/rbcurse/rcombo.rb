@@ -44,7 +44,7 @@ module RubyCurses
     def init_vars
       super
       @show_symbol ||= true
-      @COMBO_SYMBOL ||= Ncurses::ACS_DARROW #GEQUAL
+      @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL
       bind_key(KEY_UP) { previous_row }
       bind_key(KEY_DOWN) { next_row }
     end
