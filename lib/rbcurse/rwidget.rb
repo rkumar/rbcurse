@@ -38,6 +38,10 @@ KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
 KEY_DELETE = 330
 KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
 KEY_CC     = 3   # C-c
+KEY_LEFT  = FFI::NCurses::KEY_LEFT
+KEY_RIGHT  = FFI::NCurses::KEY_RIGHT
+KEY_UP  = FFI::NCurses::KEY_UP
+KEY_DOWN  = FFI::NCurses::KEY_DOWN
 
 class Object
 # thanks to terminal-table for this method
