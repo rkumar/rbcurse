@@ -215,7 +215,8 @@ module RubyCurses
       ## appending is quite a pain, maybe we should make it separate.
       #stext = "%-80s" % @_stext
       #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
-      scr.refresh()
+      #scr.refresh()
+      FFI::NCurses.refresh(scr)
     end
     # shows a simple progress bar on last row, using stdscr
     # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
