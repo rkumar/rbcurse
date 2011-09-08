@@ -1,5 +1,5 @@
 require 'ffi-ncurses'
-module ANcurses
+module Ncurses
   extend self
   def method_missing meth, *args
     if (FFI::NCurses.respond_to?(meth))
