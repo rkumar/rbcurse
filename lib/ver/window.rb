@@ -125,7 +125,11 @@ module VER
       else
       end
       if @window
-        @window.send(meth, *args)
+        if @window.respond_to? meth
+          @window.send(meth, *args)
+        else
+          FFI::NCurses.send( meth, *args)
+        end
       else
         FFI::NCurses.send( meth, *args)
       end
