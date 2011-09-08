@@ -167,7 +167,7 @@ module VER
       print(strings.join("\n") << "\n")
     end
 
-    def refresh
+    def _refresh
       return unless visible?
       @window.refresh
     end
