@@ -49,8 +49,8 @@ module VER
 
       #@window = Ncurses::WINDOW.new(height, width, top, left)
       @window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
-      #@panel = Ncurses::Panel.new_panel(@window)
-      @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
+      #@panel = VER::Panel.new_panel(@window)
+      @panel = VER::Panel.new(@window) # added FFI 2011-09-6 
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
@@ -76,7 +76,7 @@ module VER
       @window = Window.new(@layout)
       @window.name = "Window::ROOTW"
       @window.wrefresh
-      Ncurses::Panel.update_panels
+      VER::Panel.update_panels
       return @window
     end
     # 2009-10-13 12:24 
@@ -335,19 +335,19 @@ module VER
     # Ncurses panel
 
     def hide
-      Ncurses::Panel.hide_panel @panel
+      VER::Panel.hide_panel @panel
       Ncurses.refresh # wnoutrefresh
       @visible = false
     end
 
     def show
-      Ncurses::Panel.show_panel @panel
+      VER::Panel.show_panel @panel
       Ncurses.refresh # wnoutrefresh
       @visible = true
     end
 
     def on_top
-      Ncurses::Panel.top_panel @panel
+      VER::Panel.top_panel @panel
       wnoutrefresh
     end
 
@@ -365,7 +365,7 @@ module VER
       $log.debug "win destroy start"
 
       #@panel = @window.panel if @window
-      Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
+      VER::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
       @window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
       $log.debug "win destroy end"
     end
@@ -581,7 +581,7 @@ module VER
           @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
           $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
           #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
-          @panel = Ncurses::Panel.new_panel(@subwin)
+          @panel = VER::Panel.new_panel(@subwin)
 
           @window = @subwin # makes more mthods available
           init_vars
@@ -600,7 +600,7 @@ module VER
       # or should window do it for all subwins, or would we want to wait that long ?
       $log.debug "subwin destroy"
 
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
+      VER::Panel.del_panel(@panel) if !@panel.nil?   
       @window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
     end
   end
