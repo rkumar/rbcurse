@@ -111,7 +111,7 @@ class Fixnum
    end
 end unless "a"[0] == "a"
 
-include Ncurses
+#include Ncurses XXX 2011-09-8 testing
 module RubyCurses
   extend self
   include ColorMap
