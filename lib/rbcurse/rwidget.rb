@@ -114,6 +114,12 @@ end unless "a"[0] == "a"
 #include Ncurses XXX 2011-09-8 testing FFI
 module RubyCurses
   extend self
+    # testing FFI since we've used KEYS without qualifying module
+    def const_missing name
+      val = FFI::NCurses.const_get(name)
+      #const_set(name, val)
+      return val
+    end
   include ColorMap
     class FieldValidationException < RuntimeError
     end
@@ -303,12 +309,6 @@ module RubyCurses
         require 'rbcurse/extras/viewer'
         RubyCurses::Viewer.view what, config
       end
-    end
-    # testing FFI since we've used KEYS without qualifying module
-    def const_missing name
-      val = FFI::NCurses.const_get(name)
-      #const_set(name, val)
-      return val
     end
 
     module EventHandler
