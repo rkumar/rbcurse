@@ -383,7 +383,7 @@ module VER
         att = Ncurses::A_REVERSE    
       end
 
-      attron(Ncurses.COLOR_PAIR(color) | att)
+      wattron(Ncurses.COLOR_PAIR(color) | att)
       # we should not print beyond window coordinates
       # trying out on 2009-01-03 19:29 
       width = Ncurses.COLS
@@ -391,7 +391,7 @@ module VER
       #string = string[0..(width-c)] if c + string.length > width
       #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
       mvwprintw(r, c, "%s", :string, string);
-      attroff(Ncurses.COLOR_PAIR(color) | att)
+      wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
     # added by rk 2008-11-29 19:01 
     # Since these methods write directly to window they are not advised
@@ -482,7 +482,7 @@ module VER
       when 'reverse'
         att = Ncurses::A_REVERSE    
       end
-      attron(Ncurses.COLOR_PAIR(color) | att)
+      wattron(Ncurses.COLOR_PAIR(color) | att)
       mvwaddch  row, col, Ncurses::ACS_ULCORNER
       mvwhline( row, col+1, Ncurses::ACS_HLINE, width-2)
       mvwaddch row, col+width-1, Ncurses::ACS_URCORNER
