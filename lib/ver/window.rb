@@ -294,7 +294,7 @@ module VER
     def default_for(name)
       case name
       when :height, :top
-        $log.debug "XXX Ncurses.stdscr #{FFI::NCurses.stdscr.class.methods} "
+        $log.debug "XXX Ncurses.stdscr #{FFI::NCurses.stdscr.class} "
         Ncurses.stdscr.getmaxy(stdscr)
       when :width, :left
         Ncurses.stdscr.getmaxx(stdscr)
