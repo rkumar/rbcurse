@@ -1604,7 +1604,7 @@ module RubyCurses
         when -1
           return
         #when Ncurses::KEY_RESIZE # SIGWINCH
-        when KEY_RESIZE # SIGWINCH #  FFI
+        when FFI::NCurses::KEY_RESIZE # SIGWINCH #  FFI
           lines = Ncurses.LINES
           cols = Ncurses.COLS
           x = Ncurses.stdscr.getmaxy
