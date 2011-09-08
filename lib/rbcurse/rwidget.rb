@@ -586,7 +586,7 @@ module RubyCurses
     def destroy
       $log.debug "DESTROY : widget #{@name} "
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      VER::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
     # @deprecated pls call windows method
@@ -1220,7 +1220,7 @@ module RubyCurses
        if @window.window_type == :WINDOW
          $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
-         Ncurses::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
+         VER::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
        end
     end
     ## 
