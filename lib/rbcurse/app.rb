@@ -207,7 +207,7 @@ module RubyCurses
     # (similar to message_immediate) but faster and less involved
     def raw_message text
       # experimentally trying stdscr instead of label
-      scr = Ncurses.stdscr
+      scr = FFI::NCurses.stdscr
       text = "%-80s" % text
       Ncurses.mvprintw @message_label.row ,0, text
       #@_stext ||= ""
@@ -215,7 +215,7 @@ module RubyCurses
       ## appending is quite a pain, maybe we should make it separate.
       #stext = "%-80s" % @_stext
       #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
-      #scr.refresh() # NW w FFI
+      scr.refresh() # NW w FFI
       FFI::NCurses.refresh
     end
     # shows a simple progress bar on last row, using stdscr
