@@ -240,7 +240,7 @@ module RubyCurses
       text = "[" + "%-10s" % stext + "]"
       Ncurses.mvprintw( @message_label.row ,startcol-10, s) if s
       Ncurses.mvprintw @message_label.row ,startcol, text
-      scr.refresh()
+      #scr.refresh() # XXX FFI NW
 
     end
     # used only by LiveConsole, if enables in an app, usually only during testing.
