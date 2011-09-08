@@ -91,7 +91,7 @@ module ColorMap
 end # modul
 if $0 == __FILE__
 require 'logger'
-require 'lib/ver/window'
+require 'ver/window'
 #include Ncurses # FFI 2011-09-8 
 include ColorMap
   # Initialize curses
