@@ -1,6 +1,36 @@
 require 'ffi-ncurses'
 module Ncurses
   extend self
+  FALSE = 0
+  TRUE = 1
+  module NCX
+    def COLS
+      FFI::NCurses.getmaxx(FFI::NCurses.stdscr)
+    end
+    def LINES
+#      #FFI::NCurses.getmaxy(FFI::NCurses.stdscr)
+      FFI::NCurses.LINES
+    end
+#    # supposed to be picked up at runtime
+    def COLORS
+      FFI::NCurses.COLORS
+    end
+
+    # jsut trying this so i can do Ncurses.stdscr.getmax
+    def stdscr
+      FFI::NCurses.stdscr
+    end
+    # this allows me to refer to them as Ncurses::A_REVERSE as is the case everywhere
+    A_REVERSE = FFI::NCurses::A_REVERSE
+    A_STANDOUT = FFI::NCurses::A_STANDOUT
+    A_BOLD = FFI::NCurses::A_BOLD
+    A_UNDERLINE = FFI::NCurses::A_UNDERLINE
+    A_BLINK = FFI::NCurses::A_BLINK
+    A_NORMAL = FFI::NCurses::A_NORMAL
+    KEY_F1 = FFI::NCurses::KEY_F1
+  end
+  include NCX
+  extend NCX
   def method_missing meth, *args
     if (FFI::NCurses.respond_to?(meth))
       FFI::NCurses.send meth, *args
