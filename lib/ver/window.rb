@@ -286,20 +286,21 @@ module VER
     # removed ref to default_for since giving error in FFI 2011-09-8 
     def layout_value(name)
       value = @layout[name]
-      #default = default_for(name)
+      default = default_for(name)
 
-      #value = value.call(default) if value.respond_to?(:call)
-      #return (value || default).to_i
+      value = value.call(default) if value.respond_to?(:call)
+      return (value || default).to_i
     end
 
     # this gives error since stdscr is only a pointer at this time
     def default_for(name)
       case name
       when :height, :top
-        $log.debug "XXX Ncurses.stdscr #{FFI::NCurses.stdscr.class} "
-        Ncurses.stdscr.getmaxy(stdscr)
+        #Ncurses.stdscr.getmaxy(stdscr)
+        FFI::NCurses.LINES
       when :width, :left
-        Ncurses.stdscr.getmaxx(stdscr)
+        #Ncurses.stdscr.getmaxx(stdscr)
+        FFI::NCurses.COLS
       else
         0
       end
