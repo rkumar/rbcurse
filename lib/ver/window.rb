@@ -63,7 +63,8 @@ module VER
       #@window.wresize(height, width)
       FFI::NCurses.wresize(@window,height, width)
       # this is dicey since we often change top and left in pads only for panning !! XXX
-      @window.mvwin(top, left)
+      #@window.mvwin(top, left)
+      FFI::NCurses.mvwin(@window, top, left)
     end
 
     %w[width height top left].each do |side|
