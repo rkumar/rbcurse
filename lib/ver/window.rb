@@ -342,7 +342,7 @@ module VER
       # changed Ncurses::Panel to VER::Panel on 2011-09-8 when moved to FFI
       VER::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
       #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
-      delwin(@window) if !@window.nil? # added FFI 2011-09-7 
+      delwin() if !@window.nil? # added FFI 2011-09-7 
       $log.debug "win destroy end"
     end
     ## 
