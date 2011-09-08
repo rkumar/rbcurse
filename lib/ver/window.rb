@@ -85,6 +85,12 @@ module VER
     def delwin # 2011-09-7 
       Ncurses.delwin(@window)
     end
+    def attron *args
+      FFI::NCurses.wattron @window, *args
+    end
+    def attroff *args
+      FFI::NCurses.wattroff @window, *args
+    end
     #
     # ## END FFI
 
