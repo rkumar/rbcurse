@@ -508,6 +508,11 @@ module RubyCurses
       #@manages_cursor = false # form should manage it, I will pass row and col to it. XXX ?
     end
 
+    def const_missing name
+      val = FFI::NCurses.const_get(name)
+      #const_set(name, val)
+      return val
+    end
     # modified
     ##
     # typically read will be overridden to check if value changed from what it was on enter.
