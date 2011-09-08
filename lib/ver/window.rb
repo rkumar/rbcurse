@@ -128,7 +128,7 @@ module VER
 
     # while moving from ncurses-ruby to FFI need to pass window pointer
     # for w methods as well as mvw - NOT COMING HERE due to include FFI
-    def method_missing(meth, *args)
+    def OLDmethod_missing(meth, *args)
       $log.debug " WWWW method missing #{meth} "
       if meth[0,1]=="w" || meth[0,3] == "mvw"
         $log.debug " WWWW method missing #{meth} adding window in call "
@@ -147,6 +147,28 @@ module VER
       end
     end
 
+    def method_missing(name, *args)
+      name = name.to_s
+      if (name[0,2] == "mv")
+        test_name = name.dup
+        test_name[2,0] = "w" # insert "w" after"mv"
+        if (FFI::NCurses.respond_to?(test_name))
+          return FFI::NCurses.send(test_name, @window, *args)
+        end
+      end
+      test_name = "w" + name
+      if (FFI::NCurses.respond_to?(test_name))
+        return FFI::NCurses.send(test_name, @window, *args)
+      end
+      FFI::NCurses.send(name, @window, *args)
+    end
+    def respond_to?(name)
+      name = name.to_s
+      if (name[0,2] == "mv" && FFI::NCurses.respond_to?("mvw" + name[2..-1]))
+        return true
+      end
+      FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
+    end
     def print(string, width = width)
       return unless visible?
       @window.waddnstr(string.to_s, width)
@@ -524,6 +546,9 @@ module VER
       $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
       return v
     end
+    # This used to return an Ncurses window object, and you could call methods on it
+    # Now it returns a FFI::NCurses.window pointer which you cannot call methods on.
+    # You have to pass it to FFI::NCurses.<method>
     def get_window; @window; end
     def to_s; @name || self; end
     # use in place of mvwhline if your widget could be using a pad or window
