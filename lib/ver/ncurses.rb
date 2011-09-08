@@ -8,7 +8,7 @@ module Ncurses
   end
   # FFINC.constants.each { |e| Ncurses.const_set(e, FFINC.const_get(e) )  }
   def const_missing name
-    val = FFI::Ncurses.const_get(name)
+    val = FFI::NCurses.const_get(name)
     const_set(name, val)
     return val
   end
