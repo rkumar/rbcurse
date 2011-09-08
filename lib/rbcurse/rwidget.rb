@@ -169,7 +169,7 @@ module RubyCurses
           return "left"
         when 261
           return "right"
-        when KEY_F1..KEY_F12
+        when FFI::NCurses::KEY_F1..FFI::NCurses::KEY_F12
           return "F"+ (keycode-264).to_s
         when 330
           return "delete"
@@ -1626,12 +1626,12 @@ module RubyCurses
               ret = select_next_field
               return ret if ret == :NO_NEXT_FIELD
               # alt-shift-tab  or backtab (in case Table eats backtab)
-            when KEY_BTAB, 481 ## backtab added 2008-12-14 18:41 
+            when FFI::NCurses::KEY_BTAB, 481 ## backtab added 2008-12-14 18:41 
               ret = select_prev_field
               return ret if ret == :NO_PREV_FIELD
-            when KEY_UP
+            when FFI::NCurses::KEY_UP
               select_prev_field
-            when KEY_DOWN
+            when FFI::NCurses::KEY_DOWN
               select_next_field
             #when ?\M-L.getbyte(0)
               ### trying out these for fuun and testing splitpane 2010-01-10 20:32 
@@ -1992,9 +1992,9 @@ module RubyCurses
   end
   def map_keys
     return if @keys_mapped
-    bind_key(KEY_LEFT){ cursor_backward }
-    bind_key(KEY_RIGHT){ cursor_forward }
-    bind_key(KEY_BACKSPACE){ delete_prev_char }
+    bind_key(FFI::NCurses::KEY_LEFT){ cursor_backward }
+    bind_key(FFI::NCurses::KEY_RIGHT){ cursor_forward }
+    bind_key(FFI::NCurses::KEY_BACKSPACE){ delete_prev_char }
     bind_key(127){ delete_prev_char }
     bind_key(330){ delete_curr_char }
     bind_key(?\C-a){ cursor_home }
@@ -2545,13 +2545,13 @@ module RubyCurses
     # Button
     def handle_key ch
       case ch
-      when KEY_LEFT, KEY_UP
+      when FFI::NCurses::KEY_LEFT, FFI::NCurses::KEY_UP
         return :UNHANDLED
         #  @form.select_prev_field
-      when KEY_RIGHT, KEY_DOWN
+      when FFI::NCurses::KEY_RIGHT, FFI::NCurses::KEY_DOWN
         return :UNHANDLED
         #  @form.select_next_field
-      when KEY_ENTER, 10, 13, 32  # added space bar also
+      when FFI::NCurses::KEY_ENTER, 10, 13, 32  # added space bar also
         if respond_to? :fire
           fire
         end
