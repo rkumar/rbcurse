@@ -33,7 +33,7 @@ require 'rbcurse/io'
 KEY_TAB    = 9
 KEY_F1  = FFI::NCurses::KEY_F1
 KEY_ENTER  = FFI::NCurses::KEY_ENTER
-#KEY_BTAB  = 353 # nc gives same
+KEY_BTAB  = 353 # nc gives same
 KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
 KEY_DELETE = 330
 KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
