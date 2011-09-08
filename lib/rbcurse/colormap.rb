@@ -6,6 +6,7 @@ module ColorMap
   def ColorMap.get_color_const colorstring
     ret = FFI::NCurses.const_get "COLOR_#{colorstring.upcase}"
     raise  "color const nil ColorMap 8 " if !ret
+    raise "GOT #{ret} COLORMAP "
     ret
   end
   ## private
