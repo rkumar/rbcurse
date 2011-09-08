@@ -295,7 +295,7 @@ module VER
     def default_for(name)
       case name
       when :height, :top
-        Ncurses.stdscr.getmaxy(stdscr)
+        FFI::NCurses.stdscr.getmaxy(stdscr)
       when :width, :left
         Ncurses.stdscr.getmaxx(stdscr)
       else
