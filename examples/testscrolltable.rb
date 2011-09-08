@@ -26,7 +26,7 @@
 #*******************************************************#
 # Creates a scrollpane with a Table 
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtable'

@@ -4,7 +4,7 @@
 # a basic file pager to check out ncurses ruby pad
 # working in 1.8.7 but not showing anything when i hit a key in 1.9.1
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 
 include Ncurses

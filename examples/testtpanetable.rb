@@ -14,7 +14,7 @@
 #
 $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib/"
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtabbedpane'
