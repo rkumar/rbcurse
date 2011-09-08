@@ -121,7 +121,8 @@ module VER
       $log.debug " WWWW method missing #{meth} "
       if meth[0,1]=="w" || meth[0,3] == "mvw"
         $log.debug " WWWW method missing #{meth} adding window in call "
-        return @window.send(meth, @window, *args)
+        #return @window.send(meth, @window, *args)
+        return FF::NCurses.send(meth, @window, *args)
       else
       end
       if @window
