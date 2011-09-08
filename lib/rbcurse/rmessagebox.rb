@@ -214,7 +214,7 @@ module RubyCurses
     def print_borders
       width = @layout[:width]
       height = @layout[:height]
-      @window.print_border_mb 1,2, height, width, $normalcolor, A_REVERSE
+      @window.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
 =begin
       start = 2
       hline = "+%s+" % [ "-"*(width-((start+1)*2)) ]
