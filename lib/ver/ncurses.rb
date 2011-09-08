@@ -43,6 +43,15 @@ module Ncurses
     return val
   end
 end
+module KeysFFI
+    # testing FFI since we've used KEYS without qualifying module
+    def const_missing name
+      val = FFI::NCurses.const_get(name)
+      #const_set(name, val)
+      return val
+    end
+end
+include KeysFFI
 #include FFI::NCurses
 require 'rbcurse/colormap'
 module VER
