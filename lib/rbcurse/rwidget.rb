@@ -114,11 +114,6 @@ end unless "a"[0] == "a"
 #include Ncurses XXX 2011-09-8 testing FFI
 module RubyCurses
   extend self
-    def const_missing name
-      val = FFI::NCurses.const_get(name)
-      #const_set(name, val)
-      return val
-    end
   include ColorMap
     class FieldValidationException < RuntimeError
     end

@@ -241,10 +241,10 @@ module RubyCurses
 
     def map_keys
       return if @keys_mapped
-      bind_key(KEY_LEFT){ cursor_backward }
-      bind_key(KEY_RIGHT){ cursor_forward }
-      bind_key(KEY_UP){ up }
-      bind_key(KEY_DOWN){ down }
+      bind_key(Ncurses.KEY_LEFT){ cursor_backward }
+      bind_key(Ncurses.KEY_RIGHT){ cursor_forward }
+      bind_key(Ncurses.KEY_UP){ up }
+      bind_key(Ncurses.KEY_DOWN){ down }
       bind_key(?\C-a){ cursor_bol }
       bind_key(?\C-e){ cursor_eol }
       bind_key(?\C-n) { scroll_forward }
@@ -252,8 +252,8 @@ module RubyCurses
       bind_key(?\C-[) { goto_start }
       bind_key(?\C-]) { goto_end }
 
-      bind_key(KEY_BACKSPACE){ delete_prev_char if @editable }
-      bind_key(KEY_BSPACE){ delete_prev_char if @editable}
+      bind_key(Ncurses.KEY_BACKSPACE){ delete_prev_char if @editable }
+      bind_key(Ncurses.KEY_BSPACE){ delete_prev_char if @editable}
       bind_key(?\M-d, :delete_word)
       bind_key(?\M-f, :forward_word)
 
@@ -291,17 +291,17 @@ module RubyCurses
       #$log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}, w: #{@width} max #{@maxlen}"
       
       case ch
-      when KEY_ENTER, 10, KEY_RETURN
+      when Ncurses.KEY_ENTER, 10, Ncurses.KEY_RETURN
         insert_break
       #when KEY_LEFT
         #cursor_backward
       #when KEY_RIGHT
         #cursor_forward
-      when KEY_BACKSPACE, KEY_BSPACE
+      when Ncurses.KEY_BACKSPACE, Ncurses.KEY_BSPACE
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
         end
-      when KEY_DELETE, ?\C-d.getbyte(0) # delete char
+      when Ncurses.KEY_DELETE, ?\C-d.getbyte(0) # delete char
         if @editable
           delete_curr_char 
         end
