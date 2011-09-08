@@ -1,5 +1,5 @@
 require "ffi-ncurses"
-  #module Ncurses
+  #module Ncurses # changed on 2011-09-8 
 module VER
     class Panel < Struct.new(:pointer)
       extend FFI::Library
