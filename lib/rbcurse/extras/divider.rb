@@ -1,5 +1,5 @@
 require 'rbcurse/app'
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 
 # TODO : We can consider making it independent of objects, or allow for a margin so it does not write

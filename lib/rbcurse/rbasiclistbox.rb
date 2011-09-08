@@ -16,7 +16,7 @@ require 'rbcurse/listcellrenderer'
 require 'forwardable'
 
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   ##

@@ -19,7 +19,7 @@ require 'rubygems'
 require 'logger'
 require 'rbcurse'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
