@@ -5,15 +5,13 @@ module ColorMap
   # returns a color constant for a human color string
   def ColorMap.get_color_const colorstring
     ret = FFI::NCurses.const_get "COLOR_#{colorstring.upcase}"
-    raise  "color const nil ColorMap 8 " if !ret
-    $log.debug "GOT #{ret} COLORMAP " if ret > 0
-    ret
+    #raise  "color const nil ColorMap 8 " if !ret
   end
   ## private
   # creates a new color pair, puts in color map and returns color_pair
   # number
   def ColorMap.install_color fgc, bgc
-      $log.debug " install_color found #{fgc} #{@bgc} "
+      #$log.debug " install_color found #{fgc} #{@bgc} "
       @color_id += 1
     fg = ColorMap.get_color_const fgc
     bg = ColorMap.get_color_const bgc
@@ -38,10 +36,10 @@ module ColorMap
     fgc = fgc.to_sym if fgc.is_a? String
     bgc = bgc.to_sym if bgc.is_a? String
     if $color_map.include? [fgc, bgc]
-      $log.debug " get_color found #{fgc} #{@bgc} "
+      #$log.debug " get_color found #{fgc} #{@bgc} "
       return $color_map[[fgc, bgc]]
     else
-      $log.debug " get_color NOT found #{fgc} #{@bgc} "
+      #$log.debug " get_color NOT found #{fgc} #{@bgc} "
       return ColorMap.install_color fgc, bgc
     end
   end
