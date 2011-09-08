@@ -291,11 +291,10 @@ module VER
       return (value || default).to_i
     end
 
-    # possibly unused FFI added stdscr as argument
     def default_for(name)
       case name
       when :height, :top
-        FFI::NCurses.stdscr.getmaxy(stdscr)
+        Ncurses.stdscr.getmaxy(stdscr)
       when :width, :left
         Ncurses.stdscr.getmaxx(stdscr)
       else
