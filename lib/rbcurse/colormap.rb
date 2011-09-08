@@ -97,9 +97,9 @@ require 'ver/window'
 include ColorMap
   # Initialize curses
   begin
+    $log = Logger.new("view.log")
     VER::start_ncurses
     @window = VER::Window.root_window
-    $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
     ColorMap.setup
 
