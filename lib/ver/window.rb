@@ -348,19 +348,19 @@ module VER
     # Ncurses panel
 
     def hide
-      Ncurses::Panel.hide_panel @panel
+      Ncurses::Panel.hide_panel @panel.pointer
       Ncurses.refresh # wnoutrefresh
       @visible = false
     end
 
     def show
-      Ncurses::Panel.show_panel @panel
+      Ncurses::Panel.show_panel @panel.pointer
       Ncurses.refresh # wnoutrefresh
       @visible = true
     end
 
     def on_top
-      Ncurses::Panel.top_panel @panel
+      Ncurses::Panel.top_panel @panel.pointer
       wnoutrefresh
     end
 
