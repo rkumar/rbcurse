@@ -191,7 +191,7 @@ module VER
 
     def getch
       #c = @window.getch
-      c = getch
+      c = Ncurses.getch
       #if c == Ncurses::KEY_RESIZE
 
     rescue Interrupt => ex
