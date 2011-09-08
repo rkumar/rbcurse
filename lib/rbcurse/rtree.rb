@@ -19,7 +19,7 @@ require 'rbcurse/tree/treecellrenderer'
 
 TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   # a representation of heirarchical data in outline form

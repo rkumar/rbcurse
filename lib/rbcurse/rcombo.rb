@@ -12,7 +12,7 @@
 require 'rbcurse'
 require 'rbcurse/rlistbox'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   META_KEY = 128
