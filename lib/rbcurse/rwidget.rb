@@ -355,11 +355,13 @@ module RubyCurses
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
               #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
-              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
+              #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
               begin
                 blk.call object,  *aeve[ix]
               rescue => ex
-                $log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
+                ## some don't have name
+                #$log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
+                $log.error "======= Error ERROR in block event #{self}:  #{event}"
                 $log.error ex
                 $log.error(ex.backtrace.join("\n")) 
                 #$error_message = "#{ex}" # changed 2010  
