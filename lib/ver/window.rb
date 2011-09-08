@@ -122,7 +122,7 @@ module VER
       if meth[0,1]=="w" || meth[0,3] == "mvw"
         $log.debug " WWWW method missing #{meth} adding window in call "
         #return @window.send(meth, @window, *args)
-        return FF::NCurses.send(meth, @window, *args)
+        return FFI::NCurses.send(meth, @window, *args)
       else
       end
       if @window
