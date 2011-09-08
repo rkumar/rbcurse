@@ -25,7 +25,6 @@ require 'rbcurse/listeditable'
 
 #include Ncurses # FFI 2011-09-8 
 include RubyCurses
-include KeysFFI
 module RubyCurses
   extend self
 
