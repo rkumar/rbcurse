@@ -304,6 +304,12 @@ module RubyCurses
         RubyCurses::Viewer.view what, config
       end
     end
+    # testing FFI since we've used KEYS without qualifying module
+    def const_missing name
+      val = FFI::NCurses.const_get(name)
+      #const_set(name, val)
+      return val
+    end
 
     module EventHandler
       ##
