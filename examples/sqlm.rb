@@ -8,7 +8,7 @@
 # instead of a tabbed panes. 
 #
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'sqlite3'
 require 'rbcurse'

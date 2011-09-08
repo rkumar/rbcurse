@@ -1,7 +1,7 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 # Creates a scrollpane with a Testwidget (which is a modified TextView class)
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rlistbox'

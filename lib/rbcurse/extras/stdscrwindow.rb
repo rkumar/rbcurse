@@ -29,9 +29,31 @@ module RubyCurses
 
     # Ncurses
 
-    def method_missing(meth, *args)
-      @window.send(meth, *args)
+
+    # taken from Window
+    def method_missing(name, *args)
+      name = name.to_s
+      if (name[0,2] == "mv")
+        test_name = name.dup
+        test_name[2,0] = "w" # insert "w" after"mv"
+        if (FFI::NCurses.respond_to?(test_name))
+          return FFI::NCurses.send(test_name, self, *args)
+        end
+      end
+      test_name = "w" + name
+      if (FFI::NCurses.respond_to?(test_name))
+        return FFI::NCurses.send(test_name, self, *args)
+      end
+      FFI::NCurses.send(name, self, *args)
     end
+    def respond_to?(name)
+      name = name.to_s
+      if (name[0,2] == "mv" && FFI::NCurses.respond_to?("mvw" + name[2..-1]))
+        return true
+      end
+      FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
+    end
+      #@window.send(meth, *args)
 
     def print(string, width = width)
       return unless visible?
@@ -66,16 +88,16 @@ module RubyCurses
     end
 
     def highlight_line(color, y, x, max)
-      @window.mvchgat(y, x, max, Ncurses::A_NORMAL, color, nil)
+      @window.mvchgat(y, x, max, FFI::NCurses::A_NORMAL, color, nil)
     end
 
     def ungetch(ch)
-      Ncurses.ungetch(ch)
+      FFI::NCurses.ungetch(ch)
     end
 
     def getch
       c = @window.getch
-      #if c == Ncurses::KEY_RESIZE
+      #if c == FFI::NCurses::KEY_RESIZE
     rescue Interrupt => ex
       3 # is C-c
     end
@@ -174,26 +196,26 @@ module RubyCurses
     # @param color - color pair
     # @ param att - ncurses attribute: normal, bold, reverse, blink,
     # underline
-    def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
+    def printstring(r,c,string, color, att = FFI::NCurses::A_NORMAL)
         prv_printstring(r,c,string, color, att )
     end
 
     ## name changed from printstring to prv_prinstring
-    def prv_printstring(r,c,string, color, att = Ncurses::A_NORMAL)
+    def prv_printstring(r,c,string, color, att = FFI::NCurses::A_NORMAL)
 
       #$log.debug " #{@name} inside window printstring r #{r} c #{c} #{string} "
-      att = Ncurses::A_NORMAL if att.nil? 
+      att = FFI::NCurses::A_NORMAL if att.nil? 
       case att.to_s.downcase
       when 'normal'
-        att = Ncurses::A_NORMAL
+        att = FFI::NCurses::A_NORMAL
       when 'underline'
-        att = Ncurses::A_UNDERLINE
+        att = FFI::NCurses::A_UNDERLINE
       when 'bold'
-        att = Ncurses::A_BOLD
+        att = FFI::NCurses::A_BOLD
       when 'blink'
-        att = Ncurses::A_BLINK    # unlikely to work
+        att = FFI::NCurses::A_BLINK    # unlikely to work
       when 'reverse'
-        att = Ncurses::A_REVERSE    
+        att = FFI::NCurses::A_REVERSE    
       end
 
       attron(Ncurses.COLOR_PAIR(color) | att)

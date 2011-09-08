@@ -21,7 +21,7 @@
 #               Copyright 2010, Rahul Kumar             #
 #*******************************************************#
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
