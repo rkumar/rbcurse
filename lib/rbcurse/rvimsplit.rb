@@ -95,7 +95,7 @@ module RubyCurses
       bind_key([?\C-w,?6], :increase_current_component)
       bind_key([?\C-w,?5], :decrease_current_component)
       # this needs to be set at application level
-      bind_key(KEY_F3) {RubyCurses::FocusManager.toggle_focusable}
+      bind_key(FFI::NCurses::KEY_F3) {RubyCurses::FocusManager.toggle_focusable}
     end
     def init_vars
       @repaint_required = true
