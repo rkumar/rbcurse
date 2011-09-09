@@ -1320,6 +1320,7 @@ module RubyCurses
           else
               $log.debug "XXXW bottomline: before print_str #{str} "
             print_str(@question.echo * str.length, :y => @prompt_length+0)
+              $log.debug "XXXW bottomline: after print_str #{str} "
           end
           win.wmove r, c+len # more for arrow keys, curpos may not be end
           prevchar = ch
