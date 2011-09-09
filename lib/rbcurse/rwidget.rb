@@ -299,7 +299,7 @@ module RubyCurses
           $log.debug "SYMBOL " if $log.debug? 
           return send(blk, *@key_args[keycode])
         else
-          $log.debug "BLOCJ " if $log.debug? 
+          $log.debug "rwidget BLOCK called _process_key " if $log.debug? 
           return blk.call object,  *@key_args[keycode]
         end
         #0
