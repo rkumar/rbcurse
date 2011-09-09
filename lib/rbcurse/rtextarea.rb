@@ -252,8 +252,8 @@ module RubyCurses
       bind_key(?\C-[) { goto_start }
       bind_key(?\C-]) { goto_end }
 
-      bind_key(Ncurses.KEY_BACKSPACE){ delete_prev_char if @editable }
-      bind_key(Ncurses.KEY_BSPACE){ delete_prev_char if @editable}
+      bind_key(KEY_BACKSPACE){ delete_prev_char if @editable }
+      bind_key(KEY_BSPACE){ delete_prev_char if @editable}
       bind_key(?\M-d, :delete_word)
       bind_key(?\M-f, :forward_word)
 
