@@ -199,17 +199,17 @@ module Ncurses
     end
     alias delete del
   end
-  def self.initscr
-    #@stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
-    @stdscr = FFI::NCurses.initscr
-  end
-  def self.stdscr
-    @stdscr
-  end
-  class << self
-    def method_missing(method, *args, &block)
-      FFI::NCurses.send(method, *args, &block)
-    end
-  end
+#  def self.initscr
+#    #@stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
+#    @stdscr = FFI::NCurses.initscr
+#  end
+#  def self.stdscr
+#    @stdscr
+#  end
+#  class << self
+#    def method_missing(method, *args, &block)
+#      FFI::NCurses.send(method, *args, &block)
+#    end
+#  end
 #  ---
 end
