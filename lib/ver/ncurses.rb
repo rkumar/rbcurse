@@ -59,6 +59,12 @@ include ColorMap
     # If errors occur, initscr writes an appropriate error message to standard
     # error and exits; otherwise, a pointer is returned to stdscr.
     stdscr = Ncurses.initscr
+        File.open('stdscrmethrbc', 'a+'){|io|
+          io.puts '=' * 80
+          io.puts(stdscr.public_methods)
+          io.puts '=' * 80
+        }
+    $g_stdscr = stdscr
 
 #    Color.start if Ncurses.has_colors?
       Ncurses.start_color();
