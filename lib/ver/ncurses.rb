@@ -119,12 +119,12 @@ end
 module Ncurses
 
   class FFIWINDOW
-    attr_accessor :win
+    attr_accessor :pointer
     def initialize(*args, &block)
       if block_given?
-        @win = args.first
+        @pointer = args.first
       else
-        @win = FFI::NCurses.newwin(*args)
+        @pointer = FFI::NCurses.newwin(*args)
       end
     end
     def method_missing(name, *args)
@@ -133,14 +133,14 @@ module Ncurses
         test_name = name.dup
         test_name[2,0] = "w" # insert "w" after"mv"
         if (FFI::NCurses.respond_to?(test_name))
-          return FFI::NCurses.send(test_name, @win, *args)
+          return FFI::NCurses.send(test_name, @pointer, *args)
         end
       end
       test_name = "w" + name
       if (FFI::NCurses.respond_to?(test_name))
-        return FFI::NCurses.send(test_name, @win, *args)
+        return FFI::NCurses.send(test_name, @pointer, *args)
       end
-      FFI::NCurses.send(name, @win, *args)
+      FFI::NCurses.send(name, @pointer, *args)
     end
     def respond_to?(name)
       name = name.to_s
@@ -150,7 +150,7 @@ module Ncurses
       FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
     end
     def del
-      FFI::NCurses.delwin(@win)
+      FFI::NCurses.delwin(@pointer)
     end
     alias delete del
   end
@@ -198,7 +198,7 @@ module Ncurses
   include NCX
   extend NCX
   # i think we can knock this off
-  def method_missing meth, *args
+  def XXXmethod_missing meth, *args
     if (FFI::NCurses.respond_to?(meth))
       FFI::NCurses.send meth, *args
     end
