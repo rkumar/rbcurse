@@ -103,10 +103,10 @@ module RubyCurses
     end
 
     def getch
-      #c = @window_pointer.getch # FFI NW stdscr must get key not some window
+      c = @window_pointer.getch # FFI NW stdscr must get key not some window
       #raise "Ncurses.stdscr does not have getch" if !Ncurses.stdscr.respond_to? :getch
       $log.debug " XXXX before calling getch"
-      c = Ncurses.stdscr.getch
+      #c = Ncurses.stdscr.getch # FFIW
       $log.debug " XXXX after calling getch #{c}"
       #c = FFI::NCurses.getch # causes an endless loop since other comp gets key
       #if c == FFI::NCurses::KEY_RESIZE
