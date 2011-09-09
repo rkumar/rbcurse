@@ -1305,6 +1305,7 @@ module RubyCurses
             curpos += 1
             break if str.length >= maxlen
           end
+              $log.debug "bottomline: outside case loop #{str} " if $log.debug? 
           case @question.echo
           when true
             begin
@@ -1312,10 +1313,12 @@ module RubyCurses
             rescue => exc
               $log.debug "bottomline: change_proc EXC #{exc} " if $log.debug? 
             end
+              $log.debug "XXX bottomline: before print_str #{str} "
             print_str(str, :y => @prompt_length+0)
           when false
             # noop, no echoing what is typed
           else
+              $log.debug "XXXW bottomline: before print_str #{str} "
             print_str(@question.echo * str.length, :y => @prompt_length+0)
           end
           win.wmove r, c+len # more for arrow keys, curpos may not be end
