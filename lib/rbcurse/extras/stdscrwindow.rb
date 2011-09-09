@@ -106,6 +106,7 @@ module RubyCurses
       $log.debug " XXXX after calling getch #{c}"
       #c = FFI::NCurses.getch # causes an endless loop since other comp gets key
       #if c == FFI::NCurses::KEY_RESIZE
+      return c
     rescue Interrupt => ex
       3 # is C-c
     end
