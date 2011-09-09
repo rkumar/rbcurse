@@ -281,7 +281,7 @@ module RubyCurses
         @repaint_required = true
       when 27, ?\C-c.getbyte(0)
         #editing_canceled @current_index if @cell_editing_allowed
-        cancel_block # block
+        #cancel_block # block NW XXX don't think its required.
         $multiplier = 0
       when @KEY_ASK_FIND_FORWARD
       # ask_search_forward
