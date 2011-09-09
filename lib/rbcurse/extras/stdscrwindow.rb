@@ -14,7 +14,7 @@ module RubyCurses
 
     def initialize
 
-      @window_pointer = FFI::NCurses.stdscr
+      @window_pointer = FFI::NCurses.initscr
       $log.debug "STDSCR window pointer is #{@window_pointer.class}"
       $log.debug "STDSCR window pointer mehtods #{@window_pointer.public_methods}"
       $error_message_row ||= Ncurses.LINES-1
