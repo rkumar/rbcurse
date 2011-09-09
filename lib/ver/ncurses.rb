@@ -12,7 +12,8 @@ module VER
     # initscr also causes the first call to refresh to clear the screen.
     # If errors occur, initscr writes an appropriate error message to standard
     # error and exits; otherwise, a pointer is returned to stdscr.
-    stdscr = Ncurses.initscr
+    #stdscr = Ncurses.initscr  FFI
+    stdscr = FFI::NCurses.initscr
         File.open('stdscrmethrbc', 'w'){|io|
           io.puts '=' * 80
           io.puts stdscr.class
@@ -34,8 +35,8 @@ module VER
     # (made to work locally), turning on this option causes the terminal keypad
     # to be turned on when wgetch is called.
     # The default value for keypad is false.
-    #Ncurses.keypad(stdscr, bf = true)
-      Ncurses.stdscr.keypad(true)     # turn on keypad mode FFI
+    Ncurses.keypad(stdscr, bf = true)
+      #Ncurses.stdscr.keypad(true)     # turn on keypad mode FFI
     #Ncurses.keypad(stdscr, bf = 1)
 
     # The nl and nonl routines control whether the underlying display device
@@ -156,7 +157,8 @@ module Ncurses
     alias delete del
   end
   def self.initscr
-    @stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
+    #@stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
+    @stdscr = FFI::NCurses.initscr
   end
   def self.stdscr
     @stdscr

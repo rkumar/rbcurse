@@ -9,6 +9,9 @@ module RubyCurses
   # We should be able to pass this window to bottomline and have one global bottomline
   # created once (by window class ?)
   #
+  # FFI: 2011-09-9 The change to FFI has affected this a lot since I do not get window
+  # methods in rbcurse for stdscr whereas suprisingly if i run the samples, i get them
+  # all.
   class StdscrWindow 
     attr_reader :width, :height, :top, :left
 
@@ -16,7 +19,7 @@ module RubyCurses
 
       @window_pointer = FFI::NCurses.initscr
       $log.debug "STDSCR window pointer is #{@window_pointer.class}"
-      $log.debug "STDSCR window pointer mehtods #{@window_pointer.public_methods}"
+      #$log.debug "STDSCR window pointer mehtods #{@window_pointer.public_methods}"
       $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1
       init_vars

@@ -367,7 +367,7 @@ module RubyCurses
         cmd = cmdline.shift #.to_sym
         if respond_to?(cmd, true)
           if cmd == "close"
-            throw :close
+            throw :close # other seg faults in del_panel window.destroy executes 2x
           else
             send cmd, *cmdline
           end
