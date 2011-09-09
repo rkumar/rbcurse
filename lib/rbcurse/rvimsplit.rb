@@ -498,7 +498,7 @@ module RubyCurses
           return ret 
         end
       end
-      $log.debug "XXX VIM unahdled by comp #{comp.name} "
+      $log.debug "XXX VIM key unhandled by comp #{comp.name} "
       case ch
       when ?\C-c.getbyte(0)
         $multiplier = 0
