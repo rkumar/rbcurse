@@ -1122,7 +1122,7 @@ module RubyCurses
         entries = nil
         while true
           ch=win.getchar()
-          #$log.debug " rbgetstr got ch:#{ch}, str:#{str}. "
+          $log.debug " XXXX FFI rbgetstr got ch:#{ch}, str:#{str}. "
           case ch
           when 3 # -1 # C-c  # sometimes this causes an interrupt and crash
             return -1, nil
