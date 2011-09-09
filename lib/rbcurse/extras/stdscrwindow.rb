@@ -110,7 +110,8 @@ module RubyCurses
     # added by rkumar 2008-12-12 23:07 
     def getchar 
       while 1 
-        ch = getch
+        #ch = getch # FFI CHECKING XXX
+        ch = FFI::NCurses.getch 
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
