@@ -58,7 +58,7 @@ include ColorMap
     # initscr also causes the first call to refresh to clear the screen.
     # If errors occur, initscr writes an appropriate error message to standard
     # error and exits; otherwise, a pointer is returned to stdscr.
-    stdscr = Ncurses.initscr
+    stdscr = FFI::NCurses.initscr
         File.open('stdscrmethrbc', 'a+'){|io|
           io.puts '=' * 80
           io.puts(stdscr.public_methods)
