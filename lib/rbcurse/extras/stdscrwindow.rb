@@ -98,7 +98,7 @@ module RubyCurses
       FFI::NCurses.ungetch(ch)
     end
 
-    def getch
+    def _getch
       #c = @window_pointer.getch # FFI NW stdscr must get key not some window
       c = Ncurses.stdscr.getch
       #c = FFI::NCurses.getch # causes an endless loop since other comp gets key
@@ -113,7 +113,7 @@ module RubyCurses
     # added by rkumar 2008-12-12 23:07 
     def getchar 
       while 1 
-        ch = getch 
+        ch = _getch 
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
