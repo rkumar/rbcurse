@@ -62,6 +62,8 @@ module RubyCurses
     end
       #@window.send(meth, *args)
 
+    # FFI WARNING XXX I think these methods one window_pointer will fail
+    # since somehow stdscr is not getting these methods here.
     def print(string, width = width)
       return unless visible?
       @window_pointer.waddnstr(string.to_s, width)
@@ -84,6 +86,7 @@ module RubyCurses
       print(strings.join("\n") << "\n")
     end
 
+    # FFI 2011-09-9 commented off so it goes to method missing
     def XXXrefresh
       @window_pointer.refresh
     end
@@ -105,10 +108,10 @@ module RubyCurses
     def getch
       #c = @window_pointer.getch # FFI NW stdscr must get key not some window
       #raise "Ncurses.stdscr does not have getch" if !Ncurses.stdscr.respond_to? :getch
-      $log.debug " XXXX before calling getch"
-      #c = Ncurses.stdscr.getch # FFIW
-      c = FFI::NCurses.getch # causes an endless loop since other comp gets key
-      $log.debug " XXXX after calling getch #{c}"
+      #$log.debug " XXXX before calling getch"
+      #c = Ncurses.stdscr.getch # FFIW if you use the FFIWINDOW
+      c = FFI::NCurses.getch # FFI 2011-09-9  # without FFIWINDOW
+      #$log.debug " XXXX after calling getch #{c}"
       #if c == FFI::NCurses::KEY_RESIZE
       return c
     rescue Interrupt => ex
