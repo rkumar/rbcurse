@@ -80,7 +80,7 @@ module RubyCurses
       print(strings.join("\n") << "\n")
     end
 
-    def refresh
+    def XXXrefresh
       @window_pointer.refresh
     end
 
@@ -98,7 +98,7 @@ module RubyCurses
       FFI::NCurses.ungetch(ch)
     end
 
-    def getch
+    def XXXgetch
       #c = @window_pointer.getch # FFI NW stdscr must get key not some window
       c = FFI::NCurses.stdscr.getch
       #c = FFI::NCurses.getch # causes an endless loop since other comp gets key
