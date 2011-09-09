@@ -58,16 +58,16 @@ module RubyCurses
 
     def print(string, width = width)
       return unless visible?
-      @window_pointer.waddnstr(string.to_s, width)
+      @window.waddnstr(string.to_s, width)
     end
 
     def print_yx(string, y = 0, x = 0)
-      @window_pointer.mvwaddnstr(y, x, string, width)
+      @window.mvwaddnstr(y, x, string, width)
     end
 
     def print_empty_line
       return unless visible?
-      @window_pointer.printw(' ' * width)
+      @window.printw(' ' * width)
     end
 
     def print_line(string)
@@ -79,17 +79,17 @@ module RubyCurses
     end
 
     def refresh
-      @window_pointer.refresh
+      @window.refresh
     end
 
 
     def color=(color)
       @color = color
-      @window_pointer.color_set(color, nil)
+      @window.color_set(color, nil)
     end
 
     def highlight_line(color, y, x, max)
-      @window_pointer.mvchgat(y, x, max, FFI::NCurses::A_NORMAL, color, nil)
+      @window.mvchgat(y, x, max, FFI::NCurses::A_NORMAL, color, nil)
     end
 
     def ungetch(ch)
@@ -97,7 +97,7 @@ module RubyCurses
     end
 
     def getch
-      c = @window_pointer.getch
+      c = @window.getch
       #if c == FFI::NCurses::KEY_RESIZE
     rescue Interrupt => ex
       3 # is C-c
