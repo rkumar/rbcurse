@@ -1315,6 +1315,7 @@ module RubyCurses
             end
               $log.debug "XXX bottomline: before print_str #{str} "
             print_str(str, :y => @prompt_length+0)
+              $log.debug "XXX bottomline: after print_str #{str} "
           when false
             # noop, no echoing what is typed
           else
@@ -1325,6 +1326,8 @@ module RubyCurses
           win.wmove r, c+len # more for arrow keys, curpos may not be end
           prevchar = ch
         end
+              $log.debug "XXXW bottomline: after while loop"
+
         str = default if str == ""
       ensure
         Ncurses.noecho();
