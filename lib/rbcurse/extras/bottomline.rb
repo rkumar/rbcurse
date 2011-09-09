@@ -1076,7 +1076,7 @@ module RubyCurses
       #win.mvprintw(x, y, "%-40s" % text);
       win.mvprintw(x, y, "%s" % text);
       win.attroff(color);
-      win.refresh
+      #win.refresh # FFI NW 2011-09-9 
     end
 
     # actual input routine, gets each character from user, taking care of echo, limit,
