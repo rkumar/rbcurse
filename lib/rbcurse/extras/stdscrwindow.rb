@@ -98,7 +98,7 @@ module RubyCurses
       FFI::NCurses.ungetch(ch)
     end
 
-    def XXXgetch
+    def getch
       #c = @window_pointer.getch # FFI NW stdscr must get key not some window
       c = FFI::NCurses.stdscr.getch
       #c = FFI::NCurses.getch # causes an endless loop since other comp gets key

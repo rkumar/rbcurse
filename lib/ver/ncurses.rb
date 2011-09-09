@@ -12,7 +12,7 @@ module VER
     # initscr also causes the first call to refresh to clear the screen.
     # If errors occur, initscr writes an appropriate error message to standard
     # error and exits; otherwise, a pointer is returned to stdscr.
-    stdscr = FFI::NCurses.initscr
+    stdscr = Ncurses.initscr
         File.open('stdscrmethrbc', 'w'){|io|
           io.puts '=' * 80
           io.puts(stdscr.public_methods)
@@ -116,6 +116,55 @@ require 'rbcurse/colormap'
 include ColorMap
 end
 module Ncurses
+
+  class FFIWINDOW
+    attr_accessor :win
+    def initialize(*args, &block)
+      if block_given?
+        @win = args.first
+      else
+        @win = FFI::NCurses.newwin(*args)
+      end
+    end
+    def method_missing(name, *args)
+      name = name.to_s
+      if (name[0,2] == "mv")
+        test_name = name.dup
+        test_name[2,0] = "w" # insert "w" after"mv"
+        if (FFI::NCurses.respond_to?(test_name))
+          return FFI::NCurses.send(test_name, @win, *args)
+        end
+      end
+      test_name = "w" + name
+      if (FFI::NCurses.respond_to?(test_name))
+        return FFI::NCurses.send(test_name, @win, *args)
+      end
+      FFI::NCurses.send(name, @win, *args)
+    end
+    def respond_to?(name)
+      name = name.to_s
+      if (name[0,2] == "mv" && FFI::NCurses.respond_to?("mvw" + name[2..-1]))
+        return true
+      end
+      FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
+    end
+    def del
+      FFI::NCurses.delwin(@win)
+    end
+    alias delete del
+  end
+  def self.initscr
+    @stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
+  end
+  def self.stdscr
+    @stdscr
+  end
+  class << self
+    def method_missing(method, *args, &block)
+      FFI::NCurses.send(method, *args, &block)
+    end
+  end
+#  ---
   extend self
   FALSE = 0
   TRUE = 1
@@ -147,6 +196,7 @@ module Ncurses
   end
   include NCX
   extend NCX
+  # i think we can knock this off
   def method_missing meth, *args
     if (FFI::NCurses.respond_to?(meth))
       FFI::NCurses.send meth, *args
