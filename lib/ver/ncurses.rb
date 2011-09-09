@@ -44,9 +44,7 @@ module Ncurses
   end
 end
 #include FFI::NCurses
-require 'rbcurse/colormap'
 module VER
-include ColorMap
   module_function
 
   # Setup ncurses, nicely documented by the curses manpages
@@ -59,12 +57,12 @@ include ColorMap
     # If errors occur, initscr writes an appropriate error message to standard
     # error and exits; otherwise, a pointer is returned to stdscr.
     stdscr = FFI::NCurses.initscr
-        File.open('stdscrmethrbc', 'a+'){|io|
+        File.open('stdscrmethrbc', 'w'){|io|
           io.puts '=' * 80
           io.puts(stdscr.public_methods)
           io.puts '=' * 80
         }
-    $g_stdscr = stdscr
+    #$g_stdscr = stdscr
 
 #    Color.start if Ncurses.has_colors?
       Ncurses.start_color();
@@ -158,4 +156,6 @@ include ColorMap
     $stderr.puts @last_error_message if @last_error_message
     $stderr.puts @last_error, *@last_error.backtrace
   end
+require 'rbcurse/colormap'
+include ColorMap
 end
