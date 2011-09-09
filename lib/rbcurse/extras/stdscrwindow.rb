@@ -45,7 +45,7 @@ module RubyCurses
       if (FFI::NCurses.respond_to?(test_name))
         return FFI::NCurses.send(test_name, @window_pointer, *args)
       end
-      FFI::NCurses.send(name, @window_pointer, *args)
+      FFI::NCurses.send(name, window_pointer, *args)
     end
     def respond_to?(name)
       name = name.to_s
@@ -58,16 +58,16 @@ module RubyCurses
 
     def print(string, width = width)
       return unless visible?
-      @window.waddnstr(string.to_s, width)
+      @window_pointer.waddnstr(string.to_s, width)
     end
 
     def print_yx(string, y = 0, x = 0)
-      @window.mvwaddnstr(y, x, string, width)
+      @window_pointer.mvwaddnstr(y, x, string, width)
     end
 
     def print_empty_line
       return unless visible?
-      @window.printw(' ' * width)
+      @window_pointer.printw(' ' * width)
     end
 
     def print_line(string)
@@ -79,17 +79,17 @@ module RubyCurses
     end
 
     def refresh
-      @window.refresh
+      @window_pointer.refresh
     end
 
 
     def color=(color)
       @color = color
-      @window.color_set(color, nil)
+      @window_pointer.color_set(color, nil)
     end
 
     def highlight_line(color, y, x, max)
-      @window.mvchgat(y, x, max, FFI::NCurses::A_NORMAL, color, nil)
+      @window_pointer.mvchgat(y, x, max, FFI::NCurses::A_NORMAL, color, nil)
     end
 
     def ungetch(ch)
@@ -97,7 +97,7 @@ module RubyCurses
     end
 
     def getch
-      c = @window.getch
+      c = @window_pointer.getch
       #if c == FFI::NCurses::KEY_RESIZE
     rescue Interrupt => ex
       3 # is C-c
