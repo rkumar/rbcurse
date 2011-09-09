@@ -100,7 +100,7 @@ module RubyCurses
 
     def getch
       #c = @window_pointer.getch # FFI NW stdscr must get key not some window
-      c = FFI::NCurses.stdscr.getch
+      c = Ncurses.stdscr.getch
       #c = FFI::NCurses.getch # causes an endless loop since other comp gets key
       #if c == FFI::NCurses::KEY_RESIZE
     rescue Interrupt => ex
