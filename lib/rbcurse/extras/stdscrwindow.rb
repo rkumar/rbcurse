@@ -14,7 +14,7 @@ module RubyCurses
 
     def initialize
 
-      @window_pointer = Ncurses.stdscr
+      @window_pointer = FFI::NCurses.stdscr
       $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1
       init_vars
@@ -97,7 +97,8 @@ module RubyCurses
     end
 
     def getch
-      c = @window_pointer.getch
+      #c = @window_pointer.getch # FFI NW 
+      c = FFI::NCurses.getch
       #if c == FFI::NCurses::KEY_RESIZE
     rescue Interrupt => ex
       3 # is C-c
