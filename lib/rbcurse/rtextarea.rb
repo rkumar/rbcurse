@@ -241,7 +241,7 @@ module RubyCurses
 
     def map_keys
       return if @keys_mapped
-      bind_key(Ncurses.KEY_LEFT){ cursor_backward }
+      bind_key(Ncurses::KEY_LEFT){ cursor_backward }
       bind_key(Ncurses.KEY_RIGHT){ cursor_forward }
       bind_key(Ncurses.KEY_UP){ up }
       bind_key(Ncurses.KEY_DOWN){ down }
