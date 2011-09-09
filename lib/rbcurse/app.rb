@@ -366,7 +366,11 @@ module RubyCurses
         cmdline = str.split
         cmd = cmdline.shift #.to_sym
         if respond_to?(cmd, true)
-          send cmd, *cmdline
+          if cmd == "close"
+            throw :close
+          else
+            send cmd, *cmdline
+          end
         else
           alert "#{self.class} does not respond to #{cmd} "
           ret = false
