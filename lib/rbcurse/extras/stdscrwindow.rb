@@ -47,7 +47,8 @@ module RubyCurses
       if (FFI::NCurses.respond_to?(test_name))
         return FFI::NCurses.send(test_name, @window_pointer, *args)
       end
-      FFI::NCurses.send(name, window_pointer, *args)
+      # what if it does not respond, can go into loop and give stack overflow
+      FFI::NCurses.send(name, @window_pointer, *args)
     end
     def respond_to?(name)
       name = name.to_s

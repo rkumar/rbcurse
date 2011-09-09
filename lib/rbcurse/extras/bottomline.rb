@@ -1324,7 +1324,7 @@ module RubyCurses
               $log.debug "XXXW bottomline: after print_str #{str} "
           end
           #win.wmove r, c+len # more for arrow keys, curpos may not be end
-          win.move r, c+len # more for arrow keys, curpos may not be end
+          win.wmove r, c+len # more for arrow keys, curpos may not be end
           prevchar = ch
         end
               $log.debug "XXXW bottomline: after while loop"
