@@ -151,7 +151,7 @@ module Ncurses
   include NCX
   extend NCX
   # i think we can knock this off
-  def XXXmethod_missing meth, *args
+  def method_missing meth, *args
     if (FFI::NCurses.respond_to?(meth))
       FFI::NCurses.send meth, *args
     end
