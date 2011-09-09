@@ -13,6 +13,9 @@ require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
 
+include RubyCurses
+include RubyCurses::Utils # this was resulting in get_color crashing
+# in rpopupmenu when called from CL, when it was inside _FILE_ block.
 # TODO move the csv to a database so you can update. this sucketh.
 #
 module TestTodo
@@ -506,7 +509,7 @@ module TestTodo
       begin
         while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
           colcount = tcm.column_count-1
-          s = keycode_tos ch
+          #s = keycode_tos ch
           #status_row.text = "Pressed #{ch} , #{s}"
           @form.handle_key(ch)
 
@@ -559,8 +562,6 @@ module TestTodo
     end
   end
   if $0 == __FILE__
-    include RubyCurses
-    include RubyCurses::Utils
 
     begin
       # Initialize curses
