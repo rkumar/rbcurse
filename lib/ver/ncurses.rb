@@ -15,6 +15,7 @@ module VER
     stdscr = Ncurses.initscr
         File.open('stdscrmethrbc', 'w'){|io|
           io.puts '=' * 80
+          io.puts stdscr.class
           io.puts(stdscr.public_methods)
           io.puts '=' * 80
         }
