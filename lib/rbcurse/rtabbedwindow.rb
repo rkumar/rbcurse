@@ -159,7 +159,7 @@ module RubyCurses
         form = tab.form
         form.window = @window if form.window.nil? ## XXX
         panel = form.window.panel
-        @buttons.last.command { Ncurses::Panel.top_panel(panel) 
+        @buttons.last.command { Ncurses::Panel.top_panel(panel.pointer) 
           Ncurses::Panel.update_panels();
           Ncurses.doupdate();
           form.repaint
@@ -173,7 +173,7 @@ module RubyCurses
     end
     def display_form form
       panel = form.window.panel
-      Ncurses::Panel.top_panel(panel) 
+      Ncurses::Panel.top_panel(panel.pointer) 
       Ncurses::Panel.update_panels();
       Ncurses.doupdate();
       form.repaint
