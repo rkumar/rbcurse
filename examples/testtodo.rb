@@ -201,7 +201,7 @@ module TestTodo
       item.command() { table.scroll_forward }
       gotomenu.add(item)
 
-      item = RubyCurses::PPMenuItem.new "Prev Page"
+      item = RubyCurses::PMenuItem.new "Prev Page"
       item.accelerator = "Ctrl-p"
       item.command() { table.scroll_backward }
       gotomenu.add(item)
