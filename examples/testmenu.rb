@@ -32,19 +32,19 @@ if $0 == __FILE__
       #@mb = RubyCurses::MenuBar.new
       #filemenu = RubyCurses::Menu.new "File"
       filemenu = RubyCurses::PopupMenu.new "File"
-      filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
+      filemenu.add(item = RubyCurses::PMenuItem.new("Open",'O'))
 
       filemenu.insert_separator 1
-      filemenu.add(RubyCurses::MenuItem.new "New",'N')
-      filemenu.add(item = RubyCurses::MenuItem.new("Save",'S'))
-      filemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
-      filemenu.add(item = RubyCurses::MenuItem.new("Wrap Text",'W'))
-      filemenu.add(item = RubyCurses::MenuItem.new("Exit",'X'))
+      filemenu.add(RubyCurses::PMenuItem.new "New",'N')
+      filemenu.add(item = RubyCurses::PMenuItem.new("Save",'S'))
+      filemenu.add(item = RubyCurses::PMenuItem.new("Test",'T'))
+      filemenu.add(item = RubyCurses::PMenuItem.new("Wrap Text",'W'))
+      filemenu.add(item = RubyCurses::PMenuItem.new("Exit",'X'))
       item.command() {
         #throw(:menubarclose);
         throw(:close)
       }
-      item = RubyCurses::CheckBoxMenuItem.new "Reverse"
+      item = RubyCurses::PCheckBoxMenuItem.new "Reverse"
       #filemenu.create_window
 #     item.onvalue="On"
 #     item.offvalue="Off"
@@ -56,31 +56,31 @@ if $0 == __FILE__
 
       filemenu.add(item)
       #@mb.add(filemenu)
-      editmenu = RubyCurses::Menu.new "Edit"
-      item = RubyCurses::MenuItem.new "Cut"
+      editmenu = RubyCurses::PMenu.new "Edit"
+      item = RubyCurses::PMenuItem.new "Cut"
       editmenu.add(item)
       item.accelerator = "Ctrl-X"
-      item=RubyCurses::MenuItem.new "Copy"
+      item=RubyCurses::PMenuItem.new "Copy"
       editmenu.add(item)
       item.accelerator = "Ctrl-C"
-      item=RubyCurses::MenuItem.new "Paste"
+      item=RubyCurses::PMenuItem.new "Paste"
       editmenu.add(item)
       item.accelerator = "Ctrl-V"
       #@mb.add(editmenu)
       #@mb.add(
       menu=RubyCurses::Menu.new("Others")
       filemenu.add(menu)
-      #item=RubyCurses::MenuItem.new "Save","S"
-      item = RubyCurses::MenuItem.new "Config"
+      #item=RubyCurses::PMenuItem.new "Save","S"
+      item = RubyCurses::PMenuItem.new "Config"
       menu.add(item)
-      item = RubyCurses::MenuItem.new "Tables"
+      item = RubyCurses::PMenuItem.new "Tables"
       menu.add(item)
       savemenu = RubyCurses::Menu.new "EditM"
-      item = RubyCurses::MenuItem.new "CutM"
+      item = RubyCurses::PMenuItem.new "CutM"
       savemenu.add(item)
-      item = RubyCurses::MenuItem.new "DeleteM"
+      item = RubyCurses::PMenuItem.new "DeleteM"
       savemenu.add(item)
-      item = RubyCurses::MenuItem.new "PasteM"
+      item = RubyCurses::PMenuItem.new "PasteM"
       savemenu.add(item)
       menu.add(savemenu)
       # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
