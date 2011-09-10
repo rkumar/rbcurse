@@ -475,50 +475,50 @@ module ViewTodo
     def make_popup table
       require 'rbcurse/rpopupmenu'
       tablemenu = RubyCurses::PopupMenu.new "Table"
-      #tablemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
-      tablemenu.add(item = RubyCurses::MenuItem.new("&Open"))
+      #tablemenu.add(item = RubyCurses::PMenuItem.new("Open",'O'))
+      tablemenu.add(item = RubyCurses::PMenuItem.new("&Open"))
 
       tablemenu.insert_separator 1
-      #tablemenu.add(RubyCurses::MenuItem.new "New",'N')
+      #tablemenu.add(RubyCurses::PMenuItem.new "New",'N')
       tablemenu.add(@new_act)
-      tablemenu.add(item = RubyCurses::MenuItem.new("&Save"))
+      tablemenu.add(item = RubyCurses::PMenuItem.new("&Save"))
       item.command() { @save_cmd.call }
 
-      item=RubyCurses::MenuItem.new "Select"
+      item=RubyCurses::PMenuItem.new "Select"
       item.accelerator = "Ctrl-X"
       item.command() { table.toggle_row_selection() }
       #item.enabled = false
       tablemenu.add(item)
 
-      item=RubyCurses::MenuItem.new "Clr Selection"
+      item=RubyCurses::PMenuItem.new "Clr Selection"
       item.accelerator = "Alt-e"
       item.command() { table.clear_selection() }
       item.enabled = table.selected_row_count > 0 ? true : false
       tablemenu.add(item)
 
-      item=RubyCurses::MenuItem.new "Delete"
+      item=RubyCurses::PMenuItem.new "Delete"
       item.accelerator = "Alt-D"
       item.command() { @del_cmd.call }
       tablemenu.add(item)
 
-      gotomenu = RubyCurses::Menu.new "&Goto"
+      gotomenu = RubyCurses::PMenu.new "&Goto"
 
-      item = RubyCurses::MenuItem.new "Top"
+      item = RubyCurses::PMenuItem.new "Top"
       item.accelerator = "Alt-0"
       item.command() { table.goto_top }
       gotomenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Bottom"
+      item = RubyCurses::PMenuItem.new "Bottom"
       item.accelerator = "Alt-9"
       item.command() { table.goto_bottom }
       gotomenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Next Page"
+      item = RubyCurses::PMenuItem.new "Next Page"
       item.accelerator = "Ctrl-n"
       item.command() { table.scroll_forward }
       gotomenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Prev Page"
+      item = RubyCurses::PMenuItem.new "Prev Page"
       item.accelerator = "Ctrl-p"
       item.command() { table.scroll_backward }
       gotomenu.add(item)
