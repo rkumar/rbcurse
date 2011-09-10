@@ -254,7 +254,7 @@ if $0 == __FILE__
       $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
 
       # whenever updated set colorlabel and messagelabel to bold
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
 
       align.bind(:ENTER_ROW) {|fld| message_label.justify fld.getvalue}
       align.bind(:ENTER_ROW) {|fld| 
@@ -268,7 +268,9 @@ if $0 == __FILE__
       }
 
       # whenever updated set colorlabel and messagelabel to reverse
-      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
+      #@cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
+      # changing nil to normal since PROP CHAN handler will not fire if nil being set.
+      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
       row += 1
       radio1 = RadioButton.new @form do
         variable $radio
@@ -392,7 +394,7 @@ if $0 == __FILE__
      #item.checkbox.text "Labelcb"
      #item.text="Labelcb"
       # in next line, an explicit repaint is required since label is on another form.
-      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : nil; label.attr(att); label.repaint}
+      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : 'normal'; label.attr(att); label.repaint}
     
       row += 2
       ok_button = Button.new @form do
