@@ -40,8 +40,8 @@ module Io
   #def rbgetstr(win, r, c, prompt, maxlen, default, labels, validints=[], helptext="")
   def rbgetstr(win, r, c, prompt, maxlen, config={})
     #win ||= @target_window
-    $log.debug " inside rbgetstr #{win} r:#{r} c:#{c} p:#{prompt} m:#{maxlen} "
     raise "rbgetstr got no window. io.rb" if win.nil?
+    $log.debug " inside io.rb rbgetstr #{win} r:#{r} c:#{c} p:#{prompt} m:#{maxlen} #{win.name} "
     ins_mode = false
     default = config[:default] || ""
     prompt = "#{prompt} [#{default}]: " unless default
