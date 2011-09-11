@@ -56,7 +56,7 @@ module Io
     #x mylabels=["^G~Help  ", "^C~Cancel"]
     #x mylabels += labels if !labels.nil?
     begin
-      Ncurses.echo();
+      Ncurses.noecho();
       #x print_key_labels( 0, 0, mylabels)
       #curpos = 0
       curpos = str.length

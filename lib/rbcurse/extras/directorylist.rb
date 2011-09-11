@@ -320,8 +320,7 @@ module RubyCurses
     config={}; 
     oldline = line.dup
     config[:default] = line
-    #ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
-    ret, str = rbgetstr(@form.window, 23, $error_message_col,  prompt, maxlen, config)
+    ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     $log.debug " rbgetstr returned #{ret} , #{str} "
     return if ret != 0
     @list[lineno].replace(str)

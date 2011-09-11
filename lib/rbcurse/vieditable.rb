@@ -120,7 +120,7 @@ module ViEditable
   def edit_string string, prompt="Edit: ", maxlen=80
     config={}; 
     config[:default] = string
-    ret, str = rbgetstr(@form.window, $error_message_row-1, $error_message_col,  prompt, maxlen, config)
+    ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     #return str if ret == 0
     #return ""
   end
