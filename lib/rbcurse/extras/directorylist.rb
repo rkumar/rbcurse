@@ -320,7 +320,8 @@ module RubyCurses
     config={}; 
     oldline = line.dup
     config[:default] = line
-    ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+    #ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+    ret, str = rbgetstr(@form.window, 23, $error_message_col,  prompt, maxlen, config)
     $log.debug " rbgetstr returned #{ret} , #{str} "
     return if ret != 0
     @list[lineno].replace(str)
@@ -335,11 +336,10 @@ module RubyCurses
     config={}
     config[:default] = @file_pattern if @file_pattern
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
-    $log.debug "ask select got #{ret}, #{str} from rbgetstr "
     return if ret != 0
     @file_pattern = str
     values = Dir.glob(str)
-    $log.debug "ask select got #{values} "
+    $log.debug "ask select dir.glob got #{values} "
     select_values values unless values.empty?
     @repaint_required = true
   end
@@ -365,7 +365,6 @@ module RubyCurses
   # selects all rows with the values given, leaving existing selections
   # intact
   def select_values values
-    $log.debug "select values got #{values.count} values"
     return unless values
     values.each do |val|
       row = @list.index val

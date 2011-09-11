@@ -1094,7 +1094,7 @@ module RubyCurses
       maxlen = @limit || 100 # fixme
 
 
-      raise "rbgetstr got no window. io.rb" if win.nil?
+      raise "rbgetstr got no window. bottomline.rb" if win.nil?
       ins_mode = false
       oldstr = nil # for tab completion, origal word entered by user
       default = @default || ""
