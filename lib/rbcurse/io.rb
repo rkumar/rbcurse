@@ -56,7 +56,7 @@ module Io
     #x mylabels=["^G~Help  ", "^C~Cancel"]
     #x mylabels += labels if !labels.nil?
     begin
-      Ncurses.noecho();
+      Ncurses.noecho(); # FFI RK 2011-09-11 seems this was causing issue of writing on top
       #x print_key_labels( 0, 0, mylabels)
       #curpos = 0
       curpos = str.length
