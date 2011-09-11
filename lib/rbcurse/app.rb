@@ -365,6 +365,7 @@ module RubyCurses
         str = str.to_s #= str[1..-1]
         cmdline = str.split
         cmd = cmdline.shift #.to_sym
+        return unless cmd # added 2011-09-11 FFI
         if respond_to?(cmd, true)
           if cmd == "close"
             throw :close # other seg faults in del_panel window.destroy executes 2x
