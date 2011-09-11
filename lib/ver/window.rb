@@ -22,7 +22,7 @@ module VER
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
-      $error_message_col ||= 1
+      $error_message_col ||= 1 # ask (bottomline) uses 0 as default so you can have mismatch. XXX
       init_vars
 
 
