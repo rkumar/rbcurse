@@ -500,7 +500,7 @@ class RFe
     Ncurses::Panel.update_panels
     begin
     while((ch = @v_window.getchar()) != ?\C-q.getbyte(0) )
-      break if ch == KEY_F3
+      break if ch == FFI::NCurses::KEY_F3
       @v_form.handle_key ch
       @v_form.repaint
       ##@v_window.wrefresh
@@ -714,25 +714,25 @@ class RFe
       rescue Interrupt
       end
     }
-    @form.bind_key(KEY_F3){
+    @form.bind_key(FFI::NCurses::KEY_F3){
       view()
     }
-    @form.bind_key(KEY_F4){
+    @form.bind_key(FFI::NCurses::KEY_F4){
       edit()
     }
-    @form.bind_key(KEY_F6){
+    @form.bind_key(FFI::NCurses::KEY_F6){
       selected_index, sort_key, reverse, case_sensitive = sort_popup
       if selected_index == 0
         @current_list.sort(sort_key, reverse)
       end
     }
-    @form.bind_key(KEY_F5){
+    @form.bind_key(FFI::NCurses::KEY_F5){
       filter()
     }
-    @form.bind_key(KEY_F7){
+    @form.bind_key(FFI::NCurses::KEY_F7){
       grep_popup()
     }
-    @form.bind_key(KEY_F8){
+    @form.bind_key(FFI::NCurses::KEY_F8){
       system_popup()
     }
     @form.bind_key(?\C-m){
