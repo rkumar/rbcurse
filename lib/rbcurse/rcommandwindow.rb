@@ -312,6 +312,7 @@ module RubyCurses
       def display_interactive
         display_content
         while !@stop
+          @window.wrefresh # FFI 2011-09-12 
           # FIXME only clear and redisplay if change has happened (repaint_require)
           handle_keys { |ch| @cw.clear; display_content }
         end
