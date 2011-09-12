@@ -55,7 +55,7 @@ module RubyCurses
     ## 
     # multi-container
     def handle_key ch  #:nodoc:
-      $log.debug " MULTI handlekey #{ch}, #{@current_component},RET: #{Ncurses.KEY_RETURN} :: #{FFI::NCurses::KEY_ENTER} ,,, ENT #{Ncurses.KEY_ENTER}, #{FFI::NCurses::KEY_ENTER}  "
+      $log.debug " MULTI handlekey #{ch}, #{@current_component},RET: #{Ncurses.KEY_RETURN} :: #{FFI::NCurses::KEY_ENTER} ,,, ENT #{Ncurses.KEY_ENTER}, #{FFI::NCurses::KEY_ENTER}, #{KEY_ENTER}  "
       ret = :UNHANDLED
       return :UNHANDLED unless @current_component
       ret = @current_component.handle_key(ch)
