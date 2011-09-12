@@ -106,7 +106,8 @@ module RubyCurses
     end
 
     def getch
-      c = @window_pointer.getch # FFI NW stdscr must get key not some window
+      #c = @window_pointer.getch # FFI NW stdscr must get key not some window
+      c = FFI::NCurses.stdscr.getch
       #raise "Ncurses.stdscr does not have getch" if !Ncurses.stdscr.respond_to? :getch
       #$log.debug " XXXX before calling getch"
       #c = Ncurses.stdscr.getch # FFIW if you use the FFIWINDOW
