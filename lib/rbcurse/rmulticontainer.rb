@@ -172,7 +172,7 @@ module RubyCurses
       component.override_graphic(@graphic)
       @current_component = @bmanager.add component, title
       set_current_component
-      set_form_row
+      set_form_row ## FFI added 2011-09-12 to get cursor at start when adding
       $log.debug " ADD got cb : #{@current_component} "
     end
     def set_current_component
