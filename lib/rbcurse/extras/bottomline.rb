@@ -1418,10 +1418,12 @@ module RubyCurses
           val = list1[ret-1]
           if val.is_a? Array
             retval << val[0]
+            $log.debug "NL: #{retval} "
             list1 = val[1..-1]
             rc.clear
           else
             retval << val
+            $log.debug "NL1: #{retval} "
             break
           end
         end
@@ -1430,6 +1432,7 @@ module RubyCurses
         rc = nil
       end
       #list1[ret-1]
+            $log.debug "NL2: #{retval} , retval.class "
       retval
     end
     # Allows a selection in which options are shown over prompt. As user types
