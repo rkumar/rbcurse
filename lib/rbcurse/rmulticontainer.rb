@@ -172,6 +172,7 @@ module RubyCurses
       component.override_graphic(@graphic)
       @current_component = @bmanager.add component, title
       set_current_component
+      set_form_row
       $log.debug " ADD got cb : #{@current_component} "
     end
     def set_current_component
@@ -275,7 +276,6 @@ module RubyCurses
     def add component, title=nil
       $log.debug " ADD H: #{component.height} C: #{component.width} "
       insert component, @buffers.size, title
-      set_form_row
     end
     def size
       @buffers.size
