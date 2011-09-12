@@ -1482,6 +1482,8 @@ module RubyCurses
       rc = nil
     end
     #def display_list_interactive text, config={}
+    # returns a ListObject since you may not know what the list itself contained
+    # You can do ret.list[ret.current_index] to get value
     def display_list text, config={}
       require 'rbcurse/rcommandwindow'
       ht = config[:height] || 15

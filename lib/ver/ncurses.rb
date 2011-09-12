@@ -14,12 +14,12 @@ module VER
     # error and exits; otherwise, a pointer is returned to stdscr.
     #stdscr = Ncurses.initscr  FFI
     stdscr = FFI::NCurses.initscr
-        File.open('stdscrmethrbc', 'w'){|io|
-          io.puts '=' * 80
-          io.puts stdscr.class
-          io.puts(stdscr.public_methods)
-          io.puts '=' * 80
-        }
+ #       File.open('stdscrmethrbc', 'w'){|io|
+ #         io.puts '=' * 80
+ #         io.puts stdscr.class
+ #         io.puts(stdscr.public_methods)
+ #         io.puts '=' * 80
+ #       }
     #$g_stdscr = stdscr
 
 #    Color.start if Ncurses.has_colors?
