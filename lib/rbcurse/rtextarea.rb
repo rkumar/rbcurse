@@ -291,7 +291,7 @@ module RubyCurses
       #$log.debug "TA: after : curpos #{@curpos} blen: #{@buffer.length}, w: #{@width} max #{@maxlen}"
       
       case ch
-      when Ncurses.KEY_ENTER, 10, Ncurses.KEY_RETURN
+      when KEY_ENTER, 10, KEY_RETURN
         insert_break
       #when KEY_LEFT
         #cursor_backward
