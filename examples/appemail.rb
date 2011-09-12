@@ -14,6 +14,7 @@ def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
+  $log.debug " #{str.class} "
   say "We got #{str} "
 end
 def testdisplay_list
