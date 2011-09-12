@@ -105,13 +105,15 @@ module RubyCurses
       FFI::NCurses.ungetch(ch)
     end
 
+    # this used to work fine in ncursesruby
+    # but somehow in ffi, stdscr does not have most methods, i am unable to figure
+    # this out. C-c will crash this.
     def getch
       #c = @window_pointer.getch # FFI NW stdscr must get key not some window
-      c = FFI::NCurses.getch(@window_pointer)
       #raise "Ncurses.stdscr does not have getch" if !Ncurses.stdscr.respond_to? :getch
       #$log.debug " XXXX before calling getch"
       #c = Ncurses.stdscr.getch # FFIW if you use the FFIWINDOW
-      #c = FFI::NCurses.getch # FFI 2011-09-9  # without FFIWINDOW
+      c = FFI::NCurses.getch # FFI 2011-09-9  # without FFIWINDOW
       #$log.debug " XXXX after calling getch #{c}"
       #if c == FFI::NCurses::KEY_RESIZE
       return c
