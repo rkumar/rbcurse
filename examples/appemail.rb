@@ -20,8 +20,8 @@ end
 def testdisplay_list
   # scrollable list
   str = display_list Dir.glob("t*.rb"), :title => "Select a file"
-  $log.debug "23 We got #{str} :  #{str.class} "
-  message "We got #{str} "
+  $log.debug "23 We got #{str} :  #{str.class} , #{str.list[str.current_index]}  "
+  message "We got #{str.list[str.current_index]} "
 end
 def testdisplay_text
   str = display_text_interactive File.read($0), :title => "Select a file"

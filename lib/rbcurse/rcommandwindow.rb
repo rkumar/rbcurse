@@ -248,8 +248,8 @@ module RubyCurses
         @to = ListObject.new self, text, config
       end
       yield @to if block_given?
-      @to.display_interactive
-      @to
+      @to.display_interactive # this returns the item selected
+      @to   # this will return the ListObject to the user with list and current_index
     end
     # non interactive list display - EACH CALL IS CREATING A LIST OBJECT
     def udisplay_list text, config={}
