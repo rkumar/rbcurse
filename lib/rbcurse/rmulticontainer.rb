@@ -55,11 +55,11 @@ module RubyCurses
     ## 
     # multi-container
     def handle_key ch  #:nodoc:
-      $log.debug " MULTI handlekey #{ch}, #{@current_component},RET: #{Ncurses.KEY_RETURN} :: #{FFI::NCurses::KEY_ENTER} ,,, ENT #{Ncurses.KEY_ENTER}, #{FFI::NCurses::KEY_ENTER}, #{KEY_ENTER}  "
+      #$log.debug " MULTI handlekey #{ch}, #{@current_component}"
       ret = :UNHANDLED
       return :UNHANDLED unless @current_component
       ret = @current_component.handle_key(ch)
-      $log.debug " MULTI = comp returned #{ret} "
+      $log.debug " MULTI = comp #{@current_component} returned #{ret} "
       if ret == :UNHANDLED
         # check for bindings, these cannot override above keys since placed at end
         begin
@@ -164,8 +164,8 @@ module RubyCurses
     # @param [Widget] component
     # @param [String] title
     def add component, title
-      component.row = @row+@row_offset+1
-      component.col = @col+@col_offset+1
+      component.row = @row+@row_offset+0
+      component.col = @col+@col_offset+0
       component.width = @width-2
       component.height = @height-2
       component.form = @form
