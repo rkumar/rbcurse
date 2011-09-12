@@ -24,7 +24,7 @@ def testdisplay_list
   message "We got #{str.list[str.current_index]} "
 end
 def testdisplay_text
-  str = display_text_interactive File.read($0), :title => "Select a file"
+  str = display_text_interactive File.read($0), :title => "#{$0}"
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
@@ -42,7 +42,7 @@ def test
   Ncurses.attron(Ncurses.COLOR_PAIR($promptcolor))
   Ncurses.mvprintw 27,0,"helllllo theeeerE                  "
   Ncurses.attroff(Ncurses.COLOR_PAIR($promptcolor))
-  scr.refresh()
+  #scr.refresh() # refresh FFI NW
 end
 def saveas1
   @tv.saveas 

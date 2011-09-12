@@ -68,14 +68,14 @@ if $0 == __FILE__
       item.accelerator = "Ctrl-V"
       #@mb.add(editmenu)
       #@mb.add(
-      menu=RubyCurses::Menu.new("Others")
+      menu=RubyCurses::PMenu.new("Others")
       filemenu.add(menu)
       #item=RubyCurses::PMenuItem.new "Save","S"
       item = RubyCurses::PMenuItem.new "Config"
       menu.add(item)
       item = RubyCurses::PMenuItem.new "Tables"
       menu.add(item)
-      savemenu = RubyCurses::Menu.new "EditM"
+      savemenu = RubyCurses::PMenu.new "EditM"
       item = RubyCurses::PMenuItem.new "CutM"
       savemenu.add(item)
       item = RubyCurses::PMenuItem.new "DeleteM"
