@@ -14,12 +14,13 @@ def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
-  $log.debug " #{str.class} "
+  $log.debug "17 We got #{str.class} "
   say "We got #{str} "
 end
 def testdisplay_list
   # scrollable list
   str = display_list Dir.glob("t*.rb"), :title => "Select a file"
+  $log.debug "23 We got #{str} :  #{str.class} "
   message "We got #{str} "
 end
 def testdisplay_text

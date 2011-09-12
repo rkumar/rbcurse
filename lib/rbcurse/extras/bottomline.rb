@@ -1432,7 +1432,7 @@ module RubyCurses
         rc = nil
       end
       #list1[ret-1]
-            $log.debug "NL2: #{retval} , retval.class "
+            $log.debug "NL2: #{retval} , #{retval.class} "
       retval
     end
     # Allows a selection in which options are shown over prompt. As user types
