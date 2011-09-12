@@ -113,7 +113,6 @@ module RubyCurses
       #raise "Ncurses.stdscr does not have getch" if !Ncurses.stdscr.respond_to? :getch
       #$log.debug " XXXX before calling getch"
       #c = Ncurses.stdscr.getch # FFIW if you use the FFIWINDOW
-      FFI::NCurses.raw # FFI 2011-09-9  # without FFIWINDOW
       c = FFI::NCurses.getch # FFI 2011-09-9  # without FFIWINDOW
       #$log.debug " XXXX after calling getch #{c}"
       #if c == FFI::NCurses::KEY_RESIZE
@@ -127,6 +126,7 @@ module RubyCurses
     # Please test with above combinations before using on your terminal
     # added by rkumar 2008-12-12 23:07 
     def getchar 
+      FFI::NCurses.raw # FFI required so that getch does not crash on C-c
       while 1 
         ch = getch 
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1

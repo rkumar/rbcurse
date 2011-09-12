@@ -1472,7 +1472,7 @@ module RubyCurses
       require 'rbcurse/rcommandwindow'
       ht = config[:height] || 15
       layout = { :height => ht, :width => Ncurses.COLS-1, :top => Ncurses.LINES-ht+1, :left => 0 }
-      rc = CommandWindow.new nil, :layout => layout, :box => true
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
       w = rc.window
       #rc.text "There was a quick  brown fox who ran over the lazy dog and then went over the moon over and over again and again"
       rc.display_interactive(text) { |l|
