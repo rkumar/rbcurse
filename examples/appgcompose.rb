@@ -1,6 +1,8 @@
 require 'rbcurse/app'
 require 'gmail'
 
+# requires gmail gem
+
 def insert_file
   str = ask("File?  ", Pathname)  do |q| 
     q.completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
@@ -258,7 +260,8 @@ module AppgCompose
         return false
       end
       unless @username
-        ww = ENV['GMAIL_USER'] + "@gmail.com"
+        ww = ENV['GMAIL_USER'] 
+        ww << "@gmail.com" if ww
         @username = ask("Username: ") { |q| q.default = ww }
       end
       unless @password
