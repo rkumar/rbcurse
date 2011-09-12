@@ -275,6 +275,7 @@ module RubyCurses
     def add component, title=nil
       $log.debug " ADD H: #{component.height} C: #{component.width} "
       insert component, @buffers.size, title
+      set_form_row
     end
     def size
       @buffers.size
