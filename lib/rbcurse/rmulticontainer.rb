@@ -164,8 +164,8 @@ module RubyCurses
     # @param [Widget] component
     # @param [String] title
     def add component, title
-      component.row = @row+@row_offset+0
-      component.col = @col+@col_offset+0
+      component.row = @row+@row_offset+0 # FFI changed 1 to 0 2011-09-12 
+      component.col = @col+@col_offset+0 # FFI changed 1 to 0 2011-09-12 
       component.width = @width-2
       component.height = @height-2
       component.form = @form
