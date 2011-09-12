@@ -45,14 +45,14 @@ class Tester
     Tree.new @form, :data => model, :row =>2, :col=>2, :height => 20, :width => 30
 
     when 3
-    #else
 
       # use an Has to populate
       #model = { :ruby => %W[ "jruby", "mri", "yarv", "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
       model = { :ruby => [ "jruby", {:mri => %W[ 1.8.6 1.8.7]}, {:yarv => %W[1.9.1 1.9.2]}, "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
 
     Tree.new @form, :data => model, :row =>2, :col=>2, :height => 20, :width => 30
-    when 4
+    #when 4
+    else
       Tree.new @form, :row =>2, :col=>2, :height => 20, :width => 30 do
         root "root" do
           branch "hello" do
@@ -88,7 +88,7 @@ class Tester
     k_button.command { |form| @vim.decrease_weight }
 
     #
-    @help = "F1 to quit. #{$0} "
+    @help = "F1 to quit. Pass command-line argument 1,2,3,4  #{$0} "
     RubyCurses::Label.new @form, {'text' => @help, "row" => 1, "col" => 2, "color" => "yellow"}
     @form.repaint
     @window.wrefresh
