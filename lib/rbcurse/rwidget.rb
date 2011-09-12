@@ -32,7 +32,7 @@ require 'rbcurse/io'
 # some of these will get overriden by ncurses when we include
 KEY_TAB    = 9
 KEY_F1  = FFI::NCurses::KEY_F1
-KEY_ENTER  = FFI::NCurses::KEY_ENTER
+KEY_ENTER  = 10 # FFI::NCurses::KEY_ENTER gives 343
 KEY_BTAB  = 353 # nc gives same
 KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
 KEY_DELETE = 330
