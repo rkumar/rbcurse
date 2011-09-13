@@ -3,6 +3,7 @@ require 'fileutils'
 require 'yaml'
 require 'gmail'
 # You need gmail gem. (one of them depends on i18n gem).
+# # stopped working since gmail does not accept UIDS XXX FIXME
 # TODO start putting commands in a popup or menu bar
 # TODO what if i want to hide sidebar and bring it back on later
 # TODO switch mailbox or label on command line, with prompt letter indexing
