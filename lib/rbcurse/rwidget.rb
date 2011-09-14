@@ -297,7 +297,11 @@ module RubyCurses
         #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
         if blk.is_a? Symbol
           $log.debug "SYMBOL " if $log.debug? 
-          return send(blk, *@key_args[keycode])
+          if respond_to? blk
+            return send(blk, *@key_args[keycode])
+          else
+            alert "This does not respond to #{blk.to_s} "
+          end
         else
           $log.debug "rwidget BLOCK called _process_key " if $log.debug? 
           return blk.call object,  *@key_args[keycode]
