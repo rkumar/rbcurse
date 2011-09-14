@@ -394,7 +394,7 @@ module RubyCurses
       return if @window.nil?
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil? # FFI
       @items.each do |item|
         #next if item == :SEPARATOR
@@ -527,7 +527,7 @@ module RubyCurses
       $log.debug "DESTRY popup "
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil? # FFI
       @items.each do |item|
         item.destroy
@@ -699,7 +699,7 @@ module RubyCurses
       $log.debug "DESTRY menubar "
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel) if !panel.nil?   
       @window.delwin if !@window.nil?
       @items.each do |item|
         item.destroy
