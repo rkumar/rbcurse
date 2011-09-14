@@ -9,6 +9,11 @@ Status: Check branch named ffi for updates. I've got a lot of stuff working. Jus
 now. Thanks a lot to Sean O'Halpin for the ffi-ncurses gem and immediately responding 
 to my queries. I am testing on OSX Snow Leopard with ruby 1.9.2, TERM=screen on zsh.
 
+2011-09-14 : I am thinking of using the 1.2.x version for ncurses-ruby - any final
+bug fixes etc, and releasing a 1.2.x gem.
+Also, using 1.3.x and beyond for the ffi-ncurses version. Will start with a pre-release gem and
+then do a final after some testing.
+
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
 * 1.2.0: many additions (See CHANGELOG for details)
