@@ -1149,13 +1149,13 @@ module RubyCurses
           when KEY_LEFT
             curpos -= 1 if curpos > 0
             len -= 1 if len > @prompt_length
-            win.wmove r, c+len # since getchar is not going back on del and bs
+            win.move r, c+len # since getchar is not going back on del and bs wmove to move FFIWINDOW
             next
           when KEY_RIGHT
             if curpos < str.length
               curpos += 1 #if curpos < str.length
               len += 1 
-              win.wmove r, c+len # since getchar is not going back on del and bs
+              win.move r, c+len # since getchar is not going back on del and bs
             end
             next
           when ?\C-a.getbyte(0)
@@ -1163,13 +1163,13 @@ module RubyCurses
             clear_line len+maxlen+1, @prompt_length
             len -= curpos
             curpos = 0
-            win.wmove r, c+len # since getchar is not going back on del and bs
+            win.move r, c+len # since getchar is not going back on del and bs
           when ?\C-e.getbyte(0)
             olen = str.length
             len += (olen - curpos)
             curpos = olen
             clear_line len+maxlen+1, @prompt_length
-            win.wmove r, c+len # since getchar is not going back on del and bs
+            win.move r, c+len # since getchar is not going back on del and bs
 
           when ?\M-i.getbyte(0) 
             ins_mode = !ins_mode
@@ -1318,7 +1318,7 @@ module RubyCurses
           else
             print_str(@question.echo * str.length, :y => @prompt_length+0)
           end
-          win.wmove r, c+len # more for arrow keys, curpos may not be end
+          win.move r, c+len # more for arrow keys, curpos may not be end
           prevchar = ch
         end
               $log.debug "XXXW bottomline: after while loop"
@@ -1461,7 +1461,7 @@ module RubyCurses
       begin
         w = rc.window
         rc.display_menu list1
-        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.move(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
         # need some validation here that its in the list TODO
       ensure
         rc.destroy
