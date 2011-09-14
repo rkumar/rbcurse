@@ -1,5 +1,5 @@
 require 'ffi-ncurses'
-#include FFI::NCurses
+#include FFI::NCurses # this pollutes many objects and invalidates method_missing
 module VER
   module_function
 
@@ -163,6 +163,8 @@ module Ncurses
     return val
   end
 
+  # This is a window pointer wrapper, to be used for stdscr and others.
+  # Ideally ffi-ncurses should do this, if it returns a pointer, I'll do this.
   class FFIWINDOW
     attr_accessor :pointer
     def initialize(*args, &block)
@@ -199,17 +201,24 @@ module Ncurses
     end
     alias delete del
   end
-#  def self.initscr
-#    #@stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
-#    @stdscr = FFI::NCurses.initscr
-#  end
-#  def self.stdscr
-#    @stdscr
-#  end
-#  class << self
-#    def method_missing(method, *args, &block)
-#      FFI::NCurses.send(method, *args, &block)
-#    end
-#  end
+  # if ffi-ncurses returns a pointer wrap it.
+  # or we can check for whether it responds_to? refresh and getch
+  def self.initscr
+    #@stdscr = Ncurses::FFIWINDOW.new(FFI::NCurses.initscr) { }
+    stdscr = FFI::NCurses.initscr
+    if stdscr.is_a? FFI::Pointer
+      @stdscr = Ncurses::FFIWINDOW.new(stdscr) { }
+    else
+      @stdscr = stdscr
+    end
+  end
+  def self.stdscr
+    @stdscr
+  end
+  class << self
+    def method_missing(method, *args, &block)
+      FFI::NCurses.send(method, *args, &block)
+    end
+  end
 #  ---
 end
