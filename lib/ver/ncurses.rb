@@ -12,8 +12,8 @@ module VER
     # initscr also causes the first call to refresh to clear the screen.
     # If errors occur, initscr writes an appropriate error message to standard
     # error and exits; otherwise, a pointer is returned to stdscr.
-    #stdscr = Ncurses.initscr  FFI
-    stdscr = FFI::NCurses.initscr
+    stdscr = Ncurses.initscr  ## FFI
+    #stdscr = FFI::NCurses.initscr
  #       File.open('stdscrmethrbc', 'w'){|io|
  #         io.puts '=' * 80
  #         io.puts stdscr.class
@@ -35,7 +35,8 @@ module VER
     # (made to work locally), turning on this option causes the terminal keypad
     # to be turned on when wgetch is called.
     # The default value for keypad is false.
-    Ncurses.keypad(stdscr, bf = true)
+    Ncurses.keypad(stdscr.pointer, bf = true) # FFIWINDOW
+    #Ncurses.keypad(stdscr, bf = true)
       #Ncurses.stdscr.keypad(true)     # turn on keypad mode FFI
     #Ncurses.keypad(stdscr, bf = 1)
 
@@ -215,10 +216,11 @@ module Ncurses
   def self.stdscr
     @stdscr
   end
-  class << self
-    def method_missing(method, *args, &block)
-      FFI::NCurses.send(method, *args, &block)
-    end
-  end
+  #  commented off on 2011-09-15 FFIWINDOW results in errors
+#  class << self
+#    def method_missing(method, *args, &block)
+#      FFI::NCurses.send(method, *args, &block)
+#    end
+#  end
 #  ---
 end
