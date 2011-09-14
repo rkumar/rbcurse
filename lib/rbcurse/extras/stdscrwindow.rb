@@ -17,7 +17,8 @@ module RubyCurses
 
     def initialize
 
-      @window_pointer = FFI::NCurses.initscr
+      #@window_pointer = FFI::NCurses.initscr
+      @window_pointer = Ncurses.initscr # FFIWINDOW
       $log.debug "STDSCR window pointer is #{@window_pointer.class}"
       #$log.debug "STDSCR window pointer mehtods #{@window_pointer.public_methods}"
       $error_message_row ||= Ncurses.LINES-1
@@ -27,7 +28,8 @@ module RubyCurses
 
     end
     def init_vars
-      Ncurses::keypad(@window_pointer, true)
+      #Ncurses::keypad(@window_pointer, true)
+      Ncurses.keypad(@window_pointer.pointer, true)
       @stack = []
     end
     ##
@@ -41,12 +43,19 @@ module RubyCurses
       if (name[0,2] == "mv")
         test_name = name.dup
         test_name[2,0] = "w" # insert "w" after"mv"
+        if (@window_pointer.respond_to?(test_name)) # FFIPOINTER
+          return @window_pointer.send(test_name,*args)
+        end
+
         if (FFI::NCurses.respond_to?(test_name))
           return FFI::NCurses.send(test_name, @window_pointer, *args)
         end
       end
       test_name = "w" + name
       # FFI responds but the pointer does not !!! bottomline 1045
+      if (@window_pointer.respond_to?(test_name)) # FFIPOINTER
+        return @window_pointer.send(test_name,*args)
+      end
       if (FFI::NCurses.respond_to?(test_name))
         return FFI::NCurses.send(test_name, @window_pointer, *args)
       end
@@ -109,11 +118,11 @@ module RubyCurses
     # but somehow in ffi, stdscr does not have most methods, i am unable to figure
     # this out. C-c will crash this.
     def getch
-      #c = @window_pointer.getch # FFI NW stdscr must get key not some window
+      c = @window_pointer.getch # FFI NW stdscr must get key not some window
       #raise "Ncurses.stdscr does not have getch" if !Ncurses.stdscr.respond_to? :getch
       #$log.debug " XXXX before calling getch"
       #c = Ncurses.stdscr.getch # FFIW if you use the FFIWINDOW
-      c = FFI::NCurses.getch # FFI 2011-09-9  # without FFIWINDOW
+      #c = FFI::NCurses.getch # FFI 2011-09-9  # without FFIWINDOW
       #$log.debug " XXXX after calling getch #{c}"
       #if c == FFI::NCurses::KEY_RESIZE
       return c
