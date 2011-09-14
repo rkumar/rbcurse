@@ -8,7 +8,7 @@
 # instead of a tabbed panes. 
 #
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'sqlite3'
 require 'rbcurse'
@@ -297,27 +297,31 @@ class Sqlc
     #         list mylist
     list_variable $coldata
     #selection_mode :SINGLE
+    selection_mode :multiple
     #show_selector true
     title "Columns"
     title_attrib 'reverse'
     help_text "Press ENTER to append columns to sqlarea, Space to select"
   end
   ## pressing SPACE on a table populates column list with its columns so they can be selected
-  tablelist.bind_key(32) {  
-    @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
+  #tablelist.bind_key(32) {  
+  tablelist.list_selection_model().bind(:LIST_SELECTION_EVENT,tablelist) { |lsm, alist| @status_row.text = "Selected #{alist.current_index}" 
+    #@status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
     ##table = table[0] if table.class==Array ## 1.9 ???
     columnlist.list_data_model.remove_all
     columnlist.list_data_model.insert 0, *@db.get_metadata(table)
   }
   ## pressing ENTER on a table runs a query on it, no need to type and SQL
-  tablelist.bind_key(13) {  
+  #tablelist.bind_key(13) {  
+  tablelist.bind(:PRESS) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
     ##table = table[0] if table.class==Array ## 1.9 ???
     run_query "select * from #{table}"
   }
-  columnlist.bind_key(13) {  
+  #columnlist.bind_key(13) {  
+  columnlist.bind(:PRESS) {  
     ## append column name to sqlarea if ENTER pressed
     column = "#{columnlist.get_content()[columnlist.current_index]}" 
     sqlarea << "#{column},"
@@ -329,7 +333,7 @@ class Sqlc
   }
   ## construct an SQL after selecting some columns in the column list
     b_construct.command { 
-    table = "#{tablelist.get_content()[tablelist.current_index]}" 
+    table = "#{tablelist.get_content()[tablelist.selected_index]}" 
     #table = table[0] if table.class==Array ## 1.9 ???
     indexes = columnlist.selected_rows()
     columns=[]
@@ -346,8 +350,9 @@ class Sqlc
     Ncurses::Panel.update_panels
     begin
     while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
+      break if ch == KEY_F1
       s = keycode_tos ch
-      status_row.text = "Pressed #{ch} , #{s}.  Press C-q to quit, Alt-Tab for exiting table "
+      status_row.text = "Pressed #{ch}, #{s}. C-q to quit, Alt-Tab to exit table, Alt-: for buffers "
       @form.handle_key(ch)
 
       @form.repaint

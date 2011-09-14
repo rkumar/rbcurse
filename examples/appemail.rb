@@ -14,15 +14,17 @@ def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
+  $log.debug "17 We got #{str.class} "
   say "We got #{str} "
 end
 def testdisplay_list
   # scrollable list
   str = display_list Dir.glob("t*.rb"), :title => "Select a file"
-  message "We got #{str} "
+  $log.debug "23 We got #{str} :  #{str.class} , #{str.list[str.current_index]}  "
+  message "We got #{str.list[str.current_index]} "
 end
 def testdisplay_text
-  str = display_text_interactive File.read($0), :title => "Select a file"
+  str = display_text_interactive File.read($0), :title => "#{$0}"
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
@@ -40,7 +42,7 @@ def test
   Ncurses.attron(Ncurses.COLOR_PAIR($promptcolor))
   Ncurses.mvprintw 27,0,"helllllo theeeerE                  "
   Ncurses.attroff(Ncurses.COLOR_PAIR($promptcolor))
-  scr.refresh()
+  #scr.refresh() # refresh FFI NW
 end
 def saveas1
   @tv.saveas 

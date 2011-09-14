@@ -1,6 +1,6 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rmulticontainer'

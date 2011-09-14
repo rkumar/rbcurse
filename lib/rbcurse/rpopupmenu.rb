@@ -13,6 +13,10 @@ NOTE : this program works but is one of the first programs and is untouched. It 
       since its quite crappy.
       Also, we should move to Action classes as against just blokcs of code. And action class would have
 a user friendly string to identifiy the action, as well as a disabled option.
+
+     I am prefixing class names since they are same as those in rmenu and there's 
+    some crashing happening when i first execcute rmenu in one app then rpopupmenu
+    in another.
   
   --------
   * Date: 2008-11-14 23:43 
@@ -21,18 +25,18 @@ a user friendly string to identifiy the action, as well as a disabled option.
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/action'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
 
 
-  class MenuSeparator
+  class PMenuSeparator
     attr_accessor :enabled
     attr_accessor :parent
     attr_accessor :row
@@ -55,7 +59,7 @@ module RubyCurses
     end
   end
   ##
-  class MenuItem
+  class PMenuItem
     attr_accessor :parent
 #    attr_accessor :window
     attr_accessor :row
@@ -90,16 +94,16 @@ module RubyCurses
       @args = args
     end
     def on_enter
-      $log.debug ">>>on enter menuitem : #{@text} #{@row} #{@width} "
+      $log.debug ">>>on enter Pmenuitem : #{@text} #{@row} #{@width} "
       highlight
     end
     def on_leave
-      $log.debug ">>>on leave menuitem : #{@text} "
+      $log.debug ">>>on leave Pmenuitem : #{@text} "
       highlight false
     end
     ## XXX it could be a menu again
     def fire
-      $log.debug ">>>fire menuitem : #{@text} #{@command} "
+      $log.debug ">>>fire Pmenuitem : #{@text} #{@command} "
       @command.call self, *@args if !@command.nil?
       @parent.clear_menus
       return :CLOSE # added 2009-01-02 00:09 to close only actions, not submenus
@@ -143,7 +147,7 @@ module RubyCurses
      $log.debug "DESTRY menuitem #{@text}"
     end
   end
-  class Menu < MenuItem  
+  class PMenu < PMenuItem  
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
@@ -178,7 +182,7 @@ module RubyCurses
     # create a Menuitem given an Action
     # if menuitem.kind_of? RubyCurses::Action
     def create_action_component action
-        m = MenuItem.new(action.name, action.mnemonic)
+        m = PMenuItem.new(action.name, action.mnemonic)
         m.command { action.call }
         m.accelerator = action.accelerator
         return m
@@ -199,10 +203,10 @@ module RubyCurses
       return self
     end
     def insert_separator ix
-      @items.insert ix, MenuSeparator.new
+      @items.insert ix, PMenuSeparator.new
     end
     def add_separator 
-      @items << MenuSeparator.new
+      @items << PMenuSeparator.new
     end
     def get_item i
       @items[i]
@@ -220,7 +224,7 @@ module RubyCurses
       if @window.nil?
         #repaint
         create_window
-        if !@parent.is_a? RubyCurses::MenuBar 
+        if !@parent.is_a? RubyCurses::PMenuBar 
           $log.debug " ADDING self to current menu: #{self}"
           # xxx highlight true
           @parent.current_menu << self
@@ -240,7 +244,7 @@ module RubyCurses
     def repaint # menu.repaint
       return if @items.nil? or @items.empty?
       $log.debug "menu repaint: #{@text} row #{@row} col #{@col}  " 
-      if !@parent.is_a? RubyCurses::MenuBar 
+      if !@parent.is_a? RubyCurses::PMenuBar 
         @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, @text], $reversecolor)
         # added 2009-01-23 00:49 
         if !@mnemonic.nil?
@@ -307,7 +311,7 @@ module RubyCurses
     def on_enter # menu.on_enter
       $log.debug "menu onenter: #{@text} #{@row} #{@col}  " 
       # call parent method. XXX
-        if @parent.is_a? RubyCurses::MenuBar 
+        if @parent.is_a? RubyCurses::PMenuBar 
           @parent.window.printstring( @row, @col, " %s " % @text, $datacolor)
         else
           highlight
@@ -316,7 +320,7 @@ module RubyCurses
           $log.debug "menu onenter: #{@text} calling window,show"
           @window.show
           select_item 0
-        elsif @parent.is_a? RubyCurses::MenuBar and  @parent.selected
+        elsif @parent.is_a? RubyCurses::PMenuBar and  @parent.selected
           # only on the top level do we open a window if a previous one was opened
           $log.debug "menu onenter: #{@text} calling repaint CLASS: #{@parent.class}"
         #  repaint
@@ -326,7 +330,7 @@ module RubyCurses
     def on_leave # menu.on_leave
       $log.debug "menu onleave: #{@text} #{@row} #{@col}  " 
       # call parent method. XXX
-        if @parent.is_a? RubyCurses::MenuBar 
+        if @parent.is_a? RubyCurses::PMenuBar 
           @parent.window.printstring( @row, @col, " %s " % @text, $reversecolor)
           @window.hide if !@window.nil?
         else
@@ -390,8 +394,8 @@ module RubyCurses
       return if @window.nil?
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
-      @window.delwin if !@window.nil?
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      @window.delwin if !@window.nil? # FFI
       @items.each do |item|
         #next if item == :SEPARATOR
         item.destroy
@@ -399,7 +403,7 @@ module RubyCurses
       @window = nil
     end
     # menu LEFT, RIGHT, DOWN, UP, ENTER
-    # item could be menuitem or another menu
+    # item could be Pmenuitem or another menu
     #
     def handle_key ch
       #if !@current_menu.empty?
@@ -421,11 +425,11 @@ module RubyCurses
       when KEY_ENTER, 10, 13, 32 # added 32 2008-11-28 23:50 
         return cmenu.fire
       when KEY_LEFT
-        if cmenu.parent.is_a? RubyCurses::Menu 
+        if cmenu.parent.is_a? RubyCurses::PMenu 
           $log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
           $log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
-        if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
+        if cmenu.parent.is_a? RubyCurses::PMenu and !cmenu.parent.current_menu.empty?
           $log.debug " ABOU TO DESTROY DUE TO LEFT"
           cmenu.parent.current_menu.pop
           @@menus.pop
@@ -436,11 +440,11 @@ module RubyCurses
         end
       when KEY_RIGHT
        $log.debug "RIGHTIN MENU : "
-        if cmenu.parent.is_a? RubyCurses::Menu 
+        if cmenu.parent.is_a? RubyCurses::PMenu 
        $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
        $log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
-        if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
+        if cmenu.parent.is_a? RubyCurses::PMenu and !cmenu.parent.current_menu.empty?
           $log.debug " ABOU TO DESTROY DUE TO RIGHT"
           cmenu.parent.current_menu.pop
           @@menus.pop
@@ -464,7 +468,7 @@ module RubyCurses
         if key == item.mnemonic.downcase
           cmenu.select_item ix # 2009-01-23 13:32  so focus moves to menu
           ret = item.fire
-          return ret # 0 # 2009-01-23 00:43 menuitem returns CLOSE, menu 0
+          return ret # 0 # 2009-01-23 00:43 Pmenuitem returns CLOSE, menu 0
         end
       end
       return :UNHANDLED
@@ -479,7 +483,7 @@ module RubyCurses
         select_item 0
     end
   end
-  class PopupMenu < Menu
+  class PopupMenu < PMenu
     def initialize text, &block
       @row_margin = 0
       @@row = 0
@@ -523,8 +527,8 @@ module RubyCurses
       $log.debug "DESTRY popup "
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
-      @window.delwin if !@window.nil?
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      @window.delwin if !@window.nil? # FFI
       @items.each do |item|
         item.destroy
       end
@@ -535,7 +539,7 @@ module RubyCurses
   # An application related menubar.
   # Currently, I am adding this to a form. But should this not be application specific ?
   # It should popup no matter which window you are on ?? XXX
-  class MenuBar
+  class PMenuBar
     attr_reader :items
     attr_reader :window
     attr_reader :panel
@@ -695,7 +699,7 @@ module RubyCurses
       $log.debug "DESTRY menubar "
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
       @items.each do |item|
         item.destroy
@@ -704,7 +708,7 @@ module RubyCurses
     end
   end # menubar
 
-  class CheckBoxMenuItem < MenuItem
+  class PCheckBoxMenuItem < PMenuItem
     attr_reader :checkbox
     def initialize text, mnemonic=nil, &block
       @checkbox = CheckBox.new nil

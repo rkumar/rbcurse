@@ -86,7 +86,8 @@ module RubyCurses
       @col_offset = @row_offset = 1
 
       super
-      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT])
+      # added LIST event since bombing when selecting a row in table 2011-09-8 FFI
+      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT, :LIST_SELECTION_EVENT])
       init_vars
       install_list_keys
       install_keys_bindings

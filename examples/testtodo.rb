@@ -1,6 +1,6 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 #require 'ver/keyboard'
 require 'rbcurse'
@@ -13,6 +13,9 @@ require 'rbcurse/keylabelprinter'
 require 'rbcurse/applicationheader'
 require 'rbcurse/action'
 
+include RubyCurses
+include RubyCurses::Utils # this was resulting in get_color crashing
+# in rpopupmenu when called from CL, when it was inside _FILE_ block.
 # TODO move the csv to a database so you can update. this sucketh.
 #
 module TestTodo
@@ -155,75 +158,75 @@ module TestTodo
     def make_popup table
       require 'rbcurse/rpopupmenu'
       tablemenu = RubyCurses::PopupMenu.new "Table"
-      #tablemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
-      tablemenu.add(item = RubyCurses::MenuItem.new("&Open"))
+      #tablemenu.add(item = RubyCurses::PMenuItem.new("Open",'O'))
+      tablemenu.add(item = RubyCurses::PMenuItem.new("&Open"))
 
       tablemenu.insert_separator 1
-      #tablemenu.add(RubyCurses::MenuItem.new "New",'N')
+      #tablemenu.add(RubyCurses::PMenuItem.new "New",'N')
       tablemenu.add(@new_act)
-      tablemenu.add(item = RubyCurses::MenuItem.new("&Save"))
+      tablemenu.add(item = RubyCurses::PMenuItem.new("&Save"))
       item.command() { @save_cmd.call }
 
-      item=RubyCurses::MenuItem.new "Select"
+      item=RubyCurses::PMenuItem.new "Select"
       item.accelerator = "Ctrl-X"
       item.command() { table.toggle_row_selection() }
       #item.enabled = false
       tablemenu.add(item)
 
-      item=RubyCurses::MenuItem.new "Clr Selection"
+      item=RubyCurses::PMenuItem.new "Clr Selection"
       item.accelerator = "Alt-e"
       item.command() { table.clear_selection() }
       item.enabled = table.selected_row_count > 0 ? true : false
       tablemenu.add(item)
 
-      item=RubyCurses::MenuItem.new "Delete"
+      item=RubyCurses::PMenuItem.new "Delete"
       item.accelerator = "Alt-D"
       item.command() { @del_cmd.call }
       tablemenu.add(item)
 
-      gotomenu = RubyCurses::Menu.new "&Goto"
+      gotomenu = RubyCurses::PMenu.new "&Goto"
 
-      item = RubyCurses::MenuItem.new "Top"
+      item = RubyCurses::PMenuItem.new "Top"
       item.accelerator = "Alt-0"
       item.command() { table.goto_top }
       gotomenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Bottom"
+      item = RubyCurses::PMenuItem.new "Bottom"
       item.accelerator = "Alt-9"
       item.command() { table.goto_bottom }
       gotomenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Next Page"
+      item = RubyCurses::PMenuItem.new "Next Page"
       item.accelerator = "Ctrl-n"
       item.command() { table.scroll_forward }
       gotomenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Prev Page"
+      item = RubyCurses::PMenuItem.new "Prev Page"
       item.accelerator = "Ctrl-p"
       item.command() { table.scroll_backward }
       gotomenu.add(item)
 
       tablemenu.add(gotomenu)
 
-      searchmenu = RubyCurses::Menu.new "&Search"
+      searchmenu = RubyCurses::PMenu.new "&Search"
 
-      item = RubyCurses::MenuItem.new "Find forward"
+      item = RubyCurses::PMenuItem.new "Find forward"
       item.accelerator = "Alt-f"
       item.command() { table.ask_search_forward }
       searchmenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Find backward"
+      item = RubyCurses::PMenuItem.new "Find backward"
       item.accelerator = "Alt-F"
       item.command() { table.ask_search_backward }
       searchmenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Find Next"
+      item = RubyCurses::PMenuItem.new "Find Next"
       item.accelerator = "Alt-g"
       item.enabled = false if table.table_model.last_regex.nil?
       item.command() { table.find_next }
       searchmenu.add(item)
 
-      item = RubyCurses::MenuItem.new "Find Prev"
+      item = RubyCurses::PMenuItem.new "Find Prev"
       item.accelerator = "Alt-G"
       item.enabled = false if table.table_model.last_regex.nil?
       item.command() { table.find_prev }
@@ -506,7 +509,7 @@ module TestTodo
       begin
         while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
           colcount = tcm.column_count-1
-          s = keycode_tos ch
+          #s = keycode_tos ch
           #status_row.text = "Pressed #{ch} , #{s}"
           @form.handle_key(ch)
 
@@ -559,8 +562,6 @@ module TestTodo
     end
   end
   if $0 == __FILE__
-    include RubyCurses
-    include RubyCurses::Utils
 
     begin
       # Initialize curses

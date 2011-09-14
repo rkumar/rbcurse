@@ -497,6 +497,7 @@ module RubyCurses
     def sanitize content  #:nodoc:
       if content.is_a? String
         content.chomp!
+        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
         content.gsub!(/\t/, '  ') # don't display tab
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
