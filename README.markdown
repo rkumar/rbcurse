@@ -2,6 +2,13 @@
 
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
+* Status:
+  1.2.x is the last version that uses ncurses gem. Henceforth, rbcurse is moving to
+  version 1.3.x using ffi-ncurses. This is due to difficulty in installing ncurses gem.
+  Only bug-fixes will be done on 1.2.x.
+  This version has been tested till ruby 1.9.2 and will not be tested with 1.9.3 onwards.
+  (You may want to check the ffi branch for the moment)
+
 * 1.2.0: many additions (See CHANGELOG for details)
   - App class that wraps the environment and makes application development very easy
   - New controls such as:
@@ -42,17 +49,21 @@ test2.rb works - i always give it a quick run after making changes. All the test
     widgets. F2 for menubar toggling
 
    * rfe.rb is a ruby file explorer demo.
+    Also see, appdirtree.rb for tree based file explorer.
 
    * sqlc.rb is a ruby sql client _demo_ (using testd.db at
      <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
-    sqlc.rb: uses tabbedpanes - each query opens a new tab
     sqlm.rb: uses a multi-container - each query opens a new table in the multicontainer
+    sqlc.rb: uses tabbedpanes - each query opens a new tab (quite a pain)
 
    * testtodo.rb is a test TODO application (now using fastercsv)
-    (needs retesting - is working)
 
    * viewtodo.rb is a test TODO viewing application (now using sqlite3). The table is readonly, some vim keys are available.
+
+   For a multiple program application, try alpmenu.rb. This gives a list of application to call (mimicks
+   alpine's menu. It links to viewtodo.rb and testtodo.rb. It shows how a program can be independent, 
+   and be called from a menu.
 
 * Screenshots on 
   <http://www.benegal.org/files/screen/?M=D>   (new)
