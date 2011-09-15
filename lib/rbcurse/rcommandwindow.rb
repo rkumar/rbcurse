@@ -525,6 +525,7 @@ module RubyCurses
 
         #setrowcol row, nil
         @window.wmove row, c
+        @window.wrefresh   # FFI added to keep cursor display in synch with selection
       end
       def OLDbounds_check
         @start = 0 if @start < 0

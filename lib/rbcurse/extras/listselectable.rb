@@ -175,7 +175,7 @@ module RubyCurses
       @repaint_required = true
     end
     def get_matching_indices pattern
-      alert "please implement this method get_matching_indices in your class "
+      alert "please implement this method get_matching_indices(pattern)->[] in your class  "
       return []
     end # mod
     # Applications may call this or just copy and modify
@@ -185,7 +185,7 @@ module RubyCurses
       bind_key(32) { toggle_row_selection }
       bind_key(0) { add_to_selection }
       bind_key(?+, :ask_select) # --> calls select_values
-      bind_key(?-, :ask_unselect)
+      bind_key(?-, :ask_unselect) # please implement FIXME TODO
       bind_key(?a, :select_all)
       bind_key(?*, :invert_selection)
       bind_key(?u, :clear_selection)
