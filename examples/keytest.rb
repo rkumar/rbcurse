@@ -152,7 +152,7 @@ if $0 == __FILE__
 
     # Create the window to be associated with the form 
     # Un post form and free the memory
-    $log = Logger.new("view.log")
+    $log = Logger.new("rbc13.log")
     $log.level = Logger::DEBUG
 
     catch(:close) do

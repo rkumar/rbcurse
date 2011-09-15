@@ -434,8 +434,8 @@ if $0 == __FILE__
   begin
     # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    #$log = Logger.new("view.log")
-    $log = Logger.new(ENV['LOGDIR'] || "" + "rbc.log")
+    #$log = Logger.new("rbc13.log")
+    $log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
 
     $log.level = Logger::DEBUG
 

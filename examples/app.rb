@@ -105,7 +105,7 @@ module RubyCurses
         init_ncurses
       end
       unless $log
-        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc.log")))
+        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
         $log.level = Logger::DEBUG
         colors = Ncurses.COLORS
         $log.debug "START #{colors} colors  --------- #{$0}"
