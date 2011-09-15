@@ -19,7 +19,7 @@ if $0 == __FILE__
   begin
     # XXX update with new color and kb
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"view.log")))
+    $log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc.log")))
     $log.level = Logger::DEBUG
 
 #    @window = VER::Window.root_window
