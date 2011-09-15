@@ -417,7 +417,7 @@ STEP 2.
 
    `gem install rbcurse`
 
- Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named view.log. If the examples folder is readonly, you will have to set `LOGDIR` to a writable folder as below.
+ Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named rbc13.log (earlier view.log). If the examples folder is readonly, you will have to set `LOGDIR` to a writable folder as below.
 
     cd examples 
     ruby test2.rb
