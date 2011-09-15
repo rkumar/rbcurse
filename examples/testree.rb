@@ -112,7 +112,7 @@ include RubyCurses::Utils
 begin
   # XXX update with new color and kb
   VER::start_ncurses  # this is initializing colors via ColorMap.setup
-  $log = Logger.new("view.log")
+  $log = Logger.new("rbc13.log")
   $log.level = Logger::DEBUG
   n = Tester.new
   n.run
