@@ -339,7 +339,7 @@ module RubyCurses
     # Actually, this is naive, you would want to pass some values in like current data value
     # or lines ??
     # Also may want command completion, or help so all commands can be displayed
-    def get_command_from_user choices=nil
+    def get_command_from_user choices=["quit"]
       #code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
       #return unless code == 0
             @_command_history ||= Array.new
