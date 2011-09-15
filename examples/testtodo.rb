@@ -566,7 +566,7 @@ module TestTodo
     begin
       # Initialize curses
       VER::start_ncurses  # this is initializing colors via ColorMap.setup
-      $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
+      $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc.log")))
       $log.level = Logger::DEBUG
 
       colors = Ncurses.COLORS
