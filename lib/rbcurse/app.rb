@@ -115,8 +115,10 @@ module RubyCurses
       @message_row = Ncurses.LINES-1
       @prompt_row = @message_row # hope to use for ask etc
       unless $log
-        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
-        $log.level = Logger::DEBUG
+        path = File.join(ENV["LOGDIR"] || "./" ,"rbc.log")
+        file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+        $log = Logger.new(path)
+        $log.level = Logger::DEBUG # change to warn when you've tested your app.
         colors = Ncurses.COLORS
         $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
