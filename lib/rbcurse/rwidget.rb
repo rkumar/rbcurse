@@ -337,7 +337,7 @@ module RubyCurses
       # TODO: if an object throws a subclass of VetoException we should not catch it and throw it back for 
       # caller to catch and take care of, such as prevent LEAVE or update etc.
       def fire_handler event, object
-        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}, hdnler:#{@handler}"
+        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}" #, hdnler:#{@handler}"
         if !@handler.nil?
           if @_events
             raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
