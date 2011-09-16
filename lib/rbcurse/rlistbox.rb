@@ -703,6 +703,8 @@ module RubyCurses
       case ch
       when 10,13
         fire_action_event # trying out REMOVE 2011-09-16 FFI
+        $log.debug " 333 listbox "
+        return 0
       when KEY_UP  # show previous value
         return previous_row
       when KEY_DOWN  # show previous value
