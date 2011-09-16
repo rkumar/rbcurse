@@ -83,7 +83,8 @@ module RubyCurses
       list @entries
       @list.insert 0, @_header
       @title = @current_path
-      @current_index = @_first_data_index
+      #@current_index = @_first_data_index
+      @current_index = @_header_row_index # FFI 2011-09-16 trying
     end
     # called by parent's repaint
     def convert_value_to_text file, crow
