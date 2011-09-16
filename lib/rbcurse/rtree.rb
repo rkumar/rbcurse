@@ -430,7 +430,7 @@ module RubyCurses
 
       $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
       print_borders unless @suppress_borders # do this once only, unless everything changes
-      maxlen = @maxlen ||= @width-@internal_width
+      maxlen = @maxlen || @width-@internal_width
       tm = _list()
       select_default_values
       rc = row_count
