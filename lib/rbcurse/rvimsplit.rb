@@ -731,7 +731,7 @@ module RubyCurses
         if v?
           case ev.type
           when KEY_RIGHT
-            alert "VIMSPLIT RIGHT "
+            $log.debug "VIMSPLIT RIGHT "
             if @rc < @width - 3
               @recalculate_splits = true
               @rc += 1
