@@ -115,7 +115,7 @@ module RubyCurses
       @message_row = Ncurses.LINES-1
       @prompt_row = @message_row # hope to use for ask etc
       unless $log
-        path = File.join(ENV["LOGDIR"] || "./" ,"rbc.log")
+        path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
         file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
         $log = Logger.new(path)
         $log.level = Logger::DEBUG # change to warn when you've tested your app.

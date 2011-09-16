@@ -2777,7 +2777,7 @@ module RubyCurses
 
   def self.startup
     VER::start_ncurses
-    path = File.join(ENV["LOGDIR"] || "./" ,"rbc.log")
+    path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
     file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
     $log = Logger.new(path)
     $log.level = Logger::DEBUG
