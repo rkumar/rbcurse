@@ -781,7 +781,6 @@ module RubyCurses
               ret = process_key ch, self
               @multiplier = 0
               return :UNHANDLED if ret == :UNHANDLED
-              @repaint_required = true # added 2011-09-16 FFI
             end
           else
             # no motion on single key, we can freak out like in vim, pref f <char> for set_selection
@@ -793,7 +792,6 @@ module RubyCurses
             end
             ret = process_key ch, self
             return :UNHANDLED if ret == :UNHANDLED
-            @repaint_required = true # added 2011-09-16 FFI
           end
         end
       end
