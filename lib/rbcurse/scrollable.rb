@@ -157,7 +157,7 @@ module Scrollable
       list  = get_content
       @content_rows = list.length # rows can be added at any time
       win = get_window
-      maxlen = @maxlen ||= @width-2
+      maxlen = @maxlen || @width-2
       if @bgcolor.is_a? String and @color.is_a? String
         acolor = ColorMap.get_color(@color, @bgcolor)
       else
