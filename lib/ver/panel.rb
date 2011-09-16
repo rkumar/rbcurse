@@ -2,7 +2,7 @@ require "ffi-ncurses"
   module Ncurses # changed on 2011-09-8 
     # making minimal changes as per ffi-ncurses 0.4.0 which implements panels
     #module VER # too many places call Ncurses::Panel
-    class Panel < Struct.new(:pointer)
+    class Panel #< Struct.new(:pointer)
 #      extend FFI::Library
 #
 #      # use RUBY_FFI_NCURSES_LIB to specify exactly which lib you want, e.g.
@@ -44,10 +44,13 @@ require "ffi-ncurses"
           self.pointer = FFI::NCurses.new_panel(window)
         end
       end
+      def pointer
+        @pointer
+      end
 
       # Puts panel below all other panels.
       def bottom_panel
-        FFI::NCurses.bottom_panel(pointer)
+        FFI::NCurses.bottom_panel(@pointer)
       end
       alias bottom bottom_panel
 
@@ -56,7 +59,7 @@ require "ffi-ncurses"
       # To ensure compatibility across platforms, use this method instead of
       # {show_panel} when the panel is shown.
       def top_panel
-        FFI::NCurses.top_panel(pointer)
+        FFI::NCurses.top_panel(@pointer)
       end
       alias top top_panel
 
@@ -65,7 +68,7 @@ require "ffi-ncurses"
       # To ensure compatibility across platforms, use this method instead of
       # {top_panel} when the panel is hidden.
       def show_panel
-        FFI::NCurses.show_panel(pointer)
+        FFI::NCurses.show_panel(@pointer)
       end
       alias show show_panel
 
@@ -73,13 +76,13 @@ require "ffi-ncurses"
       # view.
       # The PANEL structure is not lost, merely removed from the stack.
       def hide_panel
-        FFI::NCurses.hide_panel(pointer)
+        FFI::NCurses.hide_panel(@pointer)
       end
       alias hide hide_panel
 
       # Returns a pointer to the window of the given panel.
       def panel_window
-        FFI::NCurses.panel_window(pointer)
+        FFI::NCurses.panel_window(@pointer)
       end
       alias window panel_window
 
@@ -88,7 +91,7 @@ require "ffi-ncurses"
       # You can call {replace_panel} on the output of {wresize}.
       # It does not change the position of the panel in the stack.
       def replace_panel(window)
-        FFI::NCurses.replace_panel(pointer, window)
+        FFI::NCurses.replace_panel(@pointer, window)
       end
       alias replace replace_panel
 
@@ -97,20 +100,20 @@ require "ffi-ncurses"
       # It does not change the position of the panel in the stack.
       # Be sure to use this method instead of {mvwin}, to move a panel window.
       def move_panel(starty = 0, startx = 0)
-        FFI::NCurses.move_panel(pointer, starty, startx)
+        FFI::NCurses.move_panel(@pointer, starty, startx)
       end
       alias move move_panel
 
       # Returns true if the panel is in the panel stack, false if not.
       # Returns ERR if the panel pointer is a null pointer.
       def panel_hidden
-        FFI::NCurses.panel_hidden(pointer) == 0
+        FFI::NCurses.panel_hidden(@pointer) == 0
       end
       alias hidden? panel_hidden
 
       # Returns pointer to the panel above.
       def panel_above
-        FFI::NCurses.panel_above(pointer)
+        FFI::NCurses.panel_above(@pointer)
       end
       alias above panel_above
 
@@ -118,26 +121,26 @@ require "ffi-ncurses"
       # If the panel argument is a pointer to 0, it returns a pointer to the
       # top panel in the stack.
       def panel_below
-        FFI::NCurses.panel_below(pointer)
+        FFI::NCurses.panel_below(@pointer)
       end
       alias below panel_below
 
       # Returns the user pointer for a given panel.
       def panel_userptr
-        FFI::NCurses.panel_userptr(pointer)
+        FFI::NCurses.panel_userptr(@pointer)
       end
       alias userptr panel_userptr
 
       # sets the panel's user pointer.
       def set_panel_userptr(user_pointer)
-        FFI::NCurses.set_panel_userptr(pointer, user_pointer)
+        FFI::NCurses.set_panel_userptr(@pointer, user_pointer)
       end
       alias userptr= set_panel_userptr
 
       # Remove the panel from the stack and deallocate the PANEL structure.
       # Doesn't remove the associated window.
       def del_panel
-        FFI::NCurses.del_panel(pointer)
+        FFI::NCurses.del_panel(@pointer)
       end
       alias del del_panel
       alias delete del_panel
