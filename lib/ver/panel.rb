@@ -45,6 +45,7 @@ require "ffi-ncurses"
         end
       end
 
+      class << self
       # Puts panel below all other panels.
       def bottom_panel
         FFI::NCurses.bottom_panel(pointer)
@@ -142,7 +143,7 @@ require "ffi-ncurses"
       alias del del_panel
       alias delete del_panel
 
-      def self.update_panels
+      def update_panels
         FFI::NCurses.update_panels
       end
       def method_missing(name, *args)
