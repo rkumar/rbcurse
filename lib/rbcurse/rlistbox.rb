@@ -795,6 +795,7 @@ module RubyCurses
           end
         end
       end
+      $log.debug "listbox #{@current_index} "
       $multiplier = 0
     end
     # fire handler when user presses ENTER/RETURN
