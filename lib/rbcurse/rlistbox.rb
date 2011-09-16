@@ -701,6 +701,8 @@ module RubyCurses
       $log.debug " listbox got ch #{ch}"
       #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
+      when 10,13
+        fire_action_event # trying out REMOVE 2011-09-16 FFI
       when KEY_UP  # show previous value
         return previous_row
       when KEY_DOWN  # show previous value
@@ -779,6 +781,7 @@ module RubyCurses
               ret = set_selection_for_char ch.chr
             else
               ret = process_key ch, self
+      $log.debug "111 listbox #{@current_index} "
               @multiplier = 0
               return :UNHANDLED if ret == :UNHANDLED
             end
@@ -791,11 +794,11 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
+      $log.debug "222 listbox #{@current_index} "
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
       end
-      $log.debug "listbox #{@current_index} "
       $multiplier = 0
     end
     # fire handler when user presses ENTER/RETURN
