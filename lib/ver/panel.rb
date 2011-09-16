@@ -141,5 +141,11 @@ require "ffi-ncurses"
       end
       alias del del_panel
       alias delete del_panel
+    def method_missing(name, *args)
+        if (FFI::NCurses.respond_to?(name))
+          return FFI::NCurses.send(name, pointer, *args)
+        end
+        raise "Panel did not respond_to #{name} "
+    end
     end
   end
