@@ -146,6 +146,8 @@ require "ffi-ncurses"
       alias delete del_panel
 
       class << self
+        # these will be used when you say Ncurses::Panel.del_panel(@panel.pointer)
+        # You could directly say FFI:NCurses or even @panel.del_panel
       def update_panels
         FFI::NCurses.update_panels
       end
