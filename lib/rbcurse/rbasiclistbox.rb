@@ -496,6 +496,10 @@ module RubyCurses
     # and horizontal scrolling. MODIFIES STRING
     def truncate content # :nodoc:
       maxlen = @maxlen || @width-2
+      if maxlen == 0 # (otherwise it becoems -1 below)
+        content.replace ""
+        return
+      end
       if !content.nil? 
         if content.length > maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
