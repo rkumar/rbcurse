@@ -84,7 +84,9 @@ module RubyCurses
       @list.insert 0, @_header
       @title = @current_path
       #@current_index = @_first_data_index
-      @current_index = @_header_row_index # FFI 2011-09-16 trying
+      # this next line will keep the cursor on header after sorting
+      # earlier cursor would appear in header but selection would be data row
+      @current_index = @_header_row_index # FFI 2011-09-16 keeping cursor synched with selection
     end
     # called by parent's repaint
     def convert_value_to_text file, crow

@@ -91,7 +91,7 @@ class MasterDetail < Widget
       #s.add @right1, :SECOND
       #s.add @right2, :SECOND
       s.bind :COMPONENT_RESIZE_EVENT do |e|
-        #alert "got a resize event #{e.type}  "
+        alert "masterdetail got a resize event #{e.type}, #{e.source}  "
         case e.type
         when :INCREASE
           case e.source
@@ -100,6 +100,7 @@ class MasterDetail < Widget
           when @right1
             increase_headers
           when @left
+            alert "masterdetail left increase - not handled"
 
           end
         when :DECREASE
@@ -117,6 +118,7 @@ class MasterDetail < Widget
             @right2.repaint_required  true
             @right1.repaint_required  true
             @left.repaint_required  true
+            alert "masterdetail left decrease"
           end
         when :EXPAND
           case e.source
