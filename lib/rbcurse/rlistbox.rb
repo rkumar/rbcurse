@@ -781,6 +781,7 @@ module RubyCurses
               ret = process_key ch, self
               @multiplier = 0
               return :UNHANDLED if ret == :UNHANDLED
+              @repaint_required = true # added 2011-09-16 FFI
             end
           else
             # no motion on single key, we can freak out like in vim, pref f <char> for set_selection
@@ -792,6 +793,7 @@ module RubyCurses
             end
             ret = process_key ch, self
             return :UNHANDLED if ret == :UNHANDLED
+            @repaint_required = true # added 2011-09-16 FFI
           end
         end
       end
@@ -807,7 +809,6 @@ module RubyCurses
       require 'rbcurse/ractionevent'
       # should have been callled :ACTION_EVENT !!!
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
-      $log.debug "after fire_action_event of listbox #{@current_index} #{toprow} "
     end
     # get a keystroke from user and go to first item starting with that key
     def ask_selection_for_char
