@@ -152,5 +152,6 @@ require "ffi-ncurses"
         end
         raise "Panel did not respond_to #{name} "
       end
+      end
     end
   end
