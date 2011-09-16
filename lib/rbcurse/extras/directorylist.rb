@@ -213,6 +213,7 @@ module RubyCurses
         Ncurses.error
         return
       end
+      $log.debug "inside fire_action_event of directorylist #{@current_index} #{toprow} "
       if @_header_row_index == @current_index
         # user hit enter on the header row. we determine column and sort.
         header = _get_word_under_cursor
