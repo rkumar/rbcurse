@@ -495,7 +495,7 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     def truncate content # :nodoc:
-      maxlen = @maxlen ||= @width-2
+      maxlen = @maxlen || @width-2
       if !content.nil? 
         if content.length > maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
