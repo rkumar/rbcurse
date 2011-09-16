@@ -807,6 +807,7 @@ module RubyCurses
       require 'rbcurse/ractionevent'
       # should have been callled :ACTION_EVENT !!!
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
+      $log.debug "after fire_action_event of listbox #{@current_index} #{toprow} "
     end
     # get a keystroke from user and go to first item starting with that key
     def ask_selection_for_char
