@@ -347,7 +347,7 @@ module RubyCurses
       # TODO: if an object throws a subclass of VetoException we should not catch it and throw it back for 
       # caller to catch and take care of, such as prevent LEAVE or update etc.
       def fire_handler event, object
-        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}, hdnler:#{@handler}"
+        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}"
         if !@handler.nil?
           if @_events
             raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
@@ -1247,7 +1247,6 @@ module RubyCurses
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
       @window.wmove r,c
-      @window.wrefresh  # added 2011-09-16 FFI trying out
     end
     # @return [Widget, nil] current field, nil if no focusable field
     def get_current_field
