@@ -237,8 +237,10 @@ module RubyCurses
       if File.directory? _path
         populate _path
       end
+      $log.debug "after fire_action_event of directorylist #{@current_index} #{toprow} "
 
       super
+      $log.debug "after super.fire_action_event of directorylist #{@current_index} #{toprow} "
     end
     def addcol num
       #@repaint_required = true
