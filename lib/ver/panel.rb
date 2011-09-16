@@ -39,9 +39,9 @@ require "ffi-ncurses"
 
       def initialize(window)
         if window.respond_to?(:pointer)
-          self.pointer = FFI::NCurses.new_panel(window.pointer)
+          @pointer = FFI::NCurses.new_panel(window.pointer)
         else
-          self.pointer = FFI::NCurses.new_panel(window)
+          @pointer = FFI::NCurses.new_panel(window)
         end
       end
       def pointer
