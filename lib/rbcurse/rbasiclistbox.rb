@@ -418,11 +418,11 @@ module RubyCurses
       $log.debug "basicrlistbox repaint  #{@name} graphic #{@graphic}"
       #$log.debug "XXX repaint to_print #{@to_print_borders} "
       print_borders unless @suppress_borders # do this once only, unless everything changes
-      #maxlen = @maxlen ||= @width-2
+      #maxlen = @maxlen || @width-2
       tm = list()
       rc = row_count
       @longest_line = @width
-      $log.debug " rlistbox #{row_count} "
+      $log.debug " rbasiclistbox #{row_count}, w:#{@width} , maxlen:#{@maxlen} "
       if rc > 0     # just added in case no data passed
         tr = @toprow
         acolor = get_color $datacolor
