@@ -151,7 +151,7 @@ require "ffi-ncurses"
       end
       def method_missing(name, *args)
         if (FFI::NCurses.respond_to?(name))
-          return FFI::NCurses.send(name, @pointer, *args)
+          return FFI::NCurses.send(name, *args)
         end
         raise "Panel did not respond_to #{name} "
       end
