@@ -1247,6 +1247,7 @@ module RubyCurses
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
       @window.wmove r,c
+      @window.wrefresh  # added 2011-09-16 FFI trying out
     end
     # @return [Widget, nil] current field, nil if no focusable field
     def get_current_field
