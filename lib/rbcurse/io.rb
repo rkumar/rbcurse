@@ -509,16 +509,10 @@ module Io
     sleep(5)
   end
   def print_help_page(filename = "TODO")
-    #require 'transactionviewer'
-    #tp = TransactionViewer.new(nil)
-    #tp.run
-    require 'panelreader'
-    tp = PanelReader.new()
-    tp.view_file(filename)
-    
-    #require 'padreader'
-    #tp = PadReader.new()
+    #require 'panelreader' obsolete used FORN and fiELD
+    #tp = PanelReader.new()
     #tp.view_file(filename)
+    
   end
   #def newaskyesno(win, askstr, default = "N", helptext="Helptext for this question")
   ## 
