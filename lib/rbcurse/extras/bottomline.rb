@@ -1310,7 +1310,10 @@ module RubyCurses
             begin
               cpentries = @change_proc.call(str) if @change_proc # added 2010-11-09 23:28 
             rescue => exc
-              $log.debug "bottomline: change_proc EXC #{exc} " if $log.debug? 
+              $log.error "bottomline: change_proc EXC #{exc} " if $log.debug? 
+              $log.error( exc) if exc
+              $log.error(exc.backtrace.join("\n")) if exc
+              Ncurses.error
             end
             print_str(str, :y => @prompt_length+0)
           when false
