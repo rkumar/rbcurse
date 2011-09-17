@@ -677,9 +677,10 @@ class RFe
     @form.bind_key(?\C-f){
       @klp.mode :file
       @klp.repaint
-      ## FIXME chr could fail !!
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
-        if "cmdsuvrex".index(ch.chr) == nil
+        if ch < 33 || ch > 126
+          Ncurses.beep
+        elsif "cmdsuvrex".index(ch.chr) == nil
           Ncurses.beep
         else
           opt_file ch.chr
@@ -692,9 +693,10 @@ class RFe
       @klp.mode :dir
       @klp.repaint
       keys = @klp.get_current_keys
-      ## FIXME chr could fail !!
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
-        if !keys.include?(ch.chr) 
+        if ch < 33 || ch > 126
+          Ncurses.beep
+        elsif !keys.include?(ch.chr) 
           Ncurses.beep
         else
           opt_dir ch.chr
