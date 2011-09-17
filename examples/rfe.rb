@@ -720,6 +720,46 @@ class RFe
     @form.bind_key(FFI::NCurses::KEY_F3){
       view()
     }
+    @form.bind_key(FFI::NCurses::KEY_F1){
+      #Io.view(["this is some help text","hello there"])
+      arr = []
+      arr << "  FILE BROWSER HELP  "
+      arr << "           "
+      arr << " <tab>   - switch between windows"
+      arr << " <enter> - open dir"
+      arr << " F3      - view file/dir/zip contents (toggle) "
+      arr << " F4      - edit file content"
+      arr << " <char>  - first file starting with <char>"
+      arr << "           "
+      arr << " < > ^ V - move help window "
+      arr << "           "
+      w = arr.max_by(&:length).length
+      #arr = ["this is some help text","hello there"]
+
+      require 'rbcurse/extras/viewer'
+      RubyCurses::Viewer.view(arr, :layout => [10,10, 4+arr.size, w+2],:close_key => KEY_RETURN, :title => "<Enter> to close", :print_footer => false) do |t|
+      # you may configure textview further here.
+      #t.suppress_borders true
+      #t.color = :black
+      #t.bgcolor = :white
+      # or
+      t.attr = :reverse
+      #t.bind_key(KEY_F1){ alert "closing up!"; throw :close }
+      # just for kicks move window around
+      t.bind_key('<'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
+        f.reset_layout([f.height, f.width, f.top, c]); 
+      }
+      t.bind_key('>'){ f = t.form.window; c = f.left + 1; f.hide; f.mvwin(f.top, c); 
+        f.reset_layout([f.height, f.width, f.top, c]); f.show;
+      }
+      t.bind_key('^'){ f = t.form.window; c = f.top - 1 ; f.hide; f.mvwin(c, f.left); 
+        f.reset_layout([f.height, f.width, c, f.left]) ; f.show;
+      }
+      t.bind_key('V'){ f = t.form.window; c = f.top + 1 ; f.hide; f.mvwin(c, f.left); 
+        f.reset_layout([f.height, f.width, c, f.left]); f.show;
+      }
+    end
+    }
     @form.bind_key(FFI::NCurses::KEY_F4){
       edit()
     }
