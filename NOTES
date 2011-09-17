@@ -1999,3 +1999,28 @@ update more often than required. its called in different ways,
 interactive and non-interactive. Need to look into that at some time.
 
 * * * * * * * *
+
+Subject: App.rb confirm before quit
+-----------------------------------
+Date: 2011-09-17 11:49
+
+App should be able to configure whether it wants quit-confirm. Or a
+procedure to call before quitting, such as saving values. It's okay for
+demos where there's no state to just press F1 or q or C-q to quit.
+
+* * * * * * * *
+
+Subject: porting to ffi-ncurses
+-------------------------------
+Date: 2011-09-17 11:51
+
+I've been working on porting the rbcurse gem to ffi-ncurses, since
+ncurses gems is so so hard to install for a lot of people. Thanks to
+Sean's support the work and retesting was actually very little. It's
+just that there is a lot of testing to do with all the programs,
+widgets.
+
+Sean is coming out with a version 0.4.0 which I am using. rbcurse 1.3.0
+onwards uses ffi-ncurses. 
+
+* * * * * * * *
