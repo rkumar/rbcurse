@@ -1046,6 +1046,7 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     # if you;ve truncated the data, it could stay truncated even if lb is increased. be careful
+    # FIXME if _maxlen becomes 0 then maxlen -1 will print whole string again
     def truncate content
       _maxlen = @maxlen || @width-@internal_width
       _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
