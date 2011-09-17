@@ -107,7 +107,7 @@ module RubyCurses
         end
       end
       len = @display_length || value.length
-      $log.debug " XXX @display_length: #{@display_length}, #{value.length}, #{len}::attr:: #{@attr} "
+      $log.debug " XXX @display_length: #{@display_length}, #{value.length}, L:#{len}, pw:#{@parent.width} ::attr:: #{@attr} "
       graphic.printstring r, c, @format % [len, value], @color_pair, @attr
     end # repaint
 
