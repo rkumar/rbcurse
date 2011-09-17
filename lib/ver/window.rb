@@ -319,10 +319,15 @@ module VER
     # setup and reset
 
     def reset_layout(layout)
-      @layout = layout
+      case layout
+      when Array
+        @height, @width, @top, @left = *layout
+      when Hash
+        @layout = layout
 
-      [:height, :width, :top, :left].each do |name|
-        instance_variable_set("@#{name}", layout_value(name))
+        [:height, :width, :top, :left].each do |name|
+          instance_variable_set("@#{name}", layout_value(name))
+        end
       end
     end
 
