@@ -69,6 +69,11 @@ module RubyCurses
         begin
           ret = process_key ch, self
           $log.debug " MULTI = process_key returned #{ret} "
+          if ch > 177 && ch < 187
+            n = ch - 177
+            component_at(n)
+            # go to component n
+          end
         rescue => err
 #          $error_message = err # changed 2010 dts  
           $error_message.value = err
