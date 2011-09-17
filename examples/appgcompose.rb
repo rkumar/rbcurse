@@ -261,7 +261,8 @@ module AppgCompose
       end
       unless @username
         ww = ENV['GMAIL_USER'] 
-        ww << "@gmail.com" if ww
+        #ww << "@gmail.com" if ww # suddnely giving frozen string error
+        ww = ww + "@gmail.com" if ww
         @username = ask("Username: ") { |q| q.default = ww }
       end
       unless @password
@@ -274,7 +275,13 @@ module AppgCompose
       end
       unless @gmail
         say "Connecting to gmail..."
-        @gmail = Gmail.connect!(@username, @password)
+        begin
+          @gmail = Gmail.connect!(@username, @password)
+        rescue => ex
+          @password = @username = nil
+          $log.debug( ex) if ex
+          $log.debug(ex.backtrace.join("\n")) if ex
+        end
       end
       unless @gmail
         say_with_pause "Cannot proceeed without connection" unless @gmail
