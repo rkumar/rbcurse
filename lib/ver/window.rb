@@ -115,16 +115,20 @@ module VER
     def x=(n) move(y, n) end
     def y=(n) move(n, x) end
 
-    def move(y, x)
-      return unless @visible
-#       Log.debug([y, x] => caller[0,4])
-      @window.wmove(y, x)
-    end
+    #def move(y, x)
+      #return unless @visible
+##       Log.debug([y, x] => caller[0,4])
+      ##@window.wmove(y, x) # bombing since ffi-ncurses 0.4.0 (maybe it was never called
+      ##earlier. was crashing in appemail.rb testchoose.
+      #wmove y,x # can alias it
+    #end
     # since include FFI is taking over, i need to force it here. not going into
     # method_missing
     def wmove y,x
-      Ncurses.wmove @window, y, x
+      #Ncurses.wmove @window, y, x
+      FFI::NCurses.wmove @window, y, x
     end
+    alias :move :wmove
 
     # while moving from ncurses-ruby to FFI need to pass window pointer
     # for w methods as well as mvw - NOT COMING HERE due to include FFI
