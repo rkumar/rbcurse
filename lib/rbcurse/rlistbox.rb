@@ -702,8 +702,9 @@ module RubyCurses
       #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
       when 10,13
+        # this means you cannot just bind_key 10 or 13 like we once did
         fire_action_event # trying out REMOVE 2011-09-16 FFI
-        $log.debug " 333 listbox "
+        $log.debug " 333 listbox catching 10,13 fire_action_event "
         return 0
       when KEY_UP  # show previous value
         return previous_row
