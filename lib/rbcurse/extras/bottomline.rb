@@ -1465,7 +1465,7 @@ module RubyCurses
         w = rc.window
         rc.display_menu list1
         # earlier wmove bombed, now move is (window.rb 121)
-        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.move(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
         # need some validation here that its in the list TODO
       ensure
         rc.destroy
