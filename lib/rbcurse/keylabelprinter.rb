@@ -80,7 +80,8 @@ module RubyCurses
       print_key_labels_row(posy, posx, even)
       posy = @row+1
       print_key_labels_row(posy, posx, odd)
-      #@win.wrefresh   # needed else secod row not shown after askchoice XXX
+      # uncommented next line after ffi-ncurses else not showing till key press FFI 2011-09-17 
+      @win.wrefresh   # needed else secod row not shown after askchoice XXX 
     end
     def print_key_labels_row(posy, posx, arr)
       # FIXME: this logic of padding needs to take into account
