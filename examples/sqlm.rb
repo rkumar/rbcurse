@@ -380,8 +380,8 @@ class Sqlc
       atable.set_column_widths cw
       rescue => exc
         $log.debug(exc.backtrace.join("\n"))
-        raise exc.to_s
         alert exc.to_s
+        raise exc.to_s
         return
       end
       @status_row.text = "#{@content.size} rows retrieved"

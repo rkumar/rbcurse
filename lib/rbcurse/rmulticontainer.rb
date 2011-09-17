@@ -38,9 +38,13 @@ module RubyCurses
     def init_vars
       super
       bind_key(?\M-:, :buffer_menu)
+      bind_key(?\M-;, :buffer_menu)
       # bind_key([?\C-x, ?f], :file_edit)
       bind_key([?\C-x, ?k], :delete_component)
       bind_key([?\C-x, ?\C-b], :list_components)
+      bind_key(?\M-n, :goto_next_component)
+      bind_key(?\M-p, :goto_prev_component)
+      bind_key(?\M-1, :goto_first_component)
       # easily cycle using p. n is used for next search.
       #bind_key(?p, :buffer_previous)
       @suppress_borders = false 
