@@ -109,6 +109,7 @@ class FileExplorer
     list.list_data_model.remove_all
     #list.list_data_model.insert 0, *fl
     list.list_data_model.insert 0, *flist
+    list.set_form_row
   end
   def sort key, reverse=false
     # remove parent before sorting, keep at top
