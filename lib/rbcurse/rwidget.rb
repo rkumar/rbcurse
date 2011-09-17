@@ -578,6 +578,7 @@ module RubyCurses
     end
     ##
     # default repaint method. Called by form for all widgets.
+    # XXX widget does not have display_length.
     def repaint
         r,c = rowcol
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
