@@ -164,8 +164,10 @@ module RubyCurses
     end
 
     def component_at index
-      @current_component = @bmanager.element_at index
-      $log.debug " buffer_last got #{@current_component} "
+      cc = @bmanager.element_at index
+      return unless cc 
+      @current_component = cc 
+      #$log.debug " buffer_last got #{@current_component} "
       set_current_component
     end
     ##

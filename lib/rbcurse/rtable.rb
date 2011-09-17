@@ -1023,8 +1023,11 @@ module RubyCurses
       marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
       @graphic.mvwaddch @row+@height-1, @col+@_first_column_print+1, marker
     end
+    # print table header
+    # 2011-09-17 added repaint all check so that external components can triger this
+    # e.g. multi-container when it changes tables.
     def print_header
-      return unless @table_changed
+      return unless @table_changed || @repaint_all
           $log.debug " TABLE: inside printheader 2009-10-07 11:51  DDD "
 
       r,c = rowcol
