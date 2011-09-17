@@ -737,7 +737,15 @@ class RFe
     @form.bind_key(FFI::NCurses::KEY_F8){
       system_popup()
     }
-    @form.bind_key(?\C-m){
+    # will no longer come here. list event has to be used
+    #@form.bind_key(?\C-m){ # listbox has eaten it up
+    @lista.list.bind(:PRESS){
+      dir = @current_list.filepath
+      if File.directory? @current_list.filepath
+        @current_list.change_dir dir
+      end
+    }
+    @listb.list.bind(:PRESS){
       dir = @current_list.filepath
       if File.directory? @current_list.filepath
         @current_list.change_dir dir
