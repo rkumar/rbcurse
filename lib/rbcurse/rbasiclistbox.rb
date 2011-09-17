@@ -414,6 +414,7 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
       @left_margin ||= @row_selected_symbol.length
+      _dl = [@display_length || 100, @width-2].min
 
       $log.debug "basicrlistbox repaint  #{@name} graphic #{@graphic}"
       #$log.debug "XXX repaint to_print #{@to_print_borders} "
@@ -455,6 +456,7 @@ module RubyCurses
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = cell_renderer()
+            renderer.display_length = _dl
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
           else
             # clear rows
