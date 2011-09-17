@@ -37,6 +37,7 @@ module RubyCurses
     end
     def init_vars
       super
+      # the following allows us to navigate buffers with :bn :bp etc (with Alt pressed)
       bind_key(?\M-:, :buffer_menu)
       bind_key(?\M-;, :buffer_menu)
       # bind_key([?\C-x, ?f], :file_edit)
