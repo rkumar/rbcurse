@@ -422,7 +422,7 @@ module VER
       wattron(Ncurses.COLOR_PAIR(color) | att)
       # we should not print beyond window coordinates
       # trying out on 2009-01-03 19:29 
-      width = Ncurses.COLS
+      #width = Ncurses.COLS
       # the next line won't ensure we don't write outside some bounds like table
       #string = string[0..(width-c)] if c + string.length > width
       #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
