@@ -118,7 +118,7 @@ module VER
     def move(y, x)
       return unless @visible
 #       Log.debug([y, x] => caller[0,4])
-      @window.move(y, x)
+      @window.wmove(y, x)
     end
     # since include FFI is taking over, i need to force it here. not going into
     # method_missing
