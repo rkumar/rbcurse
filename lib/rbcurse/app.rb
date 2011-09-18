@@ -105,7 +105,7 @@ module RubyCurses
       run &block
     end
     def init_vars
-      @quit_key ||= FFI::NCurses::KEY_F1
+      @quit_key ||= FFI::NCurses::KEY_F10
       # actually this should be maintained inside ncurses pack, so not loaded 2 times.
       # this way if we call an app from existing program, App won't start ncurses.
       unless $ncurses_started
@@ -195,6 +195,7 @@ module RubyCurses
     # during a process, when you wish to update status, since ordinarily the thread is busy
     # and form does not get control back, so the window won't refresh.
     # NOTE: use this only if +message+ is not working
+    # XXX Not sure if this is working after move to ffi-ncurses, check the demos
     def message_immediate text
       message text
       @message_label.repaint
@@ -290,6 +291,36 @@ module RubyCurses
       end
       opts
     end
+    def display_app_help
+      if respond_to? :help_text
+        arr = help_text
+      else
+        arr = []
+        arr << "    NO HELP SPECIFIED FOR APP "
+        arr << "    "
+        arr << "     --- General help ---          "
+        arr << "    F10         -  exit application "
+        arr << "    Alt-x       -  select commands  "
+        arr << "    :           -  select commands  "
+        arr << "    "
+      end
+      case arr
+      when String
+        arr = arr.split("\n")
+      when Array
+      end
+      w = arr.max_by(&:length).length
+
+      require 'rbcurse/extras/viewer'
+      RubyCurses::Viewer.view(arr, :layout => [2, 10, [4+arr.size, 24].min, w+2],:close_key => KEY_RETURN, :title => "<Enter> to close", :print_footer => true) do |t|
+      # you may configure textview further here.
+      #t.suppress_borders true
+      #t.color = :black
+      #t.bgcolor = :white
+      # or
+      t.attr = :reverse
+      end
+    end
     # bind a key to a method at global (form) level
     # Note that individual component may be overriding this.
     def bind_global
@@ -301,8 +332,8 @@ module RubyCurses
       end
       key = []
       str = ""
-      raw_message "Enter one or 2 keys. Finish with ENTER:"
-      raw_message "Enter first key:"
+      raw_message "Enter one or 2 keys. Finish with ENTER. Enter first key:"
+      #raw_message "Enter first key:"
       ch = @window.getchar()
       if [KEY_ENTER, 10, 13, ?\C-g.getbyte(0)].include? ch
         raw_message "Aborted."
@@ -324,7 +355,8 @@ module RubyCurses
       if !key.empty?
         raw_message "Binding #{cmd} to #{str} "
         key = key[0] if key.size == 1
-        @form.bind_key(key, cmd.to_sym)
+        #@form.bind_key(key, cmd.to_sym) # not finding it, getting called by that comp
+        @form.bind_key(key){ send(cmd.to_sym) }
       end
       #message "Bound #{str} to #{cmd} "
     end
@@ -1093,6 +1125,7 @@ module RubyCurses
               end
             end
           }
+          @form.bind_key(KEY_F1){ display_app_help }
           @message = Variable.new
           @message.value = ""
           @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
