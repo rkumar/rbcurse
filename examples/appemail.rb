@@ -5,6 +5,7 @@ require './rmail'
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
 
+# this will go into top namespace so will conflict with other apps!
 def testchoose
   # list filters as you type
   $log.debug "called test1 " if $log.debug? 
@@ -105,6 +106,32 @@ App.new do
     def test1XX
       $log.debug "called test1 " if $log.debug? 
       str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
+    end
+    def help_text
+      <<-eos
+               APPEMAIL HELP 
+
+      This is some help text for appemail.
+      We are testing out this feature.
+
+      Alt-x    -   Command mode (<tab> to see commands and select)
+      :        -   Command mode
+      <Enter>  -   Display mail headers for mailbox
+                   Display body for selected header
+      F3       -   Enable sidebars in order to change size of windows (toggle)
+      F10      -   Quit application
+
+      Some commands for using bottom of screen as vim and emacs do.
+
+      testchoose       - filter directory list as you type
+      testdir          - vim style, tabbing completes matching files
+      testnumberedmenu - use menu indexes to select options
+      testdisplaylist  - display a list at bottom of screen
+      testdisplaytext  - display text at bottom
+
+      -----------------------------------------------------------------------
+      Hope you enjoyed this help.
+      eos
     end
     @vim.set_left_component @dirs
 
