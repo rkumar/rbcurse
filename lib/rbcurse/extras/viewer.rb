@@ -54,7 +54,20 @@ module RubyCurses
         footer_attrib fa
       end
       textview.set_content content #, :WRAP_WORD
-      
+
+      t = textview
+      t.bind_key('<'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
+        f.reset_layout([f.height, f.width, f.top, c]); 
+      }
+      t.bind_key('>'){ f = t.form.window; c = f.left + 1; f.hide; f.mvwin(f.top, c); 
+        f.reset_layout([f.height, f.width, f.top, c]); f.show;
+      }
+      t.bind_key('^'){ f = t.form.window; c = f.top - 1 ; f.hide; f.mvwin(c, f.left); 
+        f.reset_layout([f.height, f.width, c, f.left]) ; f.show;
+      }
+      t.bind_key('V'){ f = t.form.window; c = f.top + 1 ; f.hide; f.mvwin(c, f.left); 
+        f.reset_layout([f.height, f.width, c, f.left]); f.show;
+      }
       # yielding textview so you may further configure or bind keys or events
       yield textview if block_given? # tentative
       v_form.repaint
