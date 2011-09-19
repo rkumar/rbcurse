@@ -74,7 +74,8 @@ module Io
           return -1, nil
         when 10, 13 # hits ENTER
           break
-        when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE # delete previous character/backspace
+        when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE, 263 # delete previous character/backspace
+          # currently hitting C-h is giving 263 instead of 8
           len -= 1 if len > prompt.length
           curpos -= 1 if curpos > 0
           str.slice!(curpos)
@@ -104,6 +105,21 @@ module Io
             win.wrefresh # FFI 2011-09-19 otherwise not showing
           end
           next
+        when ?\C-a.getbyte(0)
+          #olen = str.length
+          #clear_this win, r, c, color, len+maxlen+1
+          #clear_line len+maxlen+1, @prompt_length
+          len -= curpos
+          curpos = 0
+          win.move r, c+len # since getchar is not going back on del and bs
+          win.wrefresh # FFI 2011-09-19 otherwise not showing
+        when ?\C-e.getbyte(0)
+          olen = str.length
+          len += (olen - curpos)
+          curpos = olen
+          #clear_line len+maxlen+1, @prompt_length
+          win.move r, c+len # since getchar is not going back on del and bs
+          win.wrefresh # FFI 2011-09-19 otherwise not showing
         when ?\M-i.getbyte(0) 
           ins_mode = !ins_mode
           next
