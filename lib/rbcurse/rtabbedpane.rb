@@ -669,6 +669,8 @@ module RubyCurses
         if ret == 0 
           @component.repaint if @component
           display_form false if @form
+        elsif ret != :UNHANDLED
+          display_form false if @form
         end
         # XXX i need to call repaint of compoent if updated !!
         return ret
