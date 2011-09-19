@@ -66,7 +66,7 @@ module Io
       while true
         #ch=win.mvwgetch(r, len) # get to right of prompt - WHY  NOT WORKING ??? 
         ch=win.getchar()
-        $log.debug " rbgetstr got ch:#{ch}, str:#{str}. "
+        $log.debug "io.rb rbgetstr got ch:#{ch}, #{win} , str:#{str}, len: #{len} "
         case ch
         when 3 # -1 # C-c
           return -1, nil
@@ -94,12 +94,14 @@ module Io
           curpos -= 1 if curpos > 0
           len -= 1 if len > prompt.length
           win.wmove r, c+len # since getchar is not going back on del and bs
+          win.wrefresh # FFI 2011-09-19 otherwise not showing
           next
         when KEY_RIGHT
           if curpos < str.length
             curpos += 1 #if curpos < str.length
             len += 1 
             win.wmove r, c+len # since getchar is not going back on del and bs
+            win.wrefresh # FFI 2011-09-19 otherwise not showing
           end
           next
         when ?\M-i.getbyte(0) 
@@ -147,6 +149,7 @@ module Io
         end
         print_this(win, prompt+str, color, r, c)
         win.wmove r, c+len # more for arrow keys, curpos may not be end
+        win.wrefresh
         prevchar = ch
       end
       str = default if str == ""
