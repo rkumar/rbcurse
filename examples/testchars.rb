@@ -123,6 +123,7 @@ sarr.each_index { |i|
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != ?q.getbyte(0) )
+        break if ch == 32 || ch == 13
         str = keycode_tos ch
         @form.handle_key(ch)
         @window.wrefresh
