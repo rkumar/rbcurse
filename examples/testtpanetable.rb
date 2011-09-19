@@ -11,8 +11,9 @@
 #*******************************************************#
 
 # this is a test program, tests out tabbed panes. type F1 to exit
-#
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib/"
+# Avoid using ScrollPane at present, I intend rewriting it some day
+# It sucks. Even the TabbedPane code will be rewritten completely.
+# Don't use this demo.
 require 'rubygems'
 #require 'ncurses' # FFI
 require 'logger'
@@ -40,7 +41,7 @@ class TestTabbedPane
         #button_type :ok
       end
       @tab1 = @tp.add_tab "&Table" 
-      f1 = @tab1.form
+      #f1 = @tab1.form
       f1 = @tp.form @tab1
       raise "form f1 nil" unless f1
       $log.debug " TABLE FORM #{f1} "
