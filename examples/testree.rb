@@ -66,27 +66,6 @@ class Tester
 
     end
 
-
-
-    ok_button = Button.new @form do
-      text "+"
-      name "+"
-      row 27
-      col 10
-    end
-    #ok_button.command { |form| @vim.weight(@vim.weight + 0.1)  }
-    ok_button.command {  @vim.increase_weight }
-
-
-    k_button = Button.new @form do
-      text "-"
-      name "-"
-      row 27
-      col 17
-    end
-    #k_button.command { |form| @vim.weight( @vim.weight - 0.1) }
-    k_button.command { |form| @vim.decrease_weight }
-
     #
     @help = "F1 to quit. Pass command-line argument 1,2,3,4  #{$0} "
     RubyCurses::Label.new @form, {'text' => @help, "row" => 1, "col" => 2, "color" => "yellow"}
