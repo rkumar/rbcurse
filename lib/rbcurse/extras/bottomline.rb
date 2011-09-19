@@ -1131,7 +1131,8 @@ module RubyCurses
           when 10, 13 # hits ENTER, complete entry and return
             @history_list.push str
             break
-          when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE # delete previous character/backspace
+          when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE, 263 # delete previous character/backspace
+            # C-h is giving 263 i/o 8. 2011-09-19 
             len -= 1 if len > @prompt_length
             curpos -= 1 if curpos > 0
             str.slice!(curpos)
