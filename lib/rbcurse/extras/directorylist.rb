@@ -342,6 +342,10 @@ module RubyCurses
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     return if ret != 0
     @file_pattern = str
+    # 2011-09-19 doesn't work if pwd changed
+    if Dir.pwd != @current_path
+      Dir.chdir @current_path
+    end
     values = Dir.glob(str)
     $log.debug "ask select dir.glob got #{values} "
     select_values values unless values.empty?
@@ -355,6 +359,9 @@ module RubyCurses
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     return if ret != 0
     @file_pattern = str
+    if Dir.pwd != @current_path
+      Dir.chdir @current_path
+    end
     values = Dir.glob(str)
     unselect_values values unless values.empty?
     @repaint_required = true
