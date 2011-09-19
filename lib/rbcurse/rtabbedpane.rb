@@ -299,7 +299,7 @@ module RubyCurses
     ## create a form for tab, if multiple components are to be placed inside tab.
     #  Tabbedpane has no control over placement and width etc of what's inside a form
     def form tab
-      if tab.form.nil?
+      if !tab.has_form?
         @forms << create_tab_form(tab)
         tab.form = @forms.last
       end
@@ -634,7 +634,7 @@ module RubyCurses
       attr_accessor :text
       attr_reader :config
       attr_reader :component
-      attr_accessor :form
+      #attr_accessor :form
       attr_accessor :parent_component
       attr_accessor :index
       def initialize text, parent_component,  aconfig={}, &block
@@ -755,6 +755,28 @@ module RubyCurses
       $log.debug " display form after pad copy #{ret}. #{form.name} "
     end
 
+    # 2011-09-19 @since 1.3.0 changed so that calling form throws an exception
+    # if it's nil. Please use Tabbedpane's form() to get a form. This throws an exception
+    # so i can catch old programs that use the incorrect method
+    def form(*val)
+      if val.empty?
+        return @form if @form
+        raise "Form is nil. You may be using deprecated method. Use @tp.form, not @tab.form"
+      else
+        #raise ArgumentError "form should be ... " if val[0] ...
+        oldvalue = @form
+        @form = val[0]
+      end
+      self
+    end
+    # used by TP to set form
+    def form=(val)
+      @form = val
+    end
+    # used by TP to check form, since the other methods throws an exception
+    def has_form?
+      !@form.nil?
+    end
     end # class Tab
 
   end # class Tabbedpane
