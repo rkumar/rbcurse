@@ -39,7 +39,7 @@ class Tester
     lb2 = Listbox.new nil, :list => `gem list --local`.split("\n") , :name => "mylist2"
 
     alist = %w[ ruby perl python java jruby macruby rubinius rails rack sinatra pylons django cakephp grails] 
-    str = "Hello people of this world.\nThis is a textbox.\nUse arrow keys, j/k/h/l/gg/G/C-a/C-a/C-n/C-p\n"
+    str = "Hello people of this world.\nThis is a textbox.\nUse arrow keys, j/k/h/l/gg/G/C-a/C-e/C-n/C-p\n"
     str << alist.join("\n")
     stfl = vf == :V ? :FLOW : :STACK
     @vim.add lb, :FIRST, :AUTO
