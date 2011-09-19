@@ -1234,6 +1234,9 @@ module RubyCurses
          $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
          Ncurses::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
+       else
+         $log.warn " XXX formrepaint #{@name} no refresh called  2011-09-19  #{@window} "
+         #@window.wrefresh # trying FFI 2011-09-19 
        end
     end
     ## 
