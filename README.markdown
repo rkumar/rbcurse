@@ -1,13 +1,16 @@
 # rbcurse (for ruby 1.9.x)
 
+* WARNING!! Attenzione !! 警告!!  Please move to ffi-ncurses version (1.3.x). I am no longer going to support
+the ncurses gem dependent version.
+
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
 * Status:
   1.2.x is the last version that uses ncurses gem. Henceforth, rbcurse is moving to
   version 1.3.x using ffi-ncurses. This is due to difficulty in installing ncurses gem.
-  Only bug-fixes will be done on 1.2.x.
+  Only some (major) bug-fixes will be done on 1.2.x.
   This version has been tested till ruby 1.9.2 and will not be tested with 1.9.3 onwards.
-  (You may want to check the ffi branch for the moment)
+  (You may want to check the ffiwindow branch for the moment)
 
 * 1.2.0: many additions (See CHANGELOG for details)
   - App class that wraps the environment and makes application development very easy
