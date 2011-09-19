@@ -109,6 +109,7 @@ class FileExplorer
     list.list_data_model.remove_all
     #list.list_data_model.insert 0, *fl
     list.list_data_model.insert 0, *flist
+    list.set_form_row
   end
   def sort key, reverse=false
     # remove parent before sorting, keep at top
@@ -677,9 +678,10 @@ class RFe
     @form.bind_key(?\C-f){
       @klp.mode :file
       @klp.repaint
-      ## FIXME chr could fail !!
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
-        if "cmdsuvrex".index(ch.chr) == nil
+        if ch < 33 || ch > 126
+          Ncurses.beep
+        elsif "cmdsuvrex".index(ch.chr) == nil
           Ncurses.beep
         else
           opt_file ch.chr
@@ -692,9 +694,10 @@ class RFe
       @klp.mode :dir
       @klp.repaint
       keys = @klp.get_current_keys
-      ## FIXME chr could fail !!
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
-        if !keys.include?(ch.chr) 
+        if ch < 33 || ch > 126
+          Ncurses.beep
+        elsif !keys.include?(ch.chr) 
           Ncurses.beep
         else
           opt_dir ch.chr
@@ -717,6 +720,32 @@ class RFe
     @form.bind_key(KEY_F3){
       view()
     }
+    @form.bind_key(KEY_F1){
+      #Io.view(["this is some help text","hello there"])
+      arr = []
+      arr << "  FILE BROWSER HELP  "
+      arr << "           "
+      arr << " <tab>   - switch between windows"
+      arr << " <enter> - open dir"
+      arr << " F3      - view file/dir/zip contents (toggle) "
+      arr << " F4      - edit file content"
+      arr << " <char>  - first file starting with <char>"
+      arr << "           "
+      arr << "           "
+      w = arr.max_by(&:length).length
+      #arr = ["this is some help text","hello there"]
+
+      require 'rbcurse/extras/viewer'
+      RubyCurses::Viewer.view(arr, :layout => [10,10, 4+arr.size, w+2],:close_key => KEY_RETURN, :title => "<Enter> to close", :print_footer => false) do |t|
+      # you may configure textview further here.
+      #t.suppress_borders true
+      #t.color = :black
+      #t.bgcolor = :white
+      # or
+      t.attr = :reverse
+      #t.bind_key(KEY_F1){ alert "closing up!"; throw :close }
+    end
+    }
     @form.bind_key(KEY_F4){
       edit()
     }
@@ -735,7 +764,15 @@ class RFe
     @form.bind_key(KEY_F8){
       system_popup()
     }
-    @form.bind_key(?\C-m){
+    # will no longer come here. list event has to be used
+    #@form.bind_key(?\C-m){ # listbox has eaten it up
+    @lista.list.bind(:PRESS){
+      dir = @current_list.filepath
+      if File.directory? @current_list.filepath
+        @current_list.change_dir dir
+      end
+    }
+    @listb.list.bind(:PRESS){
       dir = @current_list.filepath
       if File.directory? @current_list.filepath
         @current_list.change_dir dir
@@ -997,8 +1034,8 @@ if $0 == __FILE__
   begin
     # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    #$log = Logger.new("view.log")
-    $log = Logger.new(ENV['LOGDIR'] || "" + "view.log")
+    #$log = Logger.new("rbc13.log")
+    $log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
 
     $log.level = Logger::DEBUG
 
