@@ -42,6 +42,9 @@ KEY_LEFT  = FFI::NCurses::KEY_LEFT
 KEY_RIGHT  = FFI::NCurses::KEY_RIGHT
 KEY_UP  = FFI::NCurses::KEY_UP
 KEY_DOWN  = FFI::NCurses::KEY_DOWN
+C_LEFT = 18168
+C_RIGHT = 18167
+S_F9 = 17949126
 
 class Object
 # thanks to terminal-table for this method
@@ -191,6 +194,12 @@ module RubyCurses
           return "C-space" # i hope this is correct, just guessing
         when 160
           return "M-space" # at least on OSX Leopard now (don't remember this working on PPC)
+        when C_LEFT
+          return "C-left"
+        when C_RIGHT
+          return "C-right"
+        when S_F9
+          return "S_F9"
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->,?\M-?,?\M-/]
           others.collect! {|x| x.getbyte(0)  }  ## added 2009-10-04 14:25 for 1.9
