@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -w
+# WARNING. This file is required by appemail.rb.
 #
-# this will only work in 1.8.7, since mailread.rb is not present after that
-# supply the path of any mbox file such as ~/mbox or ~/mail/read-mail
+# Supply the path of any mbox file such as ~/mbox or ~/mail/read-mail
 # and see a listing of mails, then give a msg number and see body
 # You may run this with -EASCII-8BIT if it crashes with a UTF8 error.
 #require 'mailread' # i've copied it in here 2011-09-18 
