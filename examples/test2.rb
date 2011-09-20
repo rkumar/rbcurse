@@ -35,7 +35,7 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors test2.rb --------- #{@window} "
       @form = Form.new @window
-      @form.window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
+      @form.window.printstring 0, 30, "Demo of some Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
@@ -73,7 +73,7 @@ if $0 == __FILE__
           show_selector true
           row_selected_symbol "[X] "
           row_unselected_symbol "[ ] "
-          title "A long list"
+          title "C-x to select"
           title_attrib 'reverse'
           cell_editing_allowed true
         end
@@ -405,9 +405,7 @@ if $0 == __FILE__
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        alert("About to dump data into log file!")
-        @form.dump_data 
-        $message.value = "Dumped data to log file"
+        alert("Hope you enjoyed this demo")
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
@@ -483,7 +481,12 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
         @form.handle_key(ch)
-        #@form.repaint
+        # print_error_message was taking away cursor, not clearing properly
+        if $error_message.get_value != ""
+          alert($error_message.get_value) if $error_message.get_value != ""
+          $error_message.value = ""
+          @form.repaint
+        end
         @window.wrefresh
       end
     end
