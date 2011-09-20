@@ -496,7 +496,7 @@ module VER
     #  2010-09-13 00:22 WE should not use these any longer.
     #  Application should create a label and map a Variable named
     #  $errormessage to it. We should only update the Variable
-    def print_error_message text=$error_message
+    def print_error_message text=$error_message.get_value
       r = $error_message_row || Ncurses.LINES-1
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
 
