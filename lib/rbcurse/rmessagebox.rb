@@ -268,7 +268,11 @@ module RubyCurses
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
       #@window.printstring( row, @message_col , message, color=$reversecolor)
         #$log.debug " print_message: row #{row}, col #{@message_col} "
-      message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
+      #message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
+      # 2011-09-20 trying to take care of when user changes color and bgcolor while calling.
+      clr = @color || :black
+      bgclr = @bgcolor || :white
+      message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, 'bgcolor' => bgclr , 'color' => clr}
 
     end
     def print_input
