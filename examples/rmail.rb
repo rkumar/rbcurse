@@ -7,8 +7,6 @@
 #require 'mailread' # i've copied it in here 2011-09-18 
 require 'date'
 
-#BOLD       = "\e[1m"
-#CLEAR      = "\e[0m"
 # a sample mail formatter class
 # Does formatting just like alpine
 # Each message is passed in the format method, thus this is reused
@@ -82,13 +80,14 @@ class Mbox
   # takes a mailbox name, e,g., mbox
   # Does not update, since this is just a demo
   def initialize folder
-    raise ArgumentError, "#{folder} not a valid file" if !File.exists? folder
+    raise ArgumentError, "#{folder} not a valid file. Pls supply correct path." if !File.exists? folder
     @folder  = folder
     @unread_count = 0
     @read_count = 0
     @mboxh = {}
     @mbox_counts = {}
     @mails = nil
+    @formatter = nil
     parse
   end
   def parse &block # :yields: Mail
@@ -234,11 +233,13 @@ end
 #puts mails.size
 if __FILE__ == $PROGRAM_NAME
   MAILBOX = ARGV[0] ||  "mbox"
-  mx = Mbox.new "mbox"
+  mx = Mbox.new MAILBOX
   mx.formatted_each do |str|
     puts str
   end
   mails = mx.mails
+BOLD       = "\e[1m"
+CLEAR      = "\e[0m"
 
   # ask user for a number and print body for that
   while true
