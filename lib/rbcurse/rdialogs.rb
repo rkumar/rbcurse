@@ -29,6 +29,9 @@ require 'rbcurse/rmessagebox'
 def alert text, config={}, &block
   title = config['title'] || "Alert"
   #instance_eval &block if block_given?
+  if text.is_a? RubyCurses::Variable # added 2011-09-20 incase variable passed
+    text = text.get_value
+  end
   mb = RubyCurses::MessageBox.new nil, config  do
     title title
     message text
