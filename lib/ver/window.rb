@@ -242,7 +242,8 @@ module VER
     def getchar 
       while 1 
         ch = getch
-        #$log.debug "window getchar() GOT: #{ch}" if ch != -1
+        $log.debug "window getchar() GOT: #{ch}" if ch != -1
+        sf = @stack.first
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
           if @stack.first == 27
@@ -256,12 +257,30 @@ module VER
               @stack.clear
               return ch
             when 3
-              $log.debug " SHOULD NOT COME HERE getchar()"
+              $log.warn " SHOULD NOT COME HERE getchar():#{@stack}" 
             end
+          #elsif [181, 179, 178].include? @stack.first
+          elsif @stack == [181] || @stack == [179] || @stack == [178]
+            ch = @stack.first
+            @stack.clear
+            return ch
+          elsif @stack == [179,49] # someone trying to spoof S-F9 with M3, 1
+            ch = @stack.shift
+            return ch
           end
+          # possibly a 49 left over from M3-1
+          unless @stack.empty?
+            if @stack.size == 1
+              @stack.clear
+              return sf
+            end
+            $log.warn "something on stack getchar(): #{@stack} "
+          end
+          # comemnt after testing keys since this will be called a lot, even stack.clear is called a lot
+          $log.warn "ERROR CLEARING STACK WITH STUFF ON IT getchar():#{@stack}"  if ($log.debug? && !@stack.empty?)
           @stack.clear
           next
-        end
+        end #  -1
         # this is the ALT combination
         if @stack.first == 27
           # experimental. 2 escapes in quick succession to make exit faster
@@ -270,7 +289,7 @@ module VER
             return ch
           end
           # possible F1..F3 on xterm-color
-          if ch == 79 or ch == 91
+          if ch == 79 || ch == 91
             #$log.debug " got 27, #{ch}, waiting for one more"
             @stack << ch
             next
@@ -299,16 +318,52 @@ module VER
           # the usual Meta combos. (alt)
           ch = 128 + ch
           @stack.clear
+          # these correspond to M-5, M2 and M3 but can also be C-left. C-rt. S-F5-S-F10
+          if ch == 181 || ch == 178 || ch == 179 
+            @stack << ch
+            next
+          end
           return ch
-        end
+        elsif @stack.first == 181
+          if ch == 68
+            ch = C_LEFT
+            @stack.clear; return ch
+          elsif ch == 67
+            ch = C_RIGHT
+            @stack.clear; return ch
+          else
+            $log.error "We ate a key 181 M-5 expecting C-L or C-r, but got #{ch}. I can only return one "
+            @stack.clear;  # should we ungetch the ch FIXME
+            return 181
+          end
+        elsif @stack == [179, 49]
+          if ch == 126
+            @stack.clear; 
+            return S_F9
+          else
+            # FIXME
+            $log.error "getchar: We ate 2 keys 179 M-?, 49 expecting S-F9, but got #{ch}. I can only return one "
+          end
+        elsif sf == 179
+          if ch == 49
+            @stack << ch
+            next
+          else
+            #@stack.clear; # should i ungetch FIXME
+            @stack.shift # some combination like M-3 2
+            @stack << ch
+            return 179
+          end
+        elsif sf == 178
+        end # stack.first == 27
         # append a 27 to stack, actually one can use a flag too
         if ch == 27
           @stack << 27
           next
         end
         return ch
-      end
-    end
+      end # while
+    end # def
 
     def clear
       # return unless visible?
@@ -403,7 +458,7 @@ module VER
     # @ param att - ncurses attribute: normal, bold, reverse, blink,
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
-        prv_printstring(r,c,string, color, att )
+      prv_printstring(r,c,string, color, att )
     end
 
     ## name changed from printstring to prv_prinstring
@@ -505,9 +560,9 @@ module VER
     end
 
 
-      ## print just the border, no cleanup
-      #+ Earlier, we would clean up. Now in some cases, i'd like
-      #+ to print border over what's been done. 
+    ## print just the border, no cleanup
+    #+ Earlier, we would clean up. Now in some cases, i'd like
+    #+ to print border over what's been done. 
     # XXX this reduces 1 from width but not height !!! FIXME 
     def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
@@ -535,8 +590,8 @@ module VER
       mvwvline( row+1, col+width-1, Ncurses::ACS_VLINE, height-1)
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
-  # added RK 2009-10-08 23:57 for tabbedpanes
-  # THIS IS EXPERIMENTAL - 
+    # added RK 2009-10-08 23:57 for tabbedpanes
+    # THIS IS EXPERIMENTAL - 
     # Acco to most sources, derwin and subwin are not thoroughly tested, avoid usage
     # subwin moving and resizing not functioning.
     def derwin(layout)
@@ -586,35 +641,35 @@ module VER
       end
     end
   end
-      ##
-      # added RK 2009-10-08 23:57 for tabbedpanes
-      # THIS IS EXPERIMENTAL - 
-      # I have not called super in the initializer so any methods you try on subwin
-      # that exist in the superclass which use @window will bomb
-      # @since 0.1.3
-      class SubWindow  < VER::Window
-        attr_reader :width, :height, :top, :left
-        attr_accessor :layout
-        attr_reader   :panel   # XXX reader requires so he can del it in end
-        attr_reader   :subwin   # 
-        attr_reader   :parent   # 
+  ##
+  # added RK 2009-10-08 23:57 for tabbedpanes
+  # THIS IS EXPERIMENTAL - 
+  # I have not called super in the initializer so any methods you try on subwin
+  # that exist in the superclass which use @window will bomb
+  # @since 0.1.3
+  class SubWindow  < VER::Window
+    attr_reader :width, :height, :top, :left
+    attr_accessor :layout
+    attr_reader   :panel   # XXX reader requires so he can del it in end
+    attr_reader   :subwin   # 
+    attr_reader   :parent   # 
 
-        def initialize(parent, layout)
-          @visible = true
-          reset_layout(layout)
+    def initialize(parent, layout)
+      @visible = true
+      reset_layout(layout)
 
-          @parent = parent
-          #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
-          @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
-          $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
-          #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
-          @panel = Ncurses::Panel.new_panel(@subwin)
+      @parent = parent
+      #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
+      @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
+      $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
+      #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
+      @panel = Ncurses::Panel.new_panel(@subwin)
 
-          @window = @subwin # makes more mthods available
-          init_vars
+      @window = @subwin # makes more mthods available
+      init_vars
 
-        end
-        # no need really now 
+    end
+    # no need really now 
     def reset_layout layout
       @layout = layout # 2010-02-13 22:23 
       @height = layout[:height]
@@ -632,7 +687,7 @@ module VER
       delwin if !@window.nil? # added FFI 2011-09-7 
     end
   end
-  
+
   ##
   # Pad
   # This is EXPERIMENTAL
@@ -739,7 +794,7 @@ module VER
 
     ## added user setting screens max row and col (e.g splitpanes first component)
     def set_screen_max_row_col mr, mc
-        $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{@screen_maxrow}, #{@screen_maxcol}  "
+      $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{@screen_maxrow}, #{@screen_maxcol}  "
       # added || check on 2010-01-09 18:39 since crashing if mr > sh + top ..
       # I removed the check, since it results in a blank area on screen since the 
       # widget has not expanded itself. Without the check it will  crash on copywin so you
@@ -772,7 +827,7 @@ module VER
     def smaxcol
       #$log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 "
       #@swidth + @left -1
-#      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
+      #      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
       @screen_maxcol || @swidth + @left -1 - @pmincol
     end
     ##
@@ -812,12 +867,12 @@ module VER
       osmr = @otherwin.smaxrow() rescue osh # TRYING for windows
       osmc = @otherwin.smaxcol() rescue osw
       if smr >= osmr
-         $log.debug " adjusted smr from #{smr} to #{osmr} -1 causing issues in viewfooter"
+        $log.debug " adjusted smr from #{smr} to #{osmr} -1 causing issues in viewfooter"
         smr = osmr-1 # XXX causing issues in viewport, wont print footer with this
       end
       if smr > @sheight + @top -1 -@pminrow # 2010-01-17 13:27 
-         smr = @sheight + @top -1 -@pminrow 
-         $log.debug " adjusted smr to #{smr} to prevent crash "
+        smr = @sheight + @top -1 -@pminrow 
+        $log.debug " adjusted smr to #{smr} to prevent crash "
       end
       smc = smaxcol()
       $log.debug " SMC original = #{smc} "
@@ -833,44 +888,44 @@ module VER
       # dang, this is coming up a lot. 2010-01-16 20:34 
       # the second scrollpane was one row too large in testsplit3a.rb
       if smr - @top > @padheight
-         $log.debug " fixing smr to padheight  2010-01-16 20:35 HOPE THIS DOESNT BREAK ANYTHING"
-         smr = @padheight
+        $log.debug " fixing smr to padheight  2010-01-16 20:35 HOPE THIS DOESNT BREAK ANYTHING"
+        smr = @padheight
       end
       @pminrow = 0 if @pminrow < 0
       @pmincol = 0 if @pmincol < 0
       $log.debug " COPYING #{self.name} to #{@otherwin.name} "
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} self #{self.name} "
       $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} WIN:#{@window} "
-#      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
+      #      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
       ret="-"
       #if ret == -1
-#x XXX        $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
-        $log.debug "  #{ret} otherwin copy pad H: #{osh} W: #{osw}"
-        if @top >= osh
-          $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{osh} "
-        end
-        if @left >= osw
-          $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{osw} "
-        end
-        if smr >= osh
-          $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{osh} "
-          smr = osh() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
-        end
-        if smc >= osw
-          $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{osw} "
-        end
-        if smc - @left > @padwidth
-          $log.debug "  #{ret} ERROR smcol - left  exceeds padwidth   #{smc}- #{@left}   PW: #{@padwidth} "
-        end
-        if smr - @top > @padheight
-          $log.debug "  #{ret} ERROR smr  - top  exceeds padheight   #{smr}- #{@top}   PH: #{@padheight} "
-        end
+      #x XXX        $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
+      $log.debug "  #{ret} otherwin copy pad H: #{osh} W: #{osw}"
+      if @top >= osh
+        $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{osh} "
+      end
+      if @left >= osw
+        $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{osw} "
+      end
+      if smr >= osh
+        $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{osh} "
+        smr = osh() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
+      end
+      if smc >= osw
+        $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{osw} "
+      end
+      if smc - @left > @padwidth
+        $log.debug "  #{ret} ERROR smcol - left  exceeds padwidth   #{smc}- #{@left}   PW: #{@padwidth} "
+      end
+      if smr - @top > @padheight
+        $log.debug "  #{ret} ERROR smr  - top  exceeds padheight   #{smr}- #{@top}   PH: #{@padheight} "
+      end
       ret = @window.copywin(@otherwin.get_window,@pminrow,@pmincol, @top, @left, smr, smc, 0)
       $log.debug " copywin ret #{ret} "
-        # 2010-01-11 19:42 one more cause of -1 coming is that padheight (actual height which never
-        # changes unless pad increases) or padwidth is smaller than area being printed. Solution: increase 
-        # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
-        # exceed padheight
+      # 2010-01-11 19:42 one more cause of -1 coming is that padheight (actual height which never
+      # changes unless pad increases) or padwidth is smaller than area being printed. Solution: increase 
+      # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
+      # exceed padheight
       #end
       @modified = false
       return ret
