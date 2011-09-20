@@ -405,7 +405,7 @@ if $0 == __FILE__
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        alert("Hope you enjoyed this demo")
+        alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
@@ -483,7 +483,7 @@ if $0 == __FILE__
         @form.handle_key(ch)
         # print_error_message was taking away cursor, not clearing properly
         if $error_message.get_value != ""
-          alert($error_message.get_value) if $error_message.get_value != ""
+          alert($error_message) if $error_message.get_value != ""
           $error_message.value = ""
           @form.repaint
         end
