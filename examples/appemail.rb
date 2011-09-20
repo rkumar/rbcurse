@@ -16,7 +16,7 @@ def testnumberedmenu
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
   $log.debug "17 We got #{str.class} "
-  say "We got #{str} "
+  say "We got #{str} " # will get overwritten by message() as soon as repaint happens
 end
 def testdisplay_list
   # scrollable list
@@ -71,7 +71,7 @@ App.new do
   @tv = nil
   borderattrib = :reverse
   @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
-  message "Press F1 to exit ...................................................."
+  message "Press F10 to exit ...................................................."
 
 
   stack :margin_top => 1, :margin => 0, :width => :EXPAND do
