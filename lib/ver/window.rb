@@ -3,23 +3,36 @@ require 'ver/panel'
 module VER
   class Window 
     attr_reader :width, :height, :top, :left
-    attr_accessor :layout
+    attr_accessor :layout # hash containing hwtl
     attr_reader   :panel   # reader requires so he can del it in end
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     attr_accessor :modified # has it been modified and may need a refresh
     attr_reader   :bottomline  # experimental here 2010-11-03 22:19 
 
-    def initialize(layout)
+    # @param [Array, Hash] window coordinates (ht, w, top, left)
+    # or 
+    # @param [int, int, int, int] window coordinates (ht, w, top, left)
+    # 2011-09-21 allowing array, or 4 ints,  in addition to hash @since 1.3.1
+    def initialize(*args)
+
+      case args.size
+      when 1
+        case args[0]
+        when Array, Hash
+         layout = args[0]
+        else
+          raise ArgumentError, "Window expects 4 ints, array of 4 ints, or Hash in constructor"
+        end
+      when 4
+        layout = { :height => args[0], :width => args[1], :top => args[2], :left => args[3] }
+      end
+
       @visible = true
       reset_layout(layout)
 
-      #@window = Ncurses::WINDOW.new(height, width, top, left)
-      #@window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
-      @window = FFI::NCurses.newwin(height, width, top, left) # added FFI 2011-09-6 
-      #@panel = Ncurses::Panel.new_panel(@window)
+      @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
-      ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1 # ask (bottomline) uses 0 as default so you can have mismatch. XXX
@@ -51,6 +64,7 @@ module VER
     # not used as yet
     # this is an alternative constructor
     # created if you don't want to create a hash first
+    #  2011-09-21 V1.3.1 You can now send an array to Window constructor
     def self.create_window(h=0, w=0, t=0, l=0)
       layout = { :height => h, :width => w, :top => t, :left => l }
       @window = Window.new(layout)
@@ -191,6 +205,7 @@ module VER
       print(string.ljust(width))
     end
 
+    # @unused, pls remove
     def show_colored_chunks(chunks)
       return unless visible?
       chunks.each do |color, chunk|
@@ -239,6 +254,8 @@ module VER
     # ALT combinations also send a 27 before the actual key
     # Please test with above combinations before using on your terminal
     # added by rkumar 2008-12-12 23:07 
+    #  2011-09-21 I added some dirty suppose for Control-left etc in 1.2.0 which i
+    #  should not have. In any case that needs to use extended_names and tigetstr etc
     def getchar 
       while 1 
         ch = getch
@@ -373,10 +390,13 @@ module VER
 
     # setup and reset
 
+    ## allow user to send an array
+    # I am tired of the hash layout (taken from ver).
     def reset_layout(layout)
       case layout
       when Array
         @height, @width, @top, @left = *layout
+        @layout = { :height => @height, :width => @width, :top => @top, :left => @top }
       when Hash
         @layout = layout
 
