@@ -481,7 +481,8 @@ class RFe
       fp=""
     end
     @layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
-    @v_window = VER::Window.new(@layout)
+    #@v_window = VER::Window.new(@layout)
+    @v_window = VER::Window.new(wh, ww, wt, wl) # trying out new constructor
     @v_form = RubyCurses::Form.new @v_window
     @textview = TextView.new @v_form do
       name   "myView" 
