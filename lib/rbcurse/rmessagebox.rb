@@ -214,7 +214,7 @@ module RubyCurses
     def print_borders
       width = @layout[:width]
       height = @layout[:height]
-      @window.print_border_mb 1,2, height, width, $normalcolor, A_REVERSE
+      @window.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
 =begin
       start = 2
       hline = "+%s+" % [ "-"*(width-((start+1)*2)) ]
@@ -268,7 +268,11 @@ module RubyCurses
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
       #@window.printstring( row, @message_col , message, color=$reversecolor)
         #$log.debug " print_message: row #{row}, col #{@message_col} "
-      message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
+      #message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
+      # 2011-09-20 trying to take care of when user changes color and bgcolor while calling.
+      clr = @color || :black
+      bgclr = @bgcolor || :white
+      message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, 'bgcolor' => bgclr , 'color' => clr}
 
     end
     def print_input
@@ -337,9 +341,10 @@ module RubyCurses
       @layout = { :height => height, :width => width, :top => top, :left => left } 
     end
     def destroy
-      $log.debug "DESTROY : widget"
+      $log.debug "DESTROY : messagebox"
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      #Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      panel.del_panel if !panel.nil?
       @window.delwin if !@window.nil?
     end
   end

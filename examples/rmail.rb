@@ -1,14 +1,12 @@
 #!/usr/bin/env ruby -w
+# WARNING. This file is required by appemail.rb.
 #
-# this will only work in 1.8.7, since mailread.rb is not present after that
-# supply the path of any mbox file such as ~/mbox or ~/mail/read-mail
+# Supply the path of any mbox file such as ~/mbox or ~/mail/read-mail
 # and see a listing of mails, then give a msg number and see body
 # You may run this with -EASCII-8BIT if it crashes with a UTF8 error.
-require 'mailread'
+#require 'mailread' # i've copied it in here 2011-09-18 
 require 'date'
 
-#BOLD       = "\e[1m"
-#CLEAR      = "\e[0m"
 # a sample mail formatter class
 # Does formatting just like alpine
 # Each message is passed in the format method, thus this is reused
@@ -82,13 +80,14 @@ class Mbox
   # takes a mailbox name, e,g., mbox
   # Does not update, since this is just a demo
   def initialize folder
-    raise ArgumentError, "#{folder} not a valid file" if !File.exists? folder
+    raise ArgumentError, "#{folder} not a valid file. Pls supply correct path." if !File.exists? folder
     @folder  = folder
     @unread_count = 0
     @read_count = 0
     @mboxh = {}
     @mbox_counts = {}
     @mails = nil
+    @formatter = nil
     parse
   end
   def parse &block # :yields: Mail
@@ -163,14 +162,84 @@ class MboxManager
     @mails
   end
 end
+
+# The Mail class represents an internet mail message (as per RFC822, RFC2822)
+# with headers and a body. 
+class Mail
+
+  # Create a new Mail where +f+ is either a stream which responds to gets(),
+  # or a path to a file.  If +f+ is a path it will be opened.
+  #
+  # The whole message is read so it can be made available through the #header,
+  # #[] and #body methods.
+  #
+  # The "From " line is ignored if the mail is in mbox format.
+  def initialize(f)
+    unless defined? f.gets
+      f = open(f, "r")
+      opened = true
+    end
+
+    @header = {}
+    @body = []
+    begin
+      while line = f.gets()
+        line.chop!
+        # Added encode by RK since crashing with UTF-8 error
+        line = line.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+        next if /^From /=~line	# skip From-line
+        break if /^$/=~line	# end of header
+
+        if /^(\S+?):\s*(.*)/=~line
+          (attr = $1).capitalize!
+          @header[attr] = $2
+        elsif attr
+          line.sub!(/^\s*/, '')
+          @header[attr] += "\n" + line
+        end
+      end
+
+      return unless line
+
+      while line = f.gets()
+        # Added encode by RK since crashing with UTF-8 error
+        line = line.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+        #line = line.encode('ASCII-8BIT') # added RK
+        break if /^From /=~line
+        @body.push(line)
+      end
+    ensure
+      f.close if opened
+    end
+  end
+
+  # Return the headers as a Hash.
+  def header
+    return @header
+  end
+
+  # Return the message body as an Array of lines
+  def body
+    return @body
+  end
+
+  # Return the header corresponding to +field+. 
+  #
+  # Matching is case-insensitive.
+  def [](field)
+    @header[field.capitalize]
+  end
+end
 #puts mails.size
 if __FILE__ == $PROGRAM_NAME
   MAILBOX = ARGV[0] ||  "mbox"
-  mx = Mbox.new "mbox"
+  mx = Mbox.new MAILBOX
   mx.formatted_each do |str|
     puts str
   end
   mails = mx.mails
+BOLD       = "\e[1m"
+CLEAR      = "\e[0m"
 
   # ask user for a number and print body for that
   while true

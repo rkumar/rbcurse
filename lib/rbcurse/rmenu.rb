@@ -21,11 +21,11 @@ NOTE on 2010-09-10 11:40 : this interface is based on Java's and is not block fr
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -388,7 +388,7 @@ module RubyCurses
       return if @window.nil?
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
       @items.each do |item|
         #next if item == :SEPARATOR
@@ -662,7 +662,7 @@ module RubyCurses
       $log.debug "DESTRY menubar "
       @visible = false
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
       @items.each do |item|
         item.destroy

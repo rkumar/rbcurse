@@ -2,7 +2,7 @@
 #
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 #require 'rbcurse/newtabbedpane'
@@ -27,7 +27,8 @@ class TestTabbedPane
         button_type :ok
       end
       @tab1 = @tp.add_tab "&Language" 
-      f1 = @tab1.form
+      #f1 = @tab1.form
+      f1 = @tp.form @tab1
       #$radio = Variable.new
       radio1 = RadioButton.new f1 do
         #variable $radio
@@ -60,7 +61,8 @@ class TestTabbedPane
         col 5
       end
       @tab2 = @tp.add_tab "&Settings"
-      f2 = @tab2.form
+      #f2 = @tab2.form
+      f2 = @tp.form @tab2
       r = 4
       butts = [ "Use &HTTP/1.0", "Use &frames", "&Use SSL" ]
       bcodes = %w[ HTTP, FRAMES, SSL ]
@@ -74,7 +76,8 @@ class TestTabbedPane
         end
       end
       @tab3 = @tp.add_tab "&Editors"
-      f3 = @tab3.form
+      #f3 = @tab3.form
+      f3 = @tp.form @tab3
       butts = %w[ &Vim E&macs &Jed &Other ]
       bcodes = %w[ VIM EMACS JED OTHER]
       row = 4
@@ -106,7 +109,7 @@ if $0 == __FILE__
   begin
     # XXX update with new color and kb
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new("view.log")
+    $log = Logger.new("rbc13.log")
     $log.level = Logger::DEBUG
     n = TestTabbedPane.new
     n.run

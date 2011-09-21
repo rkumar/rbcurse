@@ -21,7 +21,7 @@ TODO
 
 =end
 require 'rubygems'
-require 'ncurses'
+##require 'ncurses'
 require 'logger'
 #require 'rbcurse/mapper'
 require 'rbcurse/colormap'
@@ -31,11 +31,20 @@ require 'rbcurse/io'
 
 # some of these will get overriden by ncurses when we include
 KEY_TAB    = 9
-#KEY_BTAB  = 353 # nc gives same
+KEY_F1  = FFI::NCurses::KEY_F1
+KEY_ENTER  = 10 # FFI::NCurses::KEY_ENTER gives 343
+KEY_BTAB  = 353 # nc gives same
 KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
 KEY_DELETE = 330
-KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
+KEY_BACKSPACE = KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
 KEY_CC     = 3   # C-c
+KEY_LEFT  = FFI::NCurses::KEY_LEFT
+KEY_RIGHT  = FFI::NCurses::KEY_RIGHT
+KEY_UP  = FFI::NCurses::KEY_UP
+KEY_DOWN  = FFI::NCurses::KEY_DOWN
+C_LEFT = 18168
+C_RIGHT = 18167
+S_F9 = 17949126
 
 class Object
 # thanks to terminal-table for this method
@@ -111,7 +120,7 @@ class Fixnum
    end
 end unless "a"[0] == "a"
 
-include Ncurses
+#include Ncurses XXX 2011-09-8 testing FFI
 module RubyCurses
   extend self
   include ColorMap
@@ -169,7 +178,7 @@ module RubyCurses
           return "left"
         when 261
           return "right"
-        when KEY_F1..KEY_F12
+        when FFI::NCurses::KEY_F1..FFI::NCurses::KEY_F12
           return "F"+ (keycode-264).to_s
         when 330
           return "delete"
@@ -185,6 +194,12 @@ module RubyCurses
           return "C-space" # i hope this is correct, just guessing
         when 160
           return "M-space" # at least on OSX Leopard now (don't remember this working on PPC)
+        when C_LEFT
+          return "C-left"
+        when C_RIGHT
+          return "C-right"
+        when S_F9
+          return "S_F9"
         else
           others=[?\M--,?\M-+,?\M-=,?\M-',?\M-",?\M-;,?\M-:,?\M-\,, ?\M-.,?\M-<,?\M->,?\M-?,?\M-/]
           others.collect! {|x| x.getbyte(0)  }  ## added 2009-10-04 14:25 for 1.9
@@ -291,9 +306,13 @@ module RubyCurses
         #$log.debug "called process_key #{object}, kc: #{keycode}, args  #{@key_args[keycode]}"
         if blk.is_a? Symbol
           $log.debug "SYMBOL " if $log.debug? 
-          return send(blk, *@key_args[keycode])
+          if respond_to? blk
+            return send(blk, *@key_args[keycode])
+          else
+            alert "This does not respond to #{blk.to_s} "
+          end
         else
-          $log.debug "BLOCJ " if $log.debug? 
+          $log.debug "rwidget BLOCK called _process_key " if $log.debug? 
           return blk.call object,  *@key_args[keycode]
         end
         #0
@@ -337,7 +356,7 @@ module RubyCurses
       # TODO: if an object throws a subclass of VetoException we should not catch it and throw it back for 
       # caller to catch and take care of, such as prevent LEAVE or update etc.
       def fire_handler event, object
-        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}, hdnler:#{@handler}"
+        $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}"
         if !@handler.nil?
           if @_events
             raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
@@ -349,11 +368,13 @@ module RubyCurses
             aeve = @event_args[event]
             ablk.each_with_index do |blk, ix|
               #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}, obj: #{object},args: #{aeve[ix]}"
-              $log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
+              #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
               begin
                 blk.call object,  *aeve[ix]
               rescue => ex
-                $log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
+                ## some don't have name
+                #$log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
+                $log.error "======= Error ERROR in block event #{self}:  #{event}"
                 $log.error ex
                 $log.error(ex.backtrace.join("\n")) 
                 #$error_message = "#{ex}" # changed 2010  
@@ -566,6 +587,7 @@ module RubyCurses
     end
     ##
     # default repaint method. Called by form for all widgets.
+    # XXX widget does not have display_length.
     def repaint
         r,c = rowcol
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
@@ -586,7 +608,7 @@ module RubyCurses
     def destroy
       $log.debug "DESTROY : widget #{@name} "
       panel = @window.panel
-      Ncurses::Panel.del_panel(panel) if !panel.nil?   
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
     # @deprecated pls call windows method
@@ -1221,6 +1243,9 @@ module RubyCurses
          $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
          Ncurses::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
+       else
+         $log.warn " XXX formrepaint #{@name} no refresh called  2011-09-19  #{@window} "
+         #@window.wrefresh # trying FFI 2011-09-19 
        end
     end
     ## 
@@ -1330,7 +1355,7 @@ module RubyCurses
         @active_index = ix0
         @row, @col = f.rowcol
        #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
-        @window.wmove @row, @col
+        @window.wmove @row, @col # added RK FFI 2011-09-7 
         on_enter f
         f.curpos = 0
         repaint
@@ -1603,7 +1628,8 @@ module RubyCurses
         case ch
         when -1
           return
-        when Ncurses::KEY_RESIZE # SIGWINCH
+        #when Ncurses::KEY_RESIZE # SIGWINCH
+        when FFI::NCurses::KEY_RESIZE # SIGWINCH #  FFI
           lines = Ncurses.LINES
           cols = Ncurses.COLS
           x = Ncurses.stdscr.getmaxy
@@ -1625,12 +1651,12 @@ module RubyCurses
               ret = select_next_field
               return ret if ret == :NO_NEXT_FIELD
               # alt-shift-tab  or backtab (in case Table eats backtab)
-            when KEY_BTAB, 481 ## backtab added 2008-12-14 18:41 
+            when FFI::NCurses::KEY_BTAB, 481 ## backtab added 2008-12-14 18:41 
               ret = select_prev_field
               return ret if ret == :NO_PREV_FIELD
-            when KEY_UP
+            when FFI::NCurses::KEY_UP
               select_prev_field
-            when KEY_DOWN
+            when FFI::NCurses::KEY_DOWN
               select_next_field
             #when ?\M-L.getbyte(0)
               ### trying out these for fuun and testing splitpane 2010-01-10 20:32 
@@ -1991,9 +2017,9 @@ module RubyCurses
   end
   def map_keys
     return if @keys_mapped
-    bind_key(KEY_LEFT){ cursor_backward }
-    bind_key(KEY_RIGHT){ cursor_forward }
-    bind_key(KEY_BACKSPACE){ delete_prev_char }
+    bind_key(FFI::NCurses::KEY_LEFT){ cursor_backward }
+    bind_key(FFI::NCurses::KEY_RIGHT){ cursor_forward }
+    bind_key(FFI::NCurses::KEY_BACKSPACE){ delete_prev_char }
     bind_key(127){ delete_prev_char }
     bind_key(330){ delete_curr_char }
     bind_key(?\C-a){ cursor_home }
@@ -2544,13 +2570,13 @@ module RubyCurses
     # Button
     def handle_key ch
       case ch
-      when KEY_LEFT, KEY_UP
+      when FFI::NCurses::KEY_LEFT, FFI::NCurses::KEY_UP
         return :UNHANDLED
         #  @form.select_prev_field
-      when KEY_RIGHT, KEY_DOWN
+      when FFI::NCurses::KEY_RIGHT, FFI::NCurses::KEY_DOWN
         return :UNHANDLED
         #  @form.select_next_field
-      when KEY_ENTER, 10, 13, 32  # added space bar also
+      when FFI::NCurses::KEY_ENTER, 10, 13, 32  # added space bar also
         if respond_to? :fire
           fire
         end
@@ -2764,7 +2790,9 @@ module RubyCurses
 
   def self.startup
     VER::start_ncurses
-    $log = Logger.new("view.log")
+    path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    $log = Logger.new(path)
     $log.level = Logger::DEBUG
   end
 

@@ -1,7 +1,7 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 # this program tests out various widgets.
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rwidget'
@@ -22,8 +22,8 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    #$log = Logger.new(ENV['LOGDIR'] || "" + "view.log")
-    $log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"view.log")))
+    #$log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
+    $log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window
@@ -35,7 +35,7 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors test2.rb --------- #{@window} "
       @form = Form.new @window
-      @form.window.printstring 0, 30, "Demo of Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
+      @form.window.printstring 0, 30, "Demo of some Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
@@ -73,7 +73,7 @@ if $0 == __FILE__
           show_selector true
           row_selected_symbol "[X] "
           row_unselected_symbol "[ ] "
-          title "A long list"
+          title "C-x to select"
           title_attrib 'reverse'
           cell_editing_allowed true
         end
@@ -254,7 +254,7 @@ if $0 == __FILE__
       $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
 
       # whenever updated set colorlabel and messagelabel to bold
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : nil; label.attr(attrs); message_label.attr(attrs)}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
 
       align.bind(:ENTER_ROW) {|fld| message_label.justify fld.getvalue}
       align.bind(:ENTER_ROW) {|fld| 
@@ -268,7 +268,9 @@ if $0 == __FILE__
       }
 
       # whenever updated set colorlabel and messagelabel to reverse
-      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
+      #@cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
+      # changing nil to normal since PROP CHAN handler will not fire if nil being set.
+      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
       row += 1
       radio1 = RadioButton.new @form do
         variable $radio
@@ -392,7 +394,7 @@ if $0 == __FILE__
      #item.checkbox.text "Labelcb"
      #item.text="Labelcb"
       # in next line, an explicit repaint is required since label is on another form.
-      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : nil; label.attr(att); label.repaint}
+      item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : 'normal'; label.attr(att); label.repaint}
     
       row += 2
       ok_button = Button.new @form do
@@ -403,9 +405,7 @@ if $0 == __FILE__
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        alert("About to dump data into log file!")
-        @form.dump_data 
-        $message.value = "Dumped data to log file"
+        alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
       }
 
@@ -443,7 +443,7 @@ if $0 == __FILE__
       #item=RubyCurses::MenuItem.new "Save","S"
       item = RubyCurses::MenuItem.new "Options"
       item.command() do |it|  
-        require 'testtabp'
+        require './testtabp'
         tp = TestTabbedPane.new
         tp.run
         $message.value=$config_hash.inspect
@@ -472,7 +472,7 @@ if $0 == __FILE__
       savemenu2.add(item)
       savemenu.add(savemenu2)
       # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
-      @mb.toggle_key = KEY_F2
+      @mb.toggle_key = FFI::NCurses::KEY_F2
       @form.set_menu_bar  @mb
       #@cell = CellRenderer.new "Hello", {"col" => 1, "row"=>29, "justify"=>:right, "display_length" => 30}
       # END
@@ -481,7 +481,12 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
         @form.handle_key(ch)
-        #@form.repaint
+        # print_error_message was taking away cursor, not clearing properly
+        if $error_message.get_value != ""
+          alert($error_message, {:bgcolor => :red, :color => :yellow}) if $error_message.get_value != ""
+          $error_message.value = ""
+          @form.repaint
+        end
         @window.wrefresh
       end
     end

@@ -1,21 +1,21 @@
-require 'rubygems'
 require 'ver/ncurses'
 module ColorMap
   # 2010-09-20 12:22 changed colors from string to symbol
   ## private
   # returns a color constant for a human color string
   def ColorMap.get_color_const colorstring
-    Ncurses.const_get "COLOR_#{colorstring.upcase}"
+    ret = FFI::NCurses.const_get "COLOR_#{colorstring.upcase}"
+    #raise  "color const nil ColorMap 8 " if !ret
   end
   ## private
   # creates a new color pair, puts in color map and returns color_pair
   # number
   def ColorMap.install_color fgc, bgc
-#      $log.debug " install_color found #{fgc} #{@bgc} "
+      #$log.debug " install_color found #{fgc} #{@bgc} "
       @color_id += 1
     fg = ColorMap.get_color_const fgc
     bg = ColorMap.get_color_const bgc
-    Ncurses.init_pair(@color_id, fg, bg);
+    FFI::NCurses.init_pair(@color_id, fg, bg);
     $color_map[[fgc, bgc]] = @color_id
     return @color_id
   end
@@ -36,10 +36,10 @@ module ColorMap
     fgc = fgc.to_sym if fgc.is_a? String
     bgc = bgc.to_sym if bgc.is_a? String
     if $color_map.include? [fgc, bgc]
-#      $log.debug " get_color found #{fgc} #{@bgc} "
+      #$log.debug " get_color found #{fgc} #{@bgc} "
       return $color_map[[fgc, bgc]]
     else
-#      $log.debug " get_color NOT found #{fgc} #{@bgc} "
+      #$log.debug " get_color NOT found #{fgc} #{@bgc} "
       return ColorMap.install_color fgc, bgc
     end
   end
@@ -58,7 +58,7 @@ module ColorMap
   def ColorMap.setup
     @color_id = 0
     $color_map = {}
-    Ncurses.start_color();
+    FFI::NCurses.start_color();
     # Initialize few color pairs 
     $def_fg_color = :white   # pls set these 2 for your application
     $def_bg_color = :black
@@ -92,14 +92,14 @@ module ColorMap
 end # modul
 if $0 == __FILE__
 require 'logger'
-require 'lib/ver/window'
-include Ncurses
+require 'ver/window'
+#include Ncurses # FFI 2011-09-8 
 include ColorMap
   # Initialize curses
   begin
+    $log = Logger.new("rbc13.log")
     VER::start_ncurses
     @window = VER::Window.root_window
-    $log = Logger.new("view.log")
     $log.level = Logger::DEBUG
     ColorMap.setup
 
@@ -115,7 +115,7 @@ include ColorMap
 
       
 
-      while((ch = @window.getchar()) != KEY_F1 )
+      while((ch = @window.getchar()) != FFI::NCurses::KEY_F1 )
         next if ch == -1
         break if ch == ?q.getbyte(0)
         case ch

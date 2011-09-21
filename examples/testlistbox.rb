@@ -1,5 +1,5 @@
 # this program tests out various widgets.
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rwidget'
@@ -21,7 +21,7 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
+    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window

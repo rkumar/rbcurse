@@ -16,14 +16,14 @@ Todo:
 
 =end
 require 'rubygems'
-require 'ncurses'
+##require 'ncurses' # FFI removed
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'
 require 'rbcurse/rinputdataevent'
 require 'rbcurse/listeditable'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -241,10 +241,10 @@ module RubyCurses
 
     def map_keys
       return if @keys_mapped
-      bind_key(KEY_LEFT){ cursor_backward }
-      bind_key(KEY_RIGHT){ cursor_forward }
-      bind_key(KEY_UP){ up }
-      bind_key(KEY_DOWN){ down }
+      bind_key(Ncurses::KEY_LEFT){ cursor_backward }
+      bind_key(Ncurses::KEY_RIGHT){ cursor_forward }
+      bind_key(Ncurses::KEY_UP){ up }
+      bind_key(Ncurses::KEY_DOWN){ down }
       bind_key(?\C-a){ cursor_bol }
       bind_key(?\C-e){ cursor_eol }
       bind_key(?\C-n) { scroll_forward }
@@ -297,11 +297,11 @@ module RubyCurses
         #cursor_backward
       #when KEY_RIGHT
         #cursor_forward
-      when KEY_BACKSPACE, KEY_BSPACE
+      when Ncurses.KEY_BACKSPACE, Ncurses.KEY_BSPACE
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
         end
-      when KEY_DELETE, ?\C-d.getbyte(0) # delete char
+      when Ncurses.KEY_DELETE, ?\C-d.getbyte(0) # delete char
         if @editable
           delete_curr_char 
         end

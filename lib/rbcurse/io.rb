@@ -40,8 +40,8 @@ module Io
   #def rbgetstr(win, r, c, prompt, maxlen, default, labels, validints=[], helptext="")
   def rbgetstr(win, r, c, prompt, maxlen, config={})
     #win ||= @target_window
-    $log.debug " inside rbgetstr #{win} r:#{r} c:#{c} p:#{prompt} m:#{maxlen} "
     raise "rbgetstr got no window. io.rb" if win.nil?
+    $log.debug " inside io.rb rbgetstr #{win} r:#{r} c:#{c} p:#{prompt} m:#{maxlen} #{win.name} "
     ins_mode = false
     default = config[:default] || ""
     prompt = "#{prompt} [#{default}]: " unless default
@@ -56,7 +56,7 @@ module Io
     #x mylabels=["^G~Help  ", "^C~Cancel"]
     #x mylabels += labels if !labels.nil?
     begin
-      Ncurses.echo();
+      Ncurses.noecho(); # FFI RK 2011-09-11 seems this was causing issue of writing on top
       #x print_key_labels( 0, 0, mylabels)
       #curpos = 0
       curpos = str.length
@@ -66,7 +66,7 @@ module Io
       while true
         #ch=win.mvwgetch(r, len) # get to right of prompt - WHY  NOT WORKING ??? 
         ch=win.getchar()
-        $log.debug " rbgetstr got ch:#{ch}, str:#{str}. "
+        $log.debug "io.rb rbgetstr got ch:#{ch}, #{win} , str:#{str}, len: #{len} "
         case ch
         when 3 # -1 # C-c
           return -1, nil
@@ -74,7 +74,8 @@ module Io
           return -1, nil
         when 10, 13 # hits ENTER
           break
-        when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE # delete previous character/backspace
+        when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE, 263 # delete previous character/backspace
+          # currently hitting C-h is giving 263 instead of 8
           len -= 1 if len > prompt.length
           curpos -= 1 if curpos > 0
           str.slice!(curpos)
@@ -94,14 +95,31 @@ module Io
           curpos -= 1 if curpos > 0
           len -= 1 if len > prompt.length
           win.wmove r, c+len # since getchar is not going back on del and bs
+          win.wrefresh # FFI 2011-09-19 otherwise not showing
           next
         when KEY_RIGHT
           if curpos < str.length
             curpos += 1 #if curpos < str.length
             len += 1 
             win.wmove r, c+len # since getchar is not going back on del and bs
+            win.wrefresh # FFI 2011-09-19 otherwise not showing
           end
           next
+        when ?\C-a.getbyte(0)
+          #olen = str.length
+          #clear_this win, r, c, color, len+maxlen+1
+          #clear_line len+maxlen+1, @prompt_length
+          len -= curpos
+          curpos = 0
+          win.move r, c+len # since getchar is not going back on del and bs
+          win.wrefresh # FFI 2011-09-19 otherwise not showing
+        when ?\C-e.getbyte(0)
+          olen = str.length
+          len += (olen - curpos)
+          curpos = olen
+          #clear_line len+maxlen+1, @prompt_length
+          win.move r, c+len # since getchar is not going back on del and bs
+          win.wrefresh # FFI 2011-09-19 otherwise not showing
         when ?\M-i.getbyte(0) 
           ins_mode = !ins_mode
           next
@@ -147,6 +165,7 @@ module Io
         end
         print_this(win, prompt+str, color, r, c)
         win.wmove r, c+len # more for arrow keys, curpos may not be end
+        win.wrefresh
         prevchar = ch
       end
       str = default if str == ""
@@ -509,16 +528,10 @@ module Io
     sleep(5)
   end
   def print_help_page(filename = "TODO")
-    #require 'transactionviewer'
-    #tp = TransactionViewer.new(nil)
-    #tp.run
-    require 'panelreader'
-    tp = PanelReader.new()
-    tp.view_file(filename)
-    
-    #require 'padreader'
-    #tp = PadReader.new()
+    #require 'panelreader' obsolete used FORN and fiELD
+    #tp = PanelReader.new()
     #tp.view_file(filename)
+    
   end
   #def newaskyesno(win, askstr, default = "N", helptext="Helptext for this question")
   ## 

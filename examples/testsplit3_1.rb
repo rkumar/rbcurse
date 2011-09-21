@@ -21,7 +21,7 @@
 #               Copyright 2010, Rahul Kumar             #
 #*******************************************************#
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
@@ -35,7 +35,7 @@ if $0 == __FILE__
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
+        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
     show_caret_flag = true
 

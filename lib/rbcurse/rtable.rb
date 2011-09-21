@@ -25,7 +25,7 @@
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/table/tablecellrenderer'
@@ -34,7 +34,7 @@ require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/listselectable'
 require 'rbcurse/listkeys'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -86,7 +86,8 @@ module RubyCurses
       @col_offset = @row_offset = 1
 
       super
-      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT])
+      # added LIST event since bombing when selecting a row in table 2011-09-8 FFI
+      @_events.push(*[:TABLE_TRAVERSAL_EVENT,:TABLE_EDITING_EVENT, :LIST_SELECTION_EVENT])
       init_vars
       install_list_keys
       install_keys_bindings
@@ -1022,8 +1023,11 @@ module RubyCurses
       marker = @_first_column_print > 0 ?  Ncurses::ACS_CKBOARD : Ncurses::ACS_HLINE
       @graphic.mvwaddch @row+@height-1, @col+@_first_column_print+1, marker
     end
+    # print table header
+    # 2011-09-17 added repaint all check so that external components can triger this
+    # e.g. multi-container when it changes tables.
     def print_header
-      return unless @table_changed
+      return unless @table_changed || @repaint_all
           $log.debug " TABLE: inside printheader 2009-10-07 11:51  DDD "
 
       r,c = rowcol

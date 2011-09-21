@@ -157,7 +157,7 @@ module RubyCurses
       if @window
         begin
           panel = @window.panel
-          Ncurses::Panel.del_panel(panel) if panel
+          Ncurses::Panel.del_panel(panel.pointer) if panel
           @window.delwin
         rescue => exc
         end
@@ -248,8 +248,8 @@ module RubyCurses
         @to = ListObject.new self, text, config
       end
       yield @to if block_given?
-      @to.display_interactive
-      @to
+      @to.display_interactive # this returns the item selected
+      @to   # this will return the ListObject to the user with list and current_index
     end
     # non interactive list display - EACH CALL IS CREATING A LIST OBJECT
     def udisplay_list text, config={}
@@ -312,6 +312,7 @@ module RubyCurses
       def display_interactive
         display_content
         while !@stop
+          @window.wrefresh # FFI 2011-09-12 
           # FIXME only clear and redisplay if change has happened (repaint_require)
           handle_keys { |ch| @cw.clear; display_content }
         end
@@ -524,6 +525,7 @@ module RubyCurses
 
         #setrowcol row, nil
         @window.wmove row, c
+        @window.wrefresh   # FFI added to keep cursor display in synch with selection
       end
       def OLDbounds_check
         @start = 0 if @start < 0

@@ -22,13 +22,13 @@ NOTE:
   # TODO :  disable/hide tab ???
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
 KEY_TAB = 9
 KEY_BTAB = 353
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -112,7 +112,7 @@ module RubyCurses
     end
     # In order to get tab display as we traverse buttons, we need to tamper with KEY_DOWN
     # since that's the only way of getting down to selected tab in this case.
-    def handle_key ch
+    def handle_key ch # tabbed button
       case ch
       when  KEY_DOWN
         # form will not do a next_field, it will ignore this
@@ -299,7 +299,7 @@ module RubyCurses
     ## create a form for tab, if multiple components are to be placed inside tab.
     #  Tabbedpane has no control over placement and width etc of what's inside a form
     def form tab
-      if tab.form.nil?
+      if !tab.has_form?
         @forms << create_tab_form(tab)
         tab.form = @forms.last
       end
@@ -338,6 +338,7 @@ module RubyCurses
       _recreate_buttons if @recreate_buttons
       $log.debug " tabbedpane repaint #{@window.name} "
       @window.show
+      @window.wrefresh # trying out FFI 2011-09-19 since form not being refreshed
       #x set_buffer_modified()
     end
     def show
@@ -385,7 +386,7 @@ module RubyCurses
 
         b = @buttons.last
         b.command(b) { 
-          $log.debug " calling display form from button press #{b.name} #{b.state} "
+          $log.debug " calling tab.repaint,button_form_repaint from button press #{b.name} #{b.state} "
           # form.rep essentially sees that buttons get correct attributes
           # when triggering M-<char>. This button should get highlighted.
           tab.repaint
@@ -456,7 +457,8 @@ module RubyCurses
         # repaint form and refresh pad
         @form.repaint
       else
-        # only refresh pad
+        # only refresh pad 
+        # - 2011-09-19 I don't think this is called, prolly give an error
         @form.prefresh
       end
     end
@@ -632,7 +634,7 @@ module RubyCurses
       attr_accessor :text
       attr_reader :config
       attr_reader :component
-      attr_accessor :form
+      #attr_accessor :form
       attr_accessor :parent_component
       attr_accessor :index
       def initialize text, parent_component,  aconfig={}, &block
@@ -661,13 +663,18 @@ module RubyCurses
       end
       # tab should handle key instead of TP.
       # Pass to component or form
-      def handle_key ch
+      def handle_key ch # Tab
         kh = @component || @form
         ret = kh.handle_key(ch)
+       $log.debug "DEBUG : handle_key Tab got ret #{ret} "
         # forms seem to returning a nil when the pad has been updated. We need to copy it
         ret ||= 0
         if ret == 0 
           @component.repaint if @component
+          $log.debug "DEBUG calling display form(false) from handle_key XXX" if @form
+          display_form false if @form
+        elsif ret != :UNHANDLED # FFI trying out, since forms with components not displaying changes
+          # since moving to FFI. 
           display_form false if @form
         end
         # XXX i need to call repaint of compoent if updated !!
@@ -675,6 +682,7 @@ module RubyCurses
       end
       def repaint # Tab
         if @form
+          $log.debug "DEBUG calling display form(true) from repaint XXX" if $log.debug?
           display_form
         elsif @component
           # we ask the component to paint its buffer only, no actual repainting
@@ -706,7 +714,7 @@ module RubyCurses
           if !@form.nil?
             # move to first field of existing form
             #@current_form = @current_tab.form # 2010-02-27 20:22 
-            $log.debug " calling display form from handle_key NO_NEXT_FIELD: #{first_last} "
+            $log.debug " calling display form(true) from handle_key NO_NEXT_FIELD: #{first_last} "
             first_last == :FIRST ? @form.req_first_field : @form.req_last_field
             display_form
           else 
@@ -734,7 +742,7 @@ module RubyCurses
       end
       pc = @parent_component
       form.repaint if flag #   added 2009-11-03 23:27  paint widgets in inside form
-      $log.debug " TP display form before pad copy: #{pad.name}, set_backing: #{form}: #{form.name} parent: #{@parent_component} : #{pc.row} , #{pc.col}. #{pc.height} , #{pc.width}: repaint flag #{flag}   "
+      $log.debug " TP display form(#{flag})  before pad copy: #{pad.name}, set_backing: #{form}: #{form.name} parent: #{@parent_component} : #{pc.row} , #{pc.col}. #{pc.height} , #{pc.width}: repaint flag #{flag}   "
       ret = -1
       pminr = pminc = 0
       r = pc.row + 2
@@ -747,6 +755,28 @@ module RubyCurses
       $log.debug " display form after pad copy #{ret}. #{form.name} "
     end
 
+    # 2011-09-19 @since 1.3.0 changed so that calling form throws an exception
+    # if it's nil. Please use Tabbedpane's form() to get a form. This throws an exception
+    # so i can catch old programs that use the incorrect method
+    def form(*val)
+      if val.empty?
+        return @form if @form
+        raise "Form is nil. You may be using deprecated method. Use @tp.form, not @tab.form"
+      else
+        #raise ArgumentError "form should be ... " if val[0] ...
+        oldvalue = @form
+        @form = val[0]
+      end
+      self
+    end
+    # used by TP to set form
+    def form=(val)
+      @form = val
+    end
+    # used by TP to check form, since the other methods throws an exception
+    def has_form?
+      !@form.nil?
+    end
     end # class Tab
 
   end # class Tabbedpane

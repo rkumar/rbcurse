@@ -95,7 +95,7 @@ module RubyCurses
       bind_key([?\C-w,?6], :increase_current_component)
       bind_key([?\C-w,?5], :decrease_current_component)
       # this needs to be set at application level
-      bind_key(KEY_F3) {RubyCurses::FocusManager.toggle_focusable}
+      bind_key(FFI::NCurses::KEY_F3) {RubyCurses::FocusManager.toggle_focusable}
     end
     def init_vars
       @repaint_required = true
@@ -498,7 +498,7 @@ module RubyCurses
           return ret 
         end
       end
-      $log.debug "XXX VIM unahdled by comp #{comp.name} "
+      $log.debug "XXX VIM key unhandled by comp #{comp.name} "
       case ch
       when ?\C-c.getbyte(0)
         $multiplier = 0
@@ -731,6 +731,7 @@ module RubyCurses
         if v?
           case ev.type
           when KEY_RIGHT
+            $log.debug "VIMSPLIT RIGHT "
             if @rc < @width - 3
               @recalculate_splits = true
               @rc += 1

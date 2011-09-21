@@ -19,7 +19,7 @@ require 'rbcurse/tree/treecellrenderer'
 
 TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   # a representation of heirarchical data in outline form
@@ -430,7 +430,7 @@ module RubyCurses
 
       $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
       print_borders unless @suppress_borders # do this once only, unless everything changes
-      maxlen = @maxlen ||= @width-@internal_width
+      maxlen = @maxlen || @width-@internal_width
       tm = _list()
       select_default_values
       rc = row_count

@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 #require 'lib/rbcurse/rwidget'
 

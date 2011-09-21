@@ -9,41 +9,41 @@ Todo:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'ncurses'
+#require 'rubygems'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 
-require 'rbcurse/extras/bottomline'
-$tt ||= RubyCurses::Bottomline.new 
-$tt.name = "$tt"
-require 'forwardable'
-module Kernel
-  extend Forwardable
-  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause
-end
-#include Ncurses # FFI 2011-09-8 
+#include Ncurses
 include RubyCurses
 include RubyCurses::Utils
-include Io
 module RubyCurses
   extend self
 
   ##
   #
-  # @since 1.2.0
+  # @since 1.1.6
   # TODO - 
-  # / combo
-  # - popup
-  # - promptmenu
-  # - stack and flow should be objects in Form/App?, put in widget when creating
+  # what of internal objects that don't want a form !
+  # - stack and flow should be objects in Form, put in widget when creating
+  # x method: quit
   # - box / rect
+  # - animate(n) |i|
+  # x list_box :choose is the defauly
+  # x progress - like a label but fills itself, fraction
   # - para looks like a label that is more than one line, and calculates rows itself based on text
+  # x other buttons: radio, check
+  # x edit_box = textarea
+  # - combo
+  # x menu
+  # - popup
   # - multicontainer
   # - multitextview, multisplit
   # - tabbedpane
   # / table - more work regarding vim keys, also editable
   # - margin - is left offset
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
+  # - promptmenu
   #  
   
   class Widget
@@ -61,6 +61,11 @@ module RubyCurses
       bind :PRESS, *args, &block
     end
   end
+  #class Listbox
+    #def text
+      #return get_content()[@current_index]
+    #end
+  #end
   class CheckBox
     # a little dicey XXX 
     def text(*val)
@@ -71,23 +76,14 @@ module RubyCurses
       end
     end
   end
-  # This is the Application class which does the job of setting up the 
-  # environment, and closing it at the end.
   class App
     attr_reader :config
     attr_reader :form
     attr_reader :window
     attr_writer :quit_key
-    # the row on which to prompt user for any inputs
-    attr_accessor :prompt_row
 
-    extend Forwardable
-    def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list
-    #@tt = Bottomline.new @window, @message_row
-    #extend Forwardable
-    #def_delegators :@tt, :ask, :say, :agree, :choose
 
-    # TODO: i should be able to pass window coords here in config
+    # i should be able to pass window coords here in config
     # :title
     def initialize config={}, &block
       #$log.debug " inside constructor of APP #{config}  "
@@ -98,35 +94,22 @@ module RubyCurses
       @variables = {}
       # if we are creating child objects then we will not use outer form. this object will manage
       @current_object = [] 
-      @_system_commands = %w{ bind_global bind_component }
-
       init_vars
-      $log.debug "XXX APP CONFIG: #{@config}  " if $log.debug? 
       run &block
     end
     def init_vars
-      @quit_key ||= FFI::NCurses::KEY_F10
+      @quit_key ||= KEY_F1
       # actually this should be maintained inside ncurses pack, so not loaded 2 times.
       # this way if we call an app from existing program, App won't start ncurses.
       unless $ncurses_started
         init_ncurses
       end
-      $lastline = Ncurses.LINES - 1
-      @message_row = Ncurses.LINES-1
-      @prompt_row = @message_row # hope to use for ask etc
       unless $log
-        path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
-        file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
-        $log = Logger.new(path)
-        $log.level = Logger::DEBUG # change to warn when you've tested your app.
+        $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
+        $log.level = Logger::DEBUG
         colors = Ncurses.COLORS
-        $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
+        $log.debug "START #{colors} colors  --------- #{$0}"
       end
-        require 'rbcurse/extras/stdscrwindow'
-        awin = StdscrWindow.new
-        $tt.window = awin; $tt.message_row = @message_row
-      # window created in run !!!
-      #$tt.window = @window; $tt.message_row = @message_row
     end
     def logger; return $log; end
     def close
@@ -158,26 +141,6 @@ module RubyCurses
         @window.wrefresh
       end
     end
-    # if calling loop separately better to call this, since it will shut off ncurses
-    # and print error on screen.
-    def safe_loop &block
-      begin
-        loop &block
-      rescue => ex
-        $log.debug( "APP.rb rescue reached ")
-        $log.debug( ex) if ex
-        $log.debug(ex.backtrace.join("\n")) if ex
-      ensure
-        close
-        # putting it here allows it to be printed on screen, otherwise it was not showing at all.
-        if ex
-          puts "========== EXCEPTION =========="
-          p ex 
-          puts "==============================="
-          puts(ex.backtrace.join("\n")) 
-        end
-      end
-    end
     # returns a symbol of the key pressed
     # e.g. :C_c for Ctrl-C
     # :Space, :bs, :M_d etc
@@ -192,229 +155,6 @@ module RubyCurses
     def message_row row
       @message_label.row = row
     end
-    # during a process, when you wish to update status, since ordinarily the thread is busy
-    # and form does not get control back, so the window won't refresh.
-    # NOTE: use this only if +message+ is not working
-    # XXX Not sure if this is working after move to ffi-ncurses, check the demos
-    def message_immediate text
-      message text
-      @message_label.repaint
-      @window.refresh
-    end
-    # NOTE XXX using stdscr results in the screen going black if a dialog
-    # or other window is popped up, this was great but has not worked out.
-    # print directly onto stdscr so that form or window does not require repainting
-    # and cursor not messed. however, once form paints then this will be overwritten
-    # so at end of printing raw_messages, use message() for final status.
-    # Usage: application is inside a long processing loop and wishes to print ongoing status
-    # (similar to message_immediate) but faster and less involved
-    def raw_message text
-      # experimentally trying stdscr instead of label
-      scr = FFI::NCurses.stdscr
-      text = "%-80s" % text
-      Ncurses.mvprintw @message_label.row ,0, text
-      #@_stext ||= ""
-      #@_stext <<  text
-      ## appending is quite a pain, maybe we should make it separate.
-      #stext = "%-80s" % @_stext
-      #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
-      #scr.refresh() # NW w FFI XXX
-      #FFI::NCurses.refresh
-    end
-    # shows a simple progress bar on last row, using stdscr
-    # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
-    # If Array of two numbers is given then also print part/total on left of bar
-    def raw_progress arg
-      s = nil
-      case arg
-      when Array
-        #calculate percentage
-        pc = (arg[0]*1.0)/arg[1]
-        # print items/total also
-        s = "%-10s" % "(#{arg[0]}/#{arg[1]})"
-      when
-        Float
-        pc = arg
-      end
-      scr = Ncurses.stdscr
-      endcol = Ncurses.COLS-1
-      startcol = endcol - 12
-      stext = ("=" * (pc*10).to_i) 
-      text = "[" + "%-10s" % stext + "]"
-      Ncurses.mvprintw( @message_label.row ,startcol-10, s) if s
-      Ncurses.mvprintw @message_label.row ,startcol, text
-      #scr.refresh() # XXX FFI NW
-
-    end
-    # used only by LiveConsole, if enables in an app, usually only during testing.
-    def get_binding
-      return binding()
-    end
-    #
-    # suspends curses so you can play around on the shell
-    # or in cooked mode like Vim does. Expects a block to be passed.
-    # Purpose: you can print some stuff without creating a window, or 
-    # just run shell commands without coming out.
-    # NOTE: if you pass clear as true, then the screen will be cleared
-    # and you can use puts or print to print. You may have to flush.
-    # However, with clear as false, the screen will not be cleared. You
-    # will have to print using printw, and if you expect user input
-    # you must do a "system /bin/stty sane"
-    # If you print stuff, you will have to put a getch() or system("read")
-    # to pause the screen.
-    def suspend clear=true
-      return unless block_given?
-      Ncurses.def_prog_mode
-      if clear
-        Ncurses.endwin 
-        # NOTE: avoid false since screen remains half off
-        # too many issues
-      else
-        system "/bin/stty sane"
-      end
-      yield if block_given?
-      Ncurses.reset_prog_mode
-      if !clear
-        # Hope we don't screw your terminal up with this constantly.
-        VER::stop_ncurses
-        VER::start_ncurses  
-        #@form.reset_all # not required
-      end
-      @form.repaint
-      @window.wrefresh
-      Ncurses::Panel.update_panels
-    end
-    def get_all_commands
-      opts = @_system_commands.dup
-      if respond_to? :get_commands
-        opts.push(*get_commands())
-      end
-      opts
-    end
-    def display_app_help
-      if respond_to? :help_text
-        arr = help_text
-      else
-        arr = []
-        arr << "    NO HELP SPECIFIED FOR APP "
-        arr << "    "
-        arr << "     --- General help ---          "
-        arr << "    F10         -  exit application "
-        arr << "    Alt-x       -  select commands  "
-        arr << "    :           -  select commands  "
-        arr << "    "
-      end
-      case arr
-      when String
-        arr = arr.split("\n")
-      when Array
-      end
-      w = arr.max_by(&:length).length
-
-      require 'rbcurse/extras/viewer'
-      RubyCurses::Viewer.view(arr, :layout => [2, 10, [4+arr.size, 24].min, w+2],:close_key => KEY_RETURN, :title => "<Enter> to close", :print_footer => true) do |t|
-      # you may configure textview further here.
-      #t.suppress_borders true
-      #t.color = :black
-      #t.bgcolor = :white
-      # or
-      t.attr = :reverse
-      end
-    end
-    # bind a key to a method at global (form) level
-    # Note that individual component may be overriding this.
-    def bind_global
-      opts = get_all_commands
-      cmd = ask("Select a command (TAB for choices) : ", opts)
-      if cmd.nil? || cmd == ""
-        raw_message "Aborted."
-        return
-      end
-      key = []
-      str = ""
-      raw_message "Enter one or 2 keys. Finish with ENTER. Enter first key:"
-      #raw_message "Enter first key:"
-      ch = @window.getchar()
-      if [KEY_ENTER, 10, 13, ?\C-g.getbyte(0)].include? ch
-        raw_message "Aborted."
-        return
-      end
-      key << ch
-      str << keycode_tos(ch)
-      raw_message "Enter second key or hit return:"
-      ch = @window.getchar()
-      if ch == 3 || ch == ?\C-g.getbyte(0)
-        raw_message "Aborted."
-        return
-      end
-      if ch == 10 || ch == KEY_ENTER || ch == 13
-      else
-        key << ch
-        str << keycode_tos(ch)
-      end
-      if !key.empty?
-        raw_message "Binding #{cmd} to #{str} "
-        key = key[0] if key.size == 1
-        #@form.bind_key(key, cmd.to_sym) # not finding it, getting called by that comp
-        @form.bind_key(key){ send(cmd.to_sym) }
-      end
-      #message "Bound #{str} to #{cmd} "
-    end
-    def bind_component
-      # the idea here is to get the current component
-      # and bind some keys to some methods.
-      # however, how do we divine the methods we can map to
-      # and also in some cases the components itself has multiple components
-    end
-    # prompts user for a command. we need to get this back to the calling app
-    # or have some block stuff TODO
-    # Actually, this is naive, you would want to pass some values in like current data value
-    # or lines ??
-    # Also may want command completion, or help so all commands can be displayed
-    def get_command_from_user choices=["quit"]
-      #code, str = rbgetstr(@window, $lastline, 0, "", 80, :default => ":")
-      #return unless code == 0
-            @_command_history ||= Array.new
-      str = ask("Cmd: ", choices) { |q| q.default = @_previous_command; q.history = @_command_history }
-              @_command_history << str unless @_command_history.include? str
-      # shell the command
-      if str =~ /^!/
-        str = str[1..-1]
-        suspend(false) { 
-          #system(str); 
-          $log.debug "XXX STR #{str}  " if $log.debug? 
-
-          output=`#{str}`
-          system("echo ' ' ");
-          $log.debug "XXX output #{output} " if $log.debug? 
-          system("echo '#{output}' ");
-          system("echo Press Enter to continue.");
-          system("read"); 
-        }
-        return nil # i think
-      else
-        # TODO
-        # here's where we can take internal commands
-        #alert "[#{str}] string did not match :!"
-        str = str.to_s #= str[1..-1]
-        cmdline = str.split
-        cmd = cmdline.shift #.to_sym
-        return unless cmd # added 2011-09-11 FFI
-        if respond_to?(cmd, true)
-          if cmd == "close"
-            throw :close # other seg faults in del_panel window.destroy executes 2x
-          else
-            send cmd, *cmdline
-          end
-        else
-          alert "#{self.class} does not respond to #{cmd} "
-          ret = false
-          ret = execute_this(cmd, *cmdline) if respond_to?(:execute_this, true)
-          say("#{self.class} does not respond to #{cmd} ", :color_pair => $promptcolor) unless ret
-          # should be able to say in red as error
-        end
-      end
-    end
     #
     # @group methods to create widgets easily
     #
@@ -427,11 +167,32 @@ module RubyCurses
       events = [ :CHANGED,  :LEAVE, :ENTER, :CHANGE ]
       block_event = :CHANGED # LEAVE, ENTER, CHANGE
 
-      _process_args args, config, block_event, events
-      config.delete(:title)
-      _position config
-      # hope next line doesn't bonk anything
-      config[:display_length] ||= @stack.last.width if @stack.last # added here not sure 2010-11-17 18:43 
+      args.each do |arg| 
+        case arg
+        when Array
+          #puts "row, col #{arg[0]} #{arg[1]} "
+          # we can use r,c, w, h
+          row, col, display_length = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+        when Hash
+          config.merge!(arg)
+          block_event = config.delete(:block_event){ block_event }
+          raise "Invalid event. Use #{events}" unless events.include? block_event
+          #puts "hash #{config}"
+        when String
+          title = arg
+          config[:name] = title
+        end
+      end
+      if @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last.margin
+        config[:row] = @app_row
+        config[:col] = col
+        @app_row += 1
+      end
       field = Field.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       if block
@@ -446,13 +207,31 @@ module RubyCurses
       #var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
 
     def label *args
-      events = block_event = nil
+      block_event = nil
       config = {}
-      _process_args args, config, block_event, events
-      config[:text] ||= config[:name]
+
+      args.each do |arg| 
+        case arg
+        when Array
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          config[:height] = height || 1
+        when Hash
+          config.merge!(arg)
+        when String
+          config[:text] = arg
+        end
+      end
       config[:height] ||= 1
-      config.delete(:title)
-      _position(config)
+      if @instack
+        # most likely you won't have row and col. should we check or just go ahead
+        col = @stack.last.margin
+        config[:row] = @app_row
+        config[:col] = col
+        @app_row += config[:height]
+      end
       label = Label.new @form, config
       # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
       return label
@@ -463,9 +242,27 @@ module RubyCurses
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
 
-      _process_args args, config, block_event, events
-      config[:text] ||= config[:name]
-      config.delete(:title)
+      #process_args args, config, block_event, events
+      args.each do |arg| 
+        case arg
+        when Array
+          #puts "row, col #{arg[0]} #{arg[1]} "
+          # we can use r,c, w, h
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          config[:height] = height if height
+        when Hash
+          config.merge!(arg)
+          block_event = config.delete(:block_event){ block_event }
+          raise "Invalid event. Use #{events}" unless events.include? block_event
+          #puts "hash #{config}"
+        when String
+          config[:text] = arg
+          config[:name] = arg
+        end
+      end
       # flow gets precedence over stack
       _position(config)
       button = Button.new @form, config
@@ -488,15 +285,30 @@ module RubyCurses
       # TODO how to do this so he gets selected row easily
       block_event = :ENTER_ROW
 
-      _process_args args, config, block_event, events
+      # TODO abstract this into a new method so no copying
+      args.each do |arg| 
+        case arg
+        when Array
+          #puts "row, col #{arg[0]} #{arg[1]} "
+          # we can use r,c, w, h
+          row, col, display_length, height = arg
+          config[:row] = row
+          config[:col] = col
+          config[:display_length] = display_length if display_length
+          config[:height] = height if height
+        when Hash
+          config.merge!(arg)
+          block_event = config.delete(:block_event){ block_event }
+          raise "Invalid event. Use #{events}" unless events.include? block_event
+          #puts "hash #{config}"
+        when String
+          config[:name] = arg
+          config[:title] = arg
+        end
+      end
       # naive defaults, since list could be large or have very long items
       # usually user will provide
-      if !config.has_key? :height
-        ll = 0
-        ll = config[:list].length + 2 if config.has_key? :list
-        config[:height] ||= ll
-        config[:height] = 15 if config[:height] > 20
-      end
+      config[:height] ||= config[:list].length + 2
       if @current_object.empty?
         $log.debug "1 APP LB w: #{config[:width]} ,#{config[:name]} "
         config[:width] ||= @stack.last.width if @stack.last
@@ -605,26 +417,6 @@ module RubyCurses
       end
       return w
     end
-    def textview *args, &block
-      require 'rbcurse/rtextview'
-      config = {}
-      # TODO confirm events many more
-      events = [ :PRESS, :LEAVE, :ENTER ]
-      block_event = events[0]
-      _process_args args, config, block_event, events
-      config[:width] = config[:display_length] unless config.has_key? :width
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      raise "height needed for textview" if !config.has_key? :height
-      useform = nil
-      useform = @form if @current_object.empty?
-      w = TextView.new useform, config
-      if block
-        w.bind(block_event, &block)
-      end
-      return w
-    end
     # progress bar
     def progress *args, &block
       require 'rbcurse/rprogress'
@@ -711,15 +503,11 @@ module RubyCurses
     # @example
     #    hline :width => 55  
     def hline config={}
-      row = config[:row] || @app_row
+      row = @app_row
       width = config[:width] || 20
       _position config
       col = config[:col] || 1
-      @color_pair = config[:color_pair] || $datacolor
-      @attrib = config[:attrib] || Ncurses::A_NORMAL
-      @window.attron(Ncurses.COLOR_PAIR(@color_pair) | @attrib)
-      @window.mvwhline( row, col, FFI::NCurses::ACS_HLINE, width)
-      @window.attron(Ncurses.COLOR_PAIR(@color_pair) | @attrib)
+      @window.mvwhline( row, col, ACS_HLINE, width)
       @app_row += 1
     end
     def app_header title, config={}, &block
@@ -812,171 +600,6 @@ module RubyCurses
       end
       return w
     end
-    def tree *args, &block
-      require 'rbcurse/rtree'
-      config = {}
-      events = [:TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER ]
-      block_event = nil
-      _process_args args, config, block_event, events
-      config[:height] ||= 10
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = Tree.new useform, config, &block
-      return w
-    end
-    def vimsplit *args, &block
-      require 'rbcurse/rvimsplit'
-      config = {}
-      #TODO check these
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
-      block_event = nil
-      _process_args args, config, block_event, events
-      config[:height] ||= 10
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = VimSplit.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        @current_object << w
-        #instance_eval &block if block_given?
-        yield w
-        @current_object.pop
-      end
-      return w
-    end
-    # create a readonly list
-    def basiclist *args, &block
-      require 'rbcurse/rbasiclistbox'
-      config = {}
-      #TODO check these
-      events = [ :LEAVE, :ENTER, :ENTER_ROW, :LEAVE_ROW, :LIST_DATA_EVENT ]
-      # TODO how to do this so he gets selected row easily
-      block_event = :ENTER_ROW
-      _process_args args, config, block_event, events
-      # some guesses at a sensible height for listbox
-      if !config.has_key? :height
-        ll = 0
-        ll = config[:list].length + 2 if config.has_key? :list
-        config[:height] ||= ll
-        config[:height] = 15 if config[:height] > 20
-      end
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      config[:width] ||= longest_in_list(config[:list])+2
-      #config.delete :title
-      #config[:default_values] = config.delete :choose
-      config[:selection_mode] = :single unless config.has_key? :selection_mode
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = BasicListbox.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        field.bind(block_event, &block)
-      end
-      return w
-    end
-    def master_detail *args, &block
-      require 'rbcurse/extras/masterdetail'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
-      block_event = nil
-      _process_args args, config, block_event, events
-      #config[:height] ||= 10
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = MasterDetail.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        @current_object << w
-        yield_or_eval &block
-        @current_object.pop
-      end
-      return w
-    end
-    # creates a simple readonly table, that allows users to click on rows
-    # and also on the header. Header clicking is for column-sorting.
-    def tabular_widget *args, &block
-      require 'rbcurse/extras/tabularwidget'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ]
-      block_event = nil
-      _process_args args, config, block_event, events
-      config[:height] ||= 10 # not sure if this should be here
-      _position(config)
-      # if no width given, expand to stack width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = TabularWidget.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        @current_object << w
-        yield_or_eval &block
-        @current_object.pop
-      end
-      return w
-    end
-    # scrollbar attached to the right of a parent object
-    def scrollbar *args, &block
-      require 'rbcurse/extras/scrollbar'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER  ] # # none really at present
-      block_event = nil
-      _process_args args, config, block_event, events
-      raise "parent needed for scrollbar" if !config.has_key? :parent
-      useform = nil
-      useform = @form if @current_object.empty?
-      sb = Scrollbar.new useform, config
-    end
-    # divider used to resize neighbouring components TOTEST XXX
-    def divider *args, &block
-      require 'rbcurse/extras/divider'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :DRAG_EVENT  ] # # none really at present
-      block_event = nil
-      _process_args args, config, block_event, events
-      useform = nil
-      useform = @form if @current_object.empty?
-      sb = Divider.new useform, config
-    end
-    # creates a simple readonly table, that allows users to click on rows
-    # and also on the header. Header clicking is for column-sorting.
-    def combo *args, &block
-      require 'rbcurse/rcombo'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ] # XXX
-      block_event = nil
-      _process_args args, config, block_event, events
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = ComboBox.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        @current_object << w
-        yield_or_eval &block
-        @current_object.pop
-      end
-      return w
-    end
 
     # ADD new widget above this
 
@@ -987,8 +610,6 @@ module RubyCurses
     # line up vertically whatever comes in, ignoring r and c 
     # margin_top to add to margin of existing stack (if embedded) such as extra spacing
     # margin to add to margin of existing stack, or window (0)
-    # NOTE: since these coordins are calculated at start
-    # therefore if window resized i can't recalculate.
     Stack = Struct.new(:margin_top, :margin, :width)
     def stack config={}, &block
       @instack = true
@@ -996,15 +617,13 @@ module RubyCurses
       mr =  config[:margin] || 0
       # must take into account margin
       defw = Ncurses.COLS - mr
-      config[:width] = defw if config[:width] == :EXPAND
       w =   config[:width] || [50, defw].min
       s = Stack.new(mt, mr, w)
       @app_row += mt
       mr += @stack.last.margin if @stack.last
       #@stack << mr
       @stack << s
-      #instance_eval &block if block_given?
-              yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
+      instance_eval &block if block_given?
       @stack.pop
       @instack = false if @stack.empty?
       @app_row = 0 if @stack.empty?
@@ -1023,8 +642,7 @@ module RubyCurses
       col += config[:margin] || 0
       @flowstack << col
       @flowcol = col
-      #instance_eval &block if block_given?
-      yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
+      instance_eval &block if block_given?
       @flowstack.pop
       @inflow = false if @flowstack.empty?
     end
@@ -1041,100 +659,34 @@ module RubyCurses
     end
 
     # returns length of longest
-    def longest_in_list list  #:nodoc:
+    def longest_in_list list
       longest = list.inject(0) do |memo,word|
         memo >= word.length ? memo : word.length
       end    
       longest
     end    
     # returns longest item
-    def longest_in_list2 list  #:nodoc:
+    def longest_in_list2 list
       longest = list.inject(list[0]) do |memo,word|
         memo.length >= word.length ? memo : word
       end    
       longest
     end    
-
-    # if partial command entered then returns matches
-    def _resolve_command opts, cmd
-      return cmd if opts.include? cmd
-      matches = opts.grep Regexp.new("^#{cmd}")
-    end
     def run &block
       begin
 
         # check if user has passed window coord in config, else root window
         @window = VER::Window.root_window
-        #$tt.window = @window; $tt.message_row = @message_row
-        awin = @window
-        #require 'rbcurse/extras/stdscrwindow'
-        #awin = StdscrWindow.new
-        #$tt.window = awin; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
-          @form.bind_key([?\C-x, ?c]) { suspend(false) do
-            system("tput cup 26 0")
-            system("tput ed")
-            system("echo Enter C-d to return to application")
-            system (ENV['PS1']='\s-\v\$ ')
-            system(ENV['SHELL']);
-          end
-          }
-          # this is a very rudimentary default command executer, it does not 
-          # allow tab completion. App should use M-x with names of commands
-          # as in appgmail
-          @form.bind_key(?:) { 
-            str = get_command_from_user
-          }
-
-          @form.bind_key(?\M-x){
-            # TODO previous command to be default
-            opts = get_all_commands()
-            @_command_history ||= Array.new
-            # previous command should be in opts, otherwise it is not in this context
-            cmd = ask("Command: ", opts){ |q| q.default = @_previous_command; q.history = @_command_history }
-            if cmd == ""
-            else
-              @_command_history << cmd unless @_command_history.include? cmd
-              cmdline = cmd.split
-              cmd = cmdline.shift
-              # check if command is a substring of a larger command
-              if !opts.include?(cmd)
-                rcmd = _resolve_command(opts, cmd) if !opts.include?(cmd)
-                if rcmd.size == 1
-                  cmd = rcmd.first
-                else
-                  say_with_pause "Cannot resolve #{cmd}. Matches are: #{rcmd} "
-                end
-              end
-              if respond_to?(cmd, true)
-                @_previous_command = cmd
-                raw_message "calling #{cmd} "
-                begin
-                  send cmd, *cmdline
-                rescue => exc
-                  $log.debug "ERR EXC: send throwing an exception now. Duh. IMAP keeps crashing haha !! #{exc}  " if $log.debug? 
-                  if exc
-                    $log.debug( exc) 
-                    $log.debug(exc.backtrace.join("\n")) 
-                    say_with_pause exc.to_s
-                  end
-                end
-              else
-                say("Command [#{cmd}] not supported by #{self.class} ")
-              end
-            end
-          }
-          @form.bind_key(KEY_F1){ display_app_help }
           @message = Variable.new
-          @message.value = ""
-          @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
+          @message.value = "Message Comes Here"
+          @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => 24, :col => 1, :display_length => 60,  :height => 1, :color => 'cyan'}
           $error_message.update_command { @message.set_value($error_message.value) }
           if block
             begin
               #yield(self, @window, @form)
-              #instance_eval &block if block_given?
-              yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
+              instance_eval &block if block_given?
               loop
             rescue => ex
               $log.debug( "APP.rb rescue reached ")
@@ -1146,7 +698,7 @@ module RubyCurses
               if ex
                 puts "========== EXCEPTION =========="
                 p ex 
-                puts "==============================="
+                puts "=========="
                 puts(ex.backtrace.join("\n")) 
               end
             end
@@ -1160,7 +712,7 @@ module RubyCurses
     end
     # TODO
     # process args, all widgets should call this
-    def _process_args args, config, block_event, events  #:nodoc:
+    def _process_args args, config, block_event, events
       args.each do |arg| 
         case arg
         when Array
@@ -1187,7 +739,7 @@ module RubyCurses
     end # _process
     # position object based on whether in a flow or stack.
     # @app_row is prepared for next object based on this objects ht
-    def _position config  #:nodoc:
+    def _position config
       unless @current_object.empty?
         $log.debug " WWWW returning from position #{@current_object.last} "
         return
@@ -1197,11 +749,7 @@ module RubyCurses
         config[:row] = @app_row
         config[:col] = @flowcol
         $log.debug " YYYY config #{config} "
-        if config[:text]
-          @flowcol += config[:text].length + 5 # 5 came from buttons
-        else
-          @flowcol += (config[:length] || 10) + 5 # trying out for combo
-        end
+        @flowcol += config[:text].length + 5 # 5 came from buttons
       elsif @instack
         # most likely you won't have row and col. should we check or just go ahead
         col = @stack.last.margin

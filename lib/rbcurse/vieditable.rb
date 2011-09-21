@@ -130,6 +130,7 @@ module ViEditable
   # @param [int] max length of input
   # @return [0, -1] return value 0 if okay, -1 if error
   def input_string prompt="Insert: ", maxlen=80
+    #ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     #return str if ret == 0
     #return ""
