@@ -2,16 +2,17 @@
 
 * Migrating from ncurses-ruby to ffi-ncurses
 
-I have moved rbcurse to ffi-ncurses. There are currently 2 branches, ffi and ffiwindow. The ffiwindow
-branch wraps stdscr in a window, so that stdscr can be used in a windowy manner just as it was 
-when using the ncurses gem. Otherwise the two versions are quite similar. This only impacts 
-some demos and functions that use stdscr such as bottomline classes. (When you use app then this gets used).
+I have moved rbcurse to ffi-ncurses (earlier ncurses gem). 
+
+Just merged branch ffiwindow into master. If you are looking for the ncurses version, please goto
+branch rbcurse1.2.0. I am not likely to support that henceforth due to the difficulty in installing ncurses gem.
+
 
 At this moment (2011-09-15), I am using ffi-nurses 0.4.0-pre (from github). Its not yet released
-as a gem, so you'll have to download it, till Sean released the gem.
+as a gem, so you'll have to download it, till Sean releases the gem.
 
-* Status: Check branch named ffi and ffiwindow for updates. I've got a lot of stuff working. Just testing
-now. Thanks a lot to Sean O'Halpin for the ffi-ncurses gem and immediately responding 
+* Status: Succeeded in a lot of testing with ffi-ncurses.
+Thanks a lot to Sean O'Halpin for the ffi-ncurses gem and immediately responding 
 to my queries. I am testing on OSX Snow Leopard with ruby 1.9.2, TERM=screen on zsh, and also 1.9.3.
 
 * 2011-09-14 : I am thinking of using the 1.2.x version for ncurses-ruby - any final
@@ -62,16 +63,23 @@ test2.rb works - i always give it a quick run after making changes. All the test
 
    * rfe.rb is a ruby file explorer demo.
 
-   * sqlc.rb is a ruby sql client _demo_ (using testd.db at
+   * sqlm.rb is a ruby sql client _demo_ (using testd.db at
      <http://www.benegal.org/files/screen/testd.db>)
     (requires gem sqlite3-ruby)
-    sqlc.rb: uses tabbedpanes - each query opens a new tab
     sqlm.rb: uses a multi-container - each query opens a new table in the multicontainer
 
-   * testtodo.rb is a test TODO application (now using fastercsv)
-    (needs retesting - is working)
+   * alpmenu.rb - an alpine like menu screen that calls the following 2 programs
 
-   * viewtodo.rb is a test TODO viewing application (now using sqlite3). The table is readonly, some vim keys are available.
+       * testtodo.rb is a test TODO application (M-h to see popup menus)
+
+       * viewtodo.rb is a test TODO viewing application (now using sqlite3). The table is readonly, some vim keys are available.
+
+   * app.rb  - demo of the app feature. Also has progress bars (type in the textarea to see progress bar)
+
+   * appemail.rb - a larger demo of the app feature and Column Browse pattern. Uses mbox to display mails. M-x to show commands at bottom of screen. Vim and bash-like file selection and other goodies.
+
+   * appdirtree - demo of file browser using Tree on left and list on right.
+
 
 * Screenshots on 
   <http://www.benegal.org/files/screen/?M=D>   (new)
