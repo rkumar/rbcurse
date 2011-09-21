@@ -12,7 +12,7 @@
 require 'rbcurse'
 require 'rbcurse/rlistbox'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   META_KEY = 128
@@ -44,7 +44,7 @@ module RubyCurses
     def init_vars
       super
       @show_symbol ||= true
-      @COMBO_SYMBOL ||= Ncurses::ACS_DARROW #GEQUAL
+      @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL
       bind_key(KEY_UP) { previous_row }
       bind_key(KEY_DOWN) { next_row }
     end

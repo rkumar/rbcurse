@@ -16,7 +16,7 @@ require 'rbcurse/listcellrenderer'
 require 'forwardable'
 
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   ##
@@ -281,7 +281,7 @@ module RubyCurses
         @repaint_required = true
       when 27, ?\C-c.getbyte(0)
         #editing_canceled @current_index if @cell_editing_allowed
-        cancel_block # block
+        #cancel_block # block NW XXX don't think its required. 2011-09-9  FFI
         $multiplier = 0
       when @KEY_ASK_FIND_FORWARD
       # ask_search_forward
@@ -414,15 +414,17 @@ module RubyCurses
       @win_left = my_win.left
       @win_top = my_win.top
       @left_margin ||= @row_selected_symbol.length
+      # we are making sure display len does not exceed width XXX hope this does not wreak havoc elsewhere
+      _dl = [@display_length || 100, @width-2].min # 2011-09-17 RK overwriting when we move grabbar in vimsplit
 
       $log.debug "basicrlistbox repaint  #{@name} graphic #{@graphic}"
       #$log.debug "XXX repaint to_print #{@to_print_borders} "
       print_borders unless @suppress_borders # do this once only, unless everything changes
-      #maxlen = @maxlen ||= @width-2
+      #maxlen = @maxlen || @width-2
       tm = list()
       rc = row_count
       @longest_line = @width
-      $log.debug " rlistbox #{row_count} "
+      $log.debug " rbasiclistbox #{row_count}, w:#{@width} , maxlen:#{@maxlen} "
       if rc > 0     # just added in case no data passed
         tr = @toprow
         acolor = get_color $datacolor
@@ -455,6 +457,7 @@ module RubyCurses
             end
             #renderer = get_default_cell_renderer_for_class content.class.to_s
             renderer = cell_renderer()
+            renderer.display_length = _dl # 2011-09-17 RK overwriting when we move grabbar in vimsplit
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
           else
             # clear rows
@@ -495,7 +498,11 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     def truncate content # :nodoc:
-      maxlen = @maxlen ||= @width-2
+      maxlen = @maxlen || @width-2
+      if maxlen == 0 # (otherwise it becoems -1 below)
+        content.replace ""
+        return
+      end
       if !content.nil? 
         if content.length > maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line

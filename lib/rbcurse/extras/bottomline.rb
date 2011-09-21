@@ -1076,7 +1076,7 @@ module RubyCurses
       #win.mvprintw(x, y, "%-40s" % text);
       win.mvprintw(x, y, "%s" % text);
       win.attroff(color);
-      win.refresh
+      win.refresh # FFI NW 2011-09-9  , added back gets overwritten
     end
 
     # actual input routine, gets each character from user, taking care of echo, limit,
@@ -1094,7 +1094,7 @@ module RubyCurses
       maxlen = @limit || 100 # fixme
 
 
-      raise "rbgetstr got no window. io.rb" if win.nil?
+      raise "rbgetstr got no window. bottomline.rb" if win.nil?
       ins_mode = false
       oldstr = nil # for tab completion, origal word entered by user
       default = @default || ""
@@ -1122,7 +1122,7 @@ module RubyCurses
         entries = nil
         while true
           ch=win.getchar()
-          #$log.debug " rbgetstr got ch:#{ch}, str:#{str}. "
+          $log.debug " XXXX FFI rbgetstr got ch:#{ch}, str:#{str}. "
           case ch
           when 3 # -1 # C-c  # sometimes this causes an interrupt and crash
             return -1, nil
@@ -1131,7 +1131,8 @@ module RubyCurses
           when 10, 13 # hits ENTER, complete entry and return
             @history_list.push str
             break
-          when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE # delete previous character/backspace
+          when ?\C-h.getbyte(0), ?\C-?.getbyte(0), KEY_BSPACE, 263 # delete previous character/backspace
+            # C-h is giving 263 i/o 8. 2011-09-19 
             len -= 1 if len > @prompt_length
             curpos -= 1 if curpos > 0
             str.slice!(curpos)
@@ -1149,13 +1150,13 @@ module RubyCurses
           when KEY_LEFT
             curpos -= 1 if curpos > 0
             len -= 1 if len > @prompt_length
-            win.wmove r, c+len # since getchar is not going back on del and bs
+            win.move r, c+len # since getchar is not going back on del and bs wmove to move FFIWINDOW
             next
           when KEY_RIGHT
             if curpos < str.length
               curpos += 1 #if curpos < str.length
               len += 1 
-              win.wmove r, c+len # since getchar is not going back on del and bs
+              win.move r, c+len # since getchar is not going back on del and bs
             end
             next
           when ?\C-a.getbyte(0)
@@ -1163,13 +1164,13 @@ module RubyCurses
             clear_line len+maxlen+1, @prompt_length
             len -= curpos
             curpos = 0
-            win.wmove r, c+len # since getchar is not going back on del and bs
+            win.move r, c+len # since getchar is not going back on del and bs
           when ?\C-e.getbyte(0)
             olen = str.length
             len += (olen - curpos)
             curpos = olen
             clear_line len+maxlen+1, @prompt_length
-            win.wmove r, c+len # since getchar is not going back on del and bs
+            win.move r, c+len # since getchar is not going back on del and bs
 
           when ?\M-i.getbyte(0) 
             ins_mode = !ins_mode
@@ -1310,7 +1311,10 @@ module RubyCurses
             begin
               cpentries = @change_proc.call(str) if @change_proc # added 2010-11-09 23:28 
             rescue => exc
-              $log.debug "bottomline: change_proc EXC #{exc} " if $log.debug? 
+              $log.error "bottomline: change_proc EXC #{exc} " if $log.debug? 
+              $log.error( exc) if exc
+              $log.error(exc.backtrace.join("\n")) if exc
+              Ncurses.error
             end
             print_str(str, :y => @prompt_length+0)
           when false
@@ -1318,9 +1322,11 @@ module RubyCurses
           else
             print_str(@question.echo * str.length, :y => @prompt_length+0)
           end
-          win.wmove r, c+len # more for arrow keys, curpos may not be end
+          win.move r, c+len # more for arrow keys, curpos may not be end
           prevchar = ch
         end
+              $log.debug "XXXW bottomline: after while loop"
+
         str = default if str == ""
       ensure
         Ncurses.noecho();
@@ -1416,10 +1422,12 @@ module RubyCurses
           val = list1[ret-1]
           if val.is_a? Array
             retval << val[0]
+            $log.debug "NL: #{retval} "
             list1 = val[1..-1]
             rc.clear
           else
             retval << val
+            $log.debug "NL1: #{retval} "
             break
           end
         end
@@ -1428,6 +1436,7 @@ module RubyCurses
         rc = nil
       end
       #list1[ret-1]
+            $log.debug "NL2: #{retval} , #{retval.class} "
       retval
     end
     # Allows a selection in which options are shown over prompt. As user types
@@ -1456,6 +1465,7 @@ module RubyCurses
       begin
         w = rc.window
         rc.display_menu list1
+        # earlier wmove bombed, now move is (window.rb 121)
         str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
         # need some validation here that its in the list TODO
       ensure
@@ -1467,7 +1477,7 @@ module RubyCurses
       require 'rbcurse/rcommandwindow'
       ht = config[:height] || 15
       layout = { :height => ht, :width => Ncurses.COLS-1, :top => Ncurses.LINES-ht+1, :left => 0 }
-      rc = CommandWindow.new nil, :layout => layout, :box => true
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
       w = rc.window
       #rc.text "There was a quick  brown fox who ran over the lazy dog and then went over the moon over and over again and again"
       rc.display_interactive(text) { |l|
@@ -1477,6 +1487,8 @@ module RubyCurses
       rc = nil
     end
     #def display_list_interactive text, config={}
+    # returns a ListObject since you may not know what the list itself contained
+    # You can do ret.list[ret.current_index] to get value
     def display_list text, config={}
       require 'rbcurse/rcommandwindow'
       ht = config[:height] || 15

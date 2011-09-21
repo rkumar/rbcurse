@@ -1,5 +1,24 @@
 # rbcurse (for ruby 1.9.x)
 
+* Migrating from ncurses-ruby to ffi-ncurses
+
+I have moved rbcurse to ffi-ncurses. There are currently 2 branches, ffi and ffiwindow. The ffiwindow
+branch wraps stdscr in a window, so that stdscr can be used in a windowy manner just as it was 
+when using the ncurses gem. Otherwise the two versions are quite similar. This only impacts 
+some demos and functions that use stdscr such as bottomline classes. (When you use app then this gets used).
+
+At this moment (2011-09-15), I am using ffi-nurses 0.4.0-pre (from github). Its not yet released
+as a gem, so you'll have to download it, till Sean released the gem.
+
+* Status: Check branch named ffi and ffiwindow for updates. I've got a lot of stuff working. Just testing
+now. Thanks a lot to Sean O'Halpin for the ffi-ncurses gem and immediately responding 
+to my queries. I am testing on OSX Snow Leopard with ruby 1.9.2, TERM=screen on zsh, and also 1.9.3.
+
+* 2011-09-14 : I am thinking of using the 1.2.x version for ncurses-ruby - any final
+bug fixes etc, and releasing a 1.2.x gem. See the rbcurse1.2.0 branch for more updates.
+Also, using 1.3.x and beyond for the ffi-ncurses version. Will start with a pre-release gem and
+then do a final after some testing.
+
 * Version that works with ruby 1.9 (backward compatible with 1.8.7)
 
 * 1.2.0: many additions (See CHANGELOG for details)
@@ -398,7 +417,7 @@ STEP 2.
 
    `gem install rbcurse`
 
- Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named view.log. If the examples folder is readonly, you will have to set `LOGDIR` to a writable folder as below.
+ Now go to the the `examples` folder and execute some examples. Each sample writes to a log file named rbc13.log (earlier view.log). If the examples folder is readonly, you will have to set `LOGDIR` to a writable folder as below.
 
     cd examples 
     ruby test2.rb

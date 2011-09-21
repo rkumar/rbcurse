@@ -245,7 +245,7 @@ App.new do
   @tv = nil
   borderattrib = :reverse
   @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
-  message "Press F1 to exit ...................................................."
+  message "Press F10 to exit ...................................................."
 
 
      

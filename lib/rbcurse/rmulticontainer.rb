@@ -9,11 +9,11 @@
 
 =end
 #require 'rubygems'
-#require 'ncurses'
+##require 'ncurses'
 #require 'logger'
 require 'rbcurse'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -37,10 +37,15 @@ module RubyCurses
     end
     def init_vars
       super
+      # the following allows us to navigate buffers with :bn :bp etc (with Alt pressed)
       bind_key(?\M-:, :buffer_menu)
+      bind_key(?\M-;, :buffer_menu)
       # bind_key([?\C-x, ?f], :file_edit)
       bind_key([?\C-x, ?k], :delete_component)
       bind_key([?\C-x, ?\C-b], :list_components)
+      bind_key(?\M-n, :goto_next_component)
+      bind_key(?\M-p, :goto_prev_component)
+      bind_key(?\M-1, :goto_first_component)
       # easily cycle using p. n is used for next search.
       #bind_key(?p, :buffer_previous)
       @suppress_borders = false 
@@ -55,16 +60,21 @@ module RubyCurses
     ## 
     # multi-container
     def handle_key ch  #:nodoc:
-      $log.debug " MULTI handlekey #{ch}, #{@current_component}  "
+      #$log.debug " MULTI handlekey #{ch}, #{@current_component}"
       ret = :UNHANDLED
       return :UNHANDLED unless @current_component
       ret = @current_component.handle_key(ch)
-      $log.debug " MULTI = comp returned #{ret} "
+      $log.debug " MULTI = comp #{@current_component} returned #{ret} "
       if ret == :UNHANDLED
         # check for bindings, these cannot override above keys since placed at end
         begin
           ret = process_key ch, self
           $log.debug " MULTI = process_key returned #{ret} "
+          if ch > 177 && ch < 187
+            n = ch - 177
+            component_at(n)
+            # go to component n
+          end
         rescue => err
 #          $error_message = err # changed 2010 dts  
           $error_message.value = err
@@ -155,8 +165,10 @@ module RubyCurses
     end
 
     def component_at index
-      @current_component = @bmanager.element_at index
-      $log.debug " buffer_last got #{@current_component} "
+      cc = @bmanager.element_at index
+      return unless cc 
+      @current_component = cc 
+      #$log.debug " buffer_last got #{@current_component} "
       set_current_component
     end
     ##
@@ -164,14 +176,15 @@ module RubyCurses
     # @param [Widget] component
     # @param [String] title
     def add component, title
-      component.row = @row+@row_offset+1
-      component.col = @col+@col_offset+1
+      component.row = @row+@row_offset+0 # FFI changed 1 to 0 2011-09-12 
+      component.col = @col+@col_offset+0 # FFI changed 1 to 0 2011-09-12 
       component.width = @width-2
       component.height = @height-2
       component.form = @form
       component.override_graphic(@graphic)
       @current_component = @bmanager.add component, title
       set_current_component
+      set_form_row ## FFI added 2011-09-12 to get cursor at start when adding
       $log.debug " ADD got cb : #{@current_component} "
     end
     def set_current_component

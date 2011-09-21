@@ -392,7 +392,7 @@ module RubyCurses
 end # module
 
 if $0 == __FILE__
-  $log = Logger.new("view.log")
+  $log = Logger.new("rbc13.log")
   $log.level = Logger::DEBUG
      
   include RubyCurses

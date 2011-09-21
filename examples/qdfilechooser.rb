@@ -2,7 +2,7 @@
 # a quick dirty file chooser in 2 lines of code.
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'ver/ncurses'
 require 'ver/window'

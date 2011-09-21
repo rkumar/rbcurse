@@ -18,7 +18,7 @@ require 'rbcurse/listkeys'
 require 'forwardable'
 
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   ##
@@ -701,6 +701,11 @@ module RubyCurses
       $log.debug " listbox got ch #{ch}"
       #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
+      when 10,13
+        # this means you cannot just bind_key 10 or 13 like we once did
+        fire_action_event # trying out REMOVE 2011-09-16 FFI
+        $log.debug " 333 listbox catching 10,13 fire_action_event "
+        return 0
       when KEY_UP  # show previous value
         return previous_row
       when KEY_DOWN  # show previous value
@@ -779,6 +784,7 @@ module RubyCurses
               ret = set_selection_for_char ch.chr
             else
               ret = process_key ch, self
+      $log.debug "111 listbox #{@current_index} "
               @multiplier = 0
               return :UNHANDLED if ret == :UNHANDLED
             end
@@ -791,6 +797,7 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
+      $log.debug "222 listbox #{@current_index} "
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
@@ -1039,6 +1046,7 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     # if you;ve truncated the data, it could stay truncated even if lb is increased. be careful
+    # FIXME if _maxlen becomes 0 then maxlen -1 will print whole string again
     def truncate content
       _maxlen = @maxlen || @width-@internal_width
       _maxlen = @width-@internal_width if _maxlen > @width-@internal_width

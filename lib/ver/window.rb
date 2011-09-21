@@ -1,4 +1,5 @@
 require 'ver/ncurses'
+require 'ver/panel'
 module VER
   class Window 
     attr_reader :width, :height, :top, :left
@@ -13,12 +14,15 @@ module VER
       @visible = true
       reset_layout(layout)
 
-      @window = Ncurses::WINDOW.new(height, width, top, left)
-      @panel = Ncurses::Panel.new_panel(@window)
+      #@window = Ncurses::WINDOW.new(height, width, top, left)
+      #@window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
+      @window = FFI::NCurses.newwin(height, width, top, left) # added FFI 2011-09-6 
+      #@panel = Ncurses::Panel.new_panel(@window)
+      @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
-      $error_message_col ||= 1
+      $error_message_col ||= 1 # ask (bottomline) uses 0 as default so you can have mismatch. XXX
       init_vars
 
 
@@ -56,9 +60,13 @@ module VER
     def resize_with(layout)
       $log.debug " DARN ! This awready duz a resize!! if h or w or even top or left changed!!! XXX"
       reset_layout(layout)
-      @window.wresize(height, width)
+      #@window.wresize(height, width)
+      wresize(height, width)
+      #FFI::NCurses.wresize(@window,height, width)
       # this is dicey since we often change top and left in pads only for panning !! XXX
-      @window.mvwin(top, left)
+      #@window.mvwin(top, left)
+      mvwin(top, left)
+      #FFI::NCurses.mvwin(@window, top, left)
     end
 
     %w[width height top left].each do |side|
@@ -70,6 +78,21 @@ module VER
        end"
       )
     end
+    # ADDED DUE TO FFI 
+    def wrefresh
+      Ncurses.wrefresh(@window)
+    end
+    def delwin # 2011-09-7 
+      Ncurses.delwin(@window)
+    end
+    def attron *args
+      FFI::NCurses.wattron @window, *args
+    end
+    def attroff *args
+      FFI::NCurses.wattroff @window, *args
+    end
+    #
+    # ## END FFI
 
     def resize
       resize_with(@layout)
@@ -92,16 +115,64 @@ module VER
     def x=(n) move(y, n) end
     def y=(n) move(n, x) end
 
-    def move(y, x)
-      return unless @visible
-#       Log.debug([y, x] => caller[0,4])
-      @window.move(y, x)
+    #def move(y, x)
+      #return unless @visible
+##       Log.debug([y, x] => caller[0,4])
+      ##@window.wmove(y, x) # bombing since ffi-ncurses 0.4.0 (maybe it was never called
+      ##earlier. was crashing in appemail.rb testchoose.
+      #wmove y,x # can alias it
+    #end
+    # since include FFI is taking over, i need to force it here. not going into
+    # method_missing
+    def wmove y,x
+      #Ncurses.wmove @window, y, x
+      FFI::NCurses.wmove @window, y, x
+    end
+    alias :move :wmove
+
+    # while moving from ncurses-ruby to FFI need to pass window pointer
+    # for w methods as well as mvw - NOT COMING HERE due to include FFI
+    def OLDmethod_missing(meth, *args)
+      $log.debug " WWWW method missing #{meth} "
+      if meth[0,1]=="w" || meth[0,3] == "mvw"
+        $log.debug " WWWW method missing #{meth} adding window in call "
+        #return @window.send(meth, @window, *args)
+        return FFI::NCurses.send(meth, @window, *args)
+      else
+      end
+      if @window
+        if @window.respond_to? meth
+          @window.send(meth, *args)
+        else
+          FFI::NCurses.send( meth, *args)
+        end
+      else
+        FFI::NCurses.send( meth, *args)
+      end
     end
 
-    def method_missing(meth, *args)
-      @window.send(meth, *args)
+    def method_missing(name, *args)
+      name = name.to_s
+      if (name[0,2] == "mv")
+        test_name = name.dup
+        test_name[2,0] = "w" # insert "w" after"mv"
+        if (FFI::NCurses.respond_to?(test_name))
+          return FFI::NCurses.send(test_name, @window, *args)
+        end
+      end
+      test_name = "w" + name
+      if (FFI::NCurses.respond_to?(test_name))
+        return FFI::NCurses.send(test_name, @window, *args)
+      end
+      FFI::NCurses.send(name, @window, *args)
     end
-
+    def respond_to?(name)
+      name = name.to_s
+      if (name[0,2] == "mv" && FFI::NCurses.respond_to?("mvw" + name[2..-1]))
+        return true
+      end
+      FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
+    end
     def print(string, width = width)
       return unless visible?
       @window.waddnstr(string.to_s, width)
@@ -132,7 +203,7 @@ module VER
       print(strings.join("\n") << "\n")
     end
 
-    def refresh
+    def _refresh
       return unless visible?
       @window.refresh
     end
@@ -156,7 +227,8 @@ module VER
     end
 
     def getch
-      c = @window.getch
+      #c = @window.getch
+      c = Ncurses.getch
       #if c == Ncurses::KEY_RESIZE
 
     rescue Interrupt => ex
@@ -170,7 +242,8 @@ module VER
     def getchar 
       while 1 
         ch = getch
-        #$log.debug "window getchar() GOT: #{ch}" if ch != -1
+        $log.debug "window getchar() GOT: #{ch}" if ch != -1
+        sf = @stack.first
         if ch == -1
           # the returns escape 27 if no key followed it, so its SLOW if you want only esc
           if @stack.first == 27
@@ -184,12 +257,30 @@ module VER
               @stack.clear
               return ch
             when 3
-              $log.debug " SHOULD NOT COME HERE getchar()"
+              $log.warn " SHOULD NOT COME HERE getchar():#{@stack}" 
             end
+          #elsif [181, 179, 178].include? @stack.first
+          elsif @stack == [181] || @stack == [179] || @stack == [178]
+            ch = @stack.first
+            @stack.clear
+            return ch
+          elsif @stack == [179,49] # someone trying to spoof S-F9 with M3, 1
+            ch = @stack.shift
+            return ch
           end
+          # possibly a 49 left over from M3-1
+          unless @stack.empty?
+            if @stack.size == 1
+              @stack.clear
+              return sf
+            end
+            $log.warn "something on stack getchar(): #{@stack} "
+          end
+          # comemnt after testing keys since this will be called a lot, even stack.clear is called a lot
+          $log.warn "ERROR CLEARING STACK WITH STUFF ON IT getchar():#{@stack}"  if ($log.debug? && !@stack.empty?)
           @stack.clear
           next
-        end
+        end #  -1
         # this is the ALT combination
         if @stack.first == 27
           # experimental. 2 escapes in quick succession to make exit faster
@@ -198,7 +289,7 @@ module VER
             return ch
           end
           # possible F1..F3 on xterm-color
-          if ch == 79 or ch == 91
+          if ch == 79 || ch == 91
             #$log.debug " got 27, #{ch}, waiting for one more"
             @stack << ch
             next
@@ -227,16 +318,52 @@ module VER
           # the usual Meta combos. (alt)
           ch = 128 + ch
           @stack.clear
+          # these correspond to M-5, M2 and M3 but can also be C-left. C-rt. S-F5-S-F10
+          if ch == 181 || ch == 178 || ch == 179 
+            @stack << ch
+            next
+          end
           return ch
-        end
+        elsif @stack.first == 181
+          if ch == 68
+            ch = C_LEFT
+            @stack.clear; return ch
+          elsif ch == 67
+            ch = C_RIGHT
+            @stack.clear; return ch
+          else
+            $log.error "We ate a key 181 M-5 expecting C-L or C-r, but got #{ch}. I can only return one "
+            @stack.clear;  # should we ungetch the ch FIXME
+            return 181
+          end
+        elsif @stack == [179, 49]
+          if ch == 126
+            @stack.clear; 
+            return S_F9
+          else
+            # FIXME
+            $log.error "getchar: We ate 2 keys 179 M-?, 49 expecting S-F9, but got #{ch}. I can only return one "
+          end
+        elsif sf == 179
+          if ch == 49
+            @stack << ch
+            next
+          else
+            #@stack.clear; # should i ungetch FIXME
+            @stack.shift # some combination like M-3 2
+            @stack << ch
+            return 179
+          end
+        elsif sf == 178
+        end # stack.first == 27
         # append a 27 to stack, actually one can use a flag too
         if ch == 27
           @stack << 27
           next
         end
         return ch
-      end
-    end
+      end # while
+    end # def
 
     def clear
       # return unless visible?
@@ -247,13 +374,19 @@ module VER
     # setup and reset
 
     def reset_layout(layout)
-      @layout = layout
+      case layout
+      when Array
+        @height, @width, @top, @left = *layout
+      when Hash
+        @layout = layout
 
-      [:height, :width, :top, :left].each do |name|
-        instance_variable_set("@#{name}", layout_value(name))
+        [:height, :width, :top, :left].each do |name|
+          instance_variable_set("@#{name}", layout_value(name))
+        end
       end
     end
 
+    # removed ref to default_for since giving error in FFI 2011-09-8 
     def layout_value(name)
       value = @layout[name]
       default = default_for(name)
@@ -262,12 +395,15 @@ module VER
       return (value || default).to_i
     end
 
+    # this gives error since stdscr is only a pointer at this time
     def default_for(name)
       case name
       when :height, :top
-        Ncurses.stdscr.getmaxy
+        #Ncurses.stdscr.getmaxy(stdscr)
+        FFI::NCurses.LINES
       when :width, :left
-        Ncurses.stdscr.getmaxx
+        #Ncurses.stdscr.getmaxx(stdscr)
+        FFI::NCurses.COLS
       else
         0
       end
@@ -276,19 +412,19 @@ module VER
     # Ncurses panel
 
     def hide
-      Ncurses::Panel.hide_panel @panel
+      Ncurses::Panel.hide_panel @panel.pointer
       Ncurses.refresh # wnoutrefresh
       @visible = false
     end
 
     def show
-      Ncurses::Panel.show_panel @panel
+      Ncurses::Panel.show_panel @panel.pointer
       Ncurses.refresh # wnoutrefresh
       @visible = true
     end
 
     def on_top
-      Ncurses::Panel.top_panel @panel
+      Ncurses::Panel.top_panel @panel.pointer
       wnoutrefresh
     end
 
@@ -306,8 +442,10 @@ module VER
       $log.debug "win destroy start"
 
       #@panel = @window.panel if @window
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-      @window.delwin if !@window.nil?
+      # changed Ncurses::Panel to Ncurses::Panel on 2011-09-8 when moved to FFI
+      Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
+      #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
+      delwin() if !@window.nil? # added FFI 2011-09-7 
       $log.debug "win destroy end"
     end
     ## 
@@ -320,7 +458,7 @@ module VER
     # @ param att - ncurses attribute: normal, bold, reverse, blink,
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
-        prv_printstring(r,c,string, color, att )
+      prv_printstring(r,c,string, color, att )
     end
 
     ## name changed from printstring to prv_prinstring
@@ -341,15 +479,15 @@ module VER
         att = Ncurses::A_REVERSE    
       end
 
-      attron(Ncurses.COLOR_PAIR(color) | att)
+      wattron(Ncurses.COLOR_PAIR(color) | att)
       # we should not print beyond window coordinates
       # trying out on 2009-01-03 19:29 
-      width = Ncurses.COLS
+      #width = Ncurses.COLS
       # the next line won't ensure we don't write outside some bounds like table
       #string = string[0..(width-c)] if c + string.length > width
       #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
-      mvprintw(r, c, "%s", string);
-      attroff(Ncurses.COLOR_PAIR(color) | att)
+      mvwprintw(r, c, "%s", :string, string);
+      wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
     # added by rk 2008-11-29 19:01 
     # Since these methods write directly to window they are not advised
@@ -358,7 +496,7 @@ module VER
     #  2010-09-13 00:22 WE should not use these any longer.
     #  Application should create a label and map a Variable named
     #  $errormessage to it. We should only update the Variable
-    def print_error_message text=$error_message
+    def print_error_message text=$error_message.get_value
       r = $error_message_row || Ncurses.LINES-1
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
 
@@ -388,15 +526,15 @@ module VER
     ##
     # CAUTION : FOR MESSAGEBOXES ONLY !!!! XXX
     def print_border_mb row, col, height, width, color, attr
-      mvwaddch row, col, ACS_ULCORNER
-      mvwhline( row, col+1, ACS_HLINE, width-6)
+      mvwaddch row, col, Ncurses::ACS_ULCORNER
+      mvwhline( row, col+1, Ncurses::ACS_HLINE, width-6)
       mvwaddch row, col+width-5, Ncurses::ACS_URCORNER
-      mvwvline( row+1, col, ACS_VLINE, height-4)
+      mvwvline( row+1, col, Ncurses::ACS_VLINE, height-4)
 
       mvwaddch row+height-3, col, Ncurses::ACS_LLCORNER
-      mvwhline(row+height-3, col+1, ACS_HLINE, width-6)
+      mvwhline(row+height-3, col+1, Ncurses::ACS_HLINE, width-6)
       mvwaddch row+height-3, col+width-5, Ncurses::ACS_LRCORNER
-      mvwvline( row+1, col+width-5, ACS_VLINE, height-4)
+      mvwvline( row+1, col+width-5, Ncurses::ACS_VLINE, height-4)
     end
     ##
     # prints a border around a widget, CLEARING the area.
@@ -422,9 +560,9 @@ module VER
     end
 
 
-      ## print just the border, no cleanup
-      #+ Earlier, we would clean up. Now in some cases, i'd like
-      #+ to print border over what's been done. 
+    ## print just the border, no cleanup
+    #+ Earlier, we would clean up. Now in some cases, i'd like
+    #+ to print border over what's been done. 
     # XXX this reduces 1 from width but not height !!! FIXME 
     def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       att ||= Ncurses::A_NORMAL
@@ -440,20 +578,20 @@ module VER
       when 'reverse'
         att = Ncurses::A_REVERSE    
       end
-      attron(Ncurses.COLOR_PAIR(color) | att)
-      mvwaddch row, col, ACS_ULCORNER
-      mvwhline( row, col+1, ACS_HLINE, width-2)
+      wattron(Ncurses.COLOR_PAIR(color) | att)
+      mvwaddch  row, col, Ncurses::ACS_ULCORNER
+      mvwhline( row, col+1, Ncurses::ACS_HLINE, width-2)
       mvwaddch row, col+width-1, Ncurses::ACS_URCORNER
-      mvwvline( row+1, col, ACS_VLINE, height-1)
+      mvwvline( row+1, col, Ncurses::ACS_VLINE, height-1)
 
       mvwaddch row+height-0, col, Ncurses::ACS_LLCORNER
-      mvwhline(row+height-0, col+1, ACS_HLINE, width-2)
+      mvwhline(row+height-0, col+1, Ncurses::ACS_HLINE, width-2)
       mvwaddch row+height-0, col+width-1, Ncurses::ACS_LRCORNER
-      mvwvline( row+1, col+width-1, ACS_VLINE, height-1)
-      attroff(Ncurses.COLOR_PAIR(color) | att)
+      mvwvline( row+1, col+width-1, Ncurses::ACS_VLINE, height-1)
+      wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
-  # added RK 2009-10-08 23:57 for tabbedpanes
-  # THIS IS EXPERIMENTAL - 
+    # added RK 2009-10-08 23:57 for tabbedpanes
+    # THIS IS EXPERIMENTAL - 
     # Acco to most sources, derwin and subwin are not thoroughly tested, avoid usage
     # subwin moving and resizing not functioning.
     def derwin(layout)
@@ -472,6 +610,9 @@ module VER
       $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
       return v
     end
+    # This used to return an Ncurses window object, and you could call methods on it
+    # Now it returns a FFI::NCurses.window pointer which you cannot call methods on.
+    # You have to pass it to FFI::NCurses.<method>
     def get_window; @window; end
     def to_s; @name || self; end
     # use in place of mvwhline if your widget could be using a pad or window
@@ -493,42 +634,42 @@ module VER
       unless @bottomline
         require 'forwardable'
         require 'rbcurse/extras/bottomline'
-        @bottomline = Bottomline.new self, $error_message_row
+        @bottomline = RubyCurses::Bottomline.new self, $error_message_row
         @bottomline.name = "window.rb"
         extend Forwardable
         def_delegators :@bottomline, :ask, :say, :agree, :choose
       end
     end
   end
-      ##
-      # added RK 2009-10-08 23:57 for tabbedpanes
-      # THIS IS EXPERIMENTAL - 
-      # I have not called super in the initializer so any methods you try on subwin
-      # that exist in the superclass which use @window will bomb
-      # @since 0.1.3
-      class SubWindow  < VER::Window
-        attr_reader :width, :height, :top, :left
-        attr_accessor :layout
-        attr_reader   :panel   # XXX reader requires so he can del it in end
-        attr_reader   :subwin   # 
-        attr_reader   :parent   # 
+  ##
+  # added RK 2009-10-08 23:57 for tabbedpanes
+  # THIS IS EXPERIMENTAL - 
+  # I have not called super in the initializer so any methods you try on subwin
+  # that exist in the superclass which use @window will bomb
+  # @since 0.1.3
+  class SubWindow  < VER::Window
+    attr_reader :width, :height, :top, :left
+    attr_accessor :layout
+    attr_reader   :panel   # XXX reader requires so he can del it in end
+    attr_reader   :subwin   # 
+    attr_reader   :parent   # 
 
-        def initialize(parent, layout)
-          @visible = true
-          reset_layout(layout)
+    def initialize(parent, layout)
+      @visible = true
+      reset_layout(layout)
 
-          @parent = parent
-          #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
-          @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
-          $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
-          #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
-          @panel = Ncurses::Panel.new_panel(@subwin)
+      @parent = parent
+      #@subwin = @parent.get_window().derwin(@height, @width, @top, @left)
+      @subwin = @parent.get_window().subwin(@height, @width, @top, @left)
+      $log.debug "SUBWIN init #{@height} #{@width} #{@top} #{@left} "
+      #$log.debug "SUBWIN init #{@subwin.getbegx} #{@subwin.getbegy} #{@top} #{@left} "
+      @panel = Ncurses::Panel.new_panel(@subwin)
 
-          @window = @subwin # makes more mthods available
-          init_vars
+      @window = @subwin # makes more mthods available
+      init_vars
 
-        end
-        # no need really now 
+    end
+    # no need really now 
     def reset_layout layout
       @layout = layout # 2010-02-13 22:23 
       @height = layout[:height]
@@ -541,11 +682,12 @@ module VER
       # or should window do it for all subwins, or would we want to wait that long ?
       $log.debug "subwin destroy"
 
-      Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-      @window.delwin if !@window.nil?
+      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?    # FFI
+      #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
+      delwin if !@window.nil? # added FFI 2011-09-7 
     end
   end
-  
+
   ##
   # Pad
   # This is EXPERIMENTAL
@@ -652,7 +794,7 @@ module VER
 
     ## added user setting screens max row and col (e.g splitpanes first component)
     def set_screen_max_row_col mr, mc
-        $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{@screen_maxrow}, #{@screen_maxcol}  "
+      $log.debug "#{@name} set_screen_max_row_col #{mr},#{mc}. earlier #{@screen_maxrow}, #{@screen_maxcol}  "
       # added || check on 2010-01-09 18:39 since crashing if mr > sh + top ..
       # I removed the check, since it results in a blank area on screen since the 
       # widget has not expanded itself. Without the check it will  crash on copywin so you
@@ -685,7 +827,7 @@ module VER
     def smaxcol
       #$log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 "
       #@swidth + @left -1
-#      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
+      #      $log.debug "    ... niside smaxcol #{@swidth} + #{@left} -1 - #{@pmincol} "
       @screen_maxcol || @swidth + @left -1 - @pmincol
     end
     ##
@@ -725,12 +867,12 @@ module VER
       osmr = @otherwin.smaxrow() rescue osh # TRYING for windows
       osmc = @otherwin.smaxcol() rescue osw
       if smr >= osmr
-         $log.debug " adjusted smr from #{smr} to #{osmr} -1 causing issues in viewfooter"
+        $log.debug " adjusted smr from #{smr} to #{osmr} -1 causing issues in viewfooter"
         smr = osmr-1 # XXX causing issues in viewport, wont print footer with this
       end
       if smr > @sheight + @top -1 -@pminrow # 2010-01-17 13:27 
-         smr = @sheight + @top -1 -@pminrow 
-         $log.debug " adjusted smr to #{smr} to prevent crash "
+        smr = @sheight + @top -1 -@pminrow 
+        $log.debug " adjusted smr to #{smr} to prevent crash "
       end
       smc = smaxcol()
       $log.debug " SMC original = #{smc} "
@@ -746,44 +888,44 @@ module VER
       # dang, this is coming up a lot. 2010-01-16 20:34 
       # the second scrollpane was one row too large in testsplit3a.rb
       if smr - @top > @padheight
-         $log.debug " fixing smr to padheight  2010-01-16 20:35 HOPE THIS DOESNT BREAK ANYTHING"
-         smr = @padheight
+        $log.debug " fixing smr to padheight  2010-01-16 20:35 HOPE THIS DOESNT BREAK ANYTHING"
+        smr = @padheight
       end
       @pminrow = 0 if @pminrow < 0
       @pmincol = 0 if @pmincol < 0
       $log.debug " COPYING #{self.name} to #{@otherwin.name} "
       $log.debug " calling copy pad #{@pminrow} #{@pmincol}, #{@top} #{@left}, #{smr} #{smc} self #{self.name} "
       $log.debug "  calling copy pad H: #{@height} W: #{@width}, PH #{@padheight} PW #{@padwidth} WIN:#{@window} "
-#      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
+      #      $log.debug "  -otherwin target copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} OTHERWIN:#{@otherwin.name} "
       ret="-"
       #if ret == -1
-#x XXX        $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
-        $log.debug "  #{ret} otherwin copy pad H: #{osh} W: #{osw}"
-        if @top >= osh
-          $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{osh} "
-        end
-        if @left >= osw
-          $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{osw} "
-        end
-        if smr >= osh
-          $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{osh} "
-          smr = osh() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
-        end
-        if smc >= osw
-          $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{osw} "
-        end
-        if smc - @left > @padwidth
-          $log.debug "  #{ret} ERROR smcol - left  exceeds padwidth   #{smc}- #{@left}   PW: #{@padwidth} "
-        end
-        if smr - @top > @padheight
-          $log.debug "  #{ret} ERROR smr  - top  exceeds padheight   #{smr}- #{@top}   PH: #{@padheight} "
-        end
+      #x XXX        $log.debug "  #{ret} otherwin copy pad #{@otherwin.pminrow} #{@otherwin.pmincol}, #{@otherwin.top} #{@otherwin.left}, #{osmr} #{osmc} "
+      $log.debug "  #{ret} otherwin copy pad H: #{osh} W: #{osw}"
+      if @top >= osh
+        $log.debug "  #{ret} ERROR top exceeds other ht #{@top}   H: #{osh} "
+      end
+      if @left >= osw
+        $log.debug "  #{ret} ERROR left exceeds other wt #{@left}   W: #{osw} "
+      end
+      if smr >= osh
+        $log.debug "  #{ret} ERROR smrow exceeds other ht #{smr}   H: #{osh} "
+        smr = osh() -1 # testing 2010-01-31 21:47  , again 2010-02-05 20:22 
+      end
+      if smc >= osw
+        $log.debug "  #{ret} ERROR smcol exceeds other wt #{smc}   W: #{osw} "
+      end
+      if smc - @left > @padwidth
+        $log.debug "  #{ret} ERROR smcol - left  exceeds padwidth   #{smc}- #{@left}   PW: #{@padwidth} "
+      end
+      if smr - @top > @padheight
+        $log.debug "  #{ret} ERROR smr  - top  exceeds padheight   #{smr}- #{@top}   PH: #{@padheight} "
+      end
       ret = @window.copywin(@otherwin.get_window,@pminrow,@pmincol, @top, @left, smr, smc, 0)
       $log.debug " copywin ret #{ret} "
-        # 2010-01-11 19:42 one more cause of -1 coming is that padheight (actual height which never
-        # changes unless pad increases) or padwidth is smaller than area being printed. Solution: increase 
-        # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
-        # exceed padheight
+      # 2010-01-11 19:42 one more cause of -1 coming is that padheight (actual height which never
+      # changes unless pad increases) or padwidth is smaller than area being printed. Solution: increase 
+      # buffer by increasing widgets w or h. smc - left should not exceed padwidth. smr-top should not
+      # exceed padheight
       #end
       @modified = false
       return ret

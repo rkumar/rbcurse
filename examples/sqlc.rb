@@ -6,10 +6,11 @@
 # Please see bind_key statements in this app for some key bindings in table.
 # There are also key bindings in tabbedpanes and textarea's that will help alot.
 # This demo uses a tabbedpane so we can have the results of many sql statements and not
-# need to keep reissuing.
+# need to keep reissuing. The tabbed pane SUCKS, if you get in when not populated
+# you GET STUCK so press Alt-C to get out.
 #
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'sqlite3'
 require 'rbcurse'
@@ -56,6 +57,7 @@ class Datasource
   # get columns and datatypes, prefetch
   def get_data command
     @columns, *rows = @db.execute2(command)
+    $log.debug "XXX COLUMNS #{command} :  #{@columns.count}: #{@columns} "
     @content = rows
     return nil if @content.nil? or @content[0].nil?
     @datatypes = @content[0].types #if @datatypes.nil?
@@ -277,7 +279,7 @@ class Sqlc
           height tablist_ht
 #         list mylist
           list_variable $listdata
-          #selection_mode :SINGLE
+          #selection_mode :multiple
           #show_selector true
           title "Tables"
           title_attrib 'reverse'
@@ -296,28 +298,32 @@ class Sqlc
     height 15
     #         list mylist
     list_variable $coldata
-    #selection_mode :SINGLE
+    selection_mode :multiple
     #show_selector true
     title "Columns"
     title_attrib 'reverse'
     help_text "Press ENTER to append columns to sqlarea, Space to select"
   end
   ## pressing SPACE on a table populates column list with its columns so they can be selected
-  tablelist.bind_key(32) {  
-    @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
+  #tablelist.bind_key(32) {  
+  # Now space trapped at listbox level, need to use event
+  tablelist.list_selection_model().bind(:LIST_SELECTION_EVENT,tablelist) { |lsm, alist| @status_row.text = "Selected #{alist.current_index}" 
+    #@status_row.text = "Selected table #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
     ##table = table[0] if table.class==Array ## 1.9 ???
     columnlist.list_data_model.remove_all
     columnlist.list_data_model.insert 0, *@db.get_metadata(table)
   }
   ## pressing ENTER on a table runs a query on it, no need to type and SQL
-  tablelist.bind_key(13) {  
+  #tablelist.bind_key(13) {  
+  tablelist.bind(:PRESS) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
     ##table = table[0] if table.class==Array ## 1.9 ???
     run_query "select * from #{table}"
   }
-  columnlist.bind_key(13) {  
+  #columnlist.bind_key(13) {  
+  columnlist.bind(:PRESS) {  
     ## append column name to sqlarea if ENTER pressed
     column = "#{columnlist.get_content()[columnlist.current_index]}" 
     sqlarea << "#{column},"
@@ -329,7 +335,8 @@ class Sqlc
   }
   ## construct an SQL after selecting some columns in the column list
     b_construct.command { 
-    table = "#{tablelist.get_content()[tablelist.current_index]}" 
+      # current_index is wrong, we need selected_index
+    table = "#{tablelist.get_content()[tablelist.selected_index]}" 
     #table = table[0] if table.class==Array ## 1.9 ???
     indexes = columnlist.selected_rows()
     columns=[]
@@ -346,6 +353,7 @@ class Sqlc
     Ncurses::Panel.update_panels
     begin
     while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
+      break if ch == KEY_F1
       s = keycode_tos ch
       status_row.text = "Pressed #{ch} , #{s}.  Press C-q to quit, Alt-Tab for exiting table "
       @form.handle_key(ch)
@@ -415,8 +423,8 @@ if $0 == __FILE__
   begin
     # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    #$log = Logger.new("view.log")
-    $log = Logger.new(ENV['LOGDIR'] || "" + "view.log")
+    #$log = Logger.new("rbc13.log")
+    $log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
 
     $log.level = Logger::DEBUG
 

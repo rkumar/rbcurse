@@ -1,5 +1,5 @@
 require 'rbcurse/app'
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 
 # This paints a vertical white bar given row and col, and length. It also calculates and prints

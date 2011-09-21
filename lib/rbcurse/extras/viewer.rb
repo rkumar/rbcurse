@@ -3,6 +3,7 @@ require 'fileutils'
 
 # NOTE: experimental, not yet firmed up
 # If you use in application, please copy to some application folder in case i change this.
+# Can be used for print_help_page
 # TODO: add vi_keys here
 # SUGGESTIONS WELCOME.
 # @since 1.2.0
@@ -11,6 +12,8 @@ module RubyCurses
   # view filename, :close_key => KEY_RETURN
   # send data in an array
   # view Array, :close_key => KEY_RETURN, :layout => [0,0,23,80]
+  # when passing layout reserve 4 rows for window and border. So for 2 lines of text
+  # give 6 rows.
   class Viewer
     # @param filename as string or content as array
     # @yield textview object for further configuration before display
@@ -44,14 +47,27 @@ module RubyCurses
         row  0
         col  0
         width ww
-        height wh-2
+        height wh-0 # earlier 2 but seems to be leaving space.
         title fp
         title_attrib ta
         print_footer pf
         footer_attrib fa
       end
       textview.set_content content #, :WRAP_WORD
-      
+
+      t = textview
+      t.bind_key('<'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
+        f.reset_layout([f.height, f.width, f.top, c]); 
+      }
+      t.bind_key('>'){ f = t.form.window; c = f.left + 1; f.hide; f.mvwin(f.top, c); 
+        f.reset_layout([f.height, f.width, f.top, c]); f.show;
+      }
+      t.bind_key('^'){ f = t.form.window; c = f.top - 1 ; f.hide; f.mvwin(c, f.left); 
+        f.reset_layout([f.height, f.width, c, f.left]) ; f.show;
+      }
+      t.bind_key('V'){ f = t.form.window; c = f.top + 1 ; f.hide; f.mvwin(c, f.left); 
+        f.reset_layout([f.height, f.width, c, f.left]); f.show;
+      }
       # yielding textview so you may further configure or bind keys or events
       yield textview if block_given? # tentative
       v_form.repaint

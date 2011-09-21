@@ -27,7 +27,7 @@ module RubyCurses
     alias :is_row_selected :is_selected?
 
     def add_row_selection_interval ix0, ix1
-      $log.debug " def add_row_selection_interval #{ix0}, ix1"
+      $log.debug " def add_row_selection_interval #{ix0}, #{ix1}"
       # if row_selection_allowed
       @list_selection_model.add_selection_interval ix0, ix1
       @repaint_required = true

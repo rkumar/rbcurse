@@ -5,6 +5,7 @@ require './rmail'
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
 
+# this will go into top namespace so will conflict with other apps!
 def testchoose
   # list filters as you type
   $log.debug "called test1 " if $log.debug? 
@@ -14,15 +15,17 @@ def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
-  say "We got #{str} "
+  $log.debug "17 We got #{str.class} "
+  say "We got #{str} " # will get overwritten by message() as soon as repaint happens
 end
 def testdisplay_list
   # scrollable list
   str = display_list Dir.glob("t*.rb"), :title => "Select a file"
-  message "We got #{str} "
+  $log.debug "23 We got #{str} :  #{str.class} , #{str.list[str.current_index]}  "
+  message "We got #{str.list[str.current_index]} "
 end
 def testdisplay_text
-  str = display_text_interactive File.read($0), :title => "Select a file"
+  str = display_text_interactive File.read($0), :title => "#{$0}"
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
@@ -40,7 +43,7 @@ def test
   Ncurses.attron(Ncurses.COLOR_PAIR($promptcolor))
   Ncurses.mvprintw 27,0,"helllllo theeeerE                  "
   Ncurses.attroff(Ncurses.COLOR_PAIR($promptcolor))
-  scr.refresh()
+  #scr.refresh() # refresh FFI NW
 end
 def saveas1
   @tv.saveas 
@@ -67,9 +70,8 @@ App.new do
   $unread_hash = {}
   @tv = nil
   borderattrib = :reverse
-  ss = " 勿論"
-  @header = app_header "rbcurse #{ss}  1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
-  message "Press F1 to exit ...................................................."
+  @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
+  message "Press F10 to exit ...................................................."
 
 
   stack :margin_top => 1, :margin => 0, :width => :EXPAND do
@@ -104,6 +106,32 @@ App.new do
     def test1XX
       $log.debug "called test1 " if $log.debug? 
       str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
+    end
+    def help_text
+      <<-eos
+               APPEMAIL HELP 
+
+      This is some help text for appemail.
+      We are testing out this feature.
+
+      Alt-x    -   Command mode (<tab> to see commands and select)
+      :        -   Command mode
+      <Enter>  -   Display mail headers for mailbox
+                   Display body for selected header
+      F3       -   Enable sidebars in order to change size of windows (toggle)
+      F10      -   Quit application
+
+      Some commands for using bottom of screen as vim and emacs do.
+
+      testchoose       - filter directory list as you type
+      testdir          - vim style, tabbing completes matching files
+      testnumberedmenu - use menu indexes to select options
+      testdisplaylist  - display a list at bottom of screen
+      testdisplaytext  - display text at bottom
+
+      -----------------------------------------------------------------------
+      Hope you enjoyed this help.
+      eos
     end
     @vim.set_left_component @dirs
 

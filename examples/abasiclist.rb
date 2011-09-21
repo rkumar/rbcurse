@@ -20,6 +20,8 @@ App.new do
     #lb2= RubyCurses::BasicListbox.new nil, :list => list.shuffle, :justify => :center
     lb2 = basiclist :list => list.shuffle, :justify => :left, :suppress_borders => false
     s.add lb2, :SECOND
+    label({:text => "checking overwrite from list", :row => 10, :col => 60})
+    label({:text => "checking overwrite from list 1", :row => 11, :col => 60})
   end
 
 end # app

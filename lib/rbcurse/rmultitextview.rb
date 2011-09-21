@@ -12,13 +12,13 @@
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtextview'
 require 'rbcurse/listscrollable'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -258,7 +258,9 @@ module RubyCurses
     end
     def insert filename, position, title=nil
       # read up file
-      list = @source.set_content File.open(filename,"r").readlines
+      lines = File.open(filename,"r").readlines
+      $log.debug "multitextview loaded #{filename}, #{lines.size} lines " if $log.debug? 
+      list = @source.set_content lines
       # set new RBuffer
       title = filename unless title
       raise "invalid value for list, Should be an array #{list.class} " unless list.is_a? Array

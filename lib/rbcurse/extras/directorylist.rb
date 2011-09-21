@@ -83,7 +83,10 @@ module RubyCurses
       list @entries
       @list.insert 0, @_header
       @title = @current_path
-      @current_index = @_first_data_index
+      #@current_index = @_first_data_index
+      # this next line will keep the cursor on header after sorting
+      # earlier cursor would appear in header but selection would be data row
+      @current_index = @_header_row_index # FFI 2011-09-16 keeping cursor synched with selection
     end
     # called by parent's repaint
     def convert_value_to_text file, crow
@@ -213,6 +216,7 @@ module RubyCurses
         Ncurses.error
         return
       end
+      $log.debug "inside fire_action_event of directorylist #{@current_index} #{toprow} "
       if @_header_row_index == @current_index
         # user hit enter on the header row. we determine column and sort.
         header = _get_word_under_cursor
@@ -236,6 +240,7 @@ module RubyCurses
       if File.directory? _path
         populate _path
       end
+      $log.debug "after fire_action_event of directorylist #{@current_index} #{toprow} "
 
       super
     end
@@ -337,7 +342,12 @@ module RubyCurses
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     return if ret != 0
     @file_pattern = str
+    # 2011-09-19 doesn't work if pwd changed
+    if Dir.pwd != @current_path
+      Dir.chdir @current_path
+    end
     values = Dir.glob(str)
+    $log.debug "ask select dir.glob got #{values} "
     select_values values unless values.empty?
     @repaint_required = true
   end
@@ -349,6 +359,9 @@ module RubyCurses
     ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
     return if ret != 0
     @file_pattern = str
+    if Dir.pwd != @current_path
+      Dir.chdir @current_path
+    end
     values = Dir.glob(str)
     unselect_values values unless values.empty?
     @repaint_required = true

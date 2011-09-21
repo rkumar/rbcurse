@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 module RubyCurses
   class TableDateCellRenderer

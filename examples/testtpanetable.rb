@@ -11,10 +11,11 @@
 #*******************************************************#
 
 # this is a test program, tests out tabbed panes. type F1 to exit
-#
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib/"
+# Avoid using ScrollPane at present, I intend rewriting it some day
+# It sucks. Even the TabbedPane code will be rewritten completely.
+# Don't use this demo.
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtabbedpane'
@@ -40,7 +41,7 @@ class TestTabbedPane
         #button_type :ok
       end
       @tab1 = @tp.add_tab "&Table" 
-      f1 = @tab1.form
+      #f1 = @tab1.form
       f1 = @tp.form @tab1
       raise "form f1 nil" unless f1
       $log.debug " TABLE FORM #{f1} "
@@ -187,7 +188,7 @@ if $0 == __FILE__
   begin
     # XXX update with new color and kb
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"view.log")))
+    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
     n = TestTabbedPane.new
     n.run

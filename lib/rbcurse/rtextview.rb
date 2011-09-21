@@ -16,12 +16,12 @@ TODO
 
 =end
 require 'rubygems'
-require 'ncurses'
+#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'
 
-include Ncurses
+#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -497,6 +497,8 @@ module RubyCurses
     def sanitize content  #:nodoc:
       if content.is_a? String
         content.chomp!
+        # trying out since gsub giving #<ArgumentError: invalid byte sequence in UTF-8> 2011-09-11 
+        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
         content.gsub!(/\t/, '  ') # don't display tab
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else

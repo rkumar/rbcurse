@@ -34,7 +34,7 @@ require 'rbcurse/app'
         end
       end
     end # menubar
-    mb.toggle_key = KEY_F2
+    mb.toggle_key = FFI::NCurses::KEY_F2
     @form.set_menu_bar mb
     stack :margin_top => 10, :margin => 5 do
       field "a field", :attr => 'reverse', :block_event => :CHANGE do |e|

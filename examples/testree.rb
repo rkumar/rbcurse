@@ -45,14 +45,14 @@ class Tester
     Tree.new @form, :data => model, :row =>2, :col=>2, :height => 20, :width => 30
 
     when 3
-    #else
 
       # use an Has to populate
       #model = { :ruby => %W[ "jruby", "mri", "yarv", "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
       model = { :ruby => [ "jruby", {:mri => %W[ 1.8.6 1.8.7]}, {:yarv => %W[1.9.1 1.9.2]}, "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
 
     Tree.new @form, :data => model, :row =>2, :col=>2, :height => 20, :width => 30
-    when 4
+    #when 4
+    else
       Tree.new @form, :row =>2, :col=>2, :height => 20, :width => 30 do
         root "root" do
           branch "hello" do
@@ -66,29 +66,8 @@ class Tester
 
     end
 
-
-
-    ok_button = Button.new @form do
-      text "+"
-      name "+"
-      row 27
-      col 10
-    end
-    #ok_button.command { |form| @vim.weight(@vim.weight + 0.1)  }
-    ok_button.command {  @vim.increase_weight }
-
-
-    k_button = Button.new @form do
-      text "-"
-      name "-"
-      row 27
-      col 17
-    end
-    #k_button.command { |form| @vim.weight( @vim.weight - 0.1) }
-    k_button.command { |form| @vim.decrease_weight }
-
     #
-    @help = "F1 to quit. #{$0} "
+    @help = "F1 to quit. Pass command-line argument 1,2,3,4  #{$0} "
     RubyCurses::Label.new @form, {'text' => @help, "row" => 1, "col" => 2, "color" => "yellow"}
     @form.repaint
     @window.wrefresh
@@ -112,7 +91,7 @@ include RubyCurses::Utils
 begin
   # XXX update with new color and kb
   VER::start_ncurses  # this is initializing colors via ColorMap.setup
-  $log = Logger.new("view.log")
+  $log = Logger.new("rbc13.log")
   $log.level = Logger::DEBUG
   n = Tester.new
   n.run
