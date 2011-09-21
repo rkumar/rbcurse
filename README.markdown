@@ -43,7 +43,7 @@ then do a final after some testing.
 
 Check downloads at <http://github.com/rkumar/rbcurse/downloads>
 
-test2.rb works - i always give it a quick run after making changes. All the testsplit* and testscroll* examples are working.  If using ruby1.9.2, you might say: `ruby -I. test2.rb`.
+test2.rb works - i always give it a quick run after making changes. If using ruby1.9.2, you might say: `ruby -I. test2.rb`.
 
 * <http://totalrecall.wordpress.com>  - always has some status posted.
 
@@ -89,7 +89,7 @@ test2.rb works - i always give it a quick run after making changes. All the test
 * Todo (for 0.1.2):
  <http://rubyforge.org/pm/task.php?group_id=7775&group_project_id=13812&func=browse>
 
-  See [TODO2.txt](http://github.com/rkumar/rbcurse/blob/rbcurse19/TODO2.txt) (created and maintained by [todoapp.sh](http://github.com/rkumar/todoapp), also hosted here)
+  See [TODO2.txt](https://github.com/rkumar/rbcurse/blob/master/TODO2.txt) (created and maintained by [todo.rb](https://github.com/rkumar/todorb), also hosted here)
 
 * rbcurse tutorial (WIP - please review and give feedback)
  <http://rbcurse.rubyforge.org/tut0.html>
@@ -113,8 +113,8 @@ applications.
 * labels with mnemonics (hotkeys)
 * Table: multi-column table - with cell selection and editing, horizontal and
   vertical scrolling
-* Scrollpanes which can contain textviews, textareas, listboxes.
-* Splitpanes which can contain scrollpanes, textviews/areas, listboxes *or splitpanes* ...
+* Scrollpanes which can contain textviews, textareas, listboxes. (Avoid using).
+* Splitpanes which can contain scrollpanes, textviews/areas, listboxes or splitpanes ... DEPRECATED. Pls use vimplit.
 * MultiContainer = add any number of objects to it (such as tables or text objects) and cycle through them
   (saves screen estate)
 * MultiTextView - have multiple files open for viewing in one component. Since these are readonly files, one can map a lot of single-keys as in vim for operating and cycling through buffers.
@@ -124,6 +124,7 @@ applications.
 * Kill-ring concept of emacs for cut-paste operations
 * Unlimited undo and redo in TextArea (needs to be switched on at present on instance basis)
 * Numeric arguments. (vim: 25dd etc. Or in an editable box, emacs's C-u or Alt-1..9)
+* ScrollForm (testscroller.rb) - a form that takes more fields/objects than can be viewed at a go. Meta keys scroll the form.
 * Various others, too
 
 Above may be created using DSL like syntax, or hashes, and modified at
@@ -131,18 +132,17 @@ runtime. Very flexible unlike ncurses forms and fields.
 
 ## Current work
 
+* 2011-09-21 : I intend to rewrite the following widgets: tabbedpane, menu, messagebox. These were some of the earliest programs and the code is a mess. I need to work on KEY-RESIZE, too. Catching Ctrl-arrow keys and shift function keys is required.
+
+Old:
 I've just added vi and emacs key bindings to some classes, multiple object containers such as MultiContainer
 and MultiTextView. Emacs like kill-ring in TextArea and TextView. Tabbedpane can have unlimited tabs, we can scroll the tabs. Bunch of other stuff. Multiple keys can be bound to a Proc or symbol as in emacs and vim (dd or C-x C-f).
 
-I've made a demo using ScrollForm (testscroller.rb)- a form that takes more fields/objects than
-can be viewed at a go. Meta keys scroll the form.
-Then onto testing what's there, before making a stable
-release.
 
 ## Sample programs:
 
-*  test2.rb  most widgets (including menus)
-*  sqlc.rb is a ruby sql client demo (using sqlite3-ruby)
+*  test2.rb  most basic widgets (including menus)
+*  sqlm.rb is a ruby sql client demo (using sqlite3-ruby)
 *  rfe : file explorer or Finder like app
 *  testcombo.rb  combos with various insert policies and vertical
    alignments
@@ -153,18 +153,21 @@ release.
    pass 1,2,3,4, or 5 as argument on command line
    ruby test1.rb 1
    ruby test1.rb 2
-*  test2.rb  most widgets (including menus)
-   - partially tested, many widgets, needs thorough testing.
 
-*  testscroll*.rb - various demos of scrollpanes with listboxes, text areas, tables etc
-
-*  testsplit*.rb - various splitpanes with scrollpanes and other objects placed inside
    See screenshots on blog.
 
 *  testtpane.rb  - tabbedpane sample with a scrollpane and a textobject. 
 
 ## PROBLEMS, ISSUES
 
+## Splitpane
+   Deprecated. Please use vimsplit instead. It's cleaner and hopefully easier to use.
+   Splitpanes suffered from the problem of the system not knowing which pane the user was 
+   issuing a command (resize) in (when there were embedded panes). 
+
+## Scrollpane - Avoid this. Listboxes and textareas already implement scrolling. I was using pads 
+to implement a viewport, this was slow esp with scrollpanes within splitpanes, but the copywin() and
+related methods often gave errors or seg-faults. 
 
 ## General terminal related issues.
 
@@ -184,7 +187,7 @@ The following are issues with terminals (or with ncurses-ruby in some cases) not
   This is okay under "screen" and "xterm-color" but not under "xterm". You will notice
   this in the message box samples.
 
-I am developing and testing under "screen" under OS X Leopard 10.5.8 PPC (now 10.6.x Snow Leopard).
+I am developing and testing under "screen" under OS X Snow Leopard.
 
 ## SYNOPSIS:
 
