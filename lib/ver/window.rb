@@ -250,12 +250,22 @@ module VER
       3 # is C-c
     end
 
+    #  2011-09-23 @since 1.3.1
+    # Added more combinations here. These 2 are just indicative
+    SPECIAL_KEYS = {
+      [27, 79, 50, 81]              => 20014, #  'F14',
+      [27, 79, 50, 82]              => 20015 # 'F15',
+    }
+
     # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
     # ALT combinations also send a 27 before the actual key
     # Please test with above combinations before using on your terminal
     # added by rkumar 2008-12-12 23:07 
-    #  2011-09-21 I added some dirty suppose for Control-left etc in 1.2.0 which i
-    #  should not have. In any case that needs to use extended_names and tigetstr etc
+    #  2011-09-23 Redone Control-left, right, and Shift-F5..F10.
+    #  Checking for quick press of Alt-Sh-O followed by Alt or printable char
+    #  Checking for quick press of Alt-[ followed by Alt or printable char
+    #  I attempted keeping a hash of combination arrays but it fails in the above
+    #  2 cases, so abandoned.
     def getchar 
       while 1 
         ch = getch
@@ -267,15 +277,17 @@ module VER
             #$log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
             case @stack.size
             when 1
-        
               @stack.clear
               return 27
-            when 2 # basically a ALT-O, this will be really slow since it waits for -1
+            when 2 # basically a ALT-O, or alt-[ (79 or 91) this will be really slow since it waits for -1
               ch = 128 + @stack.last
               @stack.clear
               return ch
-            when 3
-              $log.warn " SHOULD NOT COME HERE getchar():#{@stack}" 
+            else
+              # check up a hash of special keys
+              ret = SPECIAL_KEYS(@stack)
+              return ret if ret
+              $log.warn "INVALID UNKNOWN KEY: SHOULD NOT COME HERE getchar():#{@stack}" 
             end
           end
           # possibly a 49 left over from M3-1
