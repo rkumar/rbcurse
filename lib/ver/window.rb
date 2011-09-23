@@ -267,6 +267,7 @@ module VER
             #$log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
             case @stack.size
             when 1
+        
               @stack.clear
               return 27
             when 2 # basically a ALT-O, this will be really slow since it waits for -1
@@ -293,7 +294,7 @@ module VER
         # this is the ALT combination
         if @stack.first == 27
           # experimental. 2 escapes in quick succession to make exit faster
-          if ch == 27
+          if @stack.size == 1 && ch == 27
             @stack.clear
             return ch
           end
@@ -315,10 +316,17 @@ module VER
               ch = KEY_F3
             when 83
               ch = KEY_F4
+            #when 27 # another alt-char following Alt-Sh-O
+            else
+              @stack.clear
+              @stack << ch
+              return 128 + 79
+
             end
             @stack.clear
             return ch
           elsif @stack == [27, 91]
+            # XXX 27, 91 also is Alt-[
             if ch == 90
               @stack.clear
               return KEY_BTAB # backtab
@@ -326,6 +334,17 @@ module VER
               # control left, right and shift function
               @stack << ch
               next
+            elsif ch == 27 # another alt-char immediately after Alt-[
+              $log.debug "getchar in 27, will return 128+91 " if $log.debug? 
+              @stack.clear
+              @stack << ch
+              return 128 + 91
+            else
+              $log.debug "getchar in other, will return 128+91: #{ch} " if $log.debug? 
+              # other cases Alt-[ followed by some char or key - merge with previous
+              @stack.clear
+              @stack << ch
+              return 128 + 91
             end
           elsif @stack == [27, 91, 53]
             if ch == 68
