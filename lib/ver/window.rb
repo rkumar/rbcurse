@@ -276,14 +276,6 @@ module VER
             when 3
               $log.warn " SHOULD NOT COME HERE getchar():#{@stack}" 
             end
-          #elsif [181, 179, 178].include? @stack.first
-          elsif @stack == [181] || @stack == [179] || @stack == [178]
-            ch = @stack.first
-            @stack.clear
-            return ch
-          elsif @stack == [179,49] # someone trying to spoof S-F9 with M3, 1
-            ch = @stack.shift
-            return ch
           end
           # possibly a 49 left over from M3-1
           unless @stack.empty?
@@ -330,48 +322,47 @@ module VER
             if ch == 90
               @stack.clear
               return KEY_BTAB # backtab
+            elsif ch == 53 || ch == 50 || ch == 51
+              # control left, right and shift function
+              @stack << ch
+              next
+            end
+          elsif @stack == [27, 91, 53]
+            if ch == 68
+              @stack.clear
+              return C_LEFT  # control-left
+            elsif ch == 67
+              @stack.clear
+              return C_RIGHT  # -control-rt
+            end
+          elsif @stack == [27, 91, 51]
+            if ch == 49 && getch()== 126
+              @stack.clear
+              return 20009  # sh_f9
+            end
+          elsif @stack == [27, 91, 50]
+            if ch == 50 && getch()== 126
+              @stack.clear
+              return 20010  # sh-F10
+            end
+            if ch == 57 && getch()== 126
+              @stack.clear
+              return 20008  # sh-F8
+            elsif ch == 56 && getch()== 126
+              @stack.clear
+              return 20007  # sh-F7
+            elsif ch == 54 && getch()== 126
+              @stack.clear
+              return 20006  # sh-F6
+            elsif ch == 53 && getch()== 126
+              @stack.clear
+              return 20005  # sh-F5
             end
           end
-          # the usual Meta combos. (alt)
+          # the usual Meta combos. (alt) - this is screwing it up, just return it in some way
           ch = 128 + ch
           @stack.clear
-          # these correspond to M-5, M2 and M3 but can also be C-left. C-rt. S-F5-S-F10
-          if ch == 181 || ch == 178 || ch == 179 
-            @stack << ch
-            next
-          end
           return ch
-        elsif @stack.first == 181
-          if ch == 68
-            ch = C_LEFT
-            @stack.clear; return ch
-          elsif ch == 67
-            ch = C_RIGHT
-            @stack.clear; return ch
-          else
-            $log.error "We ate a key 181 M-5 expecting C-L or C-r, but got #{ch}. I can only return one "
-            @stack.clear;  # should we ungetch the ch FIXME
-            return 181
-          end
-        elsif @stack == [179, 49]
-          if ch == 126
-            @stack.clear; 
-            return S_F9
-          else
-            # FIXME
-            $log.error "getchar: We ate 2 keys 179 M-?, 49 expecting S-F9, but got #{ch}. I can only return one "
-          end
-        elsif sf == 179
-          if ch == 49
-            @stack << ch
-            next
-          else
-            #@stack.clear; # should i ungetch FIXME
-            @stack.shift # some combination like M-3 2
-            @stack << ch
-            return 179
-          end
-        elsif sf == 178
         end # stack.first == 27
         # append a 27 to stack, actually one can use a flag too
         if ch == 27
