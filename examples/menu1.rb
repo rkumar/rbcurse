@@ -27,7 +27,7 @@ require 'rbcurse/app'
         end
         menu "Close" do
           item_list do
-            Dir.glob("*.bak")
+            Dir.glob("t*.rb")
           end
         end
         item "New", "N" 
