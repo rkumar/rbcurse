@@ -12,8 +12,22 @@ require 'rbcurse/app'
       #@toggle_key=KEY_F2
       menu "File" do
         item "Open", "O" do
-          command do
+          accelerator "Ctrl-O"
+          command do 
             alert "HA!! you wanted to open a file?"
+          end
+        end
+        menu "QuickOpen" do
+          item_list do
+            Dir.glob("*.rb")
+          end
+          command do |menuitem, text|
+            alert " We gots #{text} "
+          end
+        end
+        menu "Close" do
+          item_list do
+            Dir.glob("*.bak")
           end
         end
         item "New", "N" 
@@ -21,7 +35,7 @@ require 'rbcurse/app'
         item "Close", "C" 
         
       end # menu
-      menu "Window" do
+      menu "Windowing" do
         item "Tile", "T"
         menu "Find" do
           item "More", "M"
@@ -53,7 +67,7 @@ require 'rbcurse/app'
       end
       @adock = nil
     keyarray = [
-      ["F1" , "Exit"], nil,
+      ["F10" , "Exit"], nil,
       ["F2", "Menu"], nil,
       ["M-e", "Disable"], ["M-x", "XXXX"],
       ["C-?", "Help"], nil
