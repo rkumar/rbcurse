@@ -2,35 +2,30 @@
   * Name: menu and related classes
   * Description   
   * Author: rkumar
+  * I am redoing this totally, since this was one my first ruby programs and needs 
+  *  simplification. It was hard to maintain.
 TODO 
-FIXME : works with 2 levels, but focus does not go into third level. This has been fixed in rpopupmenu
-      and needs to be fixed here. DONE 2009-01-21 12:50 
-    - menu bar : what to do if adding a menu, or option later.
-      we dnt show disabld options in a way that user can know its disabled
-    - separate file created on 2008-12-24 17:58 
-NOTE : this program works but is one of the first programs and is untouched. It needs to be rewritten
-      since its quite crappy.
-      Also, we should move to Action classes as against just blokcs of code. And action class would have
+  -- MenuSeparator and MenuItem should be common to popups and menus, so we don't need
+     2 separate names, there was clobbering the same namespace.
+
+  ??  Also, we should move to Action classes as against just blokcs of code. And action class would have
 a user friendly string to identifiy the action, as well as a disabled option.
-NOTE on 2010-09-10 11:40 : this interface is based on Java's and is not block friendy. Also, i tried to keep the same class to work for horizontal menu bar and vertical submenus as per java's classes and this makes the code very complex. I should just make 2 classes and keep it simple.
   
   --------
-  * Date: 2008-11-14 23:43 
+  * Date: 2011-09-23  (old 2008-11-14 23:43 )
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
-#require 'ncurses'
-require 'logger'
+#require 'logger'
 require 'rbcurse'
 
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
 
 
+  # The separator that separates menuitems, helping to group them.
   class MenuSeparator
     attr_accessor :enabled
     attr_accessor :parent
@@ -54,6 +49,8 @@ module RubyCurses
     end
   end
   ##
+  # Items in menus. These will usually result in an action which closes the entire
+  #  menubar.
   class MenuItem
     attr_accessor :parent
 #    attr_accessor :window
@@ -75,6 +72,7 @@ module RubyCurses
     def command *args, &block 
       $log.debug ">>>command : #{@text} "
       @command = block if block_given?
+      alert "Command nil or some error! #{text} " unless @command
       @args = args
     end
     # add accelerator for a menu item
@@ -99,8 +97,9 @@ module RubyCurses
       highlight false
     end
     ## XXX it could be a menu again
+    #  We should not be firing a :NO_MENUITEMS
     def fire
-      #$log.debug ">>>fire menuitem : #{@text} #{@command} "
+      $log.debug ">>>fire menuitem : #{@text} #{@command} "
       @command.call self, *@args if !@command.nil?
       @parent.clear_menus
       return :CLOSE # added 2009-01-02 00:09 to close only actions, not submenus
@@ -126,9 +125,11 @@ module RubyCurses
       #  return
       end
       r = @row
+      ltext = text
+      ltext = "* No Items *" if text == :NO_MENUITEMS
       acolor = $reversecolor
       acolor = get_color($reversecolor, 'green', 'white') if !@enabled
-      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, text], acolor)
+      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, ltext], acolor)
       if @enabled # 2010-09-10 23:56 
       if !@accelerator.nil?
         @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, acolor)
@@ -146,8 +147,9 @@ module RubyCurses
      $log.debug "DESTROY menuitem #{@text}"
     end
   end
-  ##class Menu
-  class Menu < MenuItem  ## NEW 
+  ## class Menu. Contains menuitems, and can be a menuitem itself.
+  # Opens out another list of menuitems.
+  class Menu < MenuItem
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
@@ -192,7 +194,7 @@ module RubyCurses
 
     # add item method which could be used from blocks
     # add 2010-09-10 12:20 simplifying
-    def item text, mnem, &block
+    def item text, mnem=nil, &block
       #$log.debug "YYYY inside M: menuitem text #{text}  "
       m =  MenuItem.new text, mnem, &block 
       add m
@@ -227,11 +229,35 @@ module RubyCurses
         @items.delete n
       end
     end
+    # generate an item list at runtime for this menu
+    def item_list *args, &block 
+      $log.debug ">>>item_list : #{@text} "
+      @item_list = block if block_given?
+      @item_list_args = args
+    end
     # menu - 
     def fire
       $log.debug "menu fire called: #{text}  " 
       if @window.nil?
         #repaint
+        # added 2011-09-24 adding ability to generate list of items
+        if @item_list
+          # generate a list, but we need to know what to do with that list.
+          @items = []
+          l = @item_list.call self, *@item_list_args if !@item_list.nil?
+          if l.nil? || l.size == 0
+            item(:NO_MENUITEMS)
+          else
+            # for each element returned create a menuitem, and attach the command to it.
+            l.each { |e| it = item(e); 
+              it.command(@args) do @command.call(it, it.text) end;
+            }
+          end
+          $log.debug "menu got items #{@items.count} " 
+        end
+        if @items.empty? # user did not specify any items
+            item(:NO_MENUITEMS)
+        end
         create_window
         if !@parent.is_a? RubyCurses::MenuBar 
           @parent.current_menu << self
@@ -239,15 +265,19 @@ module RubyCurses
         end
       else
         ### shouod this not just show ?
-        $log.debug "menu fire called: #{text} ELSE XXX WHEN IS THIS CALLED ? 658  " 
-        return @items[@active_index].fire # this should happen if selected. else selected()
+        $log.debug "menu fire called: #{text} ELSE XXX WHEN IS THIS CALLED ? 658 #{@items[@active_index].text}  " 
+        if @active_index # sometimes no menu item specified 2011-09-24 NEWMENU
+          return @items[@active_index].fire # this should happen if selected. else selected()
+        end
       end
       #@action.call if !@action.nil?
     end
     # user has clicked down, we shoud display items
     # DRAW menuitems
     def repaint # menu.repaint
-      return if @items.nil? or @items.empty?
+      # OMG will not print anything if no items !
+      # When we do item generation this list will be empty
+      #return if @items.nil? or @items.empty? # commented 2011-09-24 NEWMENU
       #$log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
       if !@parent.is_a? RubyCurses::MenuBar 
         @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, text], $reversecolor)
@@ -348,7 +378,7 @@ module RubyCurses
     end
     def create_window # menu
       margin = 3
-      @width = array_width @items
+      @width = array_width(@items) + 1 # adding 1 since menus append a ">" 2011-09-24 
       #$log.debug "create window menu #{@text}: #{@row} ,#{@col},wd #{@width}   " 
       @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+1, :left => @col } 
       @win = VER::Window.new(@layout)
@@ -608,8 +638,8 @@ module RubyCurses
       ensure
         #ensure is required becos one can throw a :close
         $log.debug " DESTROY IN ENSURE"
-      current_menu.clear_menus #@@menus = [] # added 2009-01-23 13:21 
-      destroy  # Note that we destroy the menu bar upon exit
+        current_menu.clear_menus #@@menus = [] # added 2009-01-23 13:21 
+        destroy  # Note that we destroy the menu bar upon exit
       end
     end
     def current_menu
@@ -638,6 +668,7 @@ module RubyCurses
       end
     end
     ## menubar
+    # TODO: check for menu to be flush right (only for last one).
     def repaint
       return if !@visible
       @window ||= create_window
@@ -650,7 +681,7 @@ module RubyCurses
       end
       @window.wrefresh
     end
-    def create_window
+    def create_window # menubar
       @layout = { :height => 1, :width => 0, :top => 0, :left => 0 } 
       @win = VER::Window.new(@layout)
       @window = @win
