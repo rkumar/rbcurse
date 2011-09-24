@@ -35,7 +35,7 @@ require 'rbcurse/app'
         item "Close", "C" 
         
       end # menu
-      menu "Windowing" do
+      menu "Window" do
         item "Tile", "T"
         menu "Find" do
           item "More", "M"
@@ -44,6 +44,11 @@ require 'rbcurse/app'
             command do
               alert "You clickses on Less"
             end
+          end
+          menu "Size" do
+            item "Zoom", "Z"
+            item "Maximize", "X"
+            item "Minimize", "N"
           end
         end
       end
