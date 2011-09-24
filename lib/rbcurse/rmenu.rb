@@ -5,6 +5,9 @@
   * I am redoing this totally, since this was one my first ruby programs and needs 
   *  simplification. It was hard to maintain.
 TODO 
+ -- C-g should abort entire menu
+ -- Check that list is not growing too long, page it - darn why am i not making a form.
+ -- right and left keys in multi-column
   -- MenuSeparator and MenuItem should be common to popups and menus, so we don't need
      2 separate names, there was clobbering the same namespace.
 
@@ -13,6 +16,8 @@ a user friendly string to identifiy the action, as well as a disabled option.
   
   --------
   * Date: 2011-09-23  (old 2008-11-14 23:43 )
+ == Major changes
+ 2011-09-24 V1.3.1 added item_select for dynamic menuitem generation, see examples/menu1.rb
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
@@ -31,6 +36,7 @@ module RubyCurses
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
+    attr_accessor :coffset
     attr_accessor :width
     def initialize 
       @enable = false
@@ -56,9 +62,11 @@ module RubyCurses
 #    attr_accessor :window
     attr_accessor :row
     attr_accessor :col
+    attr_accessor :coffset
     attr_accessor :width
     attr_writer :accelerator
     attr_accessor :enabled
+    attr_reader :active_index # 2011-09-24 V1.3.1  trying to do a right
     attr_accessor :text, :mnemonic  # changed reader to accessor 
     def initialize text, mnemonic=nil, &block
       @text = text
@@ -113,7 +121,8 @@ module RubyCurses
         color = $datacolor
         #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
         # above line did not work in vt100, 200 terminals, next works.
-        @parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_REVERSE, $reversecolor, nil)
+#        @parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_REVERSE, $reversecolor, nil) # changed 2011 dts  2011-09-24  multicolumn, 1 skips the border
+        @parent.window.mvchgat(y=@row, x=@col+1, @width, Ncurses::A_REVERSE, $reversecolor, nil)
       else
         repaint
       end
@@ -125,13 +134,16 @@ module RubyCurses
       #  return
       end
       r = @row
+      c = @col
       ltext = text
       ltext = "* No Items *" if text == :NO_MENUITEMS
       acolor = $reversecolor
       acolor = get_color($reversecolor, 'green', 'white') if !@enabled
-      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, ltext], acolor)
+#      @parent.window.printstring( @row, 0, "|%-*s|" % [@width, ltext], acolor) # changed 2011 2011-09-24  
+      @parent.window.printstring( @row, c, "|%-*s|" % [@width, ltext], acolor)
       if @enabled # 2010-09-10 23:56 
       if !@accelerator.nil?
+        # FIXME add c earlier 0 was offset
         @parent.window.printstring( r, (@width+1)-@accelerator.length, @accelerator, acolor)
       elsif !@mnemonic.nil?
         m = @mnemonic
@@ -153,6 +165,7 @@ module RubyCurses
     attr_accessor :parent
     attr_accessor :row
     attr_accessor :col
+    attr_accessor :coffset
     attr_accessor :width
     attr_accessor :enabled
     attr_reader :text
@@ -175,6 +188,7 @@ module RubyCurses
       super text, nil, &block
       @row ||=10
       @col ||=10
+      @coffset = 0
       @@menus ||= []
     end
     ## called upon firing so when we next show menubar there are not any left overs in here.
@@ -258,7 +272,7 @@ module RubyCurses
         if @items.empty? # user did not specify any items
             item(:NO_MENUITEMS)
         end
-        create_window
+        create_window @col+(@width || 0)
         if !@parent.is_a? RubyCurses::MenuBar 
           @parent.current_menu << self
           @@menus << self # NEW
@@ -332,6 +346,41 @@ module RubyCurses
       #select_item @items.length-1
       end
     end
+    # If multi-column menuitems then try going to a left item (prev column same row)
+    def select_left_item
+      return :UNHANDLED if @items.nil? or @items.empty?
+      index = nil
+      crow = @items[@active_index].row 
+      ccol = @items[@active_index].col 
+      @items.each_with_index { |e, i| index = i if e.row == crow && e.col < ccol }
+      if index
+        select_item index
+      else
+        return :UNHANDLED
+      end
+    end
+    # @since 1.3.1 2011-09-24 
+    # If multi-column menuitems then try going to a right item (next column same row)
+    def select_right_item
+      return :UNHANDLED if @items.nil? or @items.empty?
+      crow = @items[@active_index].row 
+      ccol = @items[@active_index].col 
+      #alert "inside select right with #{@items.size} #{@items[@active_index].text}: items. r #{crow} col #{ccol}  "
+      index = nil
+      @items.each_with_index { |e, i| 
+        $log.debug " select_right #{e.row} == #{crow} , #{e.col} > #{ccol}  " if $log.debug? 
+        if e.row == crow && e.col > ccol 
+          index = i
+          $log.debug "YYY select_right #{e.row} == #{crow} , #{e.col} > #{ccol} FOUND #{i}  " if $log.debug? 
+          break
+        end
+      }
+      if index
+        select_item index
+      else
+        return :UNHANDLED
+      end
+    end
     def on_enter # menu.on_enter
       #$log.debug "menu onenter: #{text} #{@row} #{@col}  " 
       # call parent method. XXX
@@ -376,34 +425,65 @@ module RubyCurses
       @parent.window.mvchgat(y=@row, x=1, @parent.width, att, $reversecolor, nil)
       @parent.window.wrefresh
     end
-    def create_window # menu
-      margin = 3
+    def create_window offset=0 # menu
+      margin = 2 # flush against parent
       @width = array_width(@items) + 1 # adding 1 since menus append a ">" 2011-09-24 
-      #$log.debug "create window menu #{@text}: #{@row} ,#{@col},wd #{@width}   " 
-      @layout = { :height => @items.length+3, :width => @width+margin, :top => @row+1, :left => @col } 
+      $log.debug "create window menu #{@text}: r #{@row} ,col #{@col}, offset #{offset} ,wd #{@width}   " 
+      t = @row+1
+      h = @items.length+3
+      ww = @width+margin
+      ww1 = @width
+      max = Ncurses.LINES-1
+      if t + h > max
+        t = 2 # one below menubar, not touching
+        if h > max
+          h = max - 1
+          ww = ww * 3 # FIXME we need to calculate
+        end
+      end # t + 1
+      $log.debug "create window menu #{@text}: t  #{t} ,h #{h}, w: #{ww} , col #{@col}   max #{max}   " 
+
+      #@layout = { :height => @items.length+3, :width => ww, :top => @row+1, :left => @col } 
+      # earlier col had the offset to start the next level, I was not using it to print 
+      # but with mulitple cols i am using it. So, this col will overwrite existing menu.
+      @layout = { :height => h-1, :width => ww, :top => t, :left => @coffset } 
       @win = VER::Window.new(@layout)
       @window = @win
       @win.bkgd(Ncurses.COLOR_PAIR($datacolor));
       @panel = @win.panel
-        @window.printstring( 0, 0, "+%s+" % ("-"*@width), $reversecolor)
+        #@window.printstring( 0, 0, "+%s+" % ("-"*@width), $reversecolor)
+        @window.printstring( 0, 0, "+%s+" % ("-"*(ww1)), $reversecolor)
+        saved_r = 1
         r = 1
+        #saved_c = @col+@width+margin # margins???
+        saved_c = 0 ; # actual program uses 0 in repain for col
+        c = saved_c
+            $log.debug "create window menu #{@text}: first col  r  #{r} ,c #{c}" 
         @items.each do |item|
-          #if item == :SEPARATOR
-          #  @window.printstring( r, 0, "|%s|" % ("-"*@width), $reversecolor)
-          #else
+          #break if r > h # added 2011-09-24 for large number of items - causes error
+          if r >= h-2
+            @window.printstring( h-2, c, "+%s+" % ("-"*(ww1)), $reversecolor)
+            r = saved_r
+            c += (@width + 2)
+            @window.printstring( 0, c, "+%s+" % ("-"*(ww1)), $reversecolor)
+            $log.debug "create window menu #{@text}: new col  r  #{r} ,c #{c}, #{item.text} " 
+          end
             item.row = r
-            item.col = 0
-            item.col = @col+@width+margin # margins???
- #         $log.debug "create window menu loop passing col : #{item.col} " 
+            item.col = c
+            item.coffset = @coffset+@width+margin # margins???
+
+
             item.width = @width
             #item.window = @window
             item.parent = self
             item.repaint
-          #end
           r+=1
         end
-        @window.printstring( r, 0, "+%s+" % ("-"*@width), $reversecolor)
-      select_item 0
+#        @window.printstring( r, 0, "+%s+" % ("-"*@width), $reversecolor) # changed 2011 2011-09-24 
+        @window.printstring( h-2, 0, "+%s+" % ("-"*(ww1)), $reversecolor)
+        # in case of multiple rows
+        @window.printstring( r, c, "+%s+" % ("-"*(ww1)), $reversecolor)
+        select_item 0
       @window.refresh
       return @window
     end
@@ -445,7 +525,7 @@ module RubyCurses
         cmenu.select_next_item
         #return cmenu.fire # XXX 2010-10-16 21:39 trying out
         if cmenu.is_a? RubyCurses::Menu 
-          #alert "is a menu"
+          #alert "is a menu" # this gets triggered even when we are on items
         end
       when KEY_UP
         cmenu.select_prev_item
@@ -456,27 +536,47 @@ module RubyCurses
        #$log.debug "LEFT IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
        #$log.debug "left IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
-        if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
-       #$log.debug " ABOU TO DESTROY DUE TO LEFT"
-          cmenu.parent.current_menu.pop
-          @@menus.pop ## NEW
-          cmenu.destroy
-        else
-          return :UNHANDLED
+        ret = cmenu.select_left_item # 2011-09-24 V1.3.1 attempt to goto left item if columns
+        if ret == :UNHANDLED
+          if cmenu.parent.is_a? RubyCurses::MenuBar #and !cmenu.parent.current_menu.empty?
+            #$log.debug " ABOU TO DESTROY DUE TO LEFT"
+            cmenu.current_menu.pop
+            @@menus.pop ## NEW
+            cmenu.destroy
+            return :UNHANDLED
+          end
+          # LEFT on a menu list allows me to close and return to higher level
+          if cmenu.parent.is_a? RubyCurses::Menu #and !cmenu.parent.current_menu.empty?
+            #$log.debug " ABOU TO DESTROY DUE TO LEFT"
+            cmenu.current_menu.pop
+            @@menus.pop ## NEW
+            cmenu.destroy
+            #return :UNHANDLED
+          end
         end
       when KEY_RIGHT
-       #$log.debug "RIGHTIN MENU : "
-        if cmenu.parent.is_a? RubyCurses::Menu 
+       $log.debug "RIGHTIN MENU : #{text}  "
+       if cmenu.active_index
+        if cmenu.items[cmenu.active_index].is_a?  RubyCurses::Menu 
+          #alert "could fire here cmenu: #{cmenu.text}, par: #{cmenu.parent.text} "
+          cmenu.fire
+          return
        #$log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.parent.current_menu.length}"
        #$log.debug "right IN MENU : #{cmenu.parent.class} len: #{cmenu.current_menu.length}"
         end
-        if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
-          #$log.debug " ABOU TO DESTROY DUE TO RIGHT"
-          cmenu.parent.current_menu.pop
-          @@menus.pop
-          cmenu.destroy
+       end
+        ret = cmenu.select_right_item # 2011-09-24 V1.3.1 attempt to goto right item if columns
+       #alert "attempting to select right #{ret} "
+        if ret == :UNHANDLED
+          #if cmenu.parent.is_a? RubyCurses::Menu and !cmenu.parent.current_menu.empty?
+          if cmenu.parent.is_a? RubyCurses::MenuBar #and !cmenu.current_menu.empty?
+            $log.debug " ABOU TO DESTROY DUE TO RIGHT"
+            cmenu.current_menu.pop
+            @@menus.pop
+            cmenu.destroy
+            return :UNHANDLED
+          end
         end
-        return :UNHANDLED
       else
         ret = check_mnemonics cmenu, ch
         return ret
@@ -502,7 +602,7 @@ module RubyCurses
     def show # menu.show
       #$log.debug "show (menu) : #{@text} "
       if @window.nil?
-        create_window
+        create_window #@col+@width
       end
         @window.show 
         select_item 0
@@ -517,12 +617,14 @@ module RubyCurses
     attr_reader :window
     attr_reader :panel
     attr_reader :selected
+    attr_reader :text # temp 2011-09-24 V1.3.1 
     attr_accessor :visible
     attr_accessor :active_index
     attr_accessor :state              # normal, selected, highlighted
     attr_accessor :toggle_key              # key used to popup, should be set prior to attaching to form
     def initialize &block
       @window = nil
+      @text = "menubar"
       @items = []
       init_vars
       @visible = false
@@ -620,6 +722,8 @@ module RubyCurses
           #$log.debug " mb insdie KEYRIGHT :  #{ch}" 
           ret = current_menu.handle_key ch
           next_menu if ret == :UNHANDLED
+        when ?\C-g.getbyte(0) # abort
+          throw :menubarclose
         else
           #$log.debug " mb insdie ELSE :  #{ch}" 
           ret = current_menu.handle_key ch
@@ -671,17 +775,17 @@ module RubyCurses
     # TODO: check for menu to be flush right (only for last one).
     def repaint
       return if !@visible
-      @window ||= create_window
+      @window ||= create_window_menubar
       @window.printstring( 0, 0, "%-*s" % [@cols," "], $reversecolor)
       c = 1; r = 0;
       @items.each do |item|
-        item.row = r; item.col = c; item.parent = self
+        item.row = r; item.col = c; item.coffset = c; item.parent = self
         @window.printstring( r, c, " %s " % item.text, $reversecolor)
         c += (item.text.length + 2)
       end
       @window.wrefresh
     end
-    def create_window # menubar
+    def create_window_menubar
       @layout = { :height => 1, :width => 0, :top => 0, :left => 0 } 
       @win = VER::Window.new(@layout)
       @window = @win
@@ -733,7 +837,7 @@ module RubyCurses
       repaint
       highlight true
     end
-    def repaint
+    def repaint # checkbox
       @parent.window.printstring( row, 0, getvalue_for_paint, $reversecolor)
       parent.window.wrefresh
     end
