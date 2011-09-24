@@ -437,8 +437,9 @@ module RubyCurses
       if t + h > max
         t = 2 # one below menubar, not touching
         if h > max
+          i = ((h*1.0)/max).ceil
           h = max - 1
-          ww = ww * 3 # FIXME we need to calculate
+          ww = ww * i # FIXME we need to calculate
         end
       end # t + 1
       $log.debug "create window menu #{@text}: t  #{t} ,h #{h}, w: #{ww} , col #{@col}   max #{max}   " 
