@@ -5,6 +5,8 @@ require 'rbcurse/app'
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
     header = app_header "rbcurse 1.2.0", :text_center => "Menubar Demo", :text_right =>"enabled"
+    form = @form
+    mylabel = "a field"
 
     # TODO accelerators and 
     # getting a handle for later use
@@ -22,7 +24,9 @@ require 'rbcurse/app'
             Dir.glob("*.rb")
           end
           command do |menuitem, text|
-            alert " We gots #{text} "
+            #alert " We gots #{text} "
+            fld = form.by_name[mylabel]
+            fld.text =text
           end
         end
         menu "Close" do
@@ -32,7 +36,14 @@ require 'rbcurse/app'
         end
         item "New", "N" 
         separator
-        item "Close", "C" 
+        item "Exit", "x"  do 
+          command do
+            throw(:close)
+          end
+        end
+        item "Cancel Menu" do
+          accelerator "Ctrl-g"
+        end
         
       end # menu
       menu "Window" do
@@ -54,9 +65,11 @@ require 'rbcurse/app'
       end
     end # menubar
     mb.toggle_key = FFI::NCurses::KEY_F2
+    mb.color = :white
+    mb.bgcolor = :blue
     @form.set_menu_bar mb
     stack :margin_top => 10, :margin => 5 do
-      field "a field", :attr => 'reverse', :block_event => :CHANGE do |e|
+      field mylabel, :attr => 'reverse', :block_event => :CHANGE do |e|
         message e.to_s
 
         case e.text
