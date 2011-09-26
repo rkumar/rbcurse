@@ -339,6 +339,8 @@ if $0 == __FILE__
             content.each do |line|
               texta << line
             end
+          else
+            alert "File name #{filesel} nil. Pls check code. "
           end
         end
       }
