@@ -307,9 +307,10 @@ module RubyCurses
           @stop = true
           return
         when KEY_ENTER, 10, 13
+          # if you press ENTER without selecting, it won't come here
+          # it will fire button OK's fire, if that's the default button
           fire_handler :PRESS, @listbox.focussed_index
           # since Listbox is handling enter, COMBO_SELECT will not be fired
-        # $log.debug "popup ENTER : #{@selected_index} "
         # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
           return
@@ -701,7 +702,7 @@ module RubyCurses
       $log.debug " listbox got ch #{ch}"
       #$log.debug " when kps #{@KEY_PREV_SELECTION}  "
       case ch
-      when 10,13
+      when 10,13, KEY_ENTER
         # this means you cannot just bind_key 10 or 13 like we once did
         fire_action_event # trying out REMOVE 2011-09-16 FFI
         $log.debug " 333 listbox catching 10,13 fire_action_event "

@@ -51,9 +51,10 @@ module RubyCurses
       @repaint_required = true
     end
     # why is this commented off XXX could it override listscrollable
-    def selected_item
+    #def selected_item
+      #$log.warn "came in dummy selected_item of listselectable.rb"
     #  @list[@current_index]
-    end
+    #end
     # returns selected indices
     # TODO : if array passed, set those as selected indices
     def selected_rows

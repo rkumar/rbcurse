@@ -481,8 +481,7 @@ class RFe
       fp=""
     end
     @layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
-    #@v_window = VER::Window.new(@layout)
-    @v_window = VER::Window.new(wh, ww, wt, wl) # trying out new constructor
+    @v_window = VER::Window.new(@layout)
     @v_form = RubyCurses::Form.new @v_window
     @textview = TextView.new @v_form do
       name   "myView" 
@@ -496,11 +495,11 @@ class RFe
       footer_attrib 'bold'
     end
     #content = File.open(fp,"r").readlines
+    begin
     @textview.set_content content #, :WRAP_WORD
     @v_form.repaint
     @v_window.wrefresh
     Ncurses::Panel.update_panels
-    begin
     while((ch = @v_window.getchar()) != ?\C-q.getbyte(0) )
       break if ch == FFI::NCurses::KEY_F3
       @v_form.handle_key ch
@@ -719,7 +718,11 @@ class RFe
       end
     }
     @form.bind_key(FFI::NCurses::KEY_F3){
-      view()
+      begin 
+        view()
+      rescue => err
+        alert err.to_s
+      end
     }
     @form.bind_key(FFI::NCurses::KEY_F1){
       #Io.view(["this is some help text","hello there"])

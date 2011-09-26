@@ -339,6 +339,8 @@ if $0 == __FILE__
             content.each do |line|
               texta << line
             end
+          else
+            alert "File name #{filesel} nil. Pls check code. "
           end
         end
       }
@@ -362,13 +364,13 @@ if $0 == __FILE__
         str << " bugs as they crop up."
         testa.goto_start
         #testa.cursor_bol
-        testa.handle_key ?\C-a  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
         str.each_char {|c| testa.putch(c)}
         testa.repaint
         testa.handle_key KEY_DOWN # down
         testa.handle_key KEY_DOWN # down
         testa.handle_key KEY_DOWN # down
-        testa.handle_key ?\C-a  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
         #testa.cursor_bol
         str.each_char {|c| testa.putch(c)}
         $message.value = "Wrapping textarea"
@@ -378,7 +380,7 @@ if $0 == __FILE__
       filemenu.add(item = RubyCurses::MenuItem.new("Wrap",'W'))
       item.command(@form, texta) do |it, form, testa|  
         #testa.goto_start
-        testa.handle_key ?\C-a  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
         testa.wrap_para
         testa.repaint
         throw(:menubarclose)
