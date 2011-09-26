@@ -59,10 +59,13 @@ class QDFileChooser
           default_button 0
           button_type :ok_cancel
         end
+        #$log.debug "MBOX :selected #{@listb.selected_item}, #{@listb[@listb.getvalue[0]]} "
         return @mb.selected_index == 0 ? :OK : :CANCEL
-        $log.debug "MBOX :selected #{@listb.selected_item}"
   end 
   def get_selected_file
-    return @mb.selected_index == 0 ? @listb.selected_item : nil
+    #return @mb.selected_index == 0 ? @listb.selected_item : nil
+    #return @mb.selected_index == 0 ? @listb[@listb.getvalue[0]]  : nil
+    # return either the selected_value or if user pressed okay, then focussed item
+    return @mb.selected_index == 0 ? @listb.selected_value || @listb.selected_item  : nil
   end
 end
