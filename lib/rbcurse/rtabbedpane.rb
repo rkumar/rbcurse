@@ -381,7 +381,8 @@ module RubyCurses
         # if col exceeds pad_w then we need to expand pad
         # but here we don't know that a pad is being used
         $log.debug " button col #{col} " 
-        form = tab.form
+#        form = tab.form # changed 2011  2011-09-26 
+        form = form(tab)
         form.set_parent_buffer(@window) if form
 
         b = @buttons.last
