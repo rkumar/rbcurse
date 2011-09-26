@@ -1,4 +1,15 @@
 ## rkumar, 2009
+#DEPRECATED. See sqlm.rb
+#AVOID USING TabbedPane till its rewritten 1.3.2 or so.
+#You will have to press a downarrow or any key if the pane goes blank.
+#
+############ WARNING ##############################################################
+#           TabbedPanes seem to have stopped displaying at some points
+#           after moving to FFI-Ncurses. And i've not been able to locate the point.
+#           This is one subtle difference between ncurses and ffi-ncurses.
+#           So i will scrap this and do a fresh clean rewrite of TabbedPane class.
+#
+###################################################################################
 # Sample demo of various widgets and their interaction.
 # This is a simple sql client which allows table / column selection, construction
 # of SQL queries, and multiple resultsets.
@@ -157,7 +168,7 @@ class Sqlc
   end
   def run
     title = "rbcurse"
-    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client"}
+    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client ***DEPRECATED use sqlm.rb ******"}
     status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>70}
     @status_row = status_row
     # setting ENTER across all objects on a form
