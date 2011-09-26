@@ -3,6 +3,9 @@
   * Description: 
   * A tabbed pane, mostly based (iirc) on the Terminal Preferences in OSX PPC 10.5.x
   * Starting a new version using pads 2009-10-25 12:05 
+TODO - need to rewrite this pronto. 1.3.1 or 1.3.2 should have a rewritten TabbedPane
+NOTE:  PLEASE AVOID THIS. USE MULTI_CONTAINERS if you need inside a form.
+       TABBEDWINDOW IS OKAY IF YOU ARE POPPING A TABBEDPANE UP.
   * Author: rkumar
   
   --------
@@ -670,10 +673,12 @@ module RubyCurses
        $log.debug "DEBUG : handle_key Tab got ret #{ret} "
         # forms seem to returning a nil when the pad has been updated. We need to copy it
         ret ||= 0
-        if ret == 0 
+        if ret == 0 || ret == :UNHANDLED
+          $log.debug "COMPONENT REPAINT CALLING " if $log.debug? 
           @component.repaint if @component
-          $log.debug "DEBUG calling display form(false) from handle_key XXX" if @form
-          display_form false if @form
+          #@form.window.refresh
+          #$log.debug "DEBUG calling display form(false) from handle_key XXX" if @form
+          #display_form false if @form # this caused others to go blank 2011-09-26 
         elsif ret != :UNHANDLED # FFI trying out, since forms with components not displaying changes
           # since moving to FFI. 
           display_form false if @form
