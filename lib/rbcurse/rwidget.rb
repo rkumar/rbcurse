@@ -371,6 +371,10 @@ module RubyCurses
               #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
               begin
                 blk.call object,  *aeve[ix]
+              rescue FieldValidationException => fve
+                # added 2011-09-26 1.3.0 so a user raised exception on LEAVE
+                # keeps cursor in same field.
+                raise fve
               rescue => ex
                 ## some don't have name
                 #$log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
@@ -2192,6 +2196,7 @@ module RubyCurses
       if modified?
         set_modified true
       end
+      # if super fails we would have still set modified to true
       super
       #return valid
     end
