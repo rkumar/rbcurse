@@ -4,16 +4,11 @@
 
 I have moved rbcurse to ffi-ncurses (earlier ncurses gem). 
 
-Just merged branch ffiwindow into master. If you are looking for the ncurses version, please goto
+If you are looking for the ncurses version, please goto
 branch rbcurse1.2.0. I am not likely to support that henceforth due to the difficulty in installing ncurses gem.
 
-
-At this moment (2011-09-15), I am using ffi-nurses 0.4.0-pre (from github). Its not yet released
-as a gem, so you'll have to download it, till Sean releases the gem.
-
-* Status: Succeeded in a lot of testing with ffi-ncurses.
 Thanks a lot to Sean O'Halpin for the ffi-ncurses gem and immediately responding 
-to my queries. I am testing on OSX Snow Leopard with ruby 1.9.2, TERM=screen on zsh, and also 1.9.3.
+to my queries. I am testing on OSX Snow Leopard with ruby 1.9.2, TERM=screen on zsh.
 
 * 2011-09-14 : I am thinking of using the 1.2.x version for ncurses-ruby - any final
 bug fixes etc, and releasing a 1.2.x gem. See the rbcurse1.2.0 branch for more updates.
@@ -401,30 +396,14 @@ THE following samples are only demonstrative of how widgets are built. See sampl
 
 * ruby 1.9.1, 1.9.2 (I believe it is working on 1.8.7, 1.8.6 as well).
 
-* ncurses-ruby (1.2.4)
+* ffi-ncurses (>= 0.4.0)
 
 (Note: 1.8.6 users: pls report any issues and suggest a fix or alternative if you encounter a method_missing)
 
 
 ## INSTALL:
 
-STEP 1.
 (In following commands, use `sudo` if installing gems in readonly are such as /opt/local/).
-
-   `gem install ncurses`
-
-Often this gives compilation errors, or runtime errors when you run the examples.
-If so, please download [ncurses-1.2.4.gem](http://github.com/downloads/rkumar/rbcurse/ncurses-1.2.4.gem) from <http://github.com/rkumar/rbcurse/downloads> and do a:
-
-`gem install --local ncurses-1.2.4.gem`.
-
-This should have installed an `ncurses.rb` and `ncurses_bin.bundle` in the site directory.
-Goto examples directory and run some examples:
-
-    ruby rain.rb
-    ruby examples.rb
-
-STEP 2.
 
    `gem install rbcurse`
 
@@ -434,25 +413,6 @@ STEP 2.
     ruby test2.rb
     LOGDIR=~/tmp ruby test1.rb
 
-
-Note: Please use rbcurse gem version 1.1.3 or higher. I have just created this gem, so let me know if there are missing files.
-
-### Installing ncurses-ruby on Mac OS X Snow Leopard
-
-ncurses-ruby has been failing on OSX Snow Leopard. Please get 1.2.4 or 0.9.2 from <http://github.com/downloads/rkumar/rbcurse/>. Ensure that the examples are working before trying rbcurse. 
-
-I have uploaded a modified ncurses gem [here](http://github.com/downloads/rkumar/rbcurse/ncurses-0.9.2.gem) .
-Download this and then run:
-
-    gem install --local ncurses-1.2.4.gem
-OR
-    gem install --local ncurses-0.9.2.gem
-
-Thanks to Ralf Papenkordt for providing me with a working tar.bz2 file (see download folder).
-
-**Update**: I've uploaded a gem for Snow Leopard onto [rubygems.org](http://rubygems.org/gems/snowleopard-ncurses).
-
-    gem install snowleopard-ncurses
 
 ## LICENSE:
 
