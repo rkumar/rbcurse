@@ -798,7 +798,6 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
-      $log.debug "222 listbox #{@current_index} "
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
