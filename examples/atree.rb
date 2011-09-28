@@ -5,7 +5,8 @@ App.new do
   message "Press Enter to expand/collapse"
 
   stack :margin_top => 2, :margin => 5, :width => 30 do
-      tree :height => 10, :title => "ruby way"  do
+    tm = nil
+      atree = tree :height => 10, :title => "ruby way"  do
         root "root" do
           branch "hello" do
             leaf "ruby"
@@ -16,7 +17,6 @@ App.new do
           end
         end
       end
-
 
       # using a Hash
       model = { :ruby => [ "jruby", {:mri => %W[ 1.8.6 1.8.7]}, {:yarv => %W[1.9.1 1.9.2]}, "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }

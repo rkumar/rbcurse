@@ -284,7 +284,7 @@ module RubyCurses
       c = @message_col
       disp_len = @layout[:width]-8
       defaultvalue = @default_value || ""
-      input_config = @config["input_config"] || {}
+      input_config = @config["input_config"] || {} # see test1.rb for usage example
       case @type.to_s 
       when "input"
         @input = RubyCurses::Field.new @form, input_config do

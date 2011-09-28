@@ -52,7 +52,10 @@ end
 ##
 # allows user entry of a string.
 # In config you may pass Field related properties such as chars_allowed, valid_regex, values, etc.
-def get_string(message, len=20, default="", config={})
+def get_string(message, len=50, default="", config={})
+
+  config["input_config"] = {}
+  config["input_config"]["maxlen"] = len
   config["maxlen"]=len
   title = config["title"] || "Input required"
   mb = RubyCurses::MessageBox.new nil, config do

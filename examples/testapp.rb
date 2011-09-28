@@ -23,7 +23,7 @@ class Testy
     puts @value
     app = App.new 
     $log.debug " APP : value #{value}" if $log.debug? 
-    header = app.app_header "rbcurse 1.2.0", :text_center => " #{@value} Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+    header = app.app_header "rbcurse #{Rbcurse::VERSION} " , :text_center => " #{@value} Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
     app.message "Press F1 to exit from here #{@value} "
 
     app.stack :margin_top => 2, :margin => 5, :width => 30 do |s|
@@ -40,5 +40,5 @@ class Testy
   end
 end
 if __FILE__ == $PROGRAM_NAME
-  Testy.new "Rahul"
+  Testy.new "FFI-NCURSES"
 end

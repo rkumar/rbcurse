@@ -113,3 +113,4 @@
 111	[ ] (B) me: arrow down and up moves vertically not to next field (2011-09-21)
 112	[ ] (E) app: add popup (2011-09-21)
 113	[ ] (F) basic html view like alpine help with link, underline (2011-09-21)
+115	[ ] widgets shd add major keys to keylabel if present (2011-09-28)
