@@ -176,12 +176,15 @@ module RubyCurses
     # private
     def print_borders
       window = @graphic # 2009-12-26 14:54 BUFFERED
-      color = $datacolor
+      @color_pair = get_color($datacolor) # 2011-09-28 V1.3.1 
+      bordercolor = @border_color || @color_pair
+      borderatt = @border_attrib || Ncurses::A_NORMAL
+      #color = $datacolor
       #window.print_border @row, @col, @height, @width, color
       ## NOTE: If it bombs in next line, either no form passed
       ##+ or you using this embedded and need to set should_create_buffer true when
       ##+ creating. See examples/testscrollta.rb.
-      window.print_border @row, @col, @height-1, @width, color
+      window.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
 =begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
@@ -199,11 +202,12 @@ module RubyCurses
     def print_title
       # truncate title if longer than width
       return unless @title
+      @color_pair ||= get_color($datacolor)
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil?
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     # text_area print footer
     def print_foot
@@ -212,7 +216,7 @@ module RubyCurses
       #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       # changed 2010-01-02 19:31 BUFFERED we were exceeding 1
       #@graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
-      @graphic.printstring( @row + @height-1, @col+2, footer, $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height-1, @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
       @repaint_footer_required = false
     end
     ### FOR scrollable ###
