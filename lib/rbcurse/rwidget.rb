@@ -258,6 +258,7 @@ module RubyCurses
         when String
           keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
           #$log.debug " #{name} Widg String called bind_key BIND #{keycode}, #{keycode_tos(keycode)}  "
+          $log.debug "XXX XX assigning #{keycode}  " if $log.debug? 
           @key_handler[keycode] = blk
         when Array
           # for starters lets try with 2 keys only
@@ -267,6 +268,7 @@ module RubyCurses
           a1 = keycode[1]
           a1 = keycode[1].getbyte(0) if keycode[1].class == String
           @key_handler[a0] ||= OrderedHash.new
+          $log.debug "XXX XX assigning #{keycode} , A0 #{a0} , A1 #{a1} " if $log.debug? 
           @key_handler[a0][a1] = blk
           #$log.debug "XXX XX assigning #{keycode} to  key_handler " if $log.debug? 
         else
@@ -299,7 +301,8 @@ module RubyCurses
           $log.debug " process_key: got #{keycode} , #{ch} "
           yn = ch.chr
           blk1 = blk[ch]
-          return nil if blk1.nil?
+          window.ungetch(ch) if blk1.nil? # trying  2011-09-27 
+          return :UNHANDLED if blk1.nil? # changed nil to unhandled 2011-09-27 
           $log.debug " process_key: found block for #{keycode} , #{ch} "
           blk = blk1
         end
@@ -371,6 +374,10 @@ module RubyCurses
               #$log.debug "#{self} called EventHandler firehander #{@name}, #{event}"
               begin
                 blk.call object,  *aeve[ix]
+              rescue FieldValidationException => fve
+                # added 2011-09-26 1.3.0 so a user raised exception on LEAVE
+                # keeps cursor in same field.
+                raise fve
               rescue => ex
                 ## some don't have name
                 #$log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
@@ -378,7 +385,7 @@ module RubyCurses
                 $log.error ex
                 $log.error(ex.backtrace.join("\n")) 
                 #$error_message = "#{ex}" # changed 2010  
-                $error_message.value = "#{ex}"
+                $error_message.value = "#{ex.to_s}"
                 Ncurses.beep
               end
             end
@@ -399,6 +406,7 @@ module RubyCurses
       end
       fire_handler :PROPERTY_CHANGE, @pce
       @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint (viewport line 99 fire_prop
+      repaint_all(true) # for repainting borders, headers etc 2011-09-28 V1.3.1 
     end
 
     end # module eventh
@@ -1675,7 +1683,7 @@ module RubyCurses
             else
               #$log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
-              $log.debug " process_key #{ch} got ret #{ret} in #{self} "
+              $log.debug "FORM process_key #{ch} got ret #{ret} in #{self} "
               return :UNHANDLED if ret == :UNHANDLED
             end
           end
@@ -1803,8 +1811,8 @@ module RubyCurses
 
     dsl_accessor :chars_allowed      # regex, what characters to allow, will ignore all else
     dsl_accessor :display_length     # how much to display
-    dsl_accessor :bgcolor            # background color 'red' 'black' 'cyan' etc
-    dsl_accessor :color              # foreground colors from Ncurses COLOR_xxxx
+    #dsl_property :bgcolor            # background color 'red' 'black' 'cyan' etc # 2011-09-29 IN WIDGET
+    #dsl_property :color              # foreground colors from Ncurses COLOR_xxxx
     dsl_accessor :show               # what charactr to show for each char entered (password field)
     dsl_accessor :null_allowed       # allow nulls, don't validate if null # added 2008-12-22 12:38 
 
@@ -2192,6 +2200,7 @@ module RubyCurses
       if modified?
         set_modified true
       end
+      # if super fails we would have still set modified to true
       super
       #return valid
     end
@@ -2523,6 +2532,7 @@ module RubyCurses
     def repaint  # button
         #$log.debug("BUTTon repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
+        # NOTE: please override both (if using a string), or else it won't work 
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
