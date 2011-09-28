@@ -81,6 +81,8 @@ module RubyCurses
       @win_top = 0
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
 
+      
+      bind(:PROPERTY_CHANGE){|e| @cell_renderer = nil } # will be recreated if anything changes 2011-09-28 V1.3.1  
       init_vars
 
       #if !@list.selected_index.nil? 
@@ -253,7 +255,9 @@ module RubyCurses
       window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
-      bordercolor = @border_color || $datacolor
+      @color_pair = get_color($datacolor)
+#      bordercolor = @border_color || $datacolor # changed 2011 dts  
+      bordercolor = @border_color || @color_pair # 2011-09-28 V1.3.1 
       borderatt = @border_attrib || Ncurses::A_NORMAL
                            
       window.print_border startrow, startcol, height, width, bordercolor, borderatt
@@ -265,7 +269,7 @@ module RubyCurses
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-      @color_pair = get_color($datacolor)
+      @color_pair ||= get_color($datacolor)
       @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
