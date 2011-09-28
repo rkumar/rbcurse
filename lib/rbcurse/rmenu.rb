@@ -155,7 +155,7 @@ module RubyCurses
       c = @col
       ltext = text
       ltext = "* No Items *" if text == :NO_MENUITEMS
-      @color_pair  ||= get_color($reversecolor, @color, @bgcolor)
+      @color_pair  = get_color($reversecolor, @color, @bgcolor)
       #acolor = $reversecolor
       acolor = @color_pair
       acolor = get_color($reversecolor, 'green', @bgcolor) if !@enabled
@@ -320,7 +320,7 @@ module RubyCurses
       # When we do item generation this list will be empty
       #return if @items.nil? or @items.empty? # commented 2011-09-24 NEWMENU
       #$log.debug "menu repaint: #{text} row #{@row} col #{@col}  " 
-      @color_pair  ||= get_color($reversecolor, @color, @bgcolor)
+      @color_pair  = get_color($reversecolor, @color, @bgcolor)
       if !@parent.is_a? RubyCurses::MenuBar 
         @parent.window.printstring( @row, 0, "|%-*s>|" % [@width-1, text], @color_pair)
         @parent.window.refresh
@@ -830,7 +830,7 @@ module RubyCurses
     # TODO: check for menu to be flush right (only for last one).
     def repaint
       return if !@visible
-      @color_pair  ||= get_color($reversecolor, @color, @bgcolor)
+      @color_pair = get_color($reversecolor, @color, @bgcolor)
       @window ||= create_window_menubar
 #      @window.printstring( 0, 0, "%-*s" % [@cols," "], $reversecolor) # changed 2011 2011-09-24   
       @window.printstring( 0, 0, "%-*s" % [@cols," "], @color_pair)
@@ -905,7 +905,9 @@ module RubyCurses
       highlight true
     end
     def repaint # checkbox
-      @parent.window.printstring( row, 0, getvalue_for_paint, $reversecolor)
+      # FIXME need @color_pair here
+        @color_pair  ||= get_color($reversecolor, @color, @bgcolor)
+      @parent.window.printstring( row, 0, getvalue_for_paint, @color_pair)
       parent.window.wrefresh
     end
     def method_missing(sym, *args)
