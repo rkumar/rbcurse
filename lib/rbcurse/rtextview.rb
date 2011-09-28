@@ -180,7 +180,9 @@ module RubyCurses
 
       $log.debug " #{@name} print_borders,  #{@graphic.name} "
       
-      bordercolor = @border_color || $datacolor
+      @color_pair = get_color($datacolor) # added 2011-09-28 as in rlistbox
+#      bordercolor = @border_color || $datacolor # changed 2011 dts  
+      bordercolor = @border_color || @color_pair # 2011-09-28 V1.3.1 
       borderatt = @border_attrib || Ncurses::A_NORMAL
       @graphic.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
@@ -188,20 +190,21 @@ module RubyCurses
     def print_title #:nodoc:
       return unless @title
       raise "textview needs width" unless @width
-      @color_pair ||= get_color($datacolor) # should we not use this ??? XXX
+      @color_pair ||= get_color($datacolor) # should we not use this ??? XXX 
       #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
       # check title.length and truncate if exceeds width
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil?
+#      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil? # changed 2011 dts  
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     def print_foot #:nodoc:
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
       #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-      @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
     ### FOR scrollable ###
