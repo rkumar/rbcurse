@@ -471,6 +471,7 @@ module RubyCurses
       install_keys
       init_vars
       install_list_keys
+      bind(:PROPERTY_CHANGE){|e| @cell_renderer = nil } # will be recreated if anything changes 2011-09-28 V1.3.1  
 
       if @list && !@list.selected_index.nil? 
         set_focus_on @list.selected_index # the new version
@@ -661,7 +662,8 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       @color_pair = get_color($datacolor)
-      bordercolor = @border_color || $datacolor
+#      bordercolor = @border_color || $datacolor # changed 2011 dts  
+      bordercolor = @border_color || @color_pair
       borderatt = @border_attrib || Ncurses::A_NORMAL
 
       #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
@@ -798,7 +800,6 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
-      $log.debug "222 listbox #{@current_index} "
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
@@ -973,7 +974,7 @@ module RubyCurses
       $log.debug " rlistbox #{row_count} "
       if rc > 0     # just added in case no data passed
         tr = @toprow
-        acolor = get_color $datacolor
+        acolor = get_color $datacolor # should be set once, if color or bgcolor changs TODO FIXME
         h = scrollatrow()
         r,c = rowcol
         0.upto(h) do |hh|
