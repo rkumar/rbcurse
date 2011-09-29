@@ -59,6 +59,8 @@ module RubyCurses
       @list = []
       @suppress_borders = false
       @row_offset = @col_offset = 1 # for cursor display on first entry, so not positioned on border
+      @_events ||= [] 
+      @_events.push :CHANGE
       super
       @orig_col = @col
       # this does result in a blank line if we insert after creating. That's required at 
@@ -69,7 +71,6 @@ module RubyCurses
       @content_rows = @list.length
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
       # 2010-01-10 19:35 compute locally if not set
-      @_events.push :CHANGE
       install_keys
       init_vars
     end
@@ -228,16 +229,9 @@ module RubyCurses
     end
     ### FOR scrollable ###
     def repaint # textarea
-      if @screen_buffer.nil? and @should_create_buffer
-        safe_create_buffer
-        @screen_buffer.name = "Pad::TXTA_PAD_#{@name}"
-        $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
-      end
-      
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print if only col move
       paint if @repaint_required
       print_foot if @print_footer && !@suppress_borders && (@repaint_footer_required || @repaint_required)
-      buffer_to_window # 2010-02-12 14:54 RFED16
     end
     def getvalue
       @list

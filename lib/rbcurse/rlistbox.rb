@@ -462,8 +462,6 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
 
-#x      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
-#x      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
@@ -739,7 +737,7 @@ module RubyCurses
       when @KEY_CLEAR_SELECTION
         clear_selection 
         @repaint_required = true
-      when 27, ?\C-c.getbyte(0)
+      when 27, ?\C-c.getbyte(0), ?\C-g.getbyte(0)
         editing_canceled @current_index if @cell_editing_allowed
         cancel_block # block
         $multiplier = 0
@@ -888,10 +886,10 @@ module RubyCurses
       editor.component.curpos = 0 # reset it after search, if user scrols down
       #editor.component.graphic = @graphic #  2010-01-05 00:36 TRYING OUT BUFFERED
       ## override is required if the listbox uses a buffer
-      if @should_create_buffer
-        $log.debug " overriding editors comp with GRAPHIC #{@graphic} "
-        editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
-      end
+      #if @should_create_buffer # removed on 2011-09-29 
+        #$log.debug " overriding editors comp with GRAPHIC #{@graphic} "
+        #editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
+      #end
       set_form_col 0 #@left_margin
 
       # set original value so we can cancel
@@ -953,7 +951,6 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
@@ -1018,7 +1015,6 @@ module RubyCurses
       #@table_changed = false
       @repaint_required = false
       @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      buffer_to_window # RFED16 2010-02-17 23:16 
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to
@@ -1141,7 +1137,8 @@ module RubyCurses
     # the earlier painted edited comp in yellow keeps showing until a key is pressed
  
     def set_buffering params
-      super
+      $log.warn "CALLED set_buffering in LISTBOX listbox " if $log.debug? 
+      super # removed from widget 2011-09-29 
       ## Ensuring that changes to top get reflect in editing comp
       #+ otherwise it raises an exception. Still the earlier cell_edit is being
       #+ printed where it was , until a key is moved

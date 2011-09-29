@@ -2,7 +2,7 @@ require 'rbcurse/app'
 require 'terminal-table/import'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "**** Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "**** Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
   message "Press F1 to escape from here"
 
   stack :margin_top => 2, :margin => 5, :width => 30 do

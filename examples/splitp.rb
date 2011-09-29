@@ -1,7 +1,7 @@
 require 'rbcurse/app'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Splitpane Demo", :text_right =>""
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Splitpane Demo", :text_right =>""
   message_row(27)
   message "<TAB> between outer panes, Alt-W between inner tabs, Alt-TAb to exit Splitpane"
 

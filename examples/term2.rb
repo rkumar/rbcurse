@@ -3,7 +3,7 @@ require 'rbcurse/extras/tabular'
 require 'rbcurse/extras/scrollbar'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Tabular Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Tabular Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
   message "Press F10 to escape from here"
 
   stack :margin_top => 2, :margin => 5, :width => 30 do

@@ -672,7 +672,7 @@ App.new do
   @default_mailbox = "INBOX"
   @gmail = nil
   borderattrib = :reverse
-  @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Gmail Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
+  @header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Yet Another Gmail Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
   message "Press F1 to exit ...................................................."
 
 

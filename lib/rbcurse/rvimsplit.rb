@@ -64,6 +64,10 @@ module RubyCurses
       @suppress_borders = false
       @_use_preferred_sizes = true
       @row_offset = @col_offset = 1
+      # type can be :INCREASE, :DECREASE, :EXPAND, :UNEXPAND :EQUAL
+      @_events ||= []
+      @_events.push :COMPONENT_RESIZE_EVENT
+      @_events.push :DRAG_EVENT
       super
       @focusable = true
       @editable = false
@@ -77,9 +81,6 @@ module RubyCurses
       # hash, keyed on component, contains Split (which side, flow or stack, weight)
       @ch = {}
       @weight ||= 0.50
-      # type can be :INCREASE, :DECREASE, :EXPAND, :UNEXPAND :EQUAL
-      @_events.push :COMPONENT_RESIZE_EVENT
-      @_events.push :DRAG_EVENT
 
       init_vars
       bind_key([?\C-w,?o], :expand)  
@@ -102,7 +103,7 @@ module RubyCurses
       @recalculate_splits = true # convert weight to size
       # seems it works with false also, so do we really need it to be true ?
       # whe true was giving a seg fault on increasing child window by 0.05
-      @_child_buffering = false # private, internal. not to be changed by callers.
+      #@_child_buffering = false # private, internal. not to be changed by callers. # removed on 2011-09-29 
       @row_offset = @col_offset = 0 if @suppress_borders # FIXME supposed to use this !!
 
       @internal_width = 2
@@ -238,9 +239,9 @@ module RubyCurses
         end
       end
       c.parent_component = self
-      c.should_create_buffer = @_child_buffering 
-      c.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row
-      c.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col
+      #c.should_create_buffer = @_child_buffering  # removed on 2011-09-29 
+      #c.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row # removed on 2011-09-29 
+      #c.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col # removed on 2011-09-29 
 
       @components << c
       if which == :FIRST
@@ -451,8 +452,8 @@ module RubyCurses
             rca.col += e.width
             totalwd += wt if wt
           end
-          e.set_buffering(:target_window => @target_window || @form.window, :bottom => e.height-1, :right => e.width-1, :form => @form )
-          e.set_buffering(:screen_top => e.row, :screen_left => e.col)
+          e.set_buffering(:target_window => @target_window || @form.window, :bottom => e.height-1, :right => e.width-1, :form => @form ) # removed on 2011-09-29 
+          #e.set_buffering(:screen_top => e.row, :screen_left => e.col) # removed on 2011-09-29 
           $log.debug " XXXXX VIMS R #{e.row} C #{e.col} H #{e.height} W #{e.width} "
           e.repaint
           e._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
@@ -726,7 +727,7 @@ module RubyCurses
       RubyCurses::FocusManager.add @vb
       @vb.parent_component = self
       @components << @vb
-      @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form )
+      @vb.set_buffering(:target_window => @target_window || @form.window, :form => @form ) # removed on 2011-09-29 
       @vb.bind :DRAG_EVENT do |ev|
         if v?
           case ev.type

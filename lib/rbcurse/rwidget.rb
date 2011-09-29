@@ -333,9 +333,12 @@ module RubyCurses
       def bind event, *xargs, &blk
        #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
           if @_events
-            raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+            $log.warn "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+            #raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
           else
-            $log.debug "BIND #{self.class}  XXXXX no events defined in @_events. Please do so to avoid bugs and debugging. This will become a fatal error soon."
+            # it can come here if bind in initial block, since widgets add to @_event after calling super
+            # maybe we can change that.
+            $log.warn "BIND #{self.class} (#{event})  XXXXX no events defined in @_events. Please do so to avoid bugs and debugging. This will become a fatal error soon."
           end
         @handler ||= {}
         @event_args ||= {}
@@ -484,7 +487,7 @@ module RubyCurses
 
     ## 2010-01-05 13:27 create buffer conditionally, if enclosing component asks. Needs to be passed down
     ##+ to further children or editor components. Default false.
-    attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required.
+    #attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required. # removed on 2011-09-29 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
     ## I think parent_form was not a good idea since i can't add parent widget offsets
@@ -492,7 +495,7 @@ module RubyCurses
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
     # tired of getting the cursor wrong and guessing, i am now going to try to get absolute
     # coordinates - 2010-02-07 20:17 this should be updated by parent.
-    attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
+    #attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor rem 2011-09-29 
     attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
     attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
@@ -504,12 +507,18 @@ module RubyCurses
       @form = form
       @row_offset ||= 0
       @col_offset ||= 0
-      @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
+      #@ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18  # removed on 2011-09-29 
       @state = :NORMAL
       @attr = nil
 
       @handler = nil # we can avoid firing if nil
       @event_args = {}
+      # These are standard events for most widgets which will be fired by 
+      # Form. In the case of CHANGED, form fires if it's editable property is set, so
+      # it does not apply to all widgets.
+      @_events ||= []
+      @_events.push( *[:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE])
+
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
       #instance_eval &block if block_given?
       if block_given?
@@ -523,10 +532,6 @@ module RubyCurses
       # own default
       @bgcolor ||=  "black" # 0
       @color ||= "white" # $datacolor
-      # These are standard events for most widgets which will be fired by 
-      # Form. In the case of CHANGED, form fires if it's editable property is set, so
-      # it does not apply to all widgets.
-      @_events = [:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE]
   #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
     end
@@ -777,7 +782,8 @@ module RubyCurses
     # Setting it later, means that the first repaint can be off.
 
     def create_buffer()
-      $log.debug " #{self.class}  CB called with #{@should_create_buffer} H: #{@height} W #{@width}  "
+      $log.warn " CREATE_BUFFER DEPRECATED #{self.class}  CB called with #{@should_create_buffer} H: #{@height} W #{@width}  "
+      return # 2011-09-29 removed CLEANUP BUFFTOWIN
       if @should_create_buffer
          @height or $log.warn " CB height is nil, setting to 1. This may not be what you want"
         mheight = @height ||  1 # some widgets don't have height XXX
@@ -787,7 +793,7 @@ module RubyCurses
         layout  = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
         $log.debug "  cb .. #{@name} create_buffer #{mrow} #{mcol} #{mheight} #{mwidth}"
         @screen_buffer = VER::Pad.create_with_layout(layout)
-        @is_double_buffered = true # will be checked prior to blitting
+        #@is_double_buffered = true # will be checked prior to blitting # removed on 2011-09-29 
         @buffer_modified = true # set this in repaint 
         @repaint_all = true # added 2010-01-08 19:02 
       else
@@ -807,6 +813,7 @@ module RubyCurses
     # Preferable to use this instead of directly using create_buffer.
     #
     def safe_create_buffer
+      return # 2011-09-29 removed CLEANUP BUFFTOWIN
       if @screen_buffer == nil
         if @height == nil
           @height = @preferred_height || @min_height
@@ -916,10 +923,10 @@ module RubyCurses
            fire_property_change(:width, oldvalue, newvalue)
            repaint_all(true)  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
-         if is_double_buffered? and newvalue != oldvalue
-           $log.debug " #{@name} w calling resize of screen buffer with #{newvalue}. WARNING: does not change buffering_params"
-           @screen_buffer.resize(0, newvalue)
-         end
+         #if is_double_buffered? and newvalue != oldvalue # removed on 2011-09-29 
+           #$log.debug " #{@name} w calling resize of screen buffer with #{newvalue}. WARNING: does not change buffering_params"
+           #@screen_buffer.resize(0, newvalue)
+         #end
        end
      end
      def width=val
@@ -950,10 +957,10 @@ module RubyCurses
          end
          # XXX this troubles me a lot. gets fired more than we would like
          # XXX When both h and w change then happens 2 times.
-         if is_double_buffered? and newvalue != oldvalue
-           $log.debug " #{@name} h calling resize of screen buffer with #{newvalue}"
-           @screen_buffer.resize(newvalue, 0)
-         end
+         #if is_double_buffered? and newvalue != oldvalue # removed on 2011-09-29 
+           #$log.debug " #{@name} h calling resize of screen buffer with #{newvalue}"
+           #@screen_buffer.resize(newvalue, 0)
+         #end
        end
      end
      def height=val
@@ -1019,12 +1026,14 @@ module RubyCurses
         #setformrowcol r,c 
      end
 
+     # I was removing this altogether but vimsplit needs this, or masterdetail gives form and window
+     # to vimsplit. So i 've removed everything but the form and window setting. 2011-09-29 SETBUFF
      # move from TextView
      # parameters relating to buffering - new 2010-02-12 12:09 RFED16
      # I am merging so i can call multiple times
      # WARNING NOTE : this does not set Pad's top and left since Pad may not be created yet, or at all
      def set_buffering params
-       @buffer_params ||= {}
+       #@buffer_params ||= {}
        #@should_create_buffer = params[:should_create_buffer] || true
        @target_window ||= params[:target_window]
        # trying out, 2010-02-12 19:40 sometimes no form even with parent.
@@ -1042,17 +1051,18 @@ module RubyCurses
        # @right = params[:right]
        # offsets ?
        # warning, this does not touch @top and left of Pad, often pad will bot yet be created
-       @buffer_params.merge!(params)
-       if !@screen_buffer.nil?
-         # update Pad since some folks take from there such as print_border
-         @screen_buffer.top = params[:screen_top] if !params[:screen_top].nil?
-         @screen_buffer.left = params[:screen_left] if !params[:screen_left].nil?
-       end
+       #@buffer_params.merge!(params)
+       #if !@screen_buffer.nil?
+         ## update Pad since some folks take from there such as print_border
+         #@screen_buffer.top = params[:screen_top] if !params[:screen_top].nil?
+         #@screen_buffer.left = params[:screen_left] if !params[:screen_left].nil?
+       #end
      end
  
      # copy buffer onto window
      # RFED16 added 2010-02-12 14:42 0 simpler buffer management
      def buffer_to_window
+       return # 2011-09-29 BUFFTOWIN
        if @is_double_buffered and @buffer_modified
          raise " #{@name} @buffer_params not passed. Use set_buffering()" unless @buffer_params
          # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
@@ -1114,64 +1124,85 @@ module RubyCurses
   class Form
     include EventHandler
     include RubyCurses::Utils
-    attr_reader :value
+    attr_reader :value # ???
+    
+    # array of widgets
     attr_reader :widgets
+    
+    # related window used for printing
     attr_accessor :window
+    
+    # cursor row and col
     attr_accessor :row, :col
 #   attr_accessor :color
 #   attr_accessor :bgcolor
-    attr_accessor :padx
-    attr_accessor :pady
+    
+    # has the form been modified
     attr_accessor :modified
+
+    # index of active widget
     attr_accessor :active_index
-    attr_reader :by_name   # hash containing widgets by name for retrieval
+     
+    # hash containing widgets by name for retrieval
+    #   Useful if one widget refers to second before second created.
+    attr_reader :by_name   
+
+    # associated menubar
     attr_reader :menu_bar
+
     attr_accessor :navigation_policy  # :CYCLICAL will cycle around. Needed to move to other tabs
     ## i need some way to move the cursor by telling the main form what the coords are
     ##+ perhaps this will work
-    attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes
+    attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes XXX
+
     # how many rows the component is panning embedded widget by
-    attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED 
+    attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
     # how many cols the component is panning embedded widget by
-    attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED 
+    attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
+
+    # XXX ARE next tow used ??? CLEANUP
     ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
     attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
+
+    # name given to form for debugging
     attr_accessor :name # for debugging 2010-02-02 20:12 
-    attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor
-#    attr_accessor :allow_alt_digits # catch Alt-1-9 as digit_argument
+
     def initialize win, &block
       @window = win
       @widgets = []
       @by_name = {}
       @active_index = -1
-      @padx = @pady = 0
       @row = @col = -1
-      @ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18 
-      @add_cols = @add_rows = 0 # 2010-01-26 20:28 
+      @add_cols = @add_rows = 0 # 2010-01-26 20:28  CLEANUP
       @handler = {}
       @modified = false
       @focusable = true
       @navigation_policy ||= :CYCLICAL
+      @_events = [:ENTER, :LEAVE]
       instance_eval &block if block_given?
-      @_firsttime = true # internal, don't touch
       ## I need some counter so a widget knows it has been panned and can send a correct
       ##+ cursor coordinate to system.
       @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
       @_firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
       @name ||= ""
+
+      # related to emacs kill ring concept for copy-paste
+
       $kill_ring ||= [] # 2010-03-09 22:42 so textarea and others can copy and paste emacs EMACS
       $kill_ring_pointer = 0 # needs to be incremented with each append, moved with yank-pop
       $append_next_kill = false
       $kill_last_pop_size = 0 # size of last pop which has to be cleared
 
-      #@allow_alt_digits = true ; # capture Alt-1-9 as digit_args. Set to false if you wish to map
-                                 # Alt-1-9 to buttons of tabs 
       $last_key = 0 # last key pressed @since 1.1.5 (not used yet)
       $current_key = 0 # curr key pressed @since 1.1.5 (so some containers can behave based on whether
                     # user tabbed in, or backtabbed in (rmultisplit)
+
+      # for storing error message
       $error_message ||= Variable.new ""
-      $key_map ||= :vim ## should this come here or in App or ??? 2010-09-20 23:50 
+
+      # what kind of key-bindings do you want, :vim or :emacs
+      $key_map ||= :vim ## :emacs or :vim, keys to be defined accordingly. TODO
     end
     ##
     # set this menubar as the form's menu bar.
@@ -1180,7 +1211,7 @@ module RubyCurses
     def set_menu_bar mb
       @menu_bar = mb
       add_widget mb
-      mb.toggle_key ||= 27 # ESC
+      mb.toggle_key ||= Ncurses.KEY_F2
       if !mb.toggle_key.nil?
         ch = mb.toggle_key
         bind_key(ch) do |_form| 
@@ -1205,14 +1236,6 @@ module RubyCurses
 
       $log.debug " #{self} adding a widget #{@widgets.length} .. #{widget} "
       @widgets << widget
-      # add form offsets to widget's external offsets - 2010-02-07 20:22 
-      if widget.is_a? RubyCurses::Widget
-        if @window # ext seems redundant
-          widget.ext_col_offset += @window.left # just hope window aint undef!! XXX
-          $log.debug " #{@name} add widget ( #{widget.name} ) ext_row #{widget.ext_row_offset} += #{@window.top} "
-          widget.ext_row_offset += @window.top
-        end
-      end
       return @widgets.length-1
     end
     alias :add :add_widget
@@ -1221,7 +1244,6 @@ module RubyCurses
     #  added 2008-12-09 12:18 
    def remove_widget widget
      if widget.respond_to? :name and !widget.name.nil?
-       $log.debug "removing from byname: #{widget.name} " 
        @by_name.delete(widget.name)
      end
      @widgets.delete widget
@@ -1229,7 +1251,7 @@ module RubyCurses
    # form repaint
    # to be called at some interval, such as after each keypress.
     def repaint
-      $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} "
+      $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} " if $log.debug? 
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         f.repaint
@@ -1248,21 +1270,17 @@ module RubyCurses
        # although this does show cursor movement etc.
        ### XXX@window.wrefresh
        if @window.window_type == :WINDOW
-         $log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
+         #$log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
          Ncurses::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
        else
          $log.warn " XXX formrepaint #{@name} no refresh called  2011-09-19  #{@window} "
-         #@window.wrefresh # trying FFI 2011-09-19 
        end
     end
     ## 
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-      # next 2 lines added, only do cursor if current field doesn't manage it.
-      #curr = get_current_field
-      #return if curr.manages_cursor
       $log.debug "setpos : (#{self}) #{r} #{c}"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
@@ -1355,21 +1373,20 @@ module RubyCurses
     # puts focus on the given field/widget index
     # XXX if called externally will not run a on_leave of previous field
     def select_field ix0
-      #return if @widgets.nil? or @widgets.empty? or !@widgets[ix0].focusable
       return if @widgets.nil? or @widgets.empty? or !focusable?(@widgets[ix0])
-     #$log.debug "insdie select  field :  #{ix0} ai #{@active_index}" 
+     #$log.debug "inside select_field :  #{ix0} ai #{@active_index}" 
       f = @widgets[ix0]
       if focusable?(f)
         @active_index = ix0
         @row, @col = f.rowcol
-       #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
+        #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
         @window.wmove @row, @col # added RK FFI 2011-09-7 
         on_enter f
         f.curpos = 0
         repaint
         @window.refresh
       else
-        $log.debug "insdie sele nxt field ENABLED FALSE :   act #{@active_index} ix0 #{ix0}" 
+        $log.debug "inside select field ENABLED FALSE :   act #{@active_index} ix0 #{ix0}" 
       end
     end
     ##
@@ -1395,7 +1412,7 @@ module RubyCurses
     # FIXME: in the beginning it comes in as -1 and does an on_leave of last field
     def select_next_field
       return if @widgets.nil? or @widgets.empty?
-      $log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
+      #$log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?  || @active_index == -1 # needs to be tested out A LOT
         @active_index = -1 
       else
@@ -1435,7 +1452,7 @@ module RubyCurses
           end
         end
       end
-      $log.debug "insdie sele nxt field : NO NEXT  #{@active_index} WL:#{@widgets.length}" 
+      $log.debug "inside sele nxt field : NO NEXT  #{@active_index} WL:#{@widgets.length}" 
       return :NO_NEXT_FIELD
     end
     ##
@@ -1470,7 +1487,7 @@ module RubyCurses
           return
         end
       end
-      # $log.debug "insdie sele prev field FAILED:  #{@active_index} WL:#{@widgets.length}" 
+      
       ## added on 2008-12-14 18:27 so we can skip to another form/tab
       # 2009-01-08 12:24 no recursion, can be stack overflows if no focusable field
       if @navigation_policy == :CYCLICAL
@@ -1497,12 +1514,7 @@ module RubyCurses
       @window.wmove @row, @col
       ## 2010-01-30 23:45 exchange calling parent with calling this forms setrow
       # since in tabbedpane with table i am not gietting this forms offset. 
-        setrowcol nil, col
-      # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
-      #if !@parent_form.nil? and @parent_form != self #@form
-        #$log.debug " #{@name} addcol calling parents setrowcol #{row}, #{col}: #{@parent_form}   "
-        #@parent_form.setrowcol nil, col
-      #end
+      setrowcol nil, col
     end
     ##
     # move cursor by given rows and columns, can be negative.
@@ -1543,14 +1555,17 @@ module RubyCurses
   # after form handles basic keys, it gives unhandled key to current field, if current field returns
   # unhandled, then it checks this map.
   # Please update widget with any changes here. TODO: match regexes as in mapper
+
   def process_key keycode, object
     return _process_key keycode, object, @window
   end
+
   # Defines how user can give numeric args to a command even in edit mode
   # User either presses universal_argument (C-u) which generates a series of 4 16 64.
   # Or he presses C-u and then types some numbers. Followed by the action.
   # @returns [0, :UNHANDLED] :UNHANDLED implies that last keystroke is still to evaluated
   # by system. ) implies only numeric args were obtained. This method updates $multiplier
+
   def universal_argument
     $multiplier = ( ($multiplier.nil? || $multiplier == 0) ? 4 : $multiplier *= 4)
         $log.debug " inside UNIV MULT0: #{$multiplier} "
@@ -1584,6 +1599,7 @@ module RubyCurses
     end
     return 0
   end
+
   def digit_argument ch
     $multiplier = ch - ?\M-0.getbyte(0)
     $log.debug " inside UNIV MULT 0 #{$multiplier} "
@@ -1647,8 +1663,10 @@ module RubyCurses
           Ncurses.endwin
           @window.wrefresh
         else
-          keycode = keycode_tos(ch)
-          $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}  "
+          if $log.debug?
+            keycode = keycode_tos(ch)
+            $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}  "
+          end
           field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
@@ -1666,20 +1684,6 @@ module RubyCurses
               select_prev_field
             when FFI::NCurses::KEY_DOWN
               select_next_field
-            #when ?\M-L.getbyte(0)
-              ### trying out these for fuun and testing splitpane 2010-01-10 20:32 
-              #$log.debug " field #{field.name} was #{field.width} "
-              #field.width += 1
-              #$log.debug " field #{field.name} now #{field.width} "
-              #field.repaint_all
-            #when ?\M-H.getbyte(0), ?\M-<.getbyte(0)
-              #field.width -= 1
-              #$log.debug " field #{field.name} now #{field.width} "
-              #field.repaint_all
-            #when ?\M-J.getbyte(0)
-              #field.height += 1
-            #when ?\M-K.getbyte(0)
-              #field.height -= 1
             else
               #$log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
@@ -1691,8 +1695,6 @@ module RubyCurses
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
        $last_key = ch
-       #return handled # TRYNG 2010-03-01 23:30 since TP returns NO_NEXT_FIELD sometimes
-       #$multiplier = 0
   end
   ##
   # test program to dump data onto log
@@ -1702,8 +1704,8 @@ module RubyCurses
   # or editable as filters. I just dump everything?
   # What's more, currently getvalue has been used by paint to return what needs to be displayed - 
   # at least by label and button.
-  def dump_data
-    $log.debug " DUMPING DATA "
+  def DEPRECATED_dump_data # CLEAN
+    $log.debug "DEPRECATED DUMPING DATA "
     @widgets.each do |w|
       # we need checkbox and radio button values
       #next if w.is_a? RubyCurses::Button or w.is_a? RubyCurses::Label 
@@ -1718,7 +1720,7 @@ module RubyCurses
     $log.debug " END DUMPING DATA "
   end
   ##
-  # trying out for splitpane and others who have a sub-form
+  # trying out for splitpane and others who have a sub-form. TabbedPane uses
   def set_parent_buffer b
     @parent_buffer = b
   end
@@ -1758,15 +1760,6 @@ module RubyCurses
     col = w.col
     return row, col
   end
-  ## so if we come back from ncurses cooked mode we can repaint.
-  # not required, we have to stop and restart ncurses. 
-  #def reset_all
-    #$log.debug " form reset:#{self}, #{@name} , r #{@row} c #{@col} "
-    #@widgets.each do |f|
-      #next if f.visible == false # added 2008-12-09 12:17 
-      #f.repaint_all()
-    #end
-  #end
 
     ## ADD HERE FORM
   end
@@ -1808,61 +1801,57 @@ module RubyCurses
     dsl_accessor :default            # TODO use set_buffer for now
     dsl_accessor :values             # validate against provided list
     dsl_accessor :valid_regex        # validate against regular expression
+    dsl_accessor :valid_range        # validate against numeric range # 2011-09-29 V1.3.1 
 
-    dsl_accessor :chars_allowed      # regex, what characters to allow, will ignore all else
-    dsl_accessor :display_length     # how much to display
-    #dsl_property :bgcolor            # background color 'red' 'black' 'cyan' etc # 2011-09-29 IN WIDGET
-    #dsl_property :color              # foreground colors from Ncurses COLOR_xxxx
-    dsl_accessor :show               # what charactr to show for each char entered (password field)
-    dsl_accessor :null_allowed       # allow nulls, don't validate if null # added 2008-12-22 12:38 
+    dsl_accessor :chars_allowed           # regex, what characters to allow, will ignore all else
+    dsl_accessor :display_length          # how much to display
+    #dsl_property :bgcolor                # background color 'red' 'black' 'cyan' etc # 2011-09-29 IN WIDGET
+    #dsl_property :color                  # foreground colors from Ncurses COLOR_xxxx
+    dsl_accessor :show                    # what charactr to show for each char entered (password field)
+    dsl_accessor :null_allowed            # allow nulls, don't validate if null # added 2008-12-22 12:38 
 
     # any new widget that has editable should have modified also
     dsl_accessor :editable          # allow editing
 
     attr_reader :form
-    attr_reader :handler             # event handler
-    attr_reader :type                # datatype of field, currently only sets chars_allowed
-    #attr_reader :curpos              # cursor position in buffer current, in WIDGET 
-    attr_accessor :datatype              # crrently set during set_buffer
-    attr_reader :original_value              # value on entering field
+    attr_reader :handler                       # event handler
+    attr_reader :type                          # datatype of field, currently only sets chars_allowed
+    #attr_reader :curpos                       # cursor position in buffer current, in WIDGET 
+    attr_accessor :datatype                    # crrently set during set_buffer
+    attr_reader :original_value                # value on entering field
     attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
 
     def initialize form, config={}, &block
       @form = form
       @buffer = String.new
       #@type=config.fetch("type", :varchar)
-      # 2010-10-19 12:26 slight change, hopefully won't bomb
       @display_length = 20
       @maxlen = @display_length
       @row = 0
       @col = 0
       @bgcolor = $def_bg_color
       @color = $def_fg_color
-      #@name = config.fetch("name", nil)
       @editable = true
       @focusable = true
-      # are these redundant ?
-      #@display_length = config.fetch("display_length", 20)
-      #@maxlen=config.fetch("maxlen", @display_length) 
-      #@row = config.fetch("row", 0)
-      #@col = config.fetch("col", 0)
-      #@bgcolor = config.fetch("bgcolor", $def_bg_color)
-      #@color = config.fetch("color", $def_fg_color)
-      #@name = config.fetch("name", nil)
-      #@editable = config.fetch("editable", true)
-      #@focusable = config.fetch("focusable", true)
       @event_args = {}             # arguments passed at time of binding, to use when firing event
       map_keys 
       init_vars
-      super
+      @_events ||= []
       @_events.push(:CHANGE)
+      super
     end
     def init_vars
-      @pcol = 0   # needed for horiz scrolling
+      @pcol = 0                    # needed for horiz scrolling
       @curpos = 0                  # current cursor position in buffer
       @modified = false
       @repaint_required = true
     end
+
+    #
+    # Set Variable as value. 
+    #  This allows using Field as a proxy
+    #  @param [Variable] variable containing text value
+    #
     def text_variable tv
       @text_variable = tv
       set_buffer tv.value
@@ -1884,6 +1873,8 @@ module RubyCurses
         @chars_allowed = /[a-zA-Z0-9]/ 
       end
     end
+
+    #
     # add a char to field, and validate
     # NOTE: this should return self for chaining operations and throw an exception
     # if disabled or exceeding size
@@ -1975,19 +1966,19 @@ module RubyCurses
     # Typically one passes a Label, but now we can pass just a String, a label 
     # is created
     # @param [Label, String] label object to be associated with this field
-  def set_label label
-    # added case for user just using a string
-    case label
-    when String
-      # what if no form at this point
-      label = Label.new @form, {:text => label}
+    def set_label label
+      # added case for user just using a string
+      case label
+      when String
+        # what if no form at this point
+        label = Label.new @form, {:text => label}
+      end
+      @label = label
+      label.row  @row if label.row == -1
+      label.col  @col-(label.name.length+1) if label.col == -1
+      label.label_for(self)
+      label
     end
-    @label = label
-    label.row  @row if label.row == -1
-    label.col  @col-(label.name.length+1) if label.col == -1
-    label.label_for(self)
-    label
-  end
 
   ## Note that some older widgets like Field repaint every time the form.repaint
   ##+ is called, whether updated or not. I can't remember why this is, but
@@ -2010,15 +2001,10 @@ module RubyCurses
     end
     #printval = printval[0..display_length-1] if printval.length > display_length
     acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
-    #if @bgcolor.is_a? String and @color.is_a? String
-      #acolor = ColorMap.get_color(@color, @bgcolor)
-    #else
-      #acolor = $datacolor
-    #end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
     #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
     @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
-    @repaint_required = false # 2010-11-20 13:13 
+    @repaint_required = false
   end
   def set_focusable(tf)
     @focusable = tf
@@ -2034,50 +2020,22 @@ module RubyCurses
     bind_key(?\C-e){ cursor_end }
     bind_key(?\C-k){ delete_eol }
     bind_key(?\C-_){ undo_delete_eol }
-    bind_key(27){ set_buffer @original_value }
+    #bind_key(27){ set_buffer @original_value }
+    bind_key(?C-g){ set_buffer @original_value } # 2011-09-29 V1.3.1 ESC did not work
     @keys_mapped = true
   end
 
   # field
-  # # TODO bind these keys so they can be overridden
+  # 
   def handle_key ch
-    @repaint_required = true # added 2010-11-20 13:21 
+    @repaint_required = true 
     #map_keys unless @keys_mapped # moved to init
     case ch
-    #when KEY_LEFT
-      #cursor_backward
-    #when KEY_RIGHT
-      #cursor_forward
-    #when KEY_BACKSPACE, 127
-      #delete_prev_char if @editable
-    #when KEY_UP
-    #  $log.debug " FIELD GOT KEY_UP, NOW IGNORING 2009-01-16 17:52 "
-      #@form.select_prev_field # in a table this should not happen 2009-01-16 17:47 
-    #  return :UNHANDLED
-    #when KEY_DOWN
-    #  $log.debug " FIELD GOT KEY_DOWN, NOW IGNORING 2009-01-16 17:52 "
-      #@form.select_next_field # in a table this should not happen 2009-01-16 17:47 
-    #  return :UNHANDLED
-      # user cannot bind here or on form if i eat up
-    #when KEY_ENTER, 10, 13
-      #if respond_to? :fire
-        #fire
-      #end
-    #when 330
-      #delete_curr_char if @editable
-    #when ?\C-a.getbyte(0)
-      #cursor_home 
-    #when ?\C-e.getbyte(0)
-      #cursor_end 
-    #when ?\C-k.getbyte(0)
-      #delete_eol if @editable
-    #when ?\C-_.getbyte(0) # changed on 2010-02-26 14:44 so C-u can be used as numeric arg
-      #undo_delete_eol
     when 32..126
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
-    #when 27 # escape
-      #set_buffer @original_value 
+    when 27 # cannot bind it
+      set_buffer @original_value 
     else
       ret = super
       return ret
@@ -2100,15 +2058,15 @@ module RubyCurses
   ##
   # goto end of field, "end" is a keyword so could not use it.
   def cursor_end
-        blen = @buffer.rstrip.length
-        if blen < @display_length
-          set_form_col blen
-        else
-          @pcol = blen-@display_length
-          set_form_col @display_length-1
-        end
-        @curpos = blen # HACK XXX
-  #  $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+    blen = @buffer.rstrip.length
+    if blen < @display_length
+      set_form_col blen
+    else
+      @pcol = blen-@display_length
+      set_form_col @display_length-1
+    end
+    @curpos = blen # HACK XXX
+    #  $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
     #set_form_col @buffer.length
   end
   def delete_eol
@@ -2195,6 +2153,11 @@ module RubyCurses
           valid = @valid_regex.match(val.to_s)
           raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
         end
+        # added valid_range for numerics 2011-09-29 
+        if !@valid_range.nil?
+          valid = @valid_range.include?(val.to_i)
+          raise FieldValidationException, "Field not matching range #{@valid_range}" unless valid
+        end
       end
       # here is where we should set the forms modified to true - 2009-01-18 12:36 XXX
       if modified?
@@ -2239,6 +2202,7 @@ module RubyCurses
   # will update the Variable. A variable can be used to link a field with a label or 
   # some other widget.
   # This is the new version of Variable. Deleting old version on 2009-01-17 12:04 
+
   class Variable
   
     def initialize value=""
@@ -2247,6 +2211,7 @@ module RubyCurses
       @value = value
       @klass = value.class.to_s
     end
+
     ## 
     # This is to ensure that change handlers for all dependent objects are called
     # so they are updated. This is called from text_variable property of some widgets. If you 
@@ -2362,6 +2327,8 @@ module RubyCurses
       @name ||= @text
       @repaint_required = true
     end
+    #
+    # get the value for the label
     def getvalue
       @text_variable && @text_variable.value || @text
     end
@@ -2392,49 +2359,49 @@ module RubyCurses
     # XXX need to move wrapping etc up and done once. 
     def repaint
       return unless @repaint_required
-        r,c = rowcol
-        # value often nil so putting blank, but usually some application error
-        value = getvalue_for_paint || ""
-        lablist = []
-        if @height && @height > 1
-          lablist = wrap_text(value, @display_length).split("\n")
-        else
-          # ensure we do not exceed
-          if !@display_length.nil?
-            if value.length > @display_length
-              value = value[0..@display_length-1]
-            end
+      r,c = rowcol
+      # value often nil so putting blank, but usually some application error
+      value = getvalue_for_paint || ""
+      lablist = []
+      if @height && @height > 1
+        lablist = wrap_text(value, @display_length).split("\n")
+      else
+        # ensure we do not exceed
+        if !@display_length.nil?
+          if value.length > @display_length
+            value = value[0..@display_length-1]
           end
-          lablist << value
         end
-        len = @display_length || value.length
-        acolor = get_color $datacolor
-        #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
-        firstrow = r
-        _height = @height || 1
-        str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
-        # loop added for labels that are wrapped.
-        # TODO clear separately since value can change in status like labels
-        #$log.debug " RWID 1595 #{self.class} value: #{value} form:  #{form} "
-        @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
-        0.upto(_height-1) { |i| 
-          @graphic.printstring r+i, c, " " * len , acolor,@attr
-        }
-        lablist.each_with_index do |_value, ix|
-          break if ix >= _height
-          if @justify.to_sym == :center
-            padding = (@display_length - _value.length)/2
-            _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
-          end
-          @graphic.printstring r, c, str % [len, _value], acolor,@attr
-          r += 1
+        lablist << value
+      end
+      len = @display_length || value.length
+      acolor = get_color $datacolor
+      #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
+      firstrow = r
+      _height = @height || 1
+      str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
+      # loop added for labels that are wrapped.
+      # TODO clear separately since value can change in status like labels
+      #$log.debug " RWID 1595 #{self.class} value: #{value} form:  #{form} "
+      @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
+      0.upto(_height-1) { |i| 
+        @graphic.printstring r+i, c, " " * len , acolor,@attr
+      }
+      lablist.each_with_index do |_value, ix|
+        break if ix >= _height
+        if @justify.to_sym == :center
+          padding = (@display_length - _value.length)/2
+          _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
         end
-        if !@mnemonic.nil?
-          ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          @graphic.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
-        end
-        #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
-        @repaint_required = false
+        @graphic.printstring r, c, str % [len, _value], acolor,@attr
+        r += 1
+      end
+      if !@mnemonic.nil?
+        ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
+        @graphic.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
+      end
+      #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
+      @repaint_required = false
     end
   # ADD HERE LABEL
   end
@@ -2453,12 +2420,13 @@ module RubyCurses
       @editable = false
       @handler={} # event handler
       @event_args ||= {}
+      @_events ||= []
+      @_events.push :PRESS
       super
       @bgcolor ||= $datacolor 
       @color ||= $datacolor 
       @surround_chars ||= ['[ ', ' ]'] 
       @col_offset = @surround_chars[0].length 
-      @_events.push :PRESS
     end
     ##
     # set button based on Action
@@ -2484,6 +2452,7 @@ module RubyCurses
         @text = s
       end
     end
+
     ## 
     # FIXME this will not work in messageboxes since no form available
     # if already set mnemonic, then unbind_key, ??
@@ -2492,12 +2461,13 @@ module RubyCurses
       $log.error " #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
       return if @form.nil?
       @mnemonic = char
-      ch = char.downcase()[0].ord ## XXX 1.9 
+      ch = char.downcase()[0].ord ##  1.9 
       # meta key 
       mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))
       $log.debug " #{self} setting MNEMO to #{char} #{mch}"
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
+
     ##
     # bind hotkey to form keys. added 2008-12-15 20:19 
     # use ampersand in name or underline
@@ -2512,13 +2482,7 @@ module RubyCurses
       mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))
       @form.bind_key(mch, self) { |_form, _butt| _butt.fire }
     end
-    #    2009-01-17 01:48 removed so widgets can be called
-#    def on_enter
-#      $log.debug "ONENTER : #{@bgcolor} "
-#    end
-#    def on_leave
-#      $log.debug "ONLEAVE : #{@bgcolor} "
-#    end
+
     def getvalue
       @text_variable.nil? ? @text : @text_variable.get_value(@name)
     end
@@ -2564,6 +2528,7 @@ module RubyCurses
           end
         end
     end
+
     ## command of button (invoked on press, hotkey, space)
     # added args 2008-12-20 19:22 
     def command *args, &block
@@ -2577,6 +2542,7 @@ module RubyCurses
       #fire_handler :PRESS, @form XXX changed on 2010-09-12 19:22 
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
     end
+
     # Button
     def handle_key ch
       case ch
@@ -2594,6 +2560,7 @@ module RubyCurses
         return :UNHANDLED
       end
     end
+
     # temporary method, shoud be a proper class
     def self.button_layout buttons, row, startcol=0, cols=Ncurses.COLS-1, gap=5
       col = startcol
@@ -2677,6 +2644,10 @@ module RubyCurses
       @text_offset = @surround_chars[0].length
       @surround_chars[0] + buttontext + @surround_chars[1]
     end
+
+    # toggle button handle key
+    # @param [int] key received
+    #
     def handle_key ch
       if ch == 32
         toggle
@@ -2684,11 +2655,13 @@ module RubyCurses
         super
       end
     end
+
     ##
     # toggle the button value
     def toggle
       fire
     end
+
     # called on :PRESS event
     # caller should check state of itemevent passed to block
     def fire
@@ -2715,9 +2688,11 @@ module RubyCurses
       # call fire of button class 2008-12-09 17:49 
     end
   end # class
+
   ##
   # A checkbox, may be selected or unselected
   # TODO hotkey should work here too.
+  #
   class CheckBox < ToggleButton
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
@@ -2746,10 +2721,12 @@ module RubyCurses
       end
     end
   end # class
+
   ##
   # A selectable button that has a text value. It is based on a Variable that
   # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
   # 2008-11-27 18:45 just made this inherited from Checkbox
+
   class RadioButton < ToggleButton
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
@@ -2757,11 +2734,13 @@ module RubyCurses
       @surround_chars = ['(', ')'] if @surround_chars.nil?
       super
     end
+
     # all radio buttons will return the value of the selected value, not the offered value
     def getvalue
       #@text_variable.value
       @variable.get_value @name
     end
+
     def getvalue_for_paint
       buttontext = getvalue() == @value ? "o" : " "
       dtext = @display_length.nil? ? text : "%-*s" % [@display_length, text]
@@ -2776,16 +2755,19 @@ module RubyCurses
         return pretext + " #{dtext}"
       end
     end
+
     def toggle
       @variable.set_value @value, @name
       # call fire of button class 2008-12-09 17:49 
       fire
     end
+
     # added for bindkeys since that calls fire, not toggle - XXX i don't like this
     def fire
       @variable.set_value  @value,@name
       super
     end
+
     ##
     # ideally this should not be used. But implemented for completeness.
     # it is recommended to toggle some other radio button than to uncheck this.

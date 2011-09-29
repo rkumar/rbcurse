@@ -232,6 +232,7 @@ if $0 == __FILE__
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
+        begin
         colcount = tcm.column_count-1
         s = keycode_tos ch
         keylabel.text = "Pressed #{ch} , #{s}"
@@ -248,6 +249,11 @@ if $0 == __FILE__
 
         @form.repaint
         @window.wrefresh
+        rescue => ex
+          $log.debug( ex) if ex
+          $log.debug(ex.backtrace.join("\n")) if ex
+          alert ex.to_s
+        end
       end
     end
   rescue => ex

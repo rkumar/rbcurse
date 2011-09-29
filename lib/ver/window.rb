@@ -633,7 +633,7 @@ module VER
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
     # added RK 2009-10-08 23:57 for tabbedpanes
-    # THIS IS EXPERIMENTAL - 
+    # THIS IS EXPERIMENTAL -  XXX CLEANUP REMOVE
     # Acco to most sources, derwin and subwin are not thoroughly tested, avoid usage
     # subwin moving and resizing not functioning.
     def derwin(layout)
@@ -642,6 +642,7 @@ module VER
       $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
       return v
     end
+    ## REMOVE CLEANUP UNUSED
     def _subwin(layout)
       t = @layout[:top]
       l = @layout[:left]
@@ -688,7 +689,8 @@ module VER
   # THIS IS EXPERIMENTAL - 
   # I have not called super in the initializer so any methods you try on subwin
   # that exist in the superclass which use @window will bomb
-  # @since 0.1.3
+  # @since 0.1.3 REMOVE UNUSED.
+  # @deprecated
   class SubWindow  < VER::Window
     attr_reader :width, :height, :top, :left
     attr_accessor :layout
@@ -744,6 +746,7 @@ module VER
   # but we keep printing an extra row in copywin. so Pad needs to maintain comp height
   # and padheight.
   # @since 0.1.3
+  # NOTE used only by TabbedPane. If we rewrite without using it in 1.3.1 then scrap.
   class Pad  < VER::Window
     # top and left correspond to screen's top and left wich will mostly be fixed
     attr_accessor :top, :left
@@ -899,6 +902,8 @@ module VER
     # also assuming only one win so, window not passed as param
     # @return return value of copywin which should be 0 (-1 is ERR)
     def copy_pad_to_win
+      $log.warn " DEPRECATED copy_pad_to_win" # CLEANUP
+      raise "DEPREC copy_pad_to_win deprecated. Will be removed. Let me know if it is needed"
       # check that we don't exceed other windows height/maxrow
       smr = smaxrow()
       # SHIT, this means the otherwin has to be a Pad, cannot be a window
@@ -972,7 +977,10 @@ module VER
       @modified = false
       return ret
     end
+    # @deprecated
     def copy_win_to_pad
+      $log.warn " DEPRECATED copy_win_to_pad" # CLEANUP 2011-09-29 
+      raise "DEPREC copy_win_to_pad deprecated. Will be removed. Let me know if it is needed"
       smr = smaxrow()
       if smr >= @window.smaxrow()
         smr = @window.smaxrow()-1

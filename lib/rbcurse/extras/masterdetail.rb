@@ -28,7 +28,7 @@ class MasterDetail < Widget
     if @first_time
       @first_time = nil
       [@vim, @left, @right1, @right2].each { |e|  
-        e.set_buffering(:target_window => @target_window || @form.window, :form => @form)
+        e.set_buffering(:target_window => @target_window || @form.window, :form => @form) # removed on 2011-09-29 
       }
     end
     @vim.repaint

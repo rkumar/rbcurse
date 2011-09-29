@@ -216,17 +216,11 @@ module RubyCurses
     end
 
     def repaint # textview :nodoc:
-      if @screen_buffer.nil?
-        safe_create_buffer
-        @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
-        $log.debug " textview creates pad #{@screen_buffer} #{@name}"
-      end
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
     #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
-      buffer_to_window
     end
     def getvalue
       @list
@@ -323,7 +317,8 @@ module RubyCurses
         begin
           ret = process_key ch, self
         rescue => err
-          $error_message = err
+          #$error_message = err
+          $error_message.value = "#{err}"
           @form.window.print_error_message
           $log.error " TEXTVIEW ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))

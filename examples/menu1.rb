@@ -4,7 +4,7 @@ require 'rbcurse/app'
   App.new do 
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
-    header = app_header "rbcurse 1.2.0", :text_center => "Menubar Demo", :text_right =>"enabled"
+    header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Menubar Demo", :text_right =>"enabled"
     form = @form
     mylabel = "a field"
 

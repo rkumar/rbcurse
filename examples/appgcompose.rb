@@ -196,8 +196,8 @@ module AppgCompose
         def get_commands
           %w{ insert_file}
         end
-        header = app.app_header "rbcurse 1.2.0", :text_center => "Compose Mail", :text_right =>"27% Stronger", :color => :black, :bgcolor => :white, :attr => :bold 
-        app.message "Press F1 to exit from here"
+        header = app.app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Compose Mail", :text_right =>"27% Stronger", :color => :black, :bgcolor => :white, :attr => :bold 
+        app.message "Press F10 to exit from here"
         app.stack :margin_top => 2, :margin => 5, :width => 15 do |xxx|
           fg = :white
           bg = :blue

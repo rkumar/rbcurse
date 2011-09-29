@@ -292,7 +292,11 @@ module ListScrollable
       @search_start_ix = start
       regex = Regexp.new(regex, Regexp::IGNORECASE) if @search_case
       start.upto(fend) do |ix| 
-        row = @list[ix].to_s
+        row1 = @list[ix].to_s
+
+        # 2011-09-29 crashing on a character F3 in log file
+        row = row1.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+
         m=row.match(regex)
         if !m.nil?
           @find_offset = m.offset(0)[0]

@@ -252,7 +252,7 @@ module RubyCurses
     end
     # @deprecated, avoid usage
     def get_table_column_model
-      $log.debug " DEPRECATED. Pls use table_column_model()"
+      $log.warn " DEPRECATED. Pls use table_column_model()"
       @table_column_model 
     end
     # 

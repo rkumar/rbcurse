@@ -60,13 +60,17 @@ def help_text
       eos
 end
 if $0 == __FILE__
+  ##Encoding.default_external = Encoding.find("UTF-8") 
   include RubyCurses
 
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    #$log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
-    $log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
+    path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    $log = Logger.new(path)
+    ##$log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
+    #$log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
     @window = VER::Window.root_window
