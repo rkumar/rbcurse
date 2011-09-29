@@ -145,7 +145,8 @@ module RubyCurses
     def focussed_row
       #raise "No data in table" if row_count < 1
       return nil if row_count < 1
-      @current_index
+      return @current_index if @current_index < row_count
+      @current_index = row_count-1
     end
     def focussed_col
       return nil if row_count < 1
@@ -338,6 +339,7 @@ module RubyCurses
     #--- row and column methods of Table ---#
     # must not give wrong results when columns switched!
     def get_value_at row, col
+      return nil if row.nil? || col.nil? # 2011-09-29 
       model_index = @table_column_model.column(col).model_index
       @table_model.get_value_at row, model_index
     end
@@ -487,10 +489,10 @@ module RubyCurses
       @repaint_required = true
       # copied from rlistbox, so that editors write on parent's graphic, otherwise
       # their screen updates get overwritten by parent. 2010-01-19 20:17 
-      if @should_create_buffer
-        $log.debug "LB #{@name} overriding editors comp with GRAPHIC #{@graphic} "
-        editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
-      end
+      #if @should_create_buffer # removed on 2011-09-29 
+        #$log.debug "LB #{@name} overriding editors comp with GRAPHIC #{@graphic} "
+        #editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
+      #end
       set_form_col 
     end
     ## Its too late to call components on_leave here
