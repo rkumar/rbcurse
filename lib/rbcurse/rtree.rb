@@ -421,7 +421,6 @@ module RubyCurses
     # a section of it.
     # FIXME: tree may not be clearing till end see appdirtree after divider movement
     def repaint
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
@@ -495,8 +494,6 @@ module RubyCurses
       end
       @table_changed = false
       @repaint_required = false
-      @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      buffer_to_window # RFED16 2010-02-17 23:16 
     end
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty

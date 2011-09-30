@@ -325,17 +325,11 @@ module RubyCurses
     end
 
     def repaint # Tabularwidget :nodoc:
-      if @screen_buffer.nil?
-        safe_create_buffer
-        @screen_buffer.name = "Pad::TABW_PAD_#{@name}" unless @screen_buffer.nil?
-        $log.debug " tabularwid creates pad #{@screen_buffer} #{@name}"
-      end
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
       #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && @repaint_footer_required
-      buffer_to_window
     end
     def getvalue
       @list
@@ -621,7 +615,6 @@ module RubyCurses
       end
       @repaint_required        = false
       @repaint_footer_required = true
-      @buffer_modified         = true # required by form to call buffer_to_screen
       @repaint_all             = false
 
     end

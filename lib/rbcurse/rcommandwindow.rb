@@ -26,7 +26,6 @@ module RubyCurses
     dsl_accessor :height, :width, :top, :left  #  2009-01-06 00:05 after removing meth missing
 
     def initialize form=nil, aconfig={}, &block
-      #@form = form
       @config = aconfig
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
@@ -44,15 +43,6 @@ module RubyCurses
       @bottomline.name = "rcommandwindow's bl"
       extend Forwardable
       def_delegators :@bottomline, :ask, :say, :agree, :choose #, :display_text_interactive
-      #if @form.nil?
-        #@form = RubyCurses::Form.new @window
-      #else
-        #@form.window = @window
-      #end
-      #acolor = get_color $reversecolor
-      #color = get_color $datacolor
-      #@window.printstring 0,0,"hello there", $normalcolor, 'normal'
-      #@window.bkgd(Ncurses.COLOR_PAIR(acolor));
       if @box == :border
         @window.box 0,0
       elsif @box
@@ -66,9 +56,7 @@ module RubyCurses
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
-      #@form.repaint
       @window.wrefresh
-      #handle_keys
       @row_offset = 0
       if @box
         @row_offset = 1
@@ -127,7 +115,6 @@ module RubyCurses
       when 0
         @start = 0
       end
-      #@form.repaint
       Ncurses::Panel.update_panels();
       Ncurses.doupdate();
       @window.wrefresh

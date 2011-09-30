@@ -485,10 +485,8 @@ module RubyCurses
       #@table_changed = false
       @repaint_required = false
       @repaint_footer_required = true
-      @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false 
 
-      # 2010-02-10 22:08 RFED16
     end
     # takes a block, this way anyone extending this class can just pass a block to do his job
     # This modifies the string

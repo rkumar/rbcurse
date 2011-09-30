@@ -94,8 +94,6 @@ module RubyCurses
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @selection_mode ||= :multiple # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
-      # moving down to repaint so that scrollpane can set should_buffered
-      # added 2010-02-17 23:05  RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
 
@@ -404,7 +402,6 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint #:nodoc:
-      #safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
@@ -467,8 +464,6 @@ module RubyCurses
       end # rc == 0
       #@table_changed = false
       @repaint_required = false
-      #@buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      #buffer_to_window # RFED16 2010-02-17 23:16 
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to
@@ -531,8 +526,6 @@ module RubyCurses
     def set_form_col col1=0               #:nodoc:
       @cols_panned ||= 0 
       # editable listboxes will involve changing cursor and the form issue
-      ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
-      #win_col=@form.window.left
       win_col = 0 
       col2 = win_col + @col + @col_offset + col1 + @cols_panned + @left_margin
       $log.debug " set_form_col in rlistbox #{@col}+ left_margin #{@left_margin} ( #{col2} ) "

@@ -101,9 +101,6 @@ module RubyCurses
     def init_vars
       @repaint_required = true
       @recalculate_splits = true # convert weight to size
-      # seems it works with false also, so do we really need it to be true ?
-      # whe true was giving a seg fault on increasing child window by 0.05
-      #@_child_buffering = false # private, internal. not to be changed by callers. # removed on 2011-09-29 
       @row_offset = @col_offset = 0 if @suppress_borders # FIXME supposed to use this !!
 
       @internal_width = 2
@@ -239,9 +236,6 @@ module RubyCurses
         end
       end
       c.parent_component = self
-      #c.should_create_buffer = @_child_buffering  # removed on 2011-09-29 
-      #c.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row # removed on 2011-09-29 
-      #c.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col # removed on 2011-09-29 
 
       @components << c
       if which == :FIRST
@@ -277,7 +271,6 @@ module RubyCurses
     # repaint object
     # called by Form, and sometimes parent component (if not form).
     def repaint
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
       raise " #{@name} neither form, nor target window given TV paint " unless my_win
@@ -369,8 +362,6 @@ module RubyCurses
       # NOTE: at present one cannot change from flow to stack inside a pane
 
       @repaint_required = false
-      @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      buffer_to_window # 
     end
     def v?
       @orientation == :VERTICAL_SPLIT
@@ -453,7 +444,6 @@ module RubyCurses
             totalwd += wt if wt
           end
           e.set_buffering(:target_window => @target_window || @form.window, :bottom => e.height-1, :right => e.width-1, :form => @form ) # removed on 2011-09-29 
-          #e.set_buffering(:screen_top => e.row, :screen_left => e.col) # removed on 2011-09-29 
           $log.debug " XXXXX VIMS R #{e.row} C #{e.col} H #{e.height} W #{e.width} "
           e.repaint
           e._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired

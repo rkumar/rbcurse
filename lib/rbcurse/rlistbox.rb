@@ -1014,7 +1014,6 @@ module RubyCurses
       end # rc == 0
       #@table_changed = false
       @repaint_required = false
-      @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to

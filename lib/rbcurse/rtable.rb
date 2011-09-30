@@ -18,6 +18,7 @@
    currently it moves to next row. (examples/sqlc.rb) - DONE
   
   * 2010-01-18 19:54 - BUFFERING related changes.
+  * 2011-09-30       - removed all buffer related stuff
   --------
   * Date:   2008-12-27 21:33 
   * License:
@@ -91,7 +92,6 @@ module RubyCurses
       init_vars
       install_list_keys
       install_keys_bindings
-      ## create_buffer needs to move to repaint. widget needs values to use when i creates buffer in repaint.
       if _data && _columns
         set_data _data, _columns
       end
@@ -489,10 +489,6 @@ module RubyCurses
       @repaint_required = true
       # copied from rlistbox, so that editors write on parent's graphic, otherwise
       # their screen updates get overwritten by parent. 2010-01-19 20:17 
-      #if @should_create_buffer # removed on 2011-09-29 
-        #$log.debug "LB #{@name} overriding editors comp with GRAPHIC #{@graphic} "
-        #editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
-      #end
       set_form_col 
     end
     ## Its too late to call components on_leave here
@@ -883,7 +879,6 @@ module RubyCurses
 
 
     def repaint
-      safe_create_buffer # moved here 2010-02-19 09:53 RFED16
       return unless @repaint_required
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
@@ -982,8 +977,7 @@ module RubyCurses
       $log.debug " _print_more_data_marker(#{rc} >= #{tr} + #{h})"
       @table_changed = false
       @repaint_required = false
-      @buffer_modified = true
-      buffer_to_window # RFED16 2010-02-19 09:55 
+      #@buffer_modified = true # 2011-09-30 CLEANUP
     end
     # NEW to correct overflow
     #  2009-10-05 21:34 

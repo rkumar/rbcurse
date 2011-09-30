@@ -607,15 +607,10 @@ module RubyCurses
         value = getvalue_for_paint
         len = @display_length || value.length
         acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
-        #if @bgcolor.is_a? String and @color.is_a? String
-          #acolor = ColorMap.get_color(@color, @bgcolor)
-        #else
-          #acolor = $datacolor
-        #end
         @graphic.printstring r, c, "%-*s" % [len, value], acolor, @attr
         # next line should be in same color but only have @att so we can change att is nec
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
-        @buffer_modified = true # required for form to call buffer_to_screen
+        #@buffer_modified = true # required for form to call buffer_to_screen CLEANUP
     end
 
     def destroy
@@ -704,39 +699,6 @@ module RubyCurses
       end
     end
     ##
-    # bind an action to a key, required if you create a button which has a hotkey
-    # or a field to be focussed on a key, or any other user defined action based on key
-    # e.g. bind_key ?\C-x, object, block 
-    # added 2009-01-06 19:13 since widgets need to handle keys properly
-    #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
-    #  TODO add symbol so easy to map from config file or mapping file
-    def OLDbind_key keycode, *args, &blk
-      @key_handler ||= {}
-      if !block_given?
-        blk = args.pop
-        raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
-        $log.debug " #{@name} bind_key received a symbol #{blk} "
-      end
-      case keycode
-      when String
-        $log.debug "Widg String called bind_key BIND #{keycode} #{keycode_tos(keycode)}  "
-        keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
-        @key_handler[keycode] = blk
-      when Array
-        # for starters lets try with 2 keys only
-        a0 = keycode[0]
-        a0 = keycode[0].getbyte(0) if keycode[0].class == String
-        a1 = keycode[1]
-        a1 = keycode[1].getbyte(0) if keycode[1].class == String
-        @key_handler[a0] ||= OrderedHash.new
-        @key_handler[a0][a1] = blk
-      else
-        @key_handler[keycode] = blk
-      end
-      @key_args ||= {}
-      @key_args[keycode] = args
-    end
-    ##
     # remove a binding that you don't want
     def unbind_key keycode
       @key_args.delete keycode unless @key_args.nil?
@@ -747,12 +709,6 @@ module RubyCurses
     # returns UNHANDLED if no block for it
     # after form handles basic keys, it gives unhandled key to current field, if current field returns
     # unhandled, then it checks this map.
-    # added 2009-01-06 19:13 since widgets need to handle keys properly
-    # added 2009-01-18 12:58 returns ret val of blk.call
-    # so that if block does not handle, the key can still be handled
-    # e.g. table last row, last col does not handle, so it will auto go to next field
-    #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
-    #  except maybe for window pointer. TODO not tested
     def process_key keycode, object
       return _process_key keycode, object, @graphic
     end
@@ -767,64 +723,8 @@ module RubyCurses
     def get_preferred_size
       return @preferred_height, @preferred_width
     end
-    ## 
-    #  creates a buffer for the widget to write to.
-    #  This is typically called in the constructor. Sometimes, the constructor
-    #  does not have a height or width, since the object will be resized based on parents
-    #  size, as in splitpane
-    #  Please use this only if embedding this object in another object/s that would wish
-    #  to crop this. Otherwise, you could have many pads in your app.
-    #  Sets @graphic which can be used in place of @form.window
-    #  
-    # @return [buffer] returns pad created
-    # @since 0.1.3
-    # NOTE: 2010-01-12 11:14  there are some parent widgets that may want this w to have a larger top and left.
-    # Setting it later, means that the first repaint can be off.
 
-    def create_buffer()
-      $log.warn " CREATE_BUFFER DEPRECATED #{self.class}  CB called with #{@should_create_buffer} H: #{@height} W #{@width}  "
-      return # 2011-09-29 removed CLEANUP BUFFTOWIN
-      if @should_create_buffer
-         @height or $log.warn " CB height is nil, setting to 1. This may not be what you want"
-        mheight = @height ||  1 # some widgets don't have height XXX
-        mwidth  = @width ||  30 # some widgets don't have width as yet
-        mrow    = @row || 0
-        mcol    = @col || 0
-        layout  = { :height => mheight, :width => mwidth, :top => mrow, :left => mcol }
-        $log.debug "  cb .. #{@name} create_buffer #{mrow} #{mcol} #{mheight} #{mwidth}"
-        @screen_buffer = VER::Pad.create_with_layout(layout)
-        #@is_double_buffered = true # will be checked prior to blitting # removed on 2011-09-29 
-        @buffer_modified = true # set this in repaint 
-        @repaint_all = true # added 2010-01-08 19:02 
-      else
-        ## NOTE: if form has not been set, you could run into problems
-        ## Typically a form MUST be set by now, unless you are buffering, in which
-        ##+ case it should go in above block.
-        @screen_buffer = @form.window if @form
-      end
 
-      @graphic = @screen_buffer # use buffer for writing, not screen window
-      return @screen_buffer
-    end # create_buffer
-
-    ##
-    # checks if buffer not created already, and figures
-    # out dimensions.
-    # Preferable to use this instead of directly using create_buffer.
-    #
-    def safe_create_buffer
-      return # 2011-09-29 removed CLEANUP BUFFTOWIN
-      if @screen_buffer == nil
-        if @height == nil
-          @height = @preferred_height || @min_height
-        end
-        if @width == nil
-          @width = @preferred_width || @min_width
-        end
-        create_buffer
-      end
-      return @screen_buffer
-    end
     ##
     # Inform the system that the buffer has been modified
     # and should be blitted over the screen or copied to parent.
@@ -833,72 +733,6 @@ module RubyCurses
     end
 
 
-    ## 
-    #  copy the buffer to the screen, or given window/pad.
-    #  Relevant only in double_buffered case since pad has to be written
-    #  to screen. Should be called only by outer form, not by widgets as a widget
-    #  could be inside another widget.
-    #  Somewhere we need to clear screen if scrolling.???
-    #  aka b2s
-    # @param [Window, #get_window, nil] screen to write to, if nil then write to phys screen
-    # @return 0 - copy success, -1 copy failure, 1 - did nothing, usually since buffer_modified false
-
-   def buffer_to_screen(screen=nil, pminrow=0, pmincol=0)
-      raise "deprecated b2s "
-      return 1 unless @is_double_buffered and @buffer_modified
-      # screen is nil when form calls this to write to physical screen
-      $log.debug " screen inside buffer_to_screen b2s :#{screen} "
-      $log.error "ERROR !I have moved away fomr this method. Your program is broken and will not be working"
-      ## 2010-01-03 19:38 i think its wrong to put the pad onto the screen
-      ##+ since wrefreshing the window will cause this to be overwriting
-      ##+ so i put current window here.
-      if screen == nil
-        #$log.debug " XXX calling graphic.wrefresh 2010-01-03 12:27 (parent_buffer was nil) "
-        #$log.debug " XXX 2010-01-03 20:47 now copying pad #{@graphic} onto form.window"
-        ret = @graphic.wrefresh
-       ## 2010-01-03 20:45 rather than writing to phys screen, i write to forms window
-       ##+ so later updates to that window do not overwrite this widget.
-       ## We need to check this out with scrollpane and splitpane.
-        #ret = @graphic.copywin(@form.window.get_window, 0, 0, @row, @col, @row+@height-1, @col+@width-1,0)
-      else
-      # screen is passed when a parent object calls this to copy child buffer to itself
-        @graphic.set_backing_window(screen)
-        $log.debug "   #{@name} #{@graphic} calling copy pad to win COPY"
-        ret = @graphic.copy_pad_to_win
-      end
-      @buffer_modified = false
-      return ret
-    end # buffer_to_screen
-    ## 
-    #  returns screen_buffer or nil
-    #  
-    # @return [screen_buffer, nil] screen_buffer earlier created
-    # @since 0.1.3
-
-    def get_buffer()
-      @screen_buffer
-    end # get_buffer
-
-    ## 
-    #  destroys screen_buffer if present
-    #  
-    # @return 
-    # @since 0.1.3
-
-    def destroy_buffer()
-        if @screen_buffer != nil
-            @screen_buffer.destroy # ??? 
-        end
-    end # destroy_buffer
-
-     ## 
-     #  Does the widget buffer its output in a pad
-     #  
-     # @return [true, false] comment
-    
-     def is_double_buffered?()
-       @is_double_buffered
-     end # is_double_buffered
 
      ##
      # getter and setter for width - 2009-10-29 22:45 
@@ -1033,81 +867,14 @@ module RubyCurses
      # I am merging so i can call multiple times
      # WARNING NOTE : this does not set Pad's top and left since Pad may not be created yet, or at all
      def set_buffering params
-       #@buffer_params ||= {}
-       #@should_create_buffer = params[:should_create_buffer] || true
+     
        @target_window ||= params[:target_window]
-       # trying out, 2010-02-12 19:40 sometimes no form even with parent.
        @form = params[:form] unless @form
-       ## XXX trying this out.
-       # what if container does not ask child to buffer, as in splitpane
-       # then graphic could be nil
        if @graphic.nil? # and should_create_buffer not set or false XXX
          @graphic = @target_window
        end
-       $log.debug " set_buffering #{@name} got target window #{@target_window}, #{@graphic} - THIS DOES NOT UPDATE PAD ... sr:#{params[:screen_top]} sc:#{params[:screen_left]} top:#{params[:top]} left:#{params[:left]} bot:#{params[:bottom]} rt:#{params[:right]} "
-       # @top = params[:top]
-       # @left = params[:left]
-       # @bottom = params[:bottom]
-       # @right = params[:right]
-       # offsets ?
-       # warning, this does not touch @top and left of Pad, often pad will bot yet be created
-       #@buffer_params.merge!(params)
-       #if !@screen_buffer.nil?
-         ## update Pad since some folks take from there such as print_border
-         #@screen_buffer.top = params[:screen_top] if !params[:screen_top].nil?
-         #@screen_buffer.left = params[:screen_left] if !params[:screen_left].nil?
-       #end
      end
  
-     # copy buffer onto window
-     # RFED16 added 2010-02-12 14:42 0 simpler buffer management
-     def buffer_to_window
-       return # 2011-09-29 BUFFTOWIN
-       if @is_double_buffered and @buffer_modified
-         raise " #{@name} @buffer_params not passed. Use set_buffering()" unless @buffer_params
-         # we are notchecking for TV's width exceedingg, could get -1 if TV exceeds parent/
-          $log.debug "RFED16 paint  #{@name} calling b2s #{@graphic}  "
-          # TODO need to call set_screen_row_col (top, left), set_pad_top_left (pminrow, pmaxrow), set_screen_max_row_col
-          if false
-            # boh these print the pad behind 0,0, later scroll etc cover it and show bars.
-            # adding window was giving error
-              ret = buffer_to_screen #@target_window.get_window
-              #ret = @graphic.wrefresh
-          else
-             # ext gives me parents offset. often the row would be zero, so we still need one extra
-              r1 = @ext_row_offset # XXX NO, i should use top and left 
-              c1 = @ext_col_offset  
-              r = @graphic.top # 2010-02-12 21:12 TRYING THIS.
-              c = @graphic.left
-              maxr = @buffer_params[:bottom]
-              maxc = @buffer_params[:right]
-              r = @buffer_params[:screen_top] || 0
-              c = @buffer_params[:screen_left] || 0
-              $log.debug " b2w #{r1} #{c1} , #{r} #{c} "
-              ## sadly this is bypassing the method that does this stuff in Pad. We need to assimilate it back, so not so much work here
-              pminr = @graphic.pminrow
-              pminc = @graphic.pmincol
-              border_width = 0 # 2 #XXX  2010-02-15 23:40 2 to 0
-              $log.debug " #{@name} ret = @graphic.copywin(@target_window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, #{r}+#{maxr} - #{border_width}, #{c} + #{maxc} - #{border_width} ,0)"
-              # this print the view at 0,0, byt covers the scrllare, bars not shown.
-              # this can crash if textview is smaller than container dimension
-              # can crash/give -1 when panning, giong beyond pad size XXX
-              ret = @graphic.copywin(@target_window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
-              if ret == -1
-                $log.debug " copywin #{@name} h #{@height} w #{@width} "
-                if @height <= maxr-border_width
-                  $log.warn " h #{@height} is <= :bottom #{maxr} "
-                end
-                if @width <= maxc-border_width
-                  $log.warn " h #{@width} is <= :right #{maxc} "
-                end
-                $log.warn "ERROR !!! copywin returns -1 check Target: #{@target_window}, #{@target_window.get_window} " if ret == -1
-              end
-          end
-          $log.debug " copywin ret --> #{ret} "
-          #
-      end
-     end
      def event_list
        return @@events if defined? @@events
        nil
@@ -1862,7 +1629,7 @@ module RubyCurses
     #  2010-09-10 20:59 changed string to symbol
     def type dtype
       return if !@chars_allowed.nil?
-      case dtype.to_s.downcase
+      case dtype.to_s.downcase.to_sym # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
       when :integer
         @chars_allowed = /\d/
       when :numeric, :float
@@ -1871,6 +1638,8 @@ module RubyCurses
         @chars_allowed = /[a-zA-Z]/ 
       when :alnum
         @chars_allowed = /[a-zA-Z0-9]/ 
+      else
+        raise "type: invalid datatype specified. Use :integer, :numeric, :float, :alpha, :alnum "
       end
     end
 
@@ -2021,7 +1790,7 @@ module RubyCurses
     bind_key(?\C-k){ delete_eol }
     bind_key(?\C-_){ undo_delete_eol }
     #bind_key(27){ set_buffer @original_value }
-    bind_key(?C-g){ set_buffer @original_value } # 2011-09-29 V1.3.1 ESC did not work
+    bind_key(?\C-g){ set_buffer @original_value } # 2011-09-29 V1.3.1 ESC did not work
     @keys_mapped = true
   end
 

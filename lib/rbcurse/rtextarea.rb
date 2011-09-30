@@ -879,7 +879,6 @@ module RubyCurses
       @table_changed = false
       @repaint_required = false
       @repaint_footer_required = true # 2010-01-23 22:41 
-      @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false # added 2010-01-14 for redrawing everything
     end
     def ask_search_forward
