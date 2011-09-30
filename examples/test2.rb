@@ -13,7 +13,6 @@ require 'rbcurse/listcellrenderer'
 require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
-require './qdfilechooser'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rmessagebox'
 require 'rbcurse/rtree'
@@ -277,12 +276,15 @@ if $0 == __FILE__
       # a special case required since another form (combo popup also modifies)
       $message.update_command() { message_label.repaint }
 
-      @form.by_name["line"].display_length = 3
-      @form.by_name["line"].maxlen = 3
-      @form.by_name["line"].set_buffer  "24"
+      f = @form.by_name["line"]
+      f.display_length(3)
+      f.maxlen = 3
+      f.set_buffer  "24"
+      f.valid_range(1..200)
+      f.type :integer
       @form.by_name["name"].set_buffer  "Not focusable"
       @form.by_name["name"].set_focusable(false)
-      @form.by_name["line"].chars_allowed = /\d/
+      #@form.by_name["line"].chars_allowed = /\d/
       #@form.by_name["regex"].type(:ALPHA)
       @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/)
       @form.by_name["regex"].set_buffer  "SYNOP"
@@ -383,6 +385,7 @@ if $0 == __FILE__
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
       item.command(@form) {|it, form|  $message.value = "Open called on menu bar"; 
+        require './qdfilechooser'
         fchooser = QDFileChooser.new
         option = fchooser.show_open_dialog
         $message.value = "File Selection #{option}, #{fchooser.get_selected_file}"
