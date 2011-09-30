@@ -284,7 +284,7 @@ module RubyCurses
         component.form = @parent
         component.rows_panned = component.cols_panned = 0
         component.parent_component = self # added 2010-02-27  so offsets can go down ?
-        component.should_create_buffer = true 
+        #component.should_create_buffer = true 
         component.row = @row + TAB_ROW_OFFSET # 2
         component.col = @col + TAB_COL_OFFSET
 
@@ -705,15 +705,15 @@ module RubyCurses
       def redraw
         # this kinda stuff should be inside widget or some util class
         c = @component
-        if c.is_double_buffered?
-          c.set_buffer_modified
-          c.buffer_to_window
-        else
+        #if c.is_double_buffered?
+          #c.set_buffer_modified
+          #c.buffer_to_window
+        #else
           # force a repaint, if not buffered object e.g scrollpane.
           $log.debug " TP: forcing repaint of non-buffered object #{c}  "
           c.repaint_all
           c.repaint
-        end
+        #end
       end
       ## Set focus on a component or form field when a user has tabbed off the last or first button
       def set_focus first_last
