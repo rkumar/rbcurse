@@ -468,15 +468,20 @@ class RFe
       end 
   end
   ## TODO : make this separate and callable with its own keylabels
-  def view  content=nil
+  def view  content=nil # can throw IO errors
     require 'rbcurse/rtextview'
     wt = 0
     wl = 0
     wh = Ncurses.LINES-wt
     ww = Ncurses.COLS-wl
     if content.nil?
+      begin
       fp = @current_list.filepath
       content = get_contents(fp)
+      rescue => err
+        alert err.to_s
+        return
+      end
     else
       fp=""
     end
@@ -506,6 +511,8 @@ class RFe
       @v_form.repaint
       ##@v_window.wrefresh
     end
+    rescue => err
+      alert err.to_s
     ensure
       @v_window.destroy if !@v_window.nil?
     end
@@ -544,7 +551,7 @@ class RFe
       str= "view #{fp}"
       #if confirm("#{str}")==:YES
       $log.debug " VIEW #{fp}"
-      view
+      view 
       #end
     when 'r'
       str= "ruby #{fn}"
