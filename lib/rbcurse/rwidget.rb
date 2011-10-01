@@ -20,8 +20,6 @@ TODO
 
 
 =end
-require 'rubygems'
-##require 'ncurses'
 require 'logger'
 #require 'rbcurse/mapper'
 require 'rbcurse/colormap'
@@ -324,113 +322,6 @@ module RubyCurses
       def view what, config={} # :yields: textview for further configuration
         require 'rbcurse/extras/viewer'
         RubyCurses::Viewer.view what, config
-      end
-      # new version with a window created on 2011-10-1 12:37 AM 
-      # Now can be separate from window class, needing nothing, just a util class
-      # prints a status message and pauses for a char
-      def print_status_message text=$status_message.get_value
-        h = 2 ; w = Ncurses.COLS-0; t = Ncurses.LINES-2; l = 0
-        ewin = VER::Window.new(h, w , t, l)
-        r = 0; c = 1;
-        color = get_color($promptcolor, 'white','black')
-        ewin.printstring r, c, text, color
-        ewin.printstring r+1, c, "Press a key", color 
-        ewin.wrefresh
-        ewin.getchar
-        ewin.destroy
-        #printstring r, (Ncurses.COLS-text.length)/2, text, color = $promptcolor
-      end
-      # new version with a window created on 2011-10-1 12:30 AM 
-      # Now can be separate from window class, needing nothing, just a util class
-      # Why are we dealing with $error_message, that was due to old idea which failed
-      # scrap it and send the message.
-      def print_error_message text=$error_message.get_value
-        $log.debug "got ERROR MESSAGE #{text}  "
-        h = 2 ; w = Ncurses.COLS-1; t = Ncurses.LINES-2; l = 0
-        ewin = VER::Window.new(h, w , t, l)
-        r = 0; c = 1;
-        color = get_color($promptcolor, 'red','black')
-        ewin.printstring r, c, text, color
-        ewin.printstring r+1, c, "Press a key", color 
-        ewin.wrefresh
-        ewin.getchar
-        ewin.destroy
-      end
-      # class created to display multiple messages without asking for user to hit a key
-      # returns a window to which one can keep calling printstring with 0 or 1 as row.
-      # destroy when finished.
-      # Also, one can pause if one wants, or linger.
-      # This is meant to be a replacement for the message_immediate and message_raw
-      # I was trying out in App.rb. 2011-10-1 1:27 AM 
-      # Testing from test2.rb
-      # TODO: add option of putting progress_bar
-      class StatusWindow
-        attr_reader :win
-        attr_accessor :color_pair
-        def initialize config={}, &block
-          create_window
-        end
-        def create_window
-          return @win if @win
-          h = 2 ; w = Ncurses.COLS-0; t = Ncurses.LINES-2; l = 0
-          @win = VER::Window.new(h, w , t, l)
-          @color_pair = get_color($promptcolor, 'white','black')
-          @win
-        end
-        # creates a color pair based on given bg and fg colors as strings
-        def set_colors bgcolor, fgcolor='black'
-          @color_pair = get_color($datacolor, 'white','black')
-        end
-        # prints a string on given row (0 or 1)
-        # TODO clear previous
-        def printstring r, text
-          create_window unless @win
-          show unless @visible
-          r = 1 if r > 1
-          c = 1
-          @win.printstring r, c, text, @color_pair
-          @win.wrefresh
-        end
-        def print text1, text2=nil
-          create_window unless @win
-          show unless @visible
-          c = 1
-          @win.printstring 0, c, text1, @color_pair
-          @win.printstring(1, c, text2, @color_pair) if text2
-          @win.wrefresh
-        end
-        def pause; @win.getchar; end
-        # pauses with the message, but doesn't ask the user to press a key.
-        # If he does, the key should be used by underlying window.
-        # Do not call destroy if you call linger, it does the destroy.
-        def linger caller_window=nil
-          begin
-            if caller_window
-              ch = @win.getchar
-              caller_window.ungetch(ch) # will this be available to underlying window XXX i think not !!
-            else
-              sleep 1
-            end
-          ensure
-          destroy
-          end
-        end
-        # caller must destroy after he's finished printing messages, unless
-        # user calls linger
-        def destroy; @win.destroy if @win; @win = nil;  end
-        def hide
-          @win.hide
-          @visible = false
-        end
-        def show
-          @win.show unless @visible
-          @visible = true
-        end
-      end
-      # returns instance of a status_window for sending multiple
-      # statuses during some process
-      def status_window aconfig={}, &block
-        return StatusWindow.new
       end
     end # module
 
