@@ -74,6 +74,7 @@ class Module
           end
       #self
         end
+      # can the next bypass validations
     attr_writer sym
       }
     }
@@ -89,14 +90,24 @@ class Module
           else
                return if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
             oldvalue = @#{sym}
-            @#{sym} = val.size == 1 ? val[0] : val
-            newvalue = @#{sym}
+            # @#{sym} = val.size == 1 ? val[0] : val
+            tmp = val.size == 1 ? val[0] : val
+            newvalue = tmp
             # i am itching to deprecate next line XXX 
-            @config["#{sym}"]=@#{sym}
+            if oldvalue.nil? || @_object_created.nil?
+               @#{sym} = tmp
+               @config["#{sym}"]=@#{sym}
+            end
             return if oldvalue.nil? || @_object_created.nil?
+
             if oldvalue != newvalue
               # trying to reduce calls to fire, when object is being created
-              fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
+               begin
+                 fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
+                 @#{sym} = tmp
+                 @config["#{sym}"]=@#{sym}
+               rescue PropertyVetoException
+               end
             end
           end
         end
@@ -128,6 +139,9 @@ module RubyCurses
   extend self
   include ColorMap
     class FieldValidationException < RuntimeError
+    end
+    # The property change is not acceptable, undo it
+    class PropertyVetoException < RuntimeError
     end
     module Utils
       ## this is the numeric argument used to repeat and action by repeatm()
@@ -384,6 +398,10 @@ module RubyCurses
                 # added 2011-09-26 1.3.0 so a user raised exception on LEAVE
                 # keeps cursor in same field.
                 raise fve
+              rescue PropertyVetoException => pve
+                # added 2011-09-26 1.3.0 so a user raised exception on LEAVE
+                # keeps cursor in same field.
+                raise pve
               rescue => ex
                 ## some don't have name
                 #$log.error "======= Error ERROR in block event #{self}: #{name}, #{event}"
@@ -401,6 +419,7 @@ module RubyCurses
       ## added on 2009-01-08 00:33 
       # goes with dsl_property
       # Need to inform listeners - done 2010-02-25 23:09 
+      # Can throw a FieldValidationException or PropertyVetoException
     def fire_property_change text, oldvalue, newvalue
       # should i return if oldvalue is nil ??? TODO XXX
       #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
