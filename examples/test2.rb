@@ -385,6 +385,15 @@ if $0 == __FILE__
           radio22.align_right false
         end
       }
+      # trying out frozen, and specifying which things to freeze.
+      radio1.frozen = true
+      radio2.frozen = true
+      radio22.frozen = true
+      radio11.frozen = true
+      radio11.frozen_list = [:color, :bgcolor]
+      radio22.frozen_list = [:color, :bgcolor]
+      radio1.frozen_list = [:color, :bgcolor]
+      radio2.frozen_list = [:color, :bgcolor]
 
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
