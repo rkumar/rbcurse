@@ -317,11 +317,9 @@ module RubyCurses
         begin
           ret = process_key ch, self
         rescue => err
-          #$error_message = err
-          $error_message.value = "#{err}"
-          @form.window.print_error_message
           $log.error " TEXTVIEW ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
+          alert err.to_s
         end
         return :UNHANDLED if ret == :UNHANDLED
       end
