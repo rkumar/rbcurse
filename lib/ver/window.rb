@@ -579,7 +579,7 @@ module VER
       $error_message_clear_pending = false
     end
     ##
-    # CAUTION : FOR MESSAGEBOXES ONLY !!!! XXX
+    # NOTE : FOR MESSAGEBOXES ONLY !!!! 
     def print_border_mb row, col, height, width, color, attr
       mvwaddch row, col, Ncurses::ACS_ULCORNER
       mvwhline( row, col+1, Ncurses::ACS_HLINE, width-6)
