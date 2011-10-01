@@ -386,14 +386,22 @@ if $0 == __FILE__
         end
       }
       # trying out frozen, and specifying which things to freeze.
-      radio1.frozen = true
+      #radio1.frozen = true
       radio2.frozen = true
       radio22.frozen = true
       radio11.frozen = true
       radio11.frozen_list = [:color, :bgcolor]
       radio22.frozen_list = [:color, :bgcolor]
-      radio1.frozen_list = [:color, :bgcolor]
+      #radio1.frozen_list = [:color, :bgcolor]
       radio2.frozen_list = [:color, :bgcolor]
+      radio1.bind(:PROPERTY_CHANGE) do |e| 
+        $log.debug "XXX PROPERTY CHANGE: #{e},   #{e.newvalue} " if $log.debug? 
+        if e.property_name == 'color'
+          if e.newvalue != 'red'
+            raise PropertyVetoException, "Cannot change this!"
+          end
+        end
+      end
 
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
