@@ -422,8 +422,9 @@ module RubyCurses
         begin
           ret = process_key ch, self
         rescue => err
-          $error_message = err
-          @form.window.print_error_message
+          $error_message = err.to_s
+#          @form.window.print_error_message # changed 2011 dts  
+          alert err.to_s
           $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
           # XXX caller app has no idea error occurred so can't do anything !
