@@ -189,16 +189,16 @@ module VER
     end
     def print(string, width = width)
       return unless visible?
-      @window.waddnstr(string.to_s, width)
+      waddnstr(string.to_s, width) # changed 2011 dts  
     end
 
     def print_yx(string, y = 0, x = 0)
-      @window.mvwaddnstr(y, x, string, width)
+      mvwaddnstr(y, x, string, width) # changed 2011 dts  
     end
 
     def print_empty_line
       return unless visible?
-      @window.printw(' ' * width)
+      printw(' ' * width)
     end
 
     def print_line(string)
@@ -404,6 +404,7 @@ module VER
       end # while
     end # def
 
+    # doesn't seem to work, clears first line, not both
     def clear
       # return unless visible?
       move 0, 0
@@ -488,6 +489,7 @@ module VER
       Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
       #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
       delwin() if !@window.nil? # added FFI 2011-09-7 
+      Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
       $log.debug "win destroy end"
     end
     ## 
@@ -530,6 +532,16 @@ module VER
       #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
       mvwprintw(r, c, "%s", :string, string);
       wattroff(Ncurses.COLOR_PAIR(color) | att)
+    end
+    # @deprecated
+    def print_error_message text=$error_message.get_value
+      alert text
+    end
+    # added by rk 2008-11-29 19:01 
+    # @deprecated. use global method of same name in rdialog
+    def print_status_message text=$status_message
+      #VER::print_status_message text
+      alert text
     end
     # added by rk 2008-11-29 19:01 
     # Since these methods write directly to window they are not advised
@@ -685,6 +697,7 @@ module VER
       end
     end
   end
+  #-------------------------------- deprecated stuff ------------------ #
   ##
   # added RK 2009-10-08 23:57 for tabbedpanes
   # THIS IS EXPERIMENTAL - 
