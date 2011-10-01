@@ -61,6 +61,7 @@ end
 if $0 == __FILE__
   ##Encoding.default_external = Encoding.find("UTF-8") 
   include RubyCurses
+  include RubyCurses::Utils
 
   begin
   # Initialize curses
@@ -469,8 +470,17 @@ if $0 == __FILE__
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
+        #alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
+        sw = status_window
+        sw.print  "I am adding some stuff to list", "And testing out StatusWindow"
+        sleep 1.0
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        sw.printstring 1, "And some more now ..."
+        sleep 0.5
+        listb.list.insert 0, "get milk", "make beds", "clean shark pond","sell summer house"
+        sleep 0.5
+        sw.print "This was a test of StatusWindow", "okay we are done now ..."
+        sw.linger @window
       }
 
       # using ampersand to set mnemonic
@@ -579,11 +589,11 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
         @form.handle_key(ch)
-        # print_error_message was taking away cursor, not clearing properly
+        # this should be directly called where set, avoid this in real life
         if $error_message.get_value != ""
-          alert($error_message, {:bgcolor => :red, :color => :yellow}) if $error_message.get_value != ""
+          #alert($error_message, {:bgcolor => :red, :color => :yellow}) if $error_message.get_value != ""
+          print_error_message # new one
           $error_message.value = ""
-          @form.repaint
         end
         @window.wrefresh
       end
