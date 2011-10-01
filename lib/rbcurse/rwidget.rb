@@ -65,10 +65,14 @@ class Module
           if val.empty?
             @#{sym}
           else
+            #if @frozen # 2011-10-1  prevent object from being changed # changed 2011 dts  
+               return if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
+            #end
             @#{sym} = val.size == 1 ? val[0] : val
             # i am itching to deprecate next line XXX
             @config["#{sym}"]=@#{sym}
           end
+      #self
         end
     attr_writer sym
       }
@@ -83,6 +87,7 @@ class Module
           if val.empty?
             @#{sym}
           else
+               return if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
             oldvalue = @#{sym}
             @#{sym} = val.size == 1 ? val[0] : val
             newvalue = @#{sym}
@@ -483,11 +488,10 @@ module RubyCurses
     dsl_property :min_width  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_height  # added 2009-10-28 13:40 for splitpanes and better resizing
 
-    ## 2010-01-05 13:27 create buffer conditionally, if enclosing component asks. Needs to be passed down
-    ##+ to further children or editor components. Default false.
-    #attr_accessor  :should_create_buffer              # added  2010-01-05 13:16 BUFFERED, trying to create buffersonly where required. # removed on 2011-09-29 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
+    attr_accessor :frozen # true false
+    attr_accessor :frozen_list # list of attribs that cannot be changed
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
@@ -2149,7 +2153,7 @@ module RubyCurses
       str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
       # loop added for labels that are wrapped.
       # TODO clear separately since value can change in status like labels
-      #$log.debug " RWID 1595 #{self.class} value: #{value} form:  #{form} "
+    
       @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
       0.upto(_height-1) { |i| 
         @graphic.printstring r+i, c, " " * len , acolor,@attr
