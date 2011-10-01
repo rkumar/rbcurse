@@ -264,7 +264,9 @@ module RubyCurses
     #  2010-09-13 00:22 WE should not use these any longer.
     #  Application should create a label and map a Variable named
     #  $errormessage to it. We should only update the Variable
+    # CLEANUP DEPRECATED
     def print_error_message text=$error_message
+      raise "DEPRECATED CLEANUP use global method of same name"
       r = $error_message_row || Ncurses.LINES-1
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
 
@@ -274,7 +276,9 @@ module RubyCurses
       $error_message_clear_pending = true
     end
     # added by rk 2008-11-29 19:01 
+    # CLEANUP DEPRECATED
     def print_status_message text=$status_message
+      raise "DEPRECATED CLEANUP use global method of same name"
       r = $status_message_row || Ncurses.LINES-1
       clear_error r, $datacolor
       # print it in centre
@@ -284,6 +288,7 @@ module RubyCurses
     # I am not only clearing if something was printed. This is since
     # certain small forms like TabbedForm top form throw an error on printstring.
     # 
+      #raise "DEPRECATED CLEANUP use global method of same name"
     def clear_error r = $error_message_row, color = $datacolor
       return unless $error_message_clear_pending
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
