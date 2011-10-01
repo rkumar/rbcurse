@@ -71,7 +71,7 @@ module RubyCurses
       else
         @form.window = @window
       end
-      acolor = get_color $reversecolor
+      acolor = get_color $reversecolor # this implicitly uses color and bgcolor fooling me often
       $log.debug " MESSAGE BOX #{@bgcolor} , #{@color} , #{acolor}"
       @window.bkgd(Ncurses.COLOR_PAIR(acolor));
       @window.wrefresh
@@ -346,6 +346,7 @@ module RubyCurses
       #Ncurses::Panel.del_panel(panel) if !panel.nil?   
       panel.del_panel if !panel.nil?
       @window.delwin if !@window.nil?
+      Ncurses::Panel.update_panels # 2011-10-1 so window below doesn't have a black rectangle
     end
   end
 end
