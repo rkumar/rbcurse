@@ -17,6 +17,7 @@ require 'rbcurse/rlistbox'
 require 'rbcurse/rmessagebox'
 require 'rbcurse/rtree'
 require './appmethods.rb'
+require 'rbcurse/extras/scrollbar'
 def shell_output
   cmd = get_string("Enter shell command:", 50)
   if cmd && !cmd.empty?
@@ -73,6 +74,8 @@ if $0 == __FILE__
     #$log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
+    @lookfeel = :classic # :dialog # or :classic
+
     @window = VER::Window.root_window
     # Initialize few color pairs 
     # Create the window to be associated with the form 
@@ -126,6 +129,7 @@ if $0 == __FILE__
           title_attrib 'reverse'
           cell_editing_allowed true
         end
+        Scrollbar.new @form, :parent => listb # 2011-10-1  added
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi clojure"
@@ -471,16 +475,24 @@ if $0 == __FILE__
       end
       ok_button.command() { |eve| 
         #alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
-        sw = status_window
+        sw = case @lookfeel
+             when :dialog
+               progress_dialog :color_pair => $reversecolor, :row_offset => 4, :col_offset => 5
+             else
+               status_window # at footer last 2 rows
+             end
+
         sw.print  "I am adding some stuff to list", "And testing out StatusWindow"
         sleep 1.0
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        sw.printstring 1, "And some more now ..."
+        sw.printstring 1,1, "And some more now ..."
         sleep 0.5
         listb.list.insert 0, "get milk", "make beds", "clean shark pond","sell summer house"
         sleep 0.5
-        sw.print "This was a test of StatusWindow", "okay we are done now ..."
-        sw.linger @window
+        sw.print "This was a test of Window", "we are almost done now ..."
+        clock = %w[ | / - \ ]
+        listb.list.each_with_index { |e, index| sw.print e, clock[index%4]; sleep 0.1  }
+        sw.linger #@window
       }
 
       # using ampersand to set mnemonic
@@ -495,7 +507,12 @@ if $0 == __FILE__
         #surround_chars ['{ ',' }']  ## change the surround chars
       end
       cancel_button.command { |aeve| 
-        if confirm("Do your really want to quit?")== :YES
+        if @lookfeel == :dialog
+          ret = confirm("Do your really want to quit?") 
+        else
+          ret = confirm_window("Do your really want to quit?") 
+        end
+        if ret == :YES
           throw(:close); 
         else
           $message.value = "Quit aborted"
@@ -589,18 +606,23 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F1 )
         @form.handle_key(ch)
+
         # this should be directly called where set, avoid this in real life
         if $error_message.get_value != ""
-          #alert($error_message, {:bgcolor => :red, :color => :yellow}) if $error_message.get_value != ""
-          print_error_message # new one
+          if @lookfeel == :dialog
+            alert($error_message, {:bgcolor => :red, 'color' => 'yellow'}) if $error_message.get_value != ""
+          else
+            print_error_message $error_message, {:bgcolor => :red, :color => :yellow}
+          end
           $error_message.value = ""
+          #Ncurses::Panel.update_panels # i've added this in win.destroy
         end
         @window.wrefresh
       end
     end
   rescue => ex
   ensure
-    $log.debug " -==== EXCEPTION ===== -"
+    $log.debug " -==== EXCEPTION =====-"
     $log.debug( ex) if ex
     $log.debug(ex.backtrace.join("\n")) if ex
     @window.destroy if !@window.nil?
