@@ -918,6 +918,6 @@ module RubyCurses
         $log.error("ERROR CHECKBOXMENU #{sym} called")
       end
     end
+  end # class
 
-  end
 end # modul
