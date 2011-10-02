@@ -61,7 +61,7 @@ class MasterDetail < Widget
     # what if user gives in wrong order !!
     @gb = @vim.add :divider, :SECOND, 0
     @right2 = @vim.add comp, :SECOND, weight
-    @gb.next(@right2)
+    @gb.next_component(@right2)
     _add_component comp
     @right2
   end
