@@ -55,6 +55,7 @@ module RubyCurses
     attr_accessor :one_key_selection # will pressing a single key move to first matching row
     # index of row selected, relates to internal representation, not tree. @see selected_row
     attr_reader :selected_index   # index of row that is selected. this relates to representation
+    attr_reader :treemodel        # returns treemodel for further actions 2011-10-2 
 
     def initialize form, config={}, &block
       @focusable = true
@@ -158,15 +159,28 @@ module RubyCurses
         return @height - 3
       end
     end
-    # this allows a user to use this 2 times !! XXX
-    def root node, asks_allow_children=false, &block
+    #
+    # Sets the given node as root and returns treemodel.
+    # Returns root if no argument given.
+    # Now we return root if already set
+    # Made node nillable so we can return root. 
+    #
+    # @raise ArgumentError if setting a root after its set
+    #   or passing nil if its not been set.
+    def root node=nil, asks_allow_children=false, &block
+      if @treemodel
+        return @treemodel.root unless node
+        raise ArgumentError, "Root already set"
+      end
+
       raise ArgumentError, "root: node cannot be nil" unless node
       @treemodel = RubyCurses::DefaultTreeModel.new(node, asks_allow_children, &block)
     end
+
     # pass data to create this tree model
     # used to be list
     def data alist=nil
-      #return @treemodel if alist.nil?
+
       # if nothing passed, print an empty root, rather than crashing
       alist = [] if alist.nil?
       @data = alist # data given by user
@@ -422,10 +436,10 @@ module RubyCurses
     # FIXME: tree may not be clearing till end see appdirtree after divider movement
     def repaint
       return unless @repaint_required
-      # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
+    
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
-      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
+   
       raise " #{@name} neither form, nor target window given TV paint " unless my_win
       raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
@@ -708,6 +722,39 @@ module RubyCurses
         end
       end
     end
+
+    #
+    # To retrieve the node corresponding to a path specified as an array or string
+    # Do not mention the root.
+    # e.g. "ruby/1.9.2/io/console"
+    # or %w[ ruby 1.9.3 io console ]
+    # @since 1.4.0 2011-10-2 
+    def get_node_for_path(user_path)
+      case user_path
+      when String
+        user_path = user_path.split "/"
+      when Array
+      else
+        raise ArgumentError, "Should be Array or String delimited with /"
+      end
+      $log.debug "TREE #{user_path} " if $log.debug? 
+      root = @treemodel.root
+      found = nil
+      user_path.each { |e| 
+        success = false
+        root.children.each { |c| 
+          if c.user_object == e
+            found = c
+            success = true
+            root = c
+            break
+          end
+        }
+        return false unless success
+
+      }
+      return found
+    end
     private
     # please do not rely on this yet, name could change
     def _structure_changed tf=true
@@ -715,6 +762,7 @@ module RubyCurses
       @repaint_required = true
       #@list = nil
     end
+
 
 
     # ADD HERE
