@@ -44,7 +44,7 @@ module RubyCurses
     dsl_property :parent
     # which row is focussed, current_index of listbox, required.
     # how many total rows of data does the list have, same as @list.length, required.
-    dsl_accessor :next
+    dsl_accessor :next_component  # 'next' bombing in dsl_accessor 2011-10-2 PLS CHANGE ELSEWHERE
 
     # TODO: if parent passed, we shold bind to ON_ENTER and get current_index, so no extra work is required.
 
