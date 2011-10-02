@@ -92,7 +92,7 @@ if $0 == __FILE__
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
         field = Field.new @form do
-          name   w 
+          name w 
           row  r 
           col  fc 
           display_length  30
@@ -153,7 +153,7 @@ if $0 == __FILE__
 
         col3 = 92
         treemodel = nil
-      atree = Tree.new @form, :title => "Tree", :row =>1, :col=>col3, :height => 14, :width => 15 do
+        atree = Tree.new @form, :title => "Tree", :row =>1, :col=>col3, :height => 14, :width => 15 do
         treemodel = root "ruby" do
           branch "mri" do
             leaf "1.9.1"
@@ -229,7 +229,7 @@ if $0 == __FILE__
 
       list = ListDataModel.new( %w[white yellow cyan magenta red blue black])
       list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}";   }
-      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"; @form.widgets.each { |e| next unless e.is_a? Widget; e.color obj.selected_item }; @mb.color = obj.selected_item }
+      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"; @form.widgets.each { |e| next unless e.is_a? Widget; e.color = obj.selected_item }; @mb.color = obj.selected_item }
 
       row += 1
       combo1 = ComboBox.new @form do
@@ -282,42 +282,44 @@ if $0 == __FILE__
       $message.update_command() { message_label.repaint }
 
       f = @form.by_name["line"]
-      f.display_length(3)
-      f.maxlen = 3
-      f.set_buffer  "24"
-      f.valid_range(1..200)
-      f.type :integer
-      @form.by_name["name"].set_buffer  "Not focusable"
-      @form.by_name["name"].set_focusable(false)
-      #@form.by_name["line"].chars_allowed = /\d/
-      #@form.by_name["regex"].type(:ALPHA)
-      @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/)
-      @form.by_name["regex"].set_buffer  "SYNOP"
-      @form.by_name["regex"].display_length = 10
-      @form.by_name["regex"].maxlen = 20
-      #@form.by_name["regex"].bgcolor 'cyan'
-      @form.by_name["password"].set_buffer ""
-      @form.by_name["password"].show '*'
-      @form.by_name["password"].color 'red'
-      #@form.by_name["password"].bgcolor 'blue'
-      @form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
-      @form.by_name["password"].null_allowed true
+      f.display_length(3).set_buffer(24).valid_range(1..200).
+        maxlen(3).
+        type(:integer)
 
-      # a form level event, whenever any widget is focussed
+      @form.by_name["name"].set_buffer( "Not focusable").
+        set_focusable(false)
+      
+      @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/).
+        set_buffer( "SYNOP").
+        display_length(10).
+        maxlen = 20
+
+      @form.by_name["password"].set_buffer("").
+        show('*').
+        color('red').
+        values(%w[scotty tiger secret pass qwerty]).
+        null_allowed true
+
+      # a form level event, whenever any widget is focussed, make the label red
       @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = 'red' if f.respond_to? :label}
       @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if f.respond_to? :label}
 
       row += 1
-      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, 
+        "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
-      $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
-      $radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; $log.debug "CCC #{e.name} "; e.bgcolor tv.value }; @mb.bgcolor = tv.value }
+      $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; 
+        combo1.bgcolor tv.value}
+      $radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+        e.bgcolor tv.value }; @mb.bgcolor = tv.value }
 
       # whenever updated set colorlabel and messagelabel to bold
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| 
+        attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
 
       align.bind(:ENTER_ROW) {|fld| message_label.justify fld.getvalue}
+
       align.bind(:ENTER_ROW) {|fld| 
         if fld.getvalue == 'right'
           checkbutton1.align_right true
@@ -331,7 +333,9 @@ if $0 == __FILE__
       # whenever updated set colorlabel and messagelabel to reverse
       #@cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
       # changing nil to normal since PROP CHAN handler will not fire if nil being set.
-      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
+      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| 
+        attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
+
       row += 1
       dlen = 10
       radio1 = RadioButton.new @form do
@@ -352,6 +356,7 @@ if $0 == __FILE__
         row row
         col col+24
       end
+
       row += 1
       radio2 = RadioButton.new @form do
         variable $radio
@@ -385,24 +390,25 @@ if $0 == __FILE__
           radio22.align_right false
         end
       }
-      # trying out frozen, and specifying which things to freeze.
-      #radio1.frozen = true
-      radio2.frozen = true
-      radio22.frozen = true
-      radio11.frozen = true
-      radio11.frozen_list = [:color, :bgcolor]
-      radio22.frozen_list = [:color, :bgcolor]
-      #radio1.frozen_list = [:color, :bgcolor]
-      radio2.frozen_list = [:color, :bgcolor]
-      radio1.bind(:PROPERTY_CHANGE) do |e| 
-        $log.debug "XXX PROPERTY CHANGE: #{e},   #{e.newvalue} " if $log.debug? 
-        if e.property_name == 'color'
-          if e.newvalue != 'red'
-            raise PropertyVetoException, "Cannot change this!"
-          end
-        end
-      end
 
+      # instead of using frozen, I will use a PropertyVeto
+      # to disallow changes to color itself
+      veto = lambda { |e, name|
+        if e.property_name == 'color'
+          if e.newvalue != name
+            raise PropertyVetoException.new("Cannot change this at all!", e)
+          end
+        elsif e.property_name == 'bgcolor'
+            raise PropertyVetoException.new("Cannot change this!", e)
+        end
+      }
+      [radio1, radio2, radio11, radio22].each { |r| 
+        r.bind(:PROPERTY_CHANGE) do |e| veto.call(e, r.text) end
+      }
+
+      # 
+      # define the menu
+      #
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
@@ -444,14 +450,12 @@ if $0 == __FILE__
         str << " bugs as they crop up."
         testa.goto_start
         #testa.cursor_bol
-        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  
         str.each_char {|c| testa.putch(c)}
         testa.repaint
-        testa.handle_key KEY_DOWN # down
-        testa.handle_key KEY_DOWN # down
-        testa.handle_key KEY_DOWN # down
-        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
-        #testa.cursor_bol
+        3.times { testa.handle_key KEY_DOWN }
+        testa.handle_key ?\C-a.getbyte(0)  
+        
         str.each_char {|c| testa.putch(c)}
         $message.value = "Wrapping textarea"
         testa.repaint
@@ -460,7 +464,7 @@ if $0 == __FILE__
       filemenu.add(item = RubyCurses::MenuItem.new("Wrap",'W'))
       item.command(@form, texta) do |it, form, testa|  
         #testa.goto_start
-        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  
         testa.wrap_para
         testa.repaint
         throw(:menubarclose)
@@ -536,9 +540,6 @@ if $0 == __FILE__
         end
       }
       #col += 22
-      #Label.new @form, {'text' => "| F2 - Menu", "row" => row, "col" => col}
-      #col += 12
-      #Label.new @form, {'text' => "| F3 - View", "row" => row, "col" => col}
       col += 15
       require 'rbcurse/rprogress'
       pbar = Progress.new @form, {:width => 20, :row => 27, :col => Ncurses.COLS-20 , :bgcolor => 'white',
@@ -598,14 +599,14 @@ if $0 == __FILE__
       item.command { run_command "git diff --name-status" }
       savemenu2.add(item)
       savemenu.add(savemenu2)
-      # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
+      
       @mb.toggle_key = FFI::NCurses::KEY_F2
       @form.set_menu_bar  @mb
-      #@cell = CellRenderer.new "Hello", {"col" => 1, "row"=>29, "justify"=>:right, "display_length" => 30}
+     
       # END
       @form.bind_key(FFI::NCurses::KEY_F3) { 
         require 'rbcurse/extras/viewer'
-        RubyCurses::Viewer.view("rbc13.log", :close_key => KEY_RETURN, :title => "<Enter> to close")
+        RubyCurses::Viewer.view(path || "rbc13.log", :close_key => KEY_RETURN, :title => "<Enter> to close")
       }
       @form.bind_key(FFI::NCurses::KEY_F4) {  shell_output }
       @form.bind_key(FFI::NCurses::KEY_F5) {  suspend }
@@ -621,10 +622,30 @@ if $0 == __FILE__
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != KEY_F1 )
-        @form.handle_key(ch)
 
-        # this should be directly called where set, avoid this in real life
+      # the main loop
+
+      while((ch = @window.getchar()) != KEY_F1 )
+        begin
+          @form.handle_key(ch)
+
+        rescue FieldValidationException => fve 
+          alert fve.to_s
+          
+          f = @form.get_current_field
+          # lets restore the value
+          if f.respond_to? :restore_original_value
+            f.restore_original_value
+            @form.repaint
+          end
+          $error_message.value = ""
+        rescue => err
+          alert "Got an exception in test2: #{err} "
+          $error_message.value = ""
+        end
+
+        # this should be avoided, we should not muffle the exception and set a variable
+        # However, we have been doing that
         if $error_message.get_value != ""
           if @lookfeel == :dialog
             alert($error_message, {:bgcolor => :red, 'color' => 'yellow'}) if $error_message.get_value != ""
@@ -632,11 +653,11 @@ if $0 == __FILE__
             print_error_message $error_message, {:bgcolor => :red, :color => :yellow}
           end
           $error_message.value = ""
-          #Ncurses::Panel.update_panels # i've added this in win.destroy
         end
+
         @window.wrefresh
-      end
-    end
+      end # while loop
+    end # catch
   rescue => ex
   ensure
     $log.debug " -==== EXCEPTION =====-"
