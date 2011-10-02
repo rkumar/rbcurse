@@ -10,9 +10,12 @@
   * Author: rkumar (arunachalesha)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-TODO 
-  - repaint only what is modified
-  - save data in a hash when called for.
+
+  == CHANGES
+  * 2011-10-2 Added PropertyVetoException to rollback changes to property
+  * 2011-10-2 Returning self from dsl_accessor and dsl_property for chaining
+  * 2011-10-2 removing clutter of buffering, a lot of junk code removed too.
+  == TODO 
   - make some methods private/protected
   - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
   - Can key bindings be abstracted so they can be inherited /reused.
@@ -58,29 +61,39 @@ end
 class Module
 ## others may not want this, sets config, so there's a duplicate hash
   # also creates a attr_writer so you can use =.
+  #  2011-10-2 V1.3.1 Now returning self, so i can chain calls
   def dsl_accessor(*symbols)
     symbols.each { |sym|
+      #open('myfile.out', 'a') { |f|
+          #f.puts "dsl_access #{sym} "
+       #}
       class_eval %{
         def #{sym}(*val)
           if val.empty?
             @#{sym}
           else
             #if @frozen # 2011-10-1  prevent object from being changed # changed 2011 dts  
-               return if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
+               #return if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
             #end
             @#{sym} = val.size == 1 ? val[0] : val
             # i am itching to deprecate next line XXX
             @config["#{sym}"]=@#{sym}
+            self # 2011-10-2 
           end
-      #self
         end
       # can the next bypass validations
-    attr_writer sym
+      # I don't think anyone will expect self to be returned if using = to assign
+    attr_writer sym #2011-10-2 
+        #def #{sym}=(val)
+           ##{sym}(val)
+           # self
+        #end
       }
     }
   end
   # Besides creating getters and setters,  this also fires property change handler
   # if the value changes, and after the object has been painted once.
+  #  2011-10-2 V1.3.1 Now returning self, so i can chain calls
   def dsl_property(*symbols)
     symbols.each { |sym|
       class_eval %{
@@ -88,17 +101,17 @@ class Module
           if val.empty?
             @#{sym}
           else
-               return if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
+            #return(self) if @frozen && (@frozen_list.nil? || @frozen_list.include?(:#{sym}) )
             oldvalue = @#{sym}
             # @#{sym} = val.size == 1 ? val[0] : val
             tmp = val.size == 1 ? val[0] : val
             newvalue = tmp
-            # i am itching to deprecate next line XXX 
+            # i am itching to deprecate config setting
             if oldvalue.nil? || @_object_created.nil?
                @#{sym} = tmp
                @config["#{sym}"]=@#{sym}
             end
-            return if oldvalue.nil? || @_object_created.nil?
+            return(self) if oldvalue.nil? || @_object_created.nil?
 
             if oldvalue != newvalue
               # trying to reduce calls to fire, when object is being created
@@ -107,13 +120,15 @@ class Module
                  @#{sym} = tmp
                  @config["#{sym}"]=@#{sym}
                rescue PropertyVetoException
+                 $log.warn "PropertyVetoException for #{sym}:" + oldvalue + "->  "+newvalue
                end
-            end
-          end
-        end
+            end # if old
+            self
+          end # if val
+        end # def
     #attr_writer sym
         def #{sym}=val
-      # TODO if Variable, take .value NEXT VERSION
+           # TODO if Variable, take .value NEXT VERSION
            #{sym}(val)
         end
       }
@@ -134,15 +149,25 @@ class Fixnum
    end
 end unless "a"[0] == "a"
 
-#include Ncurses XXX 2011-09-8 testing FFI
 module RubyCurses
   extend self
   include ColorMap
     class FieldValidationException < RuntimeError
     end
-    # The property change is not acceptable, undo it
+
+    # The property change is not acceptable, undo it. e.g. test2.rb
+    # @param [String] text message
+    # @param [Event] PropertyChangeEvent object
+    # @since 1.4.0
     class PropertyVetoException < RuntimeError
+      def initialize(string, event)
+        @string = string
+        @event = event
+        super(string)
+      end
+      attr_reader :string, :event
     end
+
     module Utils
       ## this is the numeric argument used to repeat and action by repeatm()
       $multiplier = 0
@@ -509,8 +534,8 @@ module RubyCurses
 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
-    attr_accessor :frozen # true false
-    attr_accessor :frozen_list # list of attribs that cannot be changed
+    #attr_accessor :frozen # true false
+    #attr_accessor :frozen_list # list of attribs that cannot be changed
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
@@ -1018,6 +1043,7 @@ module RubyCurses
     def add_widget widget
       # this help to access widget by a name
       if widget.respond_to? :name and !widget.name.nil?
+        $log.debug "NAME #{self} adding a widget #{@widgets.length} .. #{widget.name} "
         @by_name[widget.name] = widget
       end
 
@@ -1125,8 +1151,10 @@ module RubyCurses
       @active_index = nil 
       select_prev_field
     end
+
     # please do not use req_ i will deprecate it soon.
     alias :req_last_field :select_last_field
+
     ## do not override
     # form's trigger, fired when any widget loses focus
     #  This wont get called in editor components in tables, since  they are formless XXX
@@ -1181,6 +1209,9 @@ module RubyCurses
     # run validate_field on a field, usually whatevers current
     # before transferring control
     # We should try to automate this so developer does not have to remember to call it.
+    # # @param field object
+    # @return [0, -1] for success or failure
+    # NOTE : catches exception and sets $error_message, check if -1
     def validate_field f=@widgets[@active_index]
       begin
         on_leave f
@@ -1207,6 +1238,10 @@ module RubyCurses
         f = @widgets[@active_index]
         begin
           on_leave f
+        rescue FieldValidationException => err # added 2011-10-2 v1.3.1 so we can rollback
+          $log.error "select_next_field: caught EXCEPTION #{err}"
+          $error_message.value = "#{err}"
+          raise err
         rescue => err
          $log.error "select_next_field: caught EXCEPTION #{err}"
          $log.error(err.backtrace.join("\n")) 
@@ -1417,10 +1452,14 @@ module RubyCurses
     end
     return 0
   end
+  
   ## forms handle keys
   # mainly traps tab and backtab to navigate between widgets.
   # I know some widgets will want to use tab, e.g edit boxes for entering a tab
   #  or for completion.
+  # @throws FieldValidationException
+  # NOTE : please rescue exceptions when you use this in your main loop and alert() user
+  #
   def handle_key(ch)
         if ch ==  ?\C-u.getbyte(0)
           ret = universal_argument
@@ -1723,8 +1762,16 @@ module RubyCurses
       #fire_handler :CHANGE, self    # 2008-12-09 14:51 
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, 0, char)     # 2010-09-11 13:01 
     end
+    # silently restores value without firing handlers, use if exception and you want old value
+    # @since 1.4.0 2011-10-2 
+    def restore_original_value
+      @buffer = @original_value
+      @repaint_required = true
+    end
     ## 
     # should this do a dup ?? YES
+    # set value of Field
+    # fires CHANGE handler
     def set_buffer value
       @repaint_required = true
       @datatype = value.class
@@ -1735,6 +1782,7 @@ module RubyCurses
       # XXX hope @delete_buffer is not overwritten
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, 0, @delete_buffer)     # 2010-09-11 13:01 
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :INSERT, 0, @buffer)     # 2010-09-11 13:01 
+      self # 2011-10-2 
     end
     # converts back into original type
     #  changed to convert on 2009-01-06 23:39 
