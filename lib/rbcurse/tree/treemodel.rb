@@ -147,7 +147,7 @@ module RubyCurses
     end
     ## 
     # added 2009-01-17 21:36 
-    # Use with  caution, does not call events per row
+    # Use with caution, does not call events per row
     def delete_all
       raise "not yet used"
       len = @data.length-1
