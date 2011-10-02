@@ -210,25 +210,25 @@ module RubyCurses
               when KEY_UP
                 # CHECK BOUNDS TODO 
                 # TODO what about KEY_LEFT and RIGHT ?
-                if source.next && source.next.row > 1 && source.parent.height > 1
+                if source.next_component && source.next_component.row > 1 && source.parent.height > 1
                   source.parent.height -= 1
-                  source.next.height +=1
-                  source.next.row -= 1
+                  source.next_component.height +=1
+                  source.next_component.row -= 1
                   source.parent.repaint_required
-                  source.next.repaint_required
+                  source.next_component.repaint_required
                   source.parent.repaint
-                  source.next.repaint
+                  source.next_component.repaint
                 end
               when KEY_DOWN
                 # CHECK BOUNDS TODO check with appemail.rb
-                if source.next && source.next.height > 1
+                if source.next_component && source.next_component.height > 1
                   source.parent.height += 1
-                  source.next.height -=1
-                  source.next.row += 1
+                  source.next_component.height -=1
+                  source.next_component.row += 1
                   source.parent.repaint_required
-                  source.next.repaint_required
+                  source.next_component.repaint_required
                   source.parent.repaint
-                  source.next.repaint
+                  source.next_component.repaint
                 end
               end
             end
