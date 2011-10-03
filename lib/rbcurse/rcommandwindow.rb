@@ -153,7 +153,7 @@ module RubyCurses
     # do not go more than 3 columns and do not print more than window TODO FIXME
     def display_menu list, options={}
       indexing = options[:indexing]
-      max_cols = 3
+      max_cols = 3 #  maximum no of columns, we will reduce based on data size
       l_succ = "`"
       act_height = @height
       if @box
@@ -181,6 +181,13 @@ module RubyCurses
         h = act_height
         cols = (lh*1.0 / h).ceil
         cols = max_cols if cols > max_cols
+        # sometimes elements are large like directory paths, so check size
+        datasize = list.first.length
+        if datasize > @width/3 # keep safety margin since checking only first row
+          cols = 1
+        elsif datasize > @width/2
+          cols = [2,cols].min
+        end
         adv = (@width/cols).to_i
         colct = 0
         col = 1
