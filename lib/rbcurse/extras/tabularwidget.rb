@@ -837,6 +837,8 @@ module RubyCurses
     # FIXME we can create this once and reuse
     #++
     def fire_action_event
+      return unless @list
+      return unless @table_row_sorter
       require 'rbcurse/ractionevent'
       # the header event must only be used if columns passed
       if header_row?
