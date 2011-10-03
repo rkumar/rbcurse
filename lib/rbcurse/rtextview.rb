@@ -216,6 +216,7 @@ module RubyCurses
     end
 
     def repaint # textview :nodoc:
+      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col} "  
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
