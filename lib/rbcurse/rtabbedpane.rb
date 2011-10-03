@@ -24,8 +24,6 @@ NOTE:
   #
   # TODO :  disable/hide tab ???
 =end
-require 'rubygems'
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
@@ -190,7 +188,11 @@ module RubyCurses
       $log.debug " TAB insert #{text} at #{index} "
       @tabs[index] = Tab.new(text, self, aconfig, &block)
       tab = @tabs[index]
-      tab.component = component unless component.nil?
+      tform = form(tab)
+      #tab.component = component unless component.nil? # changed on 2011-10-3 
+      #component.form = tform unless component.nil? # changed on 2011-10-3 
+      component.set_form( tform) unless component.nil? # changed on 2011-10-3 
+      configure_component component unless component.nil?
       tab.index = index # so i can undelete !!!
       fire_event tab, index, :INSERT
       @recreate_buttons = true
@@ -281,12 +283,16 @@ module RubyCurses
     # private - can't use externally
     def configure_component component
         #component.set_form @parent <<--- definitely NOT
-        component.form = @parent
+        #component.form = @parent # changed on 2011-10-2 
         component.rows_panned = component.cols_panned = 0
         component.parent_component = self # added 2010-02-27  so offsets can go down ?
         #component.should_create_buffer = true 
-        component.row = @row + TAB_ROW_OFFSET # 2
-        component.col = @col + TAB_COL_OFFSET
+        $log.debug "XXX: TABBED #{@row} #{@col} #{@height} #{@width} "
+        component.row ||= 0 # 2011-10-3 @row + TAB_ROW_OFFSET # 2
+        component.col ||= 0 #@col + TAB_COL_OFFSET
+        component.width  ||= @width #@col + TAB_COL_OFFSET
+        component.height  ||= @height - 2 #@col + TAB_COL_OFFSET
+        $log.debug "XXX: TABBED #{component.row} #{component.col} #{component.height} #{component.width} "
 
         # current_form likely to be nil XXX
         scr_top = component.row # for Pad, if Pad passed as in SplitPane
@@ -402,6 +408,9 @@ module RubyCurses
             # next line means next key is IMMED  taken by the tab not main form
             @current_tab = tab
           end
+          $log.debug "TAB : form #{tab.form}, #{tab.form.widgets.first} "
+          c = tab.form.widgets.first
+          c.set_form_row; c.set_form_col
           fire_event tab, tab.index, :OPEN
         }
       end
@@ -442,10 +451,12 @@ module RubyCurses
       Ncurses::Panel.update_panels
       _recreate_buttons
  
+      @old_tab = @tabs.first
+      @old_tab.repaint if @old_tab
       button_form_repaint true
       @window.wrefresh ## ADDED  2009-11-02 23:29 
-      @old_tab = @tabs.first
-      @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      #@buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      #@current_tab = nil # 2011-10-3 otherwise keys go to this form in the beginning
     end
     def button_form_repaint flag = true
       $log.debug " INSIDE button_form_repaint #{flag} "
@@ -495,8 +506,8 @@ module RubyCurses
       window.mvprintw(1,1, tab.text.tr('&', '')) if @print_subheader
       window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
       form.name = "Form::TAB-#{tab.text}" # 2010-02-02 19:59 
-      form.add_cols=@col
-      form.add_rows=@row
+      form.add_cols=@col + 0
+      form.add_rows=@row + 2 # 2011-10-3  position cursor correctly
       return form
     end
     ##
@@ -505,8 +516,10 @@ module RubyCurses
     # XXX stop this nonsense about current_form and current_tab
     # TP should only be concerned with tabs. what happens inside is none of its business
     def handle_key(ch)
+      return :UNHANDLED if ch == ?\M-\C-i.getbyte(0) # alt-tab to exit
+          $log.debug " handle_key in tabbed pane got : #{ch},  #{@current_tab}, f: #{@form}  "
       @current_tab ||= @form # first we cycle buttons
-          $log.debug " handle_key in tabbed pane got : #{ch}"
+          $log.debug " handle_key in tabbed pane got : #{ch}, giving to #{@current_tab} "
           # needs to go to component
           ret = @current_tab.handle_key(ch)
           $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} , #{ch} "
@@ -530,7 +543,9 @@ module RubyCurses
 
         case ret
         when :NO_NEXT_FIELD
+          alert "came to no nex field" # CLEAN
           if @current_tab != @form
+            alert "case 1 no next field req first" # changed on 2011-10-2 
             ## if no next field on a subform go to first button of main form
             @old_tab = @current_tab
             @current_tab = @form
@@ -539,6 +554,7 @@ module RubyCurses
           else
             # on top button panel - no more buttons, go to tabs first field
             if @old_tab # in case of empty tabbed pane old_tab was nil
+            alert "case 2 no next field set focus" # CLEANUP
               @current_tab = @old_tab
               @current_tab.set_focus :FIRST
             end
@@ -655,7 +671,7 @@ module RubyCurses
         raise "Component already associated with a form. Do not pass form in constructor." unless component.form.nil?
         $log.debug " calling configure component "
         @parent_component.configure_component component
-        @component = component
+        #@component = component # changed on 2011-10-3 
       end
       def remove_component
         @component = nil
@@ -669,8 +685,9 @@ module RubyCurses
       # Pass to component or form
       def handle_key ch # Tab
         kh = @component || @form
+       $log.debug "DEBUG : handle_key Tab giving key to ( #{kh} ) "
         ret = kh.handle_key(ch)
-       $log.debug "DEBUG : handle_key Tab got ret #{ret} "
+       $log.debug "DEBUG : handle_key Tab ( #{kh} )got ret #{ret} "
         # forms seem to returning a nil when the pad has been updated. We need to copy it
         ret ||= 0
         if ret == 0 || ret == :UNHANDLED
@@ -723,9 +740,14 @@ module RubyCurses
             $log.debug " calling display form(true) from handle_key NO_NEXT_FIELD: #{first_last} "
             first_last == :FIRST ? @form.req_first_field : @form.req_last_field
             display_form
+            if @form.widgets.count == 1 # not working trying to get cursor to show in first form.
+              component = @form.widgets.first
+              $log.debug "TABBED PANE setting component row col #{component} "  
+              component.set_form_row
+              component.set_form_col
+            end
           else 
             # move to component
-            #@current_form = @current_tab.component # temp HACK 2010-02-27 23:24 
             @component.set_form_row
             @component.set_form_col
           end
