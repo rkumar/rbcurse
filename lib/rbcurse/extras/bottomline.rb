@@ -1441,22 +1441,28 @@ module RubyCurses
     end
     # Allows a selection in which options are shown over prompt. As user types
     # options are narrowed down.
+    # NOTE: For a directory we are not showing a slash, so currently you
+    # have to enter the slash manually when searching.
     # FIXME we can put remarks in fron as in memacs such as [No matches] or [single completion]
     # @param [Array]  a list of items to select from
     # NOTE: if you use this please copy it to your app. This does not conform to highline's
     # choose, and I'd like to somehow get it to be identical.
     #
     def choose list1, config={}
+      dirlist = true
       case list1
       when NilClass
-        list1 = Dir.glob("*")
+        #list1 = Dir.glob("*")
+        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
       when String
-        list1 = Dir.glob(list1)
+        list1 = Dir.glob(list1).collect { |f| File.directory?(f) ? f+"/" : f  }
       when Array
+        dirlist = false
         # let it be, that's how it should come
       else
         # Dir listing as default
-        list1 = Dir.glob("*")
+        #list1 = Dir.glob("*")
+        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
       end
       require 'rbcurse/rcommandwindow'
       prompt = config[:prompt] || "Choose: "
@@ -1466,7 +1472,16 @@ module RubyCurses
         w = rc.window
         rc.display_menu list1
         # earlier wmove bombed, now move is (window.rb 121)
-        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  
+          l = list1.select{|e| e.index(str)==0}  ; 
+          if (l.size == 0 || str[-1]=='/') && dirlist
+            # used to help complete directories so we can drill up and down
+            #l = Dir.glob(str+"*")
+            l = Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  }
+          end
+          rc.display_menu l; 
+          l
+        } }
         # need some validation here that its in the list TODO
       ensure
         rc.destroy
