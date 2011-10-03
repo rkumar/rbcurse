@@ -708,7 +708,7 @@ module RubyCurses
     end
     # puts cursor on correct row.
     def set_form_row
-      raise "empty todo widget"
+      raise "empty set_form_row in widget #{self} "
     #  @form.row = @row + 1 + @winrow
       @form.row = @row + 1 
     end
