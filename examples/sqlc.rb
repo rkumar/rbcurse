@@ -1,13 +1,14 @@
 ## rkumar, 2009
-#DEPRECATED. See sqlm.rb
+#DEPRECATED. See sqlm.rb or sqlt.rb in which i use a TabularWidget instead of Table.
 #AVOID USING TabbedPane till its rewritten 1.3.2 or so.
-#You will have to press a downarrow or any key if the pane goes blank.
+
 #
 ############ WARNING ##############################################################
 #           TabbedPanes seem to have stopped displaying at some points
 #           after moving to FFI-Ncurses. And i've not been able to locate the point.
 #           This is one subtle difference between ncurses and ffi-ncurses.
 #           So i will scrap this and do a fresh clean rewrite of TabbedPane class.
+#           OKAY I've got them fixed.
 #
 ###################################################################################
 # Sample demo of various widgets and their interaction.
@@ -17,11 +18,9 @@
 # Please see bind_key statements in this app for some key bindings in table.
 # There are also key bindings in tabbedpanes and textarea's that will help alot.
 # This demo uses a tabbedpane so we can have the results of many sql statements and not
-# need to keep reissuing. The tabbed pane SUCKS, if you get in when not populated
-# you GET STUCK so press Alt-C to get out.
+# need to keep reissuing.  Its better to use a multitextview or multicontainer
+# than a tabbedpane for such use.
 #
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'sqlite3'
 require 'rbcurse'
@@ -168,7 +167,7 @@ class Sqlc
   end
   def run
     title = "rbcurse"
-    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client ***DEPRECATED use sqlm.rb ******"}
+    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client using TabbedPane and Table (see sqlm.rb instead) "}
     status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>70}
     @status_row = status_row
     # setting ENTER across all objects on a form
@@ -405,9 +404,6 @@ class Sqlc
     table_ht = 15
     atable = Table.new do
       name   "sqltable#{counter}" 
-      #cell_editing_allowed true
-      #editing_policy :EDITING_AUTO
-      #help_text "M-Tab for next field, M-8 amd M-7 for horiz scroll, + to resize, C-q quit"
       help_text "M-Tab for next field, C-q quit"
     end
     atable.bind(:TABLE_TRAVERSAL_EVENT){|e| @header.text_right "Row #{e.newrow+1} of #{atable.row_count}" }
