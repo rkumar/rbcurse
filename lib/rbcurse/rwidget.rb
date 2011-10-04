@@ -547,6 +547,7 @@ module RubyCurses
 
     # sometimes inside a container there's no way of knowing if an individual comp is in focus
     # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
+    # NOTE state takes care of this and is set by form
     attr_accessor :focussed  # is this widget in focus, so they may paint differently
 
     def initialize form, aconfig={}, &block
@@ -708,9 +709,11 @@ module RubyCurses
     end
     # puts cursor on correct row.
     def set_form_row
-      raise "empty set_form_row in widget #{self} "
+      $log.warn "XXX empty set_form_row in widget #{self} "
     #  @form.row = @row + 1 + @winrow
-      @form.row = @row + 1 
+      #@form.row = @row + 1 
+      r, c = rowcol
+      setrowcol row, nil
     end
     # set cursor on correct column, widget
     # Ideally, this should be overriden, as it is not likely to be correct.
@@ -718,7 +721,7 @@ module RubyCurses
       @curpos = col1 || 0 # 2010-01-14 21:02 
       #@form.col = @col + @col_offset + @curpos
       c = @col + @col_offset + @curpos
-      $log.debug " #{@name} widget WARNING super set_form_col #{c}, #{@form} "
+      $log.warn "XXX #{@name} widget WARNING super set_form_col #{c}, #{@form} "
       setrowcol nil, c
     end
     def hide
@@ -1172,8 +1175,12 @@ module RubyCurses
         f.fire_handler(:CHANGED, f) 
       end
     end
+    # form calls on_enter of each object.
+    # However, if a multicomponent calls on_enter of a widget, this code will
+    # not be triggered. The highlighted part
     def on_enter f
       return if f.nil? || !f.focusable # added focusable, else label was firing 2010-09
+      $log.debug "XXX: ON ENTER of field #{f} "
       f.state = :HIGHLIGHTED
       f.modified false
       #f.set_modified false
@@ -1230,7 +1237,7 @@ module RubyCurses
     # in which case returns :NO_NEXT_FIELD.
     # FIXME: in the beginning it comes in as -1 and does an on_leave of last field
     def select_next_field
-      return if @widgets.nil? or @widgets.empty?
+      return :UNHANDLED if @widgets.nil? or @widgets.empty?
       #$log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?  || @active_index == -1 # needs to be tested out A LOT
         @active_index = -1 
@@ -1248,7 +1255,7 @@ module RubyCurses
 #         $error_message = "#{err}" # changed 2010  
          $error_message.value = "#{err}"
          Ncurses.beep
-         return
+         return 0
         end
       end
       index = @active_index + 1
@@ -1257,7 +1264,7 @@ module RubyCurses
         #$log.debug "insdie sele nxt field :  i #{i}  #{index} WL:#{@widgets.length}, field #{f}" 
         if focusable?(f)
           select_field i
-          return
+          return 0
         end
       end
       #req_first_field
@@ -1271,7 +1278,7 @@ module RubyCurses
           f = @widgets[i]
           if focusable?(f)
             select_field i
-            return
+            return 0
           end
         end
       end
@@ -1285,7 +1292,7 @@ module RubyCurses
     # @return [nil, :NO_PREV_FIELD] nil if cyclical and it finds a field
     #  if not cyclical, and no more fields then :NO_PREV_FIELD
     def select_prev_field
-      return if @widgets.nil? or @widgets.empty?
+      return :UNHANDLED if @widgets.nil? or @widgets.empty?
       #$log.debug "insdie sele prev field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?
         @active_index = @widgets.length 
@@ -1461,6 +1468,7 @@ module RubyCurses
   # NOTE : please rescue exceptions when you use this in your main loop and alert() user
   #
   def handle_key(ch)
+    handled = :UNHANDLED # 2011-10-4 
         if ch ==  ?\C-u.getbyte(0)
           ret = universal_argument
           $log.debug "C-u FORM set MULT to #{$multiplier}, ret = #{ret}  "
@@ -1490,13 +1498,14 @@ module RubyCurses
           Ncurses.endwin
           @window.wrefresh
         else
+          field =  get_current_field
           if $log.debug?
             keycode = keycode_tos(ch)
-            $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}  "
+            $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}, field: giving to: #{field}, #{field.name}  "
           end
-          field =  get_current_field
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
+          $log.debug "handled inside Form #{ch} from #{field} got #{handled}  "
           # some widgets like textarea and list handle up and down
           if handled == :UNHANDLED or handled == -1 or field.nil?
             case ch
@@ -1508,15 +1517,19 @@ module RubyCurses
               ret = select_prev_field
               return ret if ret == :NO_PREV_FIELD
             when FFI::NCurses::KEY_UP
-              select_prev_field
+              ret = select_prev_field
+              return ret if ret == :NO_PREV_FIELD
             when FFI::NCurses::KEY_DOWN
-              select_next_field
+              ret = select_next_field
+              return ret if ret == :NO_NEXT_FIELD
             else
               #$log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
               $log.debug "FORM process_key #{ch} got ret #{ret} in #{self} "
               return :UNHANDLED if ret == :UNHANDLED
             end
+          elsif handled == :NO_NEXT_FIELD || handled == :NO_PREV_FIELD # 2011-10-4 
+            return handled
           end
         end
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
