@@ -847,7 +847,8 @@ module RubyCurses
     # @return [Boolean] false if no data
     def on_enter
       if @list.nil? || @list.size == 0
-        Ncurses.beep
+        #Ncurses.beep
+        get_window.ungetch($current_key) # 2011-10-4 push key back so form can go next
         return :UNHANDLED
       end
       on_enter_row @current_index
