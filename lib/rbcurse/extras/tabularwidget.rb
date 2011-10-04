@@ -156,6 +156,11 @@ module RubyCurses
       bind_key(?b, :previous_column)
       list_bindings
     end
+
+    #
+    # set column names
+    # @param [Array] column names or headings
+    #
     def columns=(array)
       @_header_adjustment = 1
       @columns = array
@@ -168,7 +173,7 @@ module RubyCurses
     end
     alias :headings= :columns=
     ## 
-    # send in a list
+    # send in a list of data
     # 
     # @param [Array / Tabular] data to be displayed
     def set_content list
@@ -424,7 +429,7 @@ module RubyCurses
         rescue => err
           $error_message = err.to_s
 #          @form.window.print_error_message # changed 2011 dts  
-          alert err.to_s
+          alert "XXX" + err.to_s
           $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
           # XXX caller app has no idea error occurred so can't do anything !
@@ -565,16 +570,16 @@ module RubyCurses
       @graphic = my_win unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
-      #_guess_col_widths
       tm = get_content
+      rc = tm.length
+      _estimate_column_widths if rc > 0  # will set preferred_width 2011-10-4 
       @left_margin ||= @row_selected_symbol.length
       @width ||= @preferred_width
+
       @height ||= [tm.length+3, 10].min
       _prepare_format
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
-      rc = tm.length
-      _estimate_column_widths if rc > 0
       _maxlen = @maxlen || @width-@internal_width
       $log.debug " #{@name} Tabularwidget repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tr = @toprow
@@ -1019,6 +1024,25 @@ module RubyCurses
         @current_index == @max_index
       end
     end
+    # for some compatibility with Table
+    def set_data data, colnames_array
+      set_content data
+      columns = colnames_array
+    end
+    def get_column_name index
+      @columns[index]
+    end
+    alias :column_name :get_column_name
+    alias :column :get_column
+    def method_missing(name, *args)
+      name = name.to_s
+      case name 
+      when 'cell_editing_allowed', 'editing_policy'
+        # silently ignore to keep compatible with Table
+      else
+        raise NoMethodError, "UNdefined method #{name} for TabularWidget"
+      end
+    end
 
   end # class tabluarw
 
@@ -1040,7 +1064,7 @@ App.new do
     b << ["russia","europe","a hot country" ] 
     #b.column_width 2, 30
   end
-  s = TabularWidget.new @form , :row => 12, :col => 32 do |b|
+  s = TabularWidget.new @form , :row => 12, :col => 32  do |b|
     b.columns = %w{ place continent text }
     b << ["india","asia","a warm country" ] 
     b << ["japan","asia","a cool country" ] 
