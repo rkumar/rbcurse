@@ -12,7 +12,7 @@ module ListScrollable
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
   def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
     #return :UNHANDLED if @current_index == 0 # EVIL
-    return false if @current_index == 0 
+    return :NO_PREVIOUS_ROW if @current_index == 0 
     @oldrow = @current_index
     # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
     # on leave and on enter
@@ -29,7 +29,7 @@ module ListScrollable
     # next field. however, in long lists when user scrolls the sudden jumping to next is very annoying.
     # In combos, if focus was on last row, the combo closed which is not accceptable.
     #return :UNHANDLED if @current_index == rc-1 # EVIL !!!
-    return false if @current_index == rc-1 
+    return :NO_NEXT_ROW if @current_index == rc-1  # changed 2011-10-5 so process can do something
     @oldrow = @current_index
     @current_index += 1*num if @current_index < rc
     bounds_check
