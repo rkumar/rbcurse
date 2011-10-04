@@ -1,15 +1,7 @@
 ## rkumar, 2009
-#DEPRECATED. See sqlm.rb
 #AVOID USING TabbedPane till its rewritten 1.3.2 or so.
 #You will have to press a downarrow or any key if the pane goes blank.
 #
-############ WARNING ##############################################################
-#           TabbedPanes seem to have stopped displaying at some points
-#           after moving to FFI-Ncurses. And i've not been able to locate the point.
-#           This is one subtle difference between ncurses and ffi-ncurses.
-#           So i will scrap this and do a fresh clean rewrite of TabbedPane class.
-#
-###################################################################################
 # Sample demo of various widgets and their interaction.
 # This is a simple sql client which allows table / column selection, construction
 # of SQL queries, and multiple resultsets.
@@ -167,7 +159,7 @@ class Sqlc
   end
   def run
     title = "rbcurse"
-    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client using TabbedPane and Table (see sqlm.rb instead) "}
+    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client using TabbedPane and TabularWidget (see sqlm.rb also) "}
     status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>70}
     @status_row = status_row
     # setting ENTER across all objects on a form
@@ -233,47 +225,7 @@ class Sqlc
     ## key bindings fo atable
     # column widths 
     app = self
-    #atable.configure() do
-      ##bind_key(330) { atable.remove_column(tcm.column(atable.focussed_col)) rescue ""  }
-      #bind_key(?+) {
-        #acolumn = atable.column atable.focussed_col()
-        #w = acolumn.width + 1
-        #acolumn.width w
-        ##atable.table_structure_changed
-      #}
-      #bind_key(?-) {
-        #acolumn = atable.column atable.focussed_col()
-        #w = acolumn.width - 1
-        #if w > 3
-          #acolumn.width w
-          ##atable.table_structure_changed
-        #end
-      #}
-      ## added new method on 2009-10-08 00:47 
-      #bind_key(?=) {
-        #atable.size_columns_to_fit
-      #}
-      #bind_key(?>) {
-        #tcm = atable.get_table_column_model
-        #colcount = tcm.column_count-1
-        ##atable.move_column sel_col.value, sel_col.value+1 unless sel_col.value == colcount
-        #col = atable.focussed_col
-        #atable.move_column col, col+1 unless col == colcount
-      #}
-      #bind_key(?<) {
-        #col = atable.focussed_col
-        #atable.move_column col, col-1 unless col == 0
-        ##atable.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
-      #}
-      ## TODO popup and key labels
-      #bind_key(?\M-h, app) {|tab,td| $log.debug " BIND... #{tab.class}, #{td.class}"; app.make_popup atable}
-    #end
-    #keylabel = RubyCurses::Label.new @form, {'text' => "", "row" => r+table_ht+3, "col" => c, "color" => "yellow", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
-    #eventlabel = RubyCurses::Label.new @form, {'text' => "Events:", "row" => r+table_ht+6, "col" => c, "color" => "white", "bgcolor"=>"blue", "display_length"=>60, "height"=>2}
 
-    # report some events
-    #atable.table_model.bind(:TABLE_MODEL_EVENT){|e| #eventlabel.text = "Event: #{e}"}
-    #atable.get_table_column_model.bind(:TABLE_COLUMN_MODEL_EVENT){|e| eventlabel.text = "Event: #{e}"}
 
     tablist_ht = 6
     mylist = @db.get_data "select name from sqlite_master"
@@ -325,14 +277,14 @@ class Sqlc
     columnlist.list_data_model.insert 0, *@db.get_metadata(table)
   }
   ## pressing ENTER on a table runs a query on it, no need to type and SQL
-  #tablelist.bind_key(13) {  
+
   tablelist.bind(:PRESS) {  
     @status_row.text = "Selected #{tablelist.get_content()[tablelist.current_index]}" 
     table = "#{tablelist.get_content()[tablelist.current_index]}" 
     ##table = table[0] if table.class==Array ## 1.9 ???
     run_query "select * from #{table}"
   }
-  #columnlist.bind_key(13) {  
+
   columnlist.bind(:PRESS) {  
     ## append column name to sqlarea if ENTER pressed
     column = "#{columnlist.get_content()[columnlist.current_index]}" 
