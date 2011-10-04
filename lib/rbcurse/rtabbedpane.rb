@@ -589,7 +589,7 @@ module RubyCurses
           case ch
           when KEY_TAB
             return :UNHANDLED
-          when KEY_RIGHT, KEY_DOWN
+          when KEY_RIGHT, KEY_DOWN, ?j.getbyte(0)
             @current_tab = @old_tab 
             if @current_tab
               @current_tab.set_focus :FIRST
@@ -607,7 +607,7 @@ module RubyCurses
           return ret
         elsif ret == :NO_PREV_FIELD
           case ch
-          when KEY_LEFT, KEY_BTAB
+          when KEY_LEFT, KEY_BTAB, ?k.getbyte(0)
             $log.debug "LEFT BTAB when no previous field"
             return :UNHANDLED
           end
@@ -616,20 +616,20 @@ module RubyCurses
         return 0
       end
       
-          $log.debug " handle_key in tabbed pane got : #{ch},  #{@current_tab}, f: #{@form}  "
+        $log.debug " handle_key in tabbed pane got : #{ch},  #{@current_tab}, f: #{@form}  "
       @current_tab ||= @form # first we cycle buttons
-          $log.debug " handle_key in tabbed pane got : #{ch}, giving to #{@current_tab} "
-          # needs to go to component
-          ret = @current_tab.handle_key(ch)
-          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} , #{ch} "
+        $log.debug " handle_key in tabbed pane got : #{ch}, giving to #{@current_tab} "
+      # needs to go to component
+      ret = @current_tab.handle_key(ch)
+        $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} , #{ch} "
 
-          # components will usually return UNHANDLED for a tab or btab
-          # We need to convert it so the main form can use it
-          if @current_tab != @form
+      # components will usually return UNHANDLED for a tab or btab
+      # We need to convert it so the main form can use it
+      if @current_tab != @form
           if ret == :UNHANDLED
             if ch == KEY_TAB #or ch == KEY_DOWN
               ret = :NO_NEXT_FIELD
-            elsif ch == KEY_BTAB #or ch == KEY_UP # btab
+            elsif ch == KEY_BTAB or ?k.getbyte(0) #or ch == KEY_UP # btab
               ret = :NO_PREV_FIELD
             end
           end
@@ -973,14 +973,16 @@ module RubyCurses
       when ?j.getbyte(0)
         ch = KEY_DOWN
       when ?k.getbyte(0)
-        ch = KEY_UP
+        ch = KEY_BTAB
+        @window.ungetch(KEY_BTAB)
+        return 0
       when ?h.getbyte(0)
         ch = KEY_LEFT
       when ?l.getbyte(0)
         ch = KEY_RIGHT
       end
 
-      super
+      super 
     end
     def repaint
       $log.debug " scrollForm repaint calling parent"
