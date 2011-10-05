@@ -62,8 +62,8 @@ module RubyCurses
           bgcolor = @highlight_background
           color = @highlight_foreground
           bgcolor = @bgcolor
-          color =  @color
-          attribs = Ncurses::A_UNDERLINE || Ncurses::A_BOLD
+          color =  "red" #@color
+          attribs = Ncurses::A_BOLD
           setrowcol r,c  # show cursor on highlighted as we tab through
           ## but when tabbing thru selected one, then selected one doesn't show cursor
         when :SELECTED
@@ -91,6 +91,16 @@ module RubyCurses
         #@form.window.printstring r, c, "%-*s" % [len, value], color, attribs
         #@graphic.printstring r+@graphic.top, c+@graphic.left, "%-*s" % [len, value], color, attribs
         #@graphic.printstring r-@graphic.top, c-@graphic.left, "%-*s" % [len, value], color, attribs
+
+        # add bar character on sides of selected  2011-10-5 
+        # mvwaddch was not doing anything ??
+        if _state == :HIGHLIGHTED
+          @graphic.printstring r, c-1, ">",  color, @attrs unless c-1 < @graphic.left
+          #@graphic.printstring r, c+len+1, "<",  color, @attrs
+        else
+          @graphic.printstring r, c-1, " ",  color, @attrs unless c-1 < @graphic.left
+          #@graphic.printstring r, c+len+1, " ",  color, @attrs
+        end
         @graphic.printstring r, c, "%-*s" % [len, value], color, attribs
         @graphic.modified = true
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -120,6 +130,8 @@ module RubyCurses
       case ch
       when  KEY_DOWN
         # form will not do a next_field, it will ignore this
+        @state = :NORMAL # 2011-10-5 
+        @form.repaint
         return :NO_NEXT_FIELD
       when KEY_RIGHT
         ret =  @form.select_next_field
@@ -385,6 +397,9 @@ module RubyCurses
       r = @row
       col = @col + 1
       @buttons ||= []
+      #
+      # NOTE: since we remove buttons, setting any events on them is useless !
+      #
       if !@buttons.empty?
         @buttons.each {|e| @form.remove_widget(e) }
       end
@@ -419,11 +434,17 @@ module RubyCurses
         b = @buttons.last
         b.display_tab_on_traversal = @display_tab_on_traversal # 2011-10-4 
         tab._button(b) # too late, user needs this when tab is created FIXME
-        b.command(b) { 
+        b.command(b, @form) { 
           $log.debug " calling tab.repaint,button_form_repaint from button press #{b.name} #{b.state} "
           # form.rep essentially sees that buttons get correct attributes
           # when triggering M-<char>. This button should get highlighted.
           tab.repaint
+
+          # the on_leave of current button does not get fired, so it gets
+          #   left in a HIGHLIGHTED state, so two can show highlighted at the same time 2011-10-5 
+          #
+          @form.widgets.each { |tb| @form.on_leave(tb) if tb.state == :HIGHLIGHTED }
+
           button_form_repaint #( b.state == :HIGHLIGHTED )
           if @display_tab_on_traversal
             # set as old tab so ONLY on going down this becomes current_tab
@@ -590,6 +611,7 @@ module RubyCurses
           when KEY_TAB
             return :UNHANDLED
           when KEY_RIGHT, KEY_DOWN, ?j.getbyte(0)
+
             @current_tab = @old_tab 
             if @current_tab
               @current_tab.set_focus :FIRST
@@ -865,6 +887,9 @@ module RubyCurses
       $log.debug " ret = pad.copywin(pc.window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, r+ #{maxr} - border_width, c+ #{maxc} -border_width,0). W:#{pc.window}, #{pc.window.get_window} "
       ret = pad.copywin(pc.window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
       $log.debug " display form after pad copy #{ret}. #{form.name} "
+      #pad.mvhline( 0,0, Ncurses::ACS_HLINE, pad.width-1)
+      pad.mvwaddch(0, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
+      pad.mvwaddch(0, pad.width-1, Ncurses::ACS_RTEE)
     end
 
     # 2011-09-19 @since 1.3.0 changed so that calling form throws an exception
