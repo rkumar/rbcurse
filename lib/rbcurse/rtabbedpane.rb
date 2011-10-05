@@ -61,9 +61,9 @@ module RubyCurses
           $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}, v: #{@value}" )
           bgcolor = @highlight_background
           color = @highlight_foreground
-          bgcolor =  @bgcolor
+          bgcolor = @bgcolor
           color =  @color
-          attribs = Ncurses::A_UNDERLINE
+          attribs = Ncurses::A_UNDERLINE || Ncurses::A_BOLD
           setrowcol r,c  # show cursor on highlighted as we tab through
           ## but when tabbing thru selected one, then selected one doesn't show cursor
         when :SELECTED
@@ -308,7 +308,7 @@ module RubyCurses
         #component.form = @parent # changed on 2011-10-2 
         component.rows_panned = component.cols_panned = 0
         component.parent_component = self # added 2010-02-27  so offsets can go down ?
-        #component.should_create_buffer = true 
+
         $log.debug "XXX: TABBED #{@row} #{@col} #{@height} #{@width} "
         component.row ||= 0 # 2011-10-3 @row + TAB_ROW_OFFSET # 2
         component.col ||= 0 #@col + TAB_COL_OFFSET
@@ -629,7 +629,7 @@ module RubyCurses
           if ret == :UNHANDLED
             if ch == KEY_TAB #or ch == KEY_DOWN
               ret = :NO_NEXT_FIELD
-            elsif ch == KEY_BTAB or ?k.getbyte(0) #or ch == KEY_UP # btab
+            elsif ch == KEY_BTAB or ch == ?k.getbyte(0) #or ch == KEY_UP # btab
               ret = :NO_PREV_FIELD
             end
           end
