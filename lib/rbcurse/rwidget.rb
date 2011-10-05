@@ -709,10 +709,10 @@ module RubyCurses
     end
     # puts cursor on correct row.
     def set_form_row
-      $log.warn "XXX empty set_form_row in widget #{self} "
     #  @form.row = @row + 1 + @winrow
       #@form.row = @row + 1 
       r, c = rowcol
+      $log.warn "XXX empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
       setrowcol row, nil
     end
     # set cursor on correct column, widget
@@ -721,7 +721,7 @@ module RubyCurses
       @curpos = col1 || 0 # 2010-01-14 21:02 
       #@form.col = @col + @col_offset + @curpos
       c = @col + @col_offset + @curpos
-      $log.warn "XXX #{@name} widget WARNING super set_form_col #{c}, #{@form} "
+      $log.warn "XXX #{@name} empty set_form_col #{c}, #{@form} "
       setrowcol nil, c
     end
     def hide
@@ -1203,8 +1203,12 @@ module RubyCurses
         @active_index = ix0
         @row, @col = f.rowcol
         #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
-        @window.wmove @row, @col # added RK FFI 2011-09-7 
         on_enter f
+        @window.wmove @row, @col # added RK FFI 2011-09-7 = setpos
+
+        f.set_form_row # added 2011-10-5 so when embedded in another form it can get the cursor
+        f.set_form_col
+
         f.curpos = 0
         repaint
         @window.refresh
@@ -1370,9 +1374,9 @@ module RubyCurses
       @col = c unless c.nil?
       r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
       c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
-      $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self}  "
+      $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self} r = #{r} , c = #{c}  "
       if !@parent_form.nil? and @parent_form != self
-        $log.debug " (#{@name}) calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
+        $log.debug " (#{@name}) addrow calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
         #r += @parent_form.window.top unless  r.nil?
         #c += @parent_form.window.left unless c.nil?
         @parent_form.setrowcol r, c
@@ -2408,6 +2412,17 @@ module RubyCurses
           fire
         end
       else
+        if $key_map == :vim
+          case ch
+          when ?j.getbyte(0)
+            @form.window.ungetch(KEY_DOWN)
+            return 0
+          when ?k.getbyte(0)
+            @form.window.ungetch(KEY_UP)
+            return 0
+          end
+
+        end
         return :UNHANDLED
       end
     end
