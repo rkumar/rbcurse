@@ -241,8 +241,8 @@ module RubyCurses
       return if @keys_mapped
       bind_key(Ncurses::KEY_LEFT){ cursor_backward }
       bind_key(Ncurses::KEY_RIGHT){ cursor_forward }
-      bind_key(Ncurses::KEY_UP){ up }
-      bind_key(Ncurses::KEY_DOWN){ down }
+      bind_key(Ncurses::KEY_UP){ ret = up;  get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW }
+      bind_key(Ncurses::KEY_DOWN){ ret = down ; get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW }
       bind_key(?\C-a){ cursor_bol }
       bind_key(?\C-e){ cursor_eol }
       bind_key(?\C-n) { scroll_forward }
