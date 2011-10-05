@@ -431,7 +431,7 @@ module RubyCurses
         rescue => err
           $error_message = err.to_s
 #          @form.window.print_error_message # changed 2011 dts  
-          alert "XXX" + err.to_s
+          alert err.to_s
           $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
           # XXX caller app has no idea error occurred so can't do anything !
