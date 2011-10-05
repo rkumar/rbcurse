@@ -257,10 +257,12 @@ module RubyCurses
       when KEY_UP, ?k.getbyte(0)
         #select_prev_row
         ret = up
+        get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW
         check_curpos
         
       when KEY_DOWN, ?j.getbyte(0)
         ret = down
+        get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
         check_curpos
       when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
