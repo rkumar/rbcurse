@@ -104,6 +104,25 @@ class TestTabbedPane
           col 5
         end
       end
+      x = RubyCurses::Field.new f3 do
+        name 'username'
+        row row+6
+        bgcolor 'white'
+        color 'black'
+        col 15
+        display_length 20
+        set_label Label.new f3, {'text' => 'User Name', 'mnemonic'=> 'u'}
+      end
+      x = RubyCurses::Field.new f3 do
+        name 'nick'
+        row row+7
+        bgcolor 'white'
+        color 'black'
+        col 15
+        display_length 10
+        set_label Label.new f3, {'text' => 'Nick Name', 'mnemonic'=> 'n'}
+      end
+
       data = [["Pathetique",3,"Tchaikovsky",3.21, true, "WIP"],
         ["Ali Maula Ali Maula",3,"NFAK",3.47, true, "WIP"],
         ["Tera Hijr Mera Nasib",92,"Razia Sultan",412, true, "Fin"],
