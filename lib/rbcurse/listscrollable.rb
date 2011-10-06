@@ -160,7 +160,7 @@ module ListScrollable
   def scroll_right
     $log.debug " inside scroll_right "
     hscrollcols = $multiplier > 0 ? $multiplier : @width/2
-    $log.debug " scroll_right  mult:#{$multiplier} , hscrollcols  #{hscrollcols}, w: #{@width} ll:#{@longest_line} "
+    $log.debug " scroll_right  mult:#{$multiplier} , hscrollcols  #{hscrollcols}, pcol #{@pcol} w: #{@width} ll:#{@longest_line} "
     #blen = @buffer.rstrip.length
     blen = @longest_line
     @pcol += hscrollcols if @pcol + @width < blen 
@@ -477,13 +477,16 @@ module ListScrollable
     end
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
+    # NOTE truncate does not take into account left_margin that some widgets might use
     def truncate content  #:nodoc:
-      maxlen = @maxlen || @width-2
+      #maxlen = @maxlen || @width-2
+      _maxlen = @maxlen || @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
       if !content.nil? 
-        if content.length > maxlen # only show maxlen
+        if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
-          #content = content[@pcol..@pcol+maxlen-1] 
-          content.replace content[@pcol..@pcol+maxlen-1] 
+          #content = content[@pcol..@pcol+_maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
         else
           # can this be avoided if pcol is 0 XXX
           content.replace content[@pcol..-1] if @pcol > 0
