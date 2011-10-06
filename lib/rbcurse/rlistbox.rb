@@ -58,9 +58,6 @@ module RubyCurses
     def each(&blk)
       @list.each(&blk)
     end
-    #def each 
-    #  @list.each { |item| yield item }
-    #end
     # not sure how to do this XXX  removed on 2009-01-14 12:28 
     #def <=>(other)
     #  @list <=> other
@@ -626,7 +623,7 @@ module RubyCurses
       end
     end
     # added 2010-09-15 00:11 to make life easier
-    def_delegators :@list, :insert, :remove_all, :delete_at, :include?
+    def_delegators :@list, :insert, :remove_all, :delete_at, :include?, :each, :values
     # get element at
     # @param [Fixnum] index for element
     # @return [Object] element
