@@ -631,12 +631,33 @@ module RubyCurses
     def print_data_row r, c, len, value, color, attr
       @graphic.printstring  r, c, "%-*s" % [len,value], color, attr
     end
+    #
+    # Truncates data to fit into display area.
+    #  Copied from listscrollable since we need to take care of left_margin
+    #  2011-10-6 This may need to be reflected in listbox and others FIXME
+    def truncate content  #:nodoc:
+      #maxlen = @maxlen || @width-2
+      _maxlen = @maxlen || @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
+      _maxlen -= @left_margin
+      if !content.nil? 
+        if content.length > _maxlen # only show maxlen
+          @longest_line = content.length if content.length > @longest_line
+          #content = content[@pcol..@pcol+_maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
+        else
+          # can this be avoided if pcol is 0 XXX
+          content.replace content[@pcol..-1] if @pcol > 0
+        end
+      end
+      content
+    end
 
     # print header row
     #  allows user to override
     def print_header_row r, c, len, value, color, attr
       #acolor = $promptcolor
-      @graphic.printstring  r, c, "%-*s" % [len ,value], color, attr
+      @graphic.printstring  r, c+@left_margin, "%-*s" % [len-@left_margin ,value], color, attr
     end
     def separator
       #return @separ if @separ
