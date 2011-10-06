@@ -241,7 +241,7 @@ module RubyCurses
         $log.debug " print_message: dl:#{display_length} "
       # XXX this needs to go up and decide height of window
       if @message_height.nil?
-        @message_height = (message.length/display_length)+1
+        @message_height = (message.length/display_length)+2
         #$log.debug " print_message: mh:#{@message_height}, ml: #{message.length}"
       end
       @message_height ||= 1
