@@ -120,7 +120,7 @@ module RubyCurses
       bind_key(KEY_RETURN) { toggle_expanded_state() }
       bind_key(?o) { toggle_expanded_state() }
       bind_key(?f){ ask_selection_for_char() }
-      bind_key(?\M-v){ @one_key_selection = true }
+      bind_key(?\M-v){ @one_key_selection = !@one_key_selection }
       bind_key(KEY_DOWN){ next_row() }
       bind_key(KEY_UP){ previous_row() }
       bind_key(?O){ expand_children() }
@@ -335,6 +335,7 @@ module RubyCurses
         if ret == :UNHANDLED
           # beware one-key eats up numbers. we'll be wondering why
           if @one_key_selection
+            alert "IONE KEY IS TRUE"
             case ch
             #when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0), ?0.getbyte(0)..?9.getbyte(0)
             when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
@@ -478,43 +479,17 @@ module RubyCurses
               node = content
               object = content
               leaf = node.is_leaf?
+              # content passed is rejected by treecellrenderer 2011-10-6 
               content = node.user_object.to_s # may need to trim or truncate
               expanded = row_expanded? crow  
             elsif content.is_a? String
-              content = content.dup
-              content.chomp!
-              content.gsub!(/\t/, '  ') # don't display tab
-              content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
-              if !content.nil? 
-                #if content.length > maxlen # only show maxlen
-                if @pcol > 0
-                  # FIXME next line does not take indent into account
-                  #@longest_line = content.length if content.length > @longest_line 
-                  $log.debug "XXX: doing truncation with pcol #{@pcol} "
-                  content = content[@pcol..@pcol+maxlen-1] 
-                else
-                  $log.debug "XXX1: doing truncation with pcol #{@pcol} "
-                  content = content[@pcol..-1]
-                end
-              end
+              $log.warn "Removed this entire block since i don't think it was used XXX  "
+              # this block does not set object XXX
             else
               raise "repaint what is the class #{content.class} "
               content = content.to_s
             end
-              if !content.nil? 
-                #if content.length > maxlen # only show maxlen
-                if @pcol > 0
-                  # FIXME next line does not take indent into account
-                  #@longest_line = content.length if content.length > @longest_line 
-                  content = content[@pcol..@pcol+maxlen-1] 
-                  $log.debug "XXX: doing truncation with pcol #{@pcol}: #{content} "
-                else
-                  # NO NO FIXME doesn't make sense now
-                  $log.debug "XXX1: doing truncation with pcol #{@pcol} "
-                  content = content[@pcol..-1]
-                end
-              end
-            # FIXME we need to sanitize all cases here not above
+            # this is redundant since data is taken by renderer directly
             #sanitize content if @sanitization_required
             #truncate value
             ## set the selector symbol if requested
@@ -527,6 +502,7 @@ module RubyCurses
               end
               @graphic.printstring r+hh, c, selection_symbol, acolor,@attr
             end
+
             renderer = cell_renderer()
             renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
             renderer.pcol = @pcol
@@ -542,28 +518,6 @@ module RubyCurses
       @repaint_required = false
     end
 
-    #
-    # truncate data to length
-    #  NOTE We need to take into account the point where printing starts since tree will 
-    #  keep indenting each line differently
-    #
-    def truncate content  #:nodoc:
-      #maxlen = @maxlen || @width-2
-      _maxlen = @maxlen || @width-@internal_width
-      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
-      _maxlen -= @left_margin
-      if !content.nil? 
-        if content.length > _maxlen # only show maxlen
-          @longest_line = content.length if content.length > @longest_line
-          #content = content[@pcol..@pcol+_maxlen-1] 
-          content.replace content[@pcol..@pcol+_maxlen-1] 
-        else
-          # can this be avoided if pcol is 0 XXX
-          content.replace content[@pcol..-1] if @pcol > 0
-        end
-      end
-      content
-    end
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
         init_vars
