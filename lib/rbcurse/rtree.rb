@@ -49,6 +49,7 @@ module RubyCurses
     dsl_property :row_selected_symbol # 2009-01-12 12:01 changed from selector to selected
     dsl_property :row_unselected_symbol # added 2009-01-12 12:00 
     dsl_property :left_margin
+    dsl_accessor :sanitization_required # 2011-10-6 
     #dsl_accessor :valign  # popup related
     #
     # will pressing a single key move to first matching row. setting it to false lets us use vim keys
@@ -76,6 +77,8 @@ module RubyCurses
       super
       #@selection_mode ||= :single # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
+      @sanitization_required = true
+      @longest_line = 0
       
      
       @win_left = 0
@@ -122,6 +125,10 @@ module RubyCurses
       bind_key(KEY_UP){ previous_row() }
       bind_key(?O){ expand_children() }
       bind_key(?X){ collapse_children() }
+      bind_key(?>, :scroll_right)
+      bind_key(?<, :scroll_left)
+      bind_key(?\M-l, :scroll_right)
+      bind_key(?\M-h, :scroll_left)
       # TODO
       bind_key(?x){ collapse_parent() }
       bind_key(?p){ goto_parent() }
@@ -448,6 +455,7 @@ module RubyCurses
       $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
       print_borders unless @suppress_borders # do this once only, unless everything changes
       maxlen = @maxlen || @width-@internal_width
+      maxlen -= @left_margin # 2011-10-6 
       tm = _list()
       select_default_values
       rc = row_count
@@ -455,6 +463,7 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
+      @longest_line = @width #maxlen
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
@@ -477,9 +486,14 @@ module RubyCurses
               content.gsub!(/\t/, '  ') # don't display tab
               content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
               if !content.nil? 
-                if content.length > maxlen # only show maxlen
+                #if content.length > maxlen # only show maxlen
+                if @pcol > 0
+                  # FIXME next line does not take indent into account
+                  #@longest_line = content.length if content.length > @longest_line 
+                  $log.debug "XXX: doing truncation with pcol #{@pcol} "
                   content = content[@pcol..@pcol+maxlen-1] 
                 else
+                  $log.debug "XXX1: doing truncation with pcol #{@pcol} "
                   content = content[@pcol..-1]
                 end
               end
@@ -487,6 +501,22 @@ module RubyCurses
               raise "repaint what is the class #{content.class} "
               content = content.to_s
             end
+              if !content.nil? 
+                #if content.length > maxlen # only show maxlen
+                if @pcol > 0
+                  # FIXME next line does not take indent into account
+                  #@longest_line = content.length if content.length > @longest_line 
+                  content = content[@pcol..@pcol+maxlen-1] 
+                  $log.debug "XXX: doing truncation with pcol #{@pcol}: #{content} "
+                else
+                  # NO NO FIXME doesn't make sense now
+                  $log.debug "XXX1: doing truncation with pcol #{@pcol} "
+                  content = content[@pcol..-1]
+                end
+              end
+            # FIXME we need to sanitize all cases here not above
+            #sanitize content if @sanitization_required
+            #truncate value
             ## set the selector symbol if requested
             selection_symbol = ''
             if @show_selector
@@ -499,8 +529,10 @@ module RubyCurses
             end
             renderer = cell_renderer()
             renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
+            renderer.pcol = @pcol
             #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, object, content, leaf,  focus_type, selected, expanded
+            @longest_line = renderer.actual_length if renderer.actual_length > @longest_line 
         else
           # clear rows
           @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
@@ -508,6 +540,29 @@ module RubyCurses
       end
       @table_changed = false
       @repaint_required = false
+    end
+
+    #
+    # truncate data to length
+    #  NOTE We need to take into account the point where printing starts since tree will 
+    #  keep indenting each line differently
+    #
+    def truncate content  #:nodoc:
+      #maxlen = @maxlen || @width-2
+      _maxlen = @maxlen || @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
+      _maxlen -= @left_margin
+      if !content.nil? 
+        if content.length > _maxlen # only show maxlen
+          @longest_line = content.length if content.length > @longest_line
+          #content = content[@pcol..@pcol+_maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
+        else
+          # can this be avoided if pcol is 0 XXX
+          content.replace content[@pcol..-1] if @pcol > 0
+        end
+      end
+      content
     end
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
