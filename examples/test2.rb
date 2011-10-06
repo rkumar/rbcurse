@@ -154,7 +154,7 @@ if $0 == __FILE__
         col3 = 92
         treemodel = nil
         atree = Tree.new @form, :title => "Tree", :row =>1, :col=>col3, :height => 14, :width => 15 do
-        treemodel = root "ruby" do
+        treemodel = root "ruby language" do
           branch "mri" do
             leaf "1.9.1"
             leaf "1.9.2"
@@ -162,6 +162,8 @@ if $0 == __FILE__
           end
           branch "jruby" do
             leaf "1.5"
+            leaf "a really long leaf"
+
           end
           branch "ree" do
             leaf "1.8"
@@ -640,6 +642,8 @@ if $0 == __FILE__
           end
           $error_message.value = ""
         rescue => err
+          $log.debug( err) if err
+          $log.debug(err.backtrace.join("\n")) if err
           alert "Got an exception in test2: #{err} "
           $error_message.value = ""
         end
