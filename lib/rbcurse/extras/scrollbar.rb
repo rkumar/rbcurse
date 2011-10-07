@@ -56,6 +56,11 @@ module RubyCurses
           @repaint_required = true  #requred otherwise at end when same value sent, prop handler
           # will not be fired (due to optimization).
         end
+        # in some cases, on leaving a listbox or other component redraws itself to reduce
+        # selected or highlighted object, so the scrollbar gets overwritten. We need to repaint it.
+        @parent.bind :LEAVE do |p|
+          @repaint_required = true  
+        end
       end
     end
 
