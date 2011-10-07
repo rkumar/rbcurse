@@ -496,7 +496,7 @@ module RubyCurses
         content.chomp!
         # trying out since gsub giving #<ArgumentError: invalid byte sequence in UTF-8> 2011-09-11 
         content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
-        content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/[\t\n\r]/, '  ') # don't display tab
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
         content
