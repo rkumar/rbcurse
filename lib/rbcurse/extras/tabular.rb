@@ -26,6 +26,7 @@
 module RubyCurses
 
   class Tabular
+    GUESSCOLUMNS = 20
 
   def yield_or_eval &block
     return unless block
@@ -187,7 +188,7 @@ module RubyCurses
     private
     def _guess_col_widths  #:nodoc:
       @list.each_with_index { |r, i| 
-        break if i > 10
+        break if i > GUESSCOLUMNS
         next if r == :separator
         r.each_with_index { |c, j|
           x = c.to_s.length
