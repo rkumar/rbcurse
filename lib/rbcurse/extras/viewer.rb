@@ -73,6 +73,7 @@ module RubyCurses
       v_form.repaint
       v_window.wrefresh
       Ncurses::Panel.update_panels
+      config[:close_key] ||= ?q.ord # if not specified then use q also to close
       begin
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
           break if ch == config[:close_key]
