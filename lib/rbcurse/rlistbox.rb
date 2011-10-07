@@ -306,7 +306,13 @@ module RubyCurses
         when KEY_ENTER, 10, 13
           # if you press ENTER without selecting, it won't come here
           # it will fire button OK's fire, if that's the default button
-          fire_handler :PRESS, @listbox.focussed_index
+
+          # returns an array of indices if multiple selection
+          if @listbox.selection_mode == :multiple
+            fire_handler :PRESS, @listbox
+          else
+            fire_handler :PRESS, @listbox.focussed_index
+          end
           # since Listbox is handling enter, COMBO_SELECT will not be fired
         # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
@@ -1155,6 +1161,23 @@ module RubyCurses
       @repaint_required = true
     end
 
+    # trying to simplify usage. The Java way has made listboxes very difficult to use
+    # Returns selected indices
+    # Indices are often required since the renderer may modify the values displayed
+    #
+    def get_selected_indices
+      @list_selection_model.get_selected_indices
+    end
+
+    # Returns selected values
+    #
+    def get_selected_values
+      selected = []
+      @list_selection_model.get_selected_indices.each { |i| selected << list_data_model[i] }
+      return selected
+    end
+    alias :selected_values :get_selected_values
+    alias :selected_indices :get_selected_indices
 
     # ADD HERE
   end # class listb
