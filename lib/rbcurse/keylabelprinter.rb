@@ -5,6 +5,8 @@ module RubyCurses
   class KeyLabelPrinter < Widget
     attr_reader :key_labels
     dsl_property :mode
+    dsl_accessor :footer_color_pair
+    dsl_accessor :footer_mnemonic_color_pair
 
     def initialize form, key_labels, config={}, &block
 
