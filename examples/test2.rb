@@ -74,7 +74,7 @@ if $0 == __FILE__
     #$log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
-    @lookfeel = :classic # :dialog # or :classic
+    @lookfeel = :dialog # :dialog # or :classic
 
     @window = VER::Window.root_window
     # Initialize few color pairs 
@@ -497,7 +497,7 @@ if $0 == __FILE__
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        #alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
+        #alert("Hope you enjoyed this demo ", {'title' => "Hello", :bgcolor => :blue, :color => :white})
         sw = case @lookfeel
              when :dialog
                progress_dialog :color_pair => $reversecolor, :row_offset => 4, :col_offset => 5
@@ -514,7 +514,7 @@ if $0 == __FILE__
         sleep 0.5
         sw.print "This was a test of Window", "we are almost done now ..."
         clock = %w[ | / - \ ]
-        listb.list.each_with_index { |e, index| sw.print e, clock[index%4]; sleep 0.1  }
+        listb.list.each_with_index { |e, index| sw.print e, clock[index%4]; sleep 0.1   }
         sw.linger #@window
       }
 
