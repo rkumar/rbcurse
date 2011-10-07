@@ -335,7 +335,6 @@ module RubyCurses
         if ret == :UNHANDLED
           # beware one-key eats up numbers. we'll be wondering why
           if @one_key_selection
-            alert "IONE KEY IS TRUE"
             case ch
             #when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0), ?0.getbyte(0)..?9.getbyte(0)
             when ?A.getbyte(0)..?Z.getbyte(0), ?a.getbyte(0)..?z.getbyte(0)
