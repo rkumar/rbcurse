@@ -183,11 +183,14 @@ module RubyCurses
       else
         raise ArgumentError, "Listbox list(): do not know how to handle #{alist.class} " 
       end
-      # added on 2009-01-13 23:19 since updates are not automatic now
-      #create_default_list_selection_model
-      #@list_selection_model.selection_mode = @tmp_selection_mode if @tmp_selection_mode
+    
       @repaint_required = true
       @list
+    end
+    # conv method to insert data, trying to keep names same across along with Tabular, TextView,
+    # TextArea and listbox. Don;t use this till i am certain.
+    def data=(val)
+      list(val)
     end
     # get element at
     # @param [Fixnum] index for element
@@ -545,8 +548,12 @@ module RubyCurses
       else
         if @selected_index == crow #@current_index
           @selected_index = nil
+          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_index = crow #@current_index
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       end
     end
@@ -556,12 +563,17 @@ module RubyCurses
     # if item already selected, it is deselected, else selected
     # typically bound to Ctrl-Space
     def add_to_selection
+      crow = @current_index
       case @selection_mode 
       when :multiple
         if @selected_indices.include? @current_index
           @selected_indices.delete @current_index
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_indices << @current_index
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
       end
@@ -595,6 +607,19 @@ module RubyCurses
       @current_index = row
       @repaint_required = true # fire list_select XXX
     end
+    # Returns selected indices
+    # Indices are often required since the renderer may modify the values displayed
+    #
+    def get_selected_indices; @selected_indices; end
+
+    # Returns selected values
+    #
+    def get_selected_values
+      selected = []
+      @selected_indices.each { |i| selected << @list[i] }
+      return selected
+    end
+    alias :selected_values :get_selected_values
  
 
 
@@ -641,9 +666,6 @@ module RubyCurses
       @attrs[:focussed] = $row_focussed_attr
 
     end
-    def getvalue
-      @text
-    end
     ##
     # sets @color_pair and @attr
     def select_colors focussed, selected
@@ -684,5 +706,20 @@ module RubyCurses
       graphic.printstring r, c, "%-*s" % [len, value], @color_pair, @attr
     end # repaint
   end # class
+  class ListSelectionEvent
+    attr_accessor :firstrow, :lastrow, :source, :type
+    def initialize firstrow, lastrow, source, type
+      @firstrow = firstrow
+      @lastrow = lastrow
+      @source = source
+      @type = type
+    end
+    def to_s
+      "#{@type.to_s}, firstrow: #{@firstrow}, lastrow: #{@lastrow}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
+  end
 
 end # module
