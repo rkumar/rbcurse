@@ -673,6 +673,7 @@ module RubyCurses
     attr_accessor :state              # normal, selected, highlighted
     attr_accessor :toggle_key              # key used to popup, should be set prior to attaching to form
     attr_accessor :color, :bgcolor # 2011-09-25 V1.3.1 
+    attr_accessor  :_object_created   # 2011-10-7 if visible then Form will call this
     def initialize &block
       @window = nil
       @text = "menubar"
@@ -734,6 +735,13 @@ module RubyCurses
 #     menu.show
 #     menu.window.wrefresh # XXX we need this
     end
+
+    def keep_visible flag=nil
+      return @keep_visible unless flag
+      @keep_visible = flag
+      @visible = flag
+      self
+    end
     # menubar LEFT, RIGHT, DOWN 
     def handle_keys
       @selected = false
@@ -749,7 +757,6 @@ module RubyCurses
         when KEY_DOWN
           #$log.debug "insdie keyDOWN :  #{ch}" 
           if !@selected
-            #alert "DOWN, firing #{current_menu.text} "
             current_menu.fire
           else
             current_menu.handle_key ch
@@ -805,7 +812,15 @@ module RubyCurses
     end
     # called by set_menu_bar in widget.rb (class Form).
     def toggle
-      @items.each { |i| $log.debug " ITEM DDD : #{i.text}" }
+      # added keeping it visible, 2011-10-7 being tested in dbdemo
+      if @keep_visible
+        init_vars
+        show
+        @items[0].highlight
+        @window.ungetch(KEY_DOWN)
+        return
+      end
+      #@items.each { |i| $log.debug " ITEM DDD : #{i.text}" }
       @visible = !@visible
       if !@visible
         hide
@@ -849,7 +864,7 @@ module RubyCurses
         c += (item.text.length + 2)
       end
       #@items[0].on_enter # 2011-09-25 V1.3.1  caused issues when toggling, first item fired on DOWN
-      @items[0].highlight # 2011-09-26 V1.3.1   fixed to take both cases into account
+      @items[0].highlight unless @keep_visible # 2011-09-26 V1.3.1   fixed to take both cases into account
       @window.wrefresh
     end
     def create_window_menubar
@@ -862,13 +877,14 @@ module RubyCurses
     end
     def destroy
       $log.debug "DESTRY menubar "
+      @items.each do |item|
+        item.destroy
+      end
+      return if @keep_visible
       @visible = false
       panel = @window.panel
       Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
-      @items.each do |item|
-        item.destroy
-      end
       @window = nil
     end
   end # menubar
