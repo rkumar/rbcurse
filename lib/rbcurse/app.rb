@@ -726,9 +726,17 @@ module RubyCurses
       require 'rbcurse/applicationheader'
       header = ApplicationHeader.new @form, title, config, &block
     end
+    
+    # prints pine-like key labels
     def dock labels, config={}, &block
       require 'rbcurse/keylabelprinter'
       klp = RubyCurses::KeyLabelPrinter.new @form, labels, config, &block
+    end
+
+    # prints a status line at bottom where mode's statuses et can be reflected
+    def status_line config={}, &block
+      require 'rbcurse/extras/statusline'
+      sl = RubyCurses::StatusLine.new @form, config, &block
     end
     def link *args, &block
       require 'rbcurse/extras/rlink'
