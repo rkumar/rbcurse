@@ -21,7 +21,6 @@ module Kernel
   extend Forwardable
   def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause
 end
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 include RubyCurses::Utils
 include Io
