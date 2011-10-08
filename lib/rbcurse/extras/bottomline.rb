@@ -83,7 +83,20 @@ module RubyCurses
     attr_accessor :name # for debugging
     def initialize win=nil, row=nil
       @window = win
-      @message_row = row
+      #@window.wrefresh
+      #Ncurses::Panel.update_panels
+      #@message_row = row
+      @message_row = 0 # 2011-10-8 
+    end
+    #
+    # create a window at bottom and show and hide it.
+    # Causing a stack overflow since Window creates a bottomline too !
+    #
+    def _create_footer_window h = 1 , w = Ncurses.COLS, t = Ncurses.LINES-1, l = 0
+      ewin = VER::Window.new(h, w , t, l)
+      #ewin.bkgd(Ncurses.COLOR_PAIR($promptcolor));
+      @window = ewin
+      return ewin
     end
 
     class QuestionError < StandardError
@@ -947,7 +960,10 @@ module RubyCurses
       end
     end
     def ask(question, answer_type=String, &details)
-      #clear_line 80
+     $log.debug "XXXX inside ask win #{@window} "
+      #@window.show #unless @window.visible?
+      @window ||= _create_footer_window
+    
       @question ||= Question.new(question, answer_type, &details)
       say(@question) #unless @question.echo == true
 
@@ -1012,7 +1028,21 @@ module RubyCurses
         retry
       ensure
         @question = nil    # Reset Question object.
+        @window.hide # assuming this method made it visible
       end
+    end
+    # bottomline user has to hide window if he called say(). At what point would 
+    # he do so ?
+    def hide 
+      @window.hide if @window
+    end
+    # 
+    # destroy window, to be called by app when shutting down
+    # since we are normally hiding the window only.
+    def destroy 
+      $log.debug "bottomline destroy... #{@window} "
+      @window.destroy if @window
+      @window = nil
     end
 
     #
@@ -1026,13 +1056,16 @@ module RubyCurses
     # you pass in.
     #
     def say statement, config={}
+      @window ||= _create_footer_window
+      #@window.show unless @window.visible? # this will need to be hidden manually NOTE
+      $log.debug "XXX: inside say win #{@window} !"
       case statement
       when Question
 
         if config.has_key? :color_pair
           $log.debug "INSIDE QUESTION 2 " if $log.debug? 
         else
-          $log.debug "XXXX SAY using #{statement.color_pair} " if $log.debug? 
+          $log.debug "XXXX SAY using colorpair: #{statement.color_pair} " if $log.debug? 
           config[:color_pair] = statement.color_pair
         end
       else
@@ -1048,8 +1081,13 @@ module RubyCurses
       print_str statement, config
     end
     def say_with_pause statement, config={}
+      @window ||= _create_footer_window
+      $log.debug "XXX: inside say pausewin #{@window} !"
       say statement, config
+      @window.wrefresh
+      Ncurses::Panel.update_panels
       ch=@window.getchar()
+      @window.hide
     end
     # A helper method for sending the output stream and error and repeat
     # of the question.
@@ -1067,8 +1105,9 @@ module RubyCurses
 
     def print_str(text, config={})
       win = config.fetch(:window, @window) # assuming its in App
-      x = config.fetch :x, @message_row # Ncurses.LINES-1
+      x = config.fetch :x, 0 # @message_row # Ncurses.LINES-1, 0 since one line window 2011-10-8 
       y = config.fetch :y, 0
+      $log.debug "XXX: print_str #{win} with text : #{text} at #{x}  #{y} "
       color = config[:color_pair] || $datacolor
       raise "no window for ask print in #{self.class} name: #{name} " unless win
       color=Ncurses.COLOR_PAIR(color);
@@ -1645,10 +1684,6 @@ if __FILE__ == $PROGRAM_NAME
   App.new do 
     header = app_header "rbcurse 1.2.0", :text_center => "**** Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
     message "Press F1 to exit from here"
-  ########  $tt.window = @window; $tt.message_row = @message_row
-    #@tt = Bottomline.new @window, @message_row
-    #extend Forwardable
-    #def_delegators :@tt, :ask, :say, :agree, :choose
 
     #stack :margin_top => 2, :margin => 5, :width => 30 do
     #end # stack
