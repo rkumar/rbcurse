@@ -9,7 +9,6 @@ Todo:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
@@ -82,9 +81,6 @@ module RubyCurses
 
     extend Forwardable
     def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list
-    #@tt = Bottomline.new @window, @message_row
-    #extend Forwardable
-    #def_delegators :@tt, :ask, :say, :agree, :choose
 
     # TODO: i should be able to pass window coords here in config
     # :title
@@ -121,11 +117,12 @@ module RubyCurses
         colors = Ncurses.COLORS
         $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
+=begin
+# trying without 2011-10-8 
         require 'rbcurse/extras/stdscrwindow'
         awin = StdscrWindow.new
         $tt.window = awin; $tt.message_row = @message_row
-      # window created in run !!!
-      #$tt.window = @window; $tt.message_row = @message_row
+=end
     end
     def logger; return $log; end
     def close
@@ -133,6 +130,7 @@ module RubyCurses
       @window.destroy if !@window.nil?
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       if @stop_ncurses_on_close
+        $tt.destroy  # added on 2011-10-9 since we created a window, but only hid it after use
         VER::stop_ncurses
         $log.debug " CLOSING NCURSES"
       end
@@ -409,7 +407,7 @@ module RubyCurses
           alert "#{self.class} does not respond to #{cmd} "
           ret = false
           ret = execute_this(cmd, *cmdline) if respond_to?(:execute_this, true)
-          say("#{self.class} does not respond to #{cmd} ", :color_pair => $promptcolor) unless ret
+          say_with_pause("#{self.class} does not respond to #{cmd} ", :color_pair => $promptcolor) unless ret
           # should be able to say in red as error
         end
       end
@@ -1072,11 +1070,7 @@ module RubyCurses
 
         # check if user has passed window coord in config, else root window
         @window = VER::Window.root_window
-        #$tt.window = @window; $tt.message_row = @message_row
         awin = @window
-        #require 'rbcurse/extras/stdscrwindow'
-        #awin = StdscrWindow.new
-        #$tt.window = awin; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
           @form.bind_key([?\C-x, ?c]) { suspend(false) do
@@ -1110,7 +1104,7 @@ module RubyCurses
                 rcmd = _resolve_command(opts, cmd) if !opts.include?(cmd)
                 if rcmd.size == 1
                   cmd = rcmd.first
-                else
+                elsif !rcmd.empty?
                   say_with_pause "Cannot resolve #{cmd}. Matches are: #{rcmd} "
                 end
               end
@@ -1128,7 +1122,7 @@ module RubyCurses
                   end
                 end
               else
-                say("Command [#{cmd}] not supported by #{self.class} ")
+                say_with_pause("Command [#{cmd}] not supported by #{self.class} ", :color_pair => $promptcolor)
               end
             end
           }
