@@ -47,7 +47,7 @@ module VER
       @name ||="#{self}"
       @modified = true
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
-      init_bottomline
+      #init_bottomline # bottomline to creates its own window 2011-10-8 
     end
     ##
     # this is an alternative constructor
