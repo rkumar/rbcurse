@@ -391,9 +391,9 @@ module RubyCurses
         blen = @buffer.rstrip.length
         set_form_col blen
         # search related 
-      when @KEY_ASK_FIND
+      when @KEY_ASK_FIND  # FIXME
         ask_search
-      when @KEY_FIND_MORE
+      when @KEY_FIND_MORE  # FIXME
         find_more
       when 10, 13, KEY_ENTER
         #fire_handler :PRESS, self
@@ -1063,7 +1063,7 @@ module RubyCurses
       when 'cell_editing_allowed', 'editing_policy'
         # silently ignore to keep compatible with Table
       else
-        raise NoMethodError, "UNdefined method #{name} for TabularWidget"
+        raise NoMethodError, "Undefined method #{name} for TabularWidget"
       end
     end
 
