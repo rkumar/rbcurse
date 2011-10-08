@@ -16,7 +16,6 @@ require 'rbcurse/listcellrenderer'
 require 'forwardable'
 
 
-#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   ##
@@ -34,9 +33,9 @@ module RubyCurses
   class BasicListbox < Widget
 
     require 'rbcurse/listscrollable'
-    #require 'rbcurse/listselectable'
-    #require 'rbcurse/defaultlistselectionmodel'
+    require 'rbcurse/extras/listselectable'             # added 2011-10-8 
     include ListScrollable
+    include NewListSelectable                           # added 2011-10-8 
     extend Forwardable
     dsl_accessor :height
     dsl_accessor :title
@@ -138,6 +137,7 @@ module RubyCurses
       bind_key(32){ toggle_row_selection() }
       bind_key(10){ fire_action_event }
       bind_key(13){ fire_action_event }
+      list_bindings
       @keys_mapped = true
 
     end
@@ -183,6 +183,7 @@ module RubyCurses
       else
         raise ArgumentError, "Listbox list(): do not know how to handle #{alist.class} " 
       end
+      clear_selection
     
       @repaint_required = true
       @list
@@ -482,7 +483,7 @@ module RubyCurses
         value.to_s if value
       end
     end
-    # takes a block, this way anyone extending this class can just pass a block to do his job
+    # takes a block, this way anyone extending this klass can just pass a block to do his job
     # This modifies the string
     def sanitize content #:nodoc:
       if content.is_a? String
@@ -539,12 +540,16 @@ module RubyCurses
     
     # change selection of current row on pressing space bar
     # If mode is multiple, then other selections are cleared and this is added
-    def toggle_row_selection crow=@current_index
+    # NOTE: 2011-10-8 allow multiple select on spacebar. Using C-Space was quite unfriendly
+    # although it will still work
+    def OLDtoggle_row_selection crow=@current_index
       @repaint_required = true
+      row = crow
       case @selection_mode 
       when :multiple
-        clear_selection
-        @selected_indices[0] = crow #@current_index
+        add_to_selection
+        #clear_selection
+        #@selected_indices[0] = crow #@current_index
       else
         if @selected_index == crow #@current_index
           @selected_index = nil
@@ -562,13 +567,13 @@ module RubyCurses
     # add an item to selection, if selection mode is multiple
     # if item already selected, it is deselected, else selected
     # typically bound to Ctrl-Space
-    def add_to_selection
+    def OLDadd_to_selection
       crow = @current_index
       case @selection_mode 
       when :multiple
         if @selected_indices.include? @current_index
           @selected_indices.delete @current_index
-          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
           fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_indices << @current_index
@@ -580,11 +585,11 @@ module RubyCurses
       @repaint_required = true
     end
     # clears selected indices
-    def clear_selection
+    def OLDclear_selection
       @selected_indices = []
       @repaint_required = true
     end
-    def is_row_selected crow=@current_index
+    def OLDis_row_selected crow=@current_index
       case @selection_mode 
       when :multiple
         @selected_indices.include? crow
@@ -706,20 +711,5 @@ module RubyCurses
       graphic.printstring r, c, "%-*s" % [len, value], @color_pair, @attr
     end # repaint
   end # class
-  class ListSelectionEvent
-    attr_accessor :firstrow, :lastrow, :source, :type
-    def initialize firstrow, lastrow, source, type
-      @firstrow = firstrow
-      @lastrow = lastrow
-      @source = source
-      @type = type
-    end
-    def to_s
-      "#{@type.to_s}, firstrow: #{@firstrow}, lastrow: #{@lastrow}, source: #{@source}"
-    end
-    def inspect
-      to_s
-    end
-  end
 
 end # module
