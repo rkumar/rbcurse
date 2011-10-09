@@ -139,13 +139,13 @@ module RubyCurses
     # select all rows, you may specify starting row.
     # if header row, then 1 else should be 0. Actually we should have a way to determine
     # this, and the default should be zero.
-    def select_all start_row=0+@_header_adjustment
+    def select_all start_row=0 #+@_header_adjustment
       @repaint_required = true
       # don't select header row - need to make sure this works for all cases. we may 
       # need a variable instead of hardoded value
       add_row_selection_interval start_row, row_count()
     end
-    def invert_selection start_row=0+@_header_adjustment
+    def invert_selection start_row=0 #+@_header_adjustment
       start_row.upto(row_count()){|i| invert_row_selection i }
     end
      
@@ -207,6 +207,7 @@ module RubyCurses
       bind_key(?*, :invert_selection)
       bind_key(?u, :clear_selection)
       @_header_adjustment ||= 0 #  incase caller does not use
+      @_events << :LIST_SELECTION_EVENT unless @_events.include? :LIST_SELECTION_EVENT
     end
     def list_init_vars
       @selected_indices = []
