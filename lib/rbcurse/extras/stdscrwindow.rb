@@ -12,6 +12,12 @@ module RubyCurses
   # FFI: 2011-09-9 The change to FFI has affected this a lot since I do not get window
   # methods in rbcurse for stdscr whereas suprisingly if i run the samples, i get them
   # all.
+  #
+  #   NOTE:
+  #   WARNING: Pls do not use this class. This was just experimentation. Using stdscr
+  #   mucks up the display and overwrites objects on the screen. I will remove this class
+  #   at some time.
+  #
   class StdscrWindow 
     attr_reader :width, :height, :top, :left
 
