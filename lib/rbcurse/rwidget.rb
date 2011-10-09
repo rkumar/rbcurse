@@ -494,6 +494,14 @@ module RubyCurses
         end
       end
     end # module config
+    
+    #
+    # prints a status line at bottom where mode's statuses et can be reflected
+    def status_line config={}, &block
+      require 'rbcurse/extras/statusline'
+      sl = RubyCurses::StatusLine.new @form, config, &block
+    end
+
     ##
     # Basic widget class. 
     # NOTE: I may soon remove the config hash. I don't use it and its just making things heavy.
