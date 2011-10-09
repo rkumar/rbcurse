@@ -1,10 +1,8 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 # this program tests out various widgets.
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rwidget'
+#require 'rbcurse/rwidget'
 require 'rbcurse/rtextarea'
 require 'rbcurse/rtextview'
 require 'rbcurse/rmenu'
@@ -74,7 +72,7 @@ if $0 == __FILE__
     #$log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
-    @lookfeel = :dialog # :dialog # or :classic
+    @lookfeel = :classic # :dialog # or :classic
 
     @window = VER::Window.root_window
     # Initialize few color pairs 
@@ -104,7 +102,7 @@ if $0 == __FILE__
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => Ncurses.LINES-1, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
 
       $results = Variable.new
       $results.value = "A variable"
@@ -483,17 +481,21 @@ if $0 == __FILE__
      #item.text="Labelcb"
       # in next line, an explicit repaint is required since label is on another form.
       item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : 'normal'; label.attr(att); label.repaint}
-      row += 2
-      ftext = "------------------------| F2 Menu | F3 View | F4 Shell | F5 Sh | F9 Help |-------"
-      @form.window.printstring row, 0, "%-*s" % [Ncurses.COLS, ftext], $datacolor, Ncurses::A_REVERSE
+      @status_line = status_line :row => Ncurses.LINES-2
+      @status_line.command {
+        "%-20s | F2 Menu | F3 View | F4 Shell | F5 Sh | F9 Help | %20s" % [Time.now, $message.value]
+      }
+      row += 1 #2
+      #ftext = "------------------------| F2 Menu | F3 View | F4 Shell | F5 Sh | F9 Help |-------"
+      #@form.window.printstring row, 0, "%-*s" % [Ncurses.COLS, ftext], $datacolor, Ncurses::A_REVERSE
       ok_button = Button.new @form do
         text "OK"
         name "OK"
         row row
         col col
-        attr 'reverse'
-        highlight_background "white"
-        highlight_foreground "blue"
+        #attr 'reverse'
+        #highlight_background "white"
+        #highlight_foreground "blue"
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
@@ -524,9 +526,9 @@ if $0 == __FILE__
         text "&Cancel"
         row row
         col col + 10
-        attr 'reverse'
-        highlight_background "white"
-        highlight_foreground "blue"
+        #attr 'reverse'
+        #highlight_background "white"
+        #highlight_foreground "blue"
         #surround_chars ['{ ',' }']  ## change the surround chars
       end
       cancel_button.command { |aeve| 
@@ -544,8 +546,8 @@ if $0 == __FILE__
       #col += 22
       col += 15
       require 'rbcurse/rprogress'
-      pbar = Progress.new @form, {:width => 20, :row => 27, :col => Ncurses.COLS-20 , :bgcolor => 'white',
-        :color => 'red', :name => "pbar"}
+      pbar = Progress.new @form, {:width => 20, :row => Ncurses.LINES-1, :col => Ncurses.COLS-20 , 
+        :bgcolor => 'white', :color => 'red', :name => "pbar"}
       #len = 1
       #pbar.fraction(len/100.0)
       pbar.visible false
