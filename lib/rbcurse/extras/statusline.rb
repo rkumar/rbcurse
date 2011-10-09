@@ -41,7 +41,8 @@ module RubyCurses
       if @command
         ftext = @command.call(self, @args) if @command
       else
-        ftext = Time.now # should we print a default value just in case user doesn't
+        status = $status_message ? $status_message.value : ""
+        ftext = " %-20s | %s" % [Time.now, status] # should we print a default value just in case user doesn't
       end
       @form.window.printstring @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
 
