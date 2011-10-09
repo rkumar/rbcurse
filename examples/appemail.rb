@@ -188,6 +188,8 @@ App.new do
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
+  @statusline = status_line :row => Ncurses.LINES-1
+  #@statusline.command { }
   @form.bind_key(?\M-v) { test11() }
   @form.bind_key(?\M-V) { testme() }
   @form.bind_key(?\M-c) { test1() }
