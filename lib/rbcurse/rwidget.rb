@@ -300,7 +300,7 @@ module RubyCurses
         when String
           keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
           #$log.debug " #{name} Widg String called bind_key BIND #{keycode}, #{keycode_tos(keycode)}  "
-          $log.debug "XXX XX assigning #{keycode}  " if $log.debug? 
+          $log.debug " assigning #{keycode}  " if $log.debug? 
           @key_handler[keycode] = blk
         when Array
           # for starters lets try with 2 keys only
@@ -310,11 +310,11 @@ module RubyCurses
           a1 = keycode[1]
           a1 = keycode[1].getbyte(0) if keycode[1].class == String
           @key_handler[a0] ||= OrderedHash.new
-          $log.debug "XXX XX assigning #{keycode} , A0 #{a0} , A1 #{a1} " if $log.debug? 
+          $log.debug " assigning #{keycode} , A0 #{a0} , A1 #{a1} " if $log.debug? 
           @key_handler[a0][a1] = blk
-          #$log.debug "XXX XX assigning #{keycode} to  key_handler " if $log.debug? 
+          #$log.debug " XX assigning #{keycode} to  key_handler " if $log.debug? 
         else
-          #$log.debug "XXX assigning #{keycode} to  key_handler " if $log.debug? 
+          #$log.debug " assigning #{keycode} to  key_handler " if $log.debug? 
           @key_handler[keycode] = blk
         end
         @key_args ||= {}
@@ -446,7 +446,6 @@ module RubyCurses
       # Need to inform listeners - done 2010-02-25 23:09 
       # Can throw a FieldValidationException or PropertyVetoException
     def fire_property_change text, oldvalue, newvalue
-      # should i return if oldvalue is nil ??? TODO XXX
       #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
       return if oldvalue.nil? || @_object_created.nil? # added 2010-09-16 so if called by methods it is still effective
       if @pce.nil?
@@ -594,7 +593,7 @@ module RubyCurses
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
       @buffer_modified = false 
-      #@manages_cursor = false # form should manage it, I will pass row and col to it. XXX ?
+      #@manages_cursor = false # form should manage it, I will pass row and col to it. 
     end
 
     # modified
@@ -655,7 +654,7 @@ module RubyCurses
     end
     ##
     # default repaint method. Called by form for all widgets.
-    # XXX widget does not have display_length.
+    #  widget does not have display_length.
     def repaint
         r,c = rowcol
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
@@ -720,7 +719,7 @@ module RubyCurses
     #  @form.row = @row + 1 + @winrow
       #@form.row = @row + 1 
       r, c = rowcol
-      $log.warn "XXX empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
+      $log.warn " empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
       setrowcol row, nil
     end
     # set cursor on correct column, widget
@@ -729,7 +728,7 @@ module RubyCurses
       @curpos = col1 || 0 # 2010-01-14 21:02 
       #@form.col = @col + @col_offset + @curpos
       c = @col + @col_offset + @curpos
-      $log.warn "XXX #{@name} empty set_form_col #{c}, #{@form} "
+      $log.warn " #{@name} empty set_form_col #{c}, #{@form} "
       setrowcol nil, c
     end
     def hide
@@ -748,7 +747,7 @@ module RubyCurses
     end
     ##
     # moves focus to this field
-    # XXX we must look into running on_leave of previous field
+    # we must look into running on_leave of previous field
     def focus
       return if !@focusable
       if @form.validate_field != -1
@@ -800,11 +799,11 @@ module RubyCurses
      # @since 0.1.3
      #
      def width(*val)
-       #$log.debug " inside XXX width() #{val}"
+       #$log.debug " inside  width() #{val}"
        if val.empty?
          return @width
        else
-         #$log.debug " inside XXX width()"
+         #$log.debug " inside  width()"
          oldvalue = @width || 0 # is this default okay, else later nil cries
          #@width = val.size == 1 ? val[0] : val
          @width = val[0]
@@ -832,7 +831,7 @@ module RubyCurses
      # @since 0.1.3
      #
      def height(*val)
-       #$log.debug " inside XXX height() #{val[0]}"
+       #$log.debug " inside  height() #{val[0]}"
        if val.empty?
          return @height
        else
@@ -846,12 +845,6 @@ module RubyCurses
            $log.debug " widget #{@name} setting repaint_all to true"
            @repaint_all=true
          end
-         # XXX this troubles me a lot. gets fired more than we would like
-         # XXX When both h and w change then happens 2 times.
-         #if is_double_buffered? and newvalue != oldvalue # removed on 2011-09-29 
-           #$log.debug " #{@name} h calling resize of screen buffer with #{newvalue}"
-           #@screen_buffer.resize(newvalue, 0)
-         #end
        end
      end
      def height=val
@@ -927,7 +920,7 @@ module RubyCurses
      
        @target_window ||= params[:target_window]
        @form = params[:form] unless @form
-       if @graphic.nil? # and should_create_buffer not set or false XXX
+       if @graphic.nil? 
          @graphic = @target_window
        end
      end
@@ -977,14 +970,13 @@ module RubyCurses
     attr_accessor :navigation_policy  # :CYCLICAL will cycle around. Needed to move to other tabs
     ## i need some way to move the cursor by telling the main form what the coords are
     ##+ perhaps this will work
-    attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes XXX
+    attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes 
 
     # how many rows the component is panning embedded widget by
     attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
     # how many cols the component is panning embedded widget by
     attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
 
-    # XXX ARE next tow used ??? CLEANUP
     ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
     attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
@@ -1093,7 +1085,7 @@ module RubyCurses
        setpos 
        # XXX this creates a problem if window is a pad
        # although this does show cursor movement etc.
-       ### XXX@window.wrefresh
+       ### @window.wrefresh
        if @window.window_type == :WINDOW
          #$log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
@@ -1133,7 +1125,7 @@ module RubyCurses
       elsif @active_index != ix
         f = @widgets[@active_index]
         begin
-          #$log.debug " XXX select first field, calling on_leave of #{f} #{@active_index} "
+          #$log.debug " select first field, calling on_leave of #{f} #{@active_index} "
           on_leave f
         rescue => err
          $log.error " Caught EXCEPTION req_first_field on_leave #{err}"
@@ -1168,12 +1160,12 @@ module RubyCurses
 
     ## do not override
     # form's trigger, fired when any widget loses focus
-    #  This wont get called in editor components in tables, since  they are formless XXX
+    #  This wont get called in editor components in tables, since  they are formless 
     def on_leave f
       return if f.nil? || !f.focusable # added focusable, else label was firing
       f.state = :NORMAL
       # on leaving update text_variable if defined. Should happen on modified only
-      # should this not be f.text_var ... f.buffer ? XXX 2008-11-25 18:58 
+      # should this not be f.text_var ... f.buffer ?  2008-11-25 18:58 
       #f.text_variable.value = f.buffer if !f.text_variable.nil? # 2008-12-20 23:36 
       f.on_leave if f.respond_to? :on_leave
       fire_handler :LEAVE, f 
@@ -1188,7 +1180,6 @@ module RubyCurses
     # not be triggered. The highlighted part
     def on_enter f
       return if f.nil? || !f.focusable # added focusable, else label was firing 2010-09
-      $log.debug "XXX: ON ENTER of field #{f} "
       f.state = :HIGHLIGHTED
       f.modified false
       #f.set_modified false
@@ -1535,7 +1526,7 @@ module RubyCurses
               ret = select_next_field
               return ret if ret == :NO_NEXT_FIELD
             else
-              #$log.debug "XXX before calling process_key in form #{ch}  " if $log.debug? 
+              #$log.debug " before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
               $log.debug "FORM process_key #{ch} got ret #{ret} in #{self} "
               return :UNHANDLED if ret == :UNHANDLED
@@ -1710,7 +1701,7 @@ module RubyCurses
     end
     ##
     # define a datatype, currently only influences chars allowed
-    # integer and float. what about allowing a minus sign? XXX
+    # integer and float. what about allowing a minus sign? 
     #  2010-09-10 20:59 changed string to symbol
     def type dtype
       return if !@chars_allowed.nil?
@@ -1787,10 +1778,12 @@ module RubyCurses
       #fire_handler :CHANGE, self    # 2008-12-09 14:51 
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, 0, char)     # 2010-09-11 13:01 
     end
+    #
     # silently restores value without firing handlers, use if exception and you want old value
     # @since 1.4.0 2011-10-2 
     def restore_original_value
-      @buffer = @original_value
+      @buffer = @original_value.dup
+      #@curpos = 0 # this would require restting setformcol
       @repaint_required = true
     end
     ## 
@@ -1804,7 +1797,7 @@ module RubyCurses
       @delete_buffer = @buffer.dup
       @buffer = value.to_s.dup
       @curpos = 0
-      # XXX hope @delete_buffer is not overwritten
+      # hope @delete_buffer is not overwritten
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :DELETE, 0, @delete_buffer)     # 2010-09-11 13:01 
       fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos, self, :INSERT, 0, @buffer)     # 2010-09-11 13:01 
       self # 2011-10-2 
@@ -1864,7 +1857,7 @@ module RubyCurses
     end
     #printval = printval[0..display_length-1] if printval.length > display_length
     acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
-    @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
+    @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
     #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
     @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
     @repaint_required = false
@@ -1928,7 +1921,7 @@ module RubyCurses
       @pcol = blen-@display_length
       set_form_col @display_length-1
     end
-    @curpos = blen # HACK XXX
+    @curpos = blen # HACK 
     #  $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
     #set_form_col @buffer.length
   end
@@ -2022,7 +2015,7 @@ module RubyCurses
           raise FieldValidationException, "Field not matching range #{@valid_range}" unless valid
         end
       end
-      # here is where we should set the forms modified to true - 2009-01-18 12:36 XXX
+      # here is where we should set the forms modified to true - 2009-01
       if modified?
         set_modified true
       end
@@ -2032,8 +2025,11 @@ module RubyCurses
     end
     ## save original value on enter, so we can check for modified.
     #  2009-01-18 12:25 
+    #   2011-10-9 I have changed to take @buffer since getvalue returns a datatype
+    #   and this causes a crash in set_original on cursor forward.
     def on_enter
-      @original_value = getvalue.dup rescue getvalue
+      #@original_value = getvalue.dup rescue getvalue
+      @original_value = @buffer.dup # getvalue.dup rescue getvalue
       super
     end
     ##
@@ -2370,14 +2366,14 @@ module RubyCurses
         value = getvalue_for_paint
         #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
         len = @display_length || value.length
-        @graphic = @form.window if @graphic.nil? ## cell editor listbox hack XXX fix in correct place
+        @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
         @graphic.printstring r, c, "%-*s" % [len, value], color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
         if @underline || @mnemonic
           uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
           #$log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline}- #{@graphic.left} #{@graphic} "
-          #$log.debug " XXX HACK in next line related to UNDERLINES -graphic.top"
+          #$log.debug "  HACK in next line related to UNDERLINES -graphic.top"
           # if the char is not found don't print it
           if uline
             y=r #-@graphic.top
@@ -2402,7 +2398,7 @@ module RubyCurses
     def fire
       $log.debug "firing PRESS #{text}"
       # why the .... am i passing form ? Pass a ActionEvent with source, text() and getvalue()
-      #fire_handler :PRESS, @form XXX changed on 2010-09-12 19:22 
+      #fire_handler :PRESS, @form  changed on 2010-09-12 19:22 
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
     end
 
