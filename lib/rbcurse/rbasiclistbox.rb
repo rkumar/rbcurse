@@ -377,6 +377,7 @@ module RubyCurses
         Ncurses.beep
         return :UNHANDLED
       end
+      super  # forgot this 2011-10-9 that's why events not firign
       on_enter_row @current_index
       set_form_row # added 2009-01-11 23:41 
       true
