@@ -15,6 +15,11 @@ require 'pathname'
   
    May later use a Label and Field.
 
+   NOTE : Pls avoid directly using this class. I am trying to redo this so ask, agree and say
+          can create their own window and be done with it. The hurdle in that is that ask calls
+          say, so when to close the window is not clear within say. Some shakeup is expected by
+          1.4.0 or so.
+
 =end
 module RubyCurses
 
