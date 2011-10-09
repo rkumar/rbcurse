@@ -429,7 +429,7 @@ module RubyCurses
         begin
           ret = process_key ch, self
         rescue => err
-          $error_message = err.to_s
+          $error_message.value = err.to_s
 #          @form.window.print_error_message # changed 2011 dts  
           alert err.to_s
           $log.error " Tabularwidget ERROR #{err} "
