@@ -1,5 +1,6 @@
 require 'rbcurse/app'
 require 'sqlite3'
+require 'rbcurse/undomanager'
 
 # @return array of table names from selected db file
 def get_table_names
@@ -74,6 +75,8 @@ end
 
 def view_data fields="*", name
   stmt = "select #{fields} from #{name}"
+  stmt << $where_string if $where_string
+  stmt << $order_string if $order_string
   @form.by_name['tarea'] << stmt
   view_sql stmt
 end
@@ -136,6 +139,16 @@ App.new do
       -----------------------------------------------------------------------
       Hope you enjoyed this help.
     eos
+  end
+  def ask_databases
+      names = Dir.glob("*.{sqlite,db}")
+      if names
+        create_popup( names,:single) {|value| connect(value);
+          @form.by_name["tlist"].list(get_table_names)
+        }
+      else
+        alert "Can't find a .db or .sqlite file"
+      end
   end
   # TODO accelerators and 
   # getting a handle for later use
@@ -205,10 +218,18 @@ App.new do
   mb.bgcolor = :blue
   @form.set_menu_bar mb
   stack :margin => 0 do
-    tlist = basiclist :name => "tlist", :list => ["No tables"], :title => "Tables", :height => 10
+    text = "No tables"
+    if !$current_db
+      text = "Select DB first. Press Alt-D"
+    end
+    tlist = basiclist :name => "tlist", :list => [text], :title => "Tables", :height => 10
     tlist.bind(:PRESS) do |eve|
+      if $current_db
       # get data of table
-      view_data eve.text
+        view_data eve.text
+      else
+        ask_databases
+      end
     end
     tlist.bind(:ENTER_ROW) do |eve|
       $current_table = eve.text if $db
@@ -216,22 +237,45 @@ App.new do
     clist = basiclist :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
       :selection_mode => :multiple
     tlist.bind(:LIST_SELECTION_EVENT) do |eve|
-      $current_table = eve.source[eve.firstrow]
+      $selected_table = eve.source[eve.firstrow]
       clist.data = get_column_names $current_table
     end
     clist.bind(:PRESS) do |eve|
       # get data of table
-      if $current_table
+      if $selected_table
         cols = "*"
         c = clist.get_selected_values
         unless c.empty?
           cols = c.join(",")
         end
-        view_data cols, $current_table
+        view_data cols, $selected_table
       else
         alert "Select a table first." 
       end
     end
+    clist.bind_key('w') {
+      c = clist.current_value
+      $where_columns ||= []
+      hist = ["#{c} = "]
+      w = ask("(UP arrow to edit) where "){ |q| q.default = "#{c} = "; q.history = hist }
+      $where_columns << w if w
+      message "where: #{$where_columns.last}. Press F4 when done"
+      $log.debug "XXX: WHERE: #{$where_columns} "
+    }
+    clist.bind_key('o') {
+      c = clist.current_value
+      $order_columns ||= []
+      $order_columns << c if c
+      message "order (asc): #{$order_columns.last}. Press F4 when done"
+      $log.debug "XXX: ORDER: #{$order_columns} "
+    }
+    clist.bind_key('O') {
+      c = clist.current_value
+      $order_columns ||= []
+      $order_columns << " #{c} desc " if c
+      message "order: #{$order_columns.last}"
+      $log.debug "XXX: ORDER: #{$order_columns}. Press F4 when done"
+    }
     @statusline = status_line
     @statusline.command { 
       # trying this out. If you want a persistent message that remains till the next on
@@ -254,10 +298,17 @@ App.new do
     ]
     tlist_keyarray = keyarray + [ ["Sp", "Select"], nil, ["Enter","View"] ]
 
-    clist_keyarray = keyarray + [ ["Sp", "Select"], ["C-sp", "Range Sel"], ["Enter","View"] ]
+    clist_keyarray = keyarray + [ ["Sp", "Select"], ["C-sp", "Range Sel"], 
+      ["Enter","View"], ['w', 'where'],
+      ["o","order by"], ['O', 'order desc']
+    ]
     tarea_keyarray = keyarray + [ ["M-z", "Commands"], nil ]
-    tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["w","Save"], ["a", "Append next"], 
-      ["y", "Yank"], ["Y", "yank pop"] ]
+    #tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["w","Save"], ["a", "Append next"], 
+      #["y", "Yank"], ["Y", "yank pop"] ]
+    tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["w","Kill Ring Save (M-w)"], ["a", "Append Next"], 
+      ["y", "Yank (C-y)"], ["Y", "yank pop (M-y)"],
+      ["u", "Undo (C-_)"], ["R", "Redo (C-r)"],
+    ]
 
     gw = get_color($reversecolor, 'green', 'black')
     @adock = dock keyarray, { :row => Ncurses.LINES-2, :footer_color_pair => $datacolor, 
@@ -280,16 +331,17 @@ App.new do
       end
     end
     @form.bind_key(?\M-d) do
-      names = Dir.glob("**/*.{sqlite,db}")
-      if names
-        create_popup( names,:single) {|value| connect(value);
-          @form.by_name["tlist"].list(get_table_names)
-        }
-      else
-        alert "Can't find a .db or .sqlite file"
-      end
+      ask_databases
     end
     @form.bind_key(Ncurses::KEY_F4) do
+      $where_string = nil
+      $order_string = nil
+      if $where_columns
+        $where_string = " where " + $where_columns.join(" and ")
+      end
+      if $order_columns
+        $order_string = " order by " + $order_columns.join(" , ")
+      end
       if $current_table
         cols = "*"
         c = clist.get_selected_values
@@ -304,6 +356,7 @@ App.new do
   end # stack
   stack :margin => 50, :width => :EXPAND  do
     tarea = textarea :name => 'tarea', :height => 20, :title => 'Sql Statement'
+    undom = SimpleUndo.new tarea
     tarea.bind_key(Ncurses::KEY_F4) do
       text = tarea.get_text
       if text == ""
@@ -314,7 +367,18 @@ App.new do
     end
     tarea.bind(:ENTER) { @adock.mode :tarea }
     tarea.bind_key(?\M-z){
-      $log.debug "XXXX MZ inside M-z"
+
+      hash = { 'c' => lambda{ tarea.remove_all },
+               'w' => lambda{ tarea.kill_ring_save },
+               'a' => lambda{ tarea.append_next_kill },
+               'y' => lambda{ tarea.yank },
+               'Y' => lambda{ tarea.yank_pop },
+               'r' => lambda{ view_sql tarea.get_text },
+               'u' => lambda{ tarea.undo },
+               'R' => lambda{ tarea.redo },
+      }
+    
+    
       @adock.mode :tarea_sub
       @adock.repaint
       keys = @adock.get_current_keys
@@ -324,12 +388,44 @@ App.new do
         elsif !keys.include?(ch.chr) 
           Ncurses.beep
         else
+          hash.fetch(ch.chr).call
           #opt_file ch.chr
           break
         end
       end
       @adock.mode :normal
-    }
+    } # M-z
+    flow do
+      button_row = 17
+      button "Save" do
+        @cmd_history ||= []
+          filename = ask("File to append contents to: ") { |q| q.default = @oldfilename; q.history = @cmd_history }
+
+          if filename
+            str = tarea.get_text
+            File.open(filename, 'a') {|f| f.write(str) } 
+            @oldfilename = filename
+            @cmd_history << filename unless @cmd_history.include? filename
+
+            message "Appended data to #{filename}"
+          else
+            message "Aborted operation"
+          end
+        hide_bottomline
+      end
+      button "Read" do
+        filter = "*"
+        str = choose filter, :title => "Files", :prompt => "Choose a file: "
+        begin
+          tarea.set_content(str) 
+          message "Read content from #{str} "
+        rescue => err
+          say_with_pause "No file named: #{str}: #{err.to_s} "
+        end
+      end
+      #ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
+      #end
+    end
   end
 end # app
 #end
