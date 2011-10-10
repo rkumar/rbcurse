@@ -16,24 +16,6 @@ require 'rbcurse/rmessagebox'
 require 'rbcurse/rtree'
 require './appmethods.rb'
 require 'rbcurse/extras/scrollbar'
-def shell_output
-  cmd = get_string("Enter shell command:", 50)
-  if cmd && !cmd.empty?
-    run_command cmd
-  end
-end
-def run_command cmd
-  # http://whynotwiki.com/Ruby_/_Process_management#What_happens_to_standard_error_.28stderr.29.3F
-  require 'rbcurse/extras/viewer'
-  begin
-    res = `#{cmd} 2>&1`
-  rescue => ex
-    res = ex.to_s
-    res << ex.backtrace.join("\n") 
-  end
-  res.gsub!("\t","   ")
-  RubyCurses::Viewer.view(res.split("\n"), :close_key => KEY_RETURN, :title => "<Enter> to close, M-l M-h to scroll")
-end
 def help_text
       <<-eos
                TEST2  HELP 
@@ -58,7 +40,7 @@ def help_text
       eos
 end
 if $0 == __FILE__
-  ##Encoding.default_external = Encoding.find("UTF-8") 
+
   include RubyCurses
   include RubyCurses::Utils
 
