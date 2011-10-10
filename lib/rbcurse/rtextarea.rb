@@ -225,6 +225,29 @@ module RubyCurses
     def get_content
       @list
     end
+    #
+    # sets content of textarea. I don't know why this was not existing all this while
+    # Name to be consistent with textview. Okay, this does not wrap the words, we assume
+    # its short enough. FIXME. Avoid using currently till i firm this.
+    # NOTE: does not wrap, and does not trigger events
+    # Added on 2011-10-10 
+    # @since 1.4.0
+    # @param [String, Array] String is an existing filename, Array is content to be replaced
+    def set_content lines
+      case lines
+      when String
+        if File.exists? lines
+          lines = File.open(lines,"r").readlines
+        else
+          raise "set_content String param should be a filename"
+        end
+      when Array
+      else
+        raise "Don't know how to handle data in set_content: #{lines.class} "
+      end
+      @list.replace lines
+      @repaint_required = true
+    end
     def get_window
       @graphic
     end
@@ -319,15 +342,9 @@ module RubyCurses
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
       when ?\C-_.getbyte(0) # changed from C-u so i can use C-u for multipliers
-        if @undo_handler
-          @undo_handler.undo
-        else
-          undo_delete
-        end
+        undo
       when ?\C-r.getbyte(0) # redo if UndoHandler installed
-        return unless @undo_handler
-        @undo_handler.redo
-        
+        text_redo # won't accept name redo
       #when @KEY_ASK_FIND_FORWARD
       #  ask_search_forward
       #when @KEY_ASK_FIND_BACKWARD
@@ -886,6 +903,17 @@ module RubyCurses
           set_focus_on(ix)
           set_form_col @find_offset
         end
+    end
+    def undo
+      if @undo_handler
+        @undo_handler.undo
+      else
+        undo_delete
+      end
+    end
+    def text_redo
+      return unless @undo_handler
+      @undo_handler.redo
     end
   end # class textarea
   ##
