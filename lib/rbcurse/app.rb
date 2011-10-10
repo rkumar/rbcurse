@@ -18,7 +18,7 @@ $tt.name = "$tt"
 require 'forwardable'
 module Kernel
   extend Forwardable
-  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause
+  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause, :hide_bottomline
 end
 include RubyCurses
 include RubyCurses::Utils
