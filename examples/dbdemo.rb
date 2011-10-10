@@ -212,6 +212,15 @@ App.new do
         end
       end
     end
+    menu "Others" do
+      require './appmethods.rb'
+      item "Shell Output" do
+        command { shell_output }
+      end
+      item "Suspend" do
+        command { suspend }
+      end
+    end
   end # menubar
   mb.toggle_key = FFI::NCurses::KEY_F2
   mb.color = :white
@@ -232,13 +241,15 @@ App.new do
       end
     end
     tlist.bind(:ENTER_ROW) do |eve|
-      $current_table = eve.text if $db
+      # too much confusion between selected and focussed row
+      #$current_table = eve.text if $db
     end
     clist = basiclist :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
       :selection_mode => :multiple
     tlist.bind(:LIST_SELECTION_EVENT) do |eve|
       $selected_table = eve.source[eve.firstrow]
-      clist.data = get_column_names $current_table
+      $current_table = $selected_table
+      clist.data = get_column_names $selected_table
     end
     clist.bind(:PRESS) do |eve|
       # get data of table
@@ -320,6 +331,24 @@ App.new do
     tlist.bind(:ENTER) { @adock.mode :tables }
     clist.bind(:ENTER) { @adock.mode :columns }
 
+    reduce = lambda { |obj|
+      obj.height -= 1 if obj.height > 3
+    }
+    increase = lambda { |obj|
+      obj.height += 1 if obj.height + obj.row < Ncurses.LINES-2
+    }
+    _lower = lambda { |obj|
+      obj.row += 1 if obj.height + obj.row < Ncurses.LINES-2
+    }
+    _raise = lambda { |obj|
+      obj.row -= 1 if obj.row > 2
+    }
+    [clist, tlist].each do |o|
+      o.bind_key([?\C-x, ?-]){ |o| reduce.call(o) }
+      o.bind_key([?\C-x, ?+]){ |o| increase.call(o) }
+      o.bind_key([?\C-x, ?v]){ |o| _lower.call(o) }
+      o.bind_key([?\C-x, ?6]){ |o| _raise.call(o) }
+    end
 
 
     @form.bind_key([?q,?q]) { throw :close }
@@ -327,7 +356,7 @@ App.new do
       if $current_db.nil?
         alert "Please select database first"
       else
-        create_popup( get_table_names,:single) {|value| $current_table = value}
+        create_popup( get_table_names,:single) {|value| $selected_table = $current_table =  value}
       end
     end
     @form.bind_key(?\M-d) do
@@ -342,6 +371,7 @@ App.new do
       if $order_columns
         $order_string = " order by " + $order_columns.join(" , ")
       end
+      # mismatch between current and selected table
       if $current_table
         cols = "*"
         c = clist.get_selected_values
@@ -428,4 +458,3 @@ App.new do
     end
   end
 end # app
-#end
