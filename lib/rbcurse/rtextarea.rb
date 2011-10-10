@@ -243,7 +243,9 @@ module RubyCurses
       bind_key(Ncurses::KEY_LEFT){ cursor_backward }
       bind_key(Ncurses::KEY_RIGHT){ cursor_forward }
       bind_key(Ncurses::KEY_UP){ ret = up;  get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW }
-      bind_key(Ncurses::KEY_DOWN){ ret = down ; get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW }
+      # the next was irritating if user wanted to add a row ! 2011-10-10 
+      #bind_key(Ncurses::KEY_DOWN){ ret = down ; get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW }
+      bind_key(Ncurses::KEY_DOWN){ ret = down ; }
       bind_key(?\C-a){ cursor_bol }
       bind_key(?\C-e){ cursor_eol }
       bind_key(?\C-n) { scroll_forward }
