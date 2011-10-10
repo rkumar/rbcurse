@@ -294,10 +294,6 @@ module RubyCurses
       case ch
       when KEY_ENTER, 10, KEY_RETURN
         insert_break
-      #when KEY_LEFT
-        #cursor_backward
-      #when KEY_RIGHT
-        #cursor_forward
       when Ncurses.KEY_BACKSPACE, Ncurses.KEY_BSPACE
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
