@@ -18,8 +18,8 @@ module RubyCurses
         VER::start_ncurses  
         #@form.reset_all # not required
       end
-      @form.repaint
-      @window.wrefresh
+      @form.repaint if @form
+      @window.wrefresh if @window
       Ncurses::Panel.update_panels
     end
     def suspend
@@ -63,6 +63,24 @@ module RubyCurses
       # or
       t.attr = :reverse
       end
+    end
+    def shell_output
+      cmd = get_string("Enter shell command:", 50)
+      if cmd && !cmd.empty?
+        run_command cmd
+      end
+    end
+    def run_command cmd
+      # http://whynotwiki.com/Ruby_/_Process_management#What_happens_to_standard_error_.28stderr.29.3F
+      require 'rbcurse/extras/viewer'
+      begin
+        res = `#{cmd} 2>&1`
+      rescue => ex
+        res = ex.to_s
+        res << ex.backtrace.join("\n") 
+      end
+      res.gsub!("\t","   ")
+      RubyCurses::Viewer.view(res.split("\n"), :close_key => KEY_RETURN, :title => "<Enter> to close, M-l M-h to scroll")
     end
   end # utils
 end # module RubyC
