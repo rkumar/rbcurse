@@ -3,6 +3,14 @@ require 'rbcurse/rwidget'
 include RubyCurses
 module RubyCurses
   ## encapsulates behaviour allowing centralization
+  # == Example
+  #    a = Action.new("&New Row") { commands }
+  #    a.accelerator "Alt N"
+  #    menu.add(a)
+  #    b = Button.new form do
+  #      action a
+  #      ...
+  #    end
   class Action < Proc
     include EventHandler
     include ConfigSetup
