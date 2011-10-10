@@ -982,6 +982,7 @@ module RubyCurses
       end
 
       begin
+        # FIXME a C-c still returns default to user !
         @answer = @question.answer_or_default(get_response) 
         unless @question.valid_answer?(@answer)
           explain_error(:not_valid)
@@ -1031,16 +1032,30 @@ module RubyCurses
       rescue Question::NoAutoCompleteMatch
         explain_error(:no_completion)
         retry
+      rescue Interrupt
+        $log.warn "User interrupted ask() get_response does not want operation to proceed"
+        return nil
       ensure
         @question = nil    # Reset Question object.
-        @window.hide # assuming this method made it visible
+        hide # assuming this method made it visible, not sure if this is called.
       end
     end
-    # bottomline user has to hide window if he called say(). At what point would 
-    # he do so ?
-    def hide 
-      @window.hide if @window
+    #
+    # bottomline user has to hide window if he called say(). 
+    #  Call this if you find the window persists after using some method from here
+    #   usually say or ask.
+    #
+    # @param [int, float] time to sleep before hiding window.
+    #
+    def hide wait=nil
+      if @window
+        sleep(wait) if wait
+        @window.hide 
+        @window.wrefresh
+        #Ncurses::Panel.update_panels
+      end
     end
+    alias :hide_bottomline :hide
     # 
     # destroy window, to be called by app when shutting down
     # since we are normally hiding the window only.
@@ -1059,6 +1074,10 @@ module RubyCurses
     # NOTE: modified from original highline, does not care about space at end of
     # question. Also, ansi color constants will not work. Be careful what ruby code
     # you pass in.
+    #
+    # NOTE: This uses a window, so it will persist in the last row. You must call 
+    # hide_bottomline to remove the window. It is preferable to call say_with_pause
+    # from user programs
     #
     def say statement, config={}
       @window ||= _create_footer_window
@@ -1079,20 +1098,22 @@ module RubyCurses
       statement =  statement.to_str
       template  = ERB.new(statement, nil, "%")
       statement = template.result(binding)
-      #puts statement
+    
       @prompt_length = statement.length # required by ask since it prints after 
       @statement = statement # 
       clear_line
       print_str statement, config
     end
+    #
+    # display some text at bottom and wait for a key before hiding window
+    #
     def say_with_pause statement, config={}
       @window ||= _create_footer_window
-      $log.debug "XXX: inside say pausewin #{@window} !"
       say statement, config
       @window.wrefresh
       Ncurses::Panel.update_panels
       ch=@window.getchar()
-      @window.hide
+      hide
     end
     # A helper method for sending the output stream and error and repeat
     # of the question.
@@ -1108,6 +1129,9 @@ module RubyCurses
       end
     end
 
+    #
+    # Internal method for printing a string
+    #
     def print_str(text, config={})
       win = config.fetch(:window, @window) # assuming its in App
       x = config.fetch :x, 0 # @message_row # Ncurses.LINES-1, 0 since one line window 2011-10-8 
@@ -1195,12 +1219,14 @@ module RubyCurses
             curpos -= 1 if curpos > 0
             len -= 1 if len > @prompt_length
             win.move r, c+len # since getchar is not going back on del and bs wmove to move FFIWINDOW
+            win.wrefresh
             next
           when KEY_RIGHT
             if curpos < str.length
               curpos += 1 #if curpos < str.length
               len += 1 
               win.move r, c+len # since getchar is not going back on del and bs
+              win.wrefresh
             end
             next
           when ?\C-a.getbyte(0)
@@ -1367,6 +1393,7 @@ module RubyCurses
             print_str(@question.echo * str.length, :y => @prompt_length+0)
           end
           win.move r, c+len # more for arrow keys, curpos may not be end
+          win.wrefresh # 2011-10-10 
           prevchar = ch
         end
               $log.debug "XXXW bottomline: after while loop"
@@ -1417,6 +1444,9 @@ module RubyCurses
       ret, str = rbgetstr
       if ret == 0
         return @question.change_case(@question.remove_whitespace(str))                
+      end
+      if ret == -1
+        raise Interrupt
       end
       return ""
     end
@@ -1530,7 +1560,10 @@ module RubyCurses
       ensure
         rc.destroy
         rc = nil
+        hide_bottomline # since we called ask() we need to close bottomline
       end
+      hide_bottomline # since we called ask() we need to close bottomline
+      return str
     end
     def display_text_interactive text, config={}
       require 'rbcurse/rcommandwindow'
