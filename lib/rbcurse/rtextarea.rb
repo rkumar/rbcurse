@@ -331,10 +331,6 @@ module RubyCurses
       when ?\C-r.getbyte(0) # redo if UndoHandler installed
         return unless @undo_handler
         @undo_handler.redo
-      #when ?\C-a.getbyte(0)
-        #cursor_bol
-      #when ?\C-e.getbyte(0)
-        #cursor_eol
         
       #when @KEY_ASK_FIND_FORWARD
       #  ask_search_forward
@@ -794,7 +790,7 @@ module RubyCurses
     def cursor_eol
        _maxlen = @maxlen || @width - @internal_width
       $log.error "ERROR !!! bufferlen gt _maxlen #{@buffer.length}, #{_maxlen}" if @buffer.length > _maxlen
-      set_form_col current_line().chomp().length()-1
+      set_form_col current_line().chomp().length() #-1 needs to be one ahead 2011-10-10 TRYING OUT XXX
     end
     def cursor_bol
       set_form_col 0
