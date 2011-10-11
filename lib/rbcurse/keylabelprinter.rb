@@ -2,14 +2,37 @@ require 'rbcurse/rwidget'
 #include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
+  #
+  # This paints labels for various keys at the bottom of the screen, in 2 rows. 
+  # This is based on alpines last 2 rows. Modes are supported so that the 
+  # labels change as you enter a widget.
+  # For an example, see dbdemo.rb or rfe.rb
+  # NOTE: applications using 'App' use a shortcut "dock" to create this.
+  #
+  # The most minimal keylabel to print one label in first row, and none in second is:
+  #     [["F1", "Help"], nil]
+  # To print 2 labels, one over the other:
+  #     [["F1", "Help"], ["F10", "Quit"]]
+  #
   class KeyLabelPrinter < Widget
     attr_reader :key_labels
+    # the current mode (labels are based on mode, changing the mode, changes the labels
+    #  displayed)
     dsl_property :mode
+    # set the color of the labels, overriding the defaults
     dsl_accessor :footer_color_pair
+    # set the color of the mnemonic, overriding the defaults
     dsl_accessor :footer_mnemonic_color_pair
 
     def initialize form, key_labels, config={}, &block
 
+      case key_labels
+      when Hash
+        raise "KeyLabelPrinter: KeyLabels cannot be a hash, Array of key labels required. Perhaps you did not pass labels"
+      when Array
+      else
+        raise "KeyLabelPrinter: Array of key labels required. Perhaps you did not pass labels"
+      end
       super form, config, &block
       @mode ||= :normal
       #@key_labels = key_labels
@@ -18,14 +41,14 @@ module RubyCurses
       @editable = false
       @focusable = false
       @cols ||= Ncurses.COLS-1
-      @row ||= Ncurses.LINES-3
+      @row ||= Ncurses.LINES-2
       @col ||= 0
       @repaint_required = true
       @footer_color_pair ||= $bottomcolor
       @footer_mnemonic_color_pair ||= $reversecolor #2
     end
     def key_labels mode=@mode
-      @key_hash[mode]
+      @key_hash[mode] 
     end
     # returns the keys as printed. these may or may not help
     # in validation depedign on what you passed as zeroth index
@@ -48,16 +71,21 @@ module RubyCurses
     def repaint
       return unless @repaint_required
       r,c = rowcol
-      print_key_labels(arr = key_labels(), mode=@mode)
+      arr = key_labels()
+      print_key_labels(arr, mode=@mode)
       @repaint_required = false
     end
+    # ?? does not use mode, i think key_labels is unused. a hash is now used 2011-10-11 XXX FIXME
+    # WARNING, i have not tested this after changing it. 
     def append_key_label key, label, mode=@mode
-      @key_labels << [key, label] if !@key_labels.include? [key, label]
+      #@key_labels << [key, label] if !@key_labels.include? [key, label]
+      @key_hash[mode] << [key, label] if !@key_hash[mode].include? [key, label]
       @repaint_required = true
     end
     def print_key_labels(arr = key_labels(), mode=@mode)
       #return if !@show_key_labels # XXX
       @win ||= @form.window
+      $log.debug "XXX: PKL #{arr.length}, #{arr}"
       @padding = @cols / (arr.length/2)
       posx = 0
       even = []
