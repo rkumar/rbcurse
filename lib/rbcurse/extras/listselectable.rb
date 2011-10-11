@@ -5,6 +5,7 @@
 # the original gets into models and has complicated operation as well
 # as difficult to remember method names. This attempts to be a simple plugin.
 # Currently being used by rbasiclistbox and now tabularwidget.
+# NOTE: pls define @_header_adjustment to 0 if you don't use it or know what it means.
 # TODO: of course we need to fire events so user can do something.
 module RubyCurses
   module NewListSelectable
@@ -24,16 +25,22 @@ module RubyCurses
       when :multiple
         if @selected_indices.include? crow
           @selected_indices.delete crow
+          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
-          #clear_selection
-          #@selected_indices[0] = crow 
           @selected_indices << crow
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
         if @selected_index == crow 
           @selected_index = nil
+          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_index = crow 
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       end
     end
@@ -53,19 +60,29 @@ module RubyCurses
         if @selected_indices.include? crow
           # delete from last_clicked until this one in any direction
           min.upto(max){ |i| @selected_indices.delete i }
+          lse = ListSelectionEvent.new(min, max, self, :DELETE)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
           # add to selection from last_clicked until this one in any direction
           min.upto(max){ |i| @selected_indices << i unless @selected_indices.include?(i) }
+          lse = ListSelectionEvent.new(min, max, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
       end
       @repaint_required = true
+      self
     end
     # clears selected indices, typically called when multiple select
     # Key binding is application specific
     def clear_selection
+      return if @selected_indices.nil? || @selected_indices.empty?
       @selected_indices = []
       @selected_index = nil
+      # Not sure what event type I should give, DELETE or a new one, user should
+      #  understand that selection has been cleared, and ignore first two params
+      lse = ListSelectionEvent.new(0, @list.size, self, :CLEAR)
+      fire_handler :LIST_SELECTION_EVENT, lse
       @repaint_required = true
     end
     def is_row_selected crow=@current_index-@_header_adjustment
@@ -100,8 +117,8 @@ module RubyCurses
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
-      #lse = ListSelectionEvent.new(ix0, ix1, @parent, :INSERT)
-      #fire_handler :LIST_SELECTION_EVENT, lse
+      lse = ListSelectionEvent.new(ix0, ix1, self, :INSERT)
+      fire_handler :LIST_SELECTION_EVENT, lse
       #$log.debug " DLSM firing LIST_SELECTION EVENT #{lse}"
     end
     alias :add_row_selection_interval :add_selection_interval
@@ -109,8 +126,8 @@ module RubyCurses
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       @selected_indices.delete_if {|x| x >= ix0 and x <= ix1}
-      #lse = ListSelectionEvent.new(ix0, ix1, @parent, :DELETE)
-      #fire_handler :LIST_SELECTION_EVENT, lse
+      lse = ListSelectionEvent.new(ix0, ix1, self, :DELETE)
+      fire_handler :LIST_SELECTION_EVENT, lse
     end
     alias :remove_row_selection_interval :remove_selection_interval
     # convenience method to select next len rows
@@ -122,13 +139,13 @@ module RubyCurses
     # select all rows, you may specify starting row.
     # if header row, then 1 else should be 0. Actually we should have a way to determine
     # this, and the default should be zero.
-    def select_all start_row=0
+    def select_all start_row=0 #+@_header_adjustment
       @repaint_required = true
       # don't select header row - need to make sure this works for all cases. we may 
       # need a variable instead of hardoded value
       add_row_selection_interval start_row, row_count()
     end
-    def invert_selection start_row=1
+    def invert_selection start_row=0 #+@_header_adjustment
       start_row.upto(row_count()){|i| invert_row_selection i }
     end
      
@@ -189,6 +206,8 @@ module RubyCurses
       bind_key(?a, :select_all)
       bind_key(?*, :invert_selection)
       bind_key(?u, :clear_selection)
+      @_header_adjustment ||= 0 #  incase caller does not use
+      @_events << :LIST_SELECTION_EVENT unless @_events.include? :LIST_SELECTION_EVENT
     end
     def list_init_vars
       @selected_indices = []
@@ -219,4 +238,19 @@ module RubyCurses
       @selected_indices
     end
   end # mod
+  class ListSelectionEvent
+    attr_accessor :firstrow, :lastrow, :source, :type
+    def initialize firstrow, lastrow, source, type
+      @firstrow = firstrow
+      @lastrow = lastrow
+      @source = source
+      @type = type
+    end
+    def to_s
+      "#{@type.to_s}, firstrow: #{@firstrow}, lastrow: #{@lastrow}, source: #{@source}"
+    end
+    def inspect
+      to_s
+    end
+  end
 end # mod

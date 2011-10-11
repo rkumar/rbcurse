@@ -39,7 +39,7 @@ App.new do
   last = nodes.last
   nodes.last.add entries
   model = DefaultTreeModel.new nodes.first
-  header = app_header "rbcurse 1.2.0", :text_center => "Yet Another File Manager", :text_right =>"Directory Lister", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Yet Another File Manager", :text_right =>"Directory Lister", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
   message "Press Enter to expand/collapse"
 
 
@@ -69,5 +69,7 @@ App.new do
     #@l = list_box :height => ht, :border_attrib => borderattrib, :selection_mode => :multiple
     s.add dl, :SECOND
     end # vimsplit
-  end # flow
+  end # stack
+  sl = status_line :row => Ncurses.LINES-1
+  sl.command { "%-20s | %-20s | v View" % [Time.now, File.absolute_path(dl.current_path)] }
 end # app

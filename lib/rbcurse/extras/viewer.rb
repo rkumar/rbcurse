@@ -53,7 +53,6 @@ module RubyCurses
         print_footer pf
         footer_attrib fa
       end
-      textview.set_content content #, :WRAP_WORD
 
       t = textview
       t.bind_key('<'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
@@ -69,25 +68,30 @@ module RubyCurses
         f.reset_layout([f.height, f.width, c, f.left]); f.show;
       }
       # yielding textview so you may further configure or bind keys or events
+      begin
+      textview.set_content content #, :WRAP_WORD
       yield textview if block_given? # tentative
       v_form.repaint
       v_window.wrefresh
       Ncurses::Panel.update_panels
-      begin
+      # allow closing using q and Ctrl-q in addition to any key specified
+      #  user should not need to specify key, since that becomes inconsistent across usages
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
-          break if ch == config[:close_key]
+          break if ch == config[:close_key] || ch == ?q.ord
           # if you've asked for RETURN then i also check for 10 and 13
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_RETURN
           v_form.handle_key ch
           v_form.repaint
         end
+      rescue => err
+        alert err.to_s
       ensure
         v_window.destroy if !v_window.nil?
       end
     end
     private
     def self._get_contents fp
-      return nil unless File.readable? fp 
+      return "File #{fp} not readable"  unless File.readable? fp 
       return Dir.new(fp).entries if File.directory? fp
       case File.extname(fp)
       when '.tgz','.gz'
@@ -95,6 +99,14 @@ module RubyCurses
         content = %x[#{cmd}]
       when '.zip'
         cmd = "unzip -l #{fp}"
+        content = %x[#{cmd}]
+      when '.jar', '.gem'
+        cmd = "tar -tvf #{fp}"
+        content = %x[#{cmd}]
+      when '.png', '.out','.jpg', '.gif','.pdf'
+        content = "File #{fp} not displayable"
+      when '.sqlite'
+        cmd = "sqlite3 #{fp} 'select name from sqlite_master;'"
         content = %x[#{cmd}]
       else
         content = File.open(fp,"r").readlines

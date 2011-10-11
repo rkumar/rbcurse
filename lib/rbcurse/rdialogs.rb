@@ -5,6 +5,11 @@
   
   --------
   * Date:  2008-12-30 12:22 
+  * 2011-10-1 : moving print_error and print_status methods here as alternatives
+                to alert and confirm. Anyone who has included those will get these.
+                And this file is included in the base file.
+
+               Shucks, this file has no module. It's bare !
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
@@ -12,8 +17,6 @@ TODO:
     Add one get_string(message, len, regex ...)
     Add select_one (message, values, default)
 =end
-require 'rubygems'
-##require 'ncurses'
 require 'logger'
 require 'rbcurse/rwidget'
 require 'rbcurse/rmessagebox'
@@ -26,6 +29,7 @@ require 'rbcurse/rmessagebox'
 # alert("You did not enter anything!", "title"=>"Wake Up")
 # alert("You did not enter anything!", {"title"=>"Wake Up", "bgcolor"=>"blue", "color"=>"white"})
 # block currently ignored. don't know what to do, can't pass it to MB since alread sending in a block
+#
 def alert text, config={}, &block
   title = config['title'] || "Alert"
   #instance_eval &block if block_given?
@@ -38,6 +42,8 @@ def alert text, config={}, &block
     button_type :ok
   end
 end
+# confirms from user returning :YES or :NO
+# Darn, should have returned boolean, now have to live with it.
 def confirm text, config={}, &block
   title = config['title'] || "Confirm"
   #instance_eval &block if block_given?
@@ -52,7 +58,10 @@ end
 ##
 # allows user entry of a string.
 # In config you may pass Field related properties such as chars_allowed, valid_regex, values, etc.
-def get_string(message, len=20, default="", config={})
+def get_string(message, len=50, default="", config={})
+
+  config["input_config"] = {}
+  config["input_config"]["maxlen"] = len
   config["maxlen"]=len
   title = config["title"] || "Input required"
   mb = RubyCurses::MessageBox.new nil, config do
@@ -155,6 +164,185 @@ def get_string_with_options(message, len=20, default="", config={})
   return mb.selected_index, mform.by_name['input'].getvalue, hash
 end
 
+# ------------------------ We've Moved here from window class ---------------- #
+#                                                                              #
+#  Moving some methods from window. They no longer require having a window.    #
+#                                                                              #
+# ---------------------------------------------------------------------------- #
+#
+#
+
+  # new version with a window created on 2011-10-1 12:37 AM 
+  # Now can be separate from window class, needing nothing, just a util class
+  # prints a status message and pauses for a char
+  def print_status_message text, aconfig={}, &block
+    _print_message :status, text, aconfig, &block
+  end
+  # new version with a window created on 2011-10-1 12:30 AM 
+  # Now can be separate from window class, needing nothing, just a util class
+  # Why are we dealing with $error_message, that was due to old idea which failed
+  # scrap it and send the message.
+  def print_error_message text, aconfig={}, &block
+    _print_message :error, text, aconfig, &block
+  end
+  def _create_footer_window h = 2 , w = Ncurses.COLS, t = Ncurses.LINES-2, l = 0
+    ewin = VER::Window.new(h, w , t, l)
+  end
+  # @param [:symbol] :error or :status kind of message
+  # @private
+  def _print_message type, text, aconfig={}, &block
+    case text
+    when RubyCurses::Variable # added 2011-09-20 incase variable passed
+      text = text.get_value
+    when Exception
+      text = text.to_s
+    end
+    # NOTE we are polluting global namespace
+    aconfig.each_pair { |k,v| instance_variable_set("@#{k}",v) }
+    ewin = _create_footer_window #*@layout
+    r = 0; c = 1;
+    case type 
+    when :error
+      @color ||= 'red'
+      @bgcolor ||= 'black'
+    else
+      @color ||= :white
+      @bgcolor ||= :black
+    end
+    color_pair = get_color($promptcolor, @color, @bgcolor)
+    ewin.bkgd(Ncurses.COLOR_PAIR(color_pair));
+    ewin.printstring r, c, text, color_pair
+    ewin.printstring r+1, c, "Press a key", color_pair
+    ewin.wrefresh
+    ewin.getchar
+    ewin.destroy
+  end
+  #
+  # Alternative to confirm dialog, if you want this look and feel, at last 2 lines of screen
+  # @param [String] text to prompt
+  # @return [true, false] 'y' is true, all else if false
+  def confirm_window text, aconfig={}, &block
+    case text
+    when RubyCurses::Variable # added 2011-09-20 incase variable passed
+      text = text.get_value
+    when Exception
+      text = text.to_s
+    end
+    ewin = _create_footer_window
+    r = 0; c = 1;
+    aconfig.each_pair { |k,v| instance_variable_set("@#{k}",v) }
+    @color ||= :white
+    @bgcolor ||= :black
+    color_pair = get_color($promptcolor, @color, @bgcolor)
+    ewin.bkgd(Ncurses.COLOR_PAIR(color_pair));
+    ewin.printstring r, c, text, color_pair
+    ewin.printstring r+1, c, "[y/n]", color_pair
+    ewin.wrefresh
+    #retval = false
+    retval = :NO # consistent with confirm
+    begin
+      ch =  ewin.getchar 
+      retval = :YES if ch.chr == 'y' 
+    ensure
+      ewin.destroy
+    end
+    retval
+  end
+  # class created to display multiple messages without asking for user to hit a key
+  # returns a window to which one can keep calling printstring with 0 or 1 as row.
+  # destroy when finished.
+  # Also, one can pause if one wants, or linger.
+  # This is meant to be a replacement for the message_immediate and message_raw
+  # I was trying out in App.rb. 2011-10-1 1:27 AM 
+  # Testing from test2.rb
+  # TODO: add option of putting progress_bar
+  class StatusWindow
+    attr_reader :h, :w, :top, :left # height, width, top row, left col of window
+    attr_reader :win
+    attr_accessor :color_pair
+    def initialize config={}, &block
+      @color_pair = config[:color_pair]
+      @row_offset = config[:row_offset] || 0
+      @col_offset = config[:col_offset] || 0
+      create_window *config[:layout]
+    end
+    def create_window h = 2 , w = Ncurses.COLS-0, t = Ncurses.LINES-2, l = 0
+      return @win if @win
+      @win = VER::Window.new(h, w , t, l)
+      @h = h ; @w = w; @top = t ; @left = l
+      @color_pair ||= get_color($promptcolor, 'white','black')
+      @win.bkgd(Ncurses.COLOR_PAIR(@color_pair));
+      @win
+    end
+    # creates a color pair based on given bg and fg colors as strings
+    #def set_colors bgcolor, fgcolor='white'
+      #@color_pair = get_color($datacolor, 'white','black')
+    #end
+    # prints a string on given row (0 or 1)
+    def printstring r, c, text, color_pair=@color_pair
+      create_window unless @win
+      show unless @visible
+      r = @h-1 if r > @h-1
+      #@win.printstring r, c, ' '*@w, @color_pair
+      # FIXME this padding overwrites the border and the offset means next line wiped
+      # However, now it may now totally clear a long line.
+      @win.printstring r+@row_offset, c+@col_offset, "%-*s" % [@w-(@col_offset*2)-c, text], color_pair
+      @win.wrefresh
+    end
+    # print given strings from first first column onwards
+    def print *textarray
+      create_window unless @win
+      show unless @visible
+      c = 1
+      textarray.each_with_index { |s, i|  
+        @win.printstring i+@row_offset, c+@col_offset, "%-*s" % [@w-(@col_offset*2)-c, s], @color_pair
+      }
+      @win.wrefresh
+    end
+    def pause; @win.getchar; end
+    # pauses with the message, but doesn't ask the user to press a key.
+    # If he does, the key should be used by underlying window.
+    # Do not call destroy if you call linger, it does the destroy.
+    def linger caller_window=nil
+      begin
+        if caller_window
+          ch = @win.getchar
+          caller_window.ungetch(ch) # will this be available to underlying window XXX i think not !!
+        else
+          sleep 1
+        end
+      ensure
+        destroy
+      end
+    end
+    # caller must destroy after he's finished printing messages, unless
+    # user calls linger
+    def destroy; @win.destroy if @win; @win = nil;  end
+    def hide
+      @win.hide
+      @visible = false
+    end
+    def show
+      @win.show unless @visible
+      @visible = true
+    end
+  end
+  # returns instance of a status_window for sending multiple
+  # statuses during some process
+  def status_window aconfig={}, &block
+    return StatusWindow.new aconfig
+  end
+  # this is a popup dialog box on which statuses can be printed as a process is taking place.
+  # I am reusing StatusWindow and so there's an issue since I've put a box, so in clearing 
+  # the line, I might overwrite the box
+  def progress_dialog aconfig={}, &block
+    aconfig[:layout] = [10,60,10,20]
+    window = status_window aconfig
+    height = 10; width = 60
+    window.win.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
+    return window
+  end
+#
 =begin  
 http://www.kammerl.de/ascii/AsciiSignature.php
  ___  

@@ -1,11 +1,16 @@
 require 'rbcurse/app'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Tree Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Tree Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
   message "Press Enter to expand/collapse"
+      @form.bind_key(FFI::NCurses::KEY_F3) { 
+        require 'rbcurse/extras/viewer'
+        RubyCurses::Viewer.view("rbc13.log", :close_key => KEY_RETURN, :title => "<Enter> to close")
+      }
 
   stack :margin_top => 2, :margin => 5, :width => 30 do
-      tree :height => 10, :title => "ruby way"  do
+    tm = nil
+      atree = tree :height => 10, :title => "ruby way"  do
         root "root" do
           branch "hello" do
             leaf "ruby"
@@ -16,7 +21,9 @@ App.new do
           end
         end
       end
-
+      found=atree.get_node_for_path "goodbye"
+      atree.set_expanded_state(atree.root, true)
+      atree.set_expanded_state(found,true)
 
       # using a Hash
       model = { :ruby => [ "jruby", {:mri => %W[ 1.8.6 1.8.7]}, {:yarv => %W[1.9.1 1.9.2]}, "rubinius", "macruby" ], :python => %W[ cpython jython laden-swallow ] }
@@ -52,5 +59,6 @@ App.new do
       end
 
       tree :data => model, :title => "legacy way"
+
   end
 end # app

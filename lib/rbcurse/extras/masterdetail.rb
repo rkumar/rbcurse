@@ -28,7 +28,7 @@ class MasterDetail < Widget
     if @first_time
       @first_time = nil
       [@vim, @left, @right1, @right2].each { |e|  
-        e.set_buffering(:target_window => @target_window || @form.window, :form => @form)
+        e.set_buffering(:target_window => @target_window || @form.window, :form => @form) # removed on 2011-09-29 
       }
     end
     @vim.repaint
@@ -61,7 +61,7 @@ class MasterDetail < Widget
     # what if user gives in wrong order !!
     @gb = @vim.add :divider, :SECOND, 0
     @right2 = @vim.add comp, :SECOND, weight
-    @gb.next(@right2)
+    @gb.next_component(@right2)
     _add_component comp
     @right2
   end

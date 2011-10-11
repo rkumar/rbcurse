@@ -22,6 +22,7 @@ module RubyCurses
       @col = config.fetch("col",-1) 
       @bgcolor = config.fetch("bgcolor", $def_bg_color)
       @color = config.fetch("color", $def_fg_color)
+      @name = config.fetch("name", "pbar")
       @editable = false
       @focusable = false
       super

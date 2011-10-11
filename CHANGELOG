@@ -1,3 +1,36 @@
+**2011-10-06**
+## 1.3.1 or 1.4.0
+
+### Major cleanup of widget class
+  Scrollpane support (buffering stuff all removed)
+
+### TabbedPane
+  Corrected, major changes
+
+### dsl_accessor and dsl_property
+  Now return self so we can chain.
+
+### return values of some keys (Class Form)
+  Earlier not returning anything meaningful or returning last_key
+  Now return NO_NEXT_FIELD or NO_PREVIOUS_FIELD
+
+### j and k keys used for down and up where possible
+   e.g. button and its children including checkbox
+
+### Miscellaneous
+
+  * Dynamic menuitems in menu (see menu1.tb)
+  * rework on menu and menubar, and keys using them
+  * FieldVetoException (see test2.rb)
+  * valid_range for Field (see test2.rb)
+  * fixed field's type method, earlier non-functional
+  * array and 4 integer constructor for Window
+  * StatusWindow class - 2 line window for alert, confirm and statuses as an
+    alternative to dialogs.
+  * status_dialog returning a handle so we can keep updating status then
+  close.
+  * many more minor adjustments, tweaks, issues
+
 **2011-09-26**
 ## 1.3.0
 

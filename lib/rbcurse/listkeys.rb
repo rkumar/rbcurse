@@ -4,8 +4,9 @@ module RubyCurses
     # That was possible earlier, but now that i am binding the key at construction time
     # any changes to the vars after construction won't have an effect.
     def install_list_keys
-      @KEY_ROW_SELECTOR ||= ?\C-x.getbyte(0)
-      @KEY_BLOCK_SELECTOR ||= ?\M-x.getbyte(0)
+      #@KEY_ROW_SELECTOR ||= ?\C-x.getbyte(0)  # need to changed from C-x since used for actions # changed 2011 dts  
+      @KEY_ROW_SELECTOR ||= 0  # need to changed from C-x since used for actions
+      @KEY_BLOCK_SELECTOR ||= ?\M-x.getbyte(0)  # need to change since M-x used for commands
       @KEY_GOTO_TOP ||= ?\M-0.getbyte(0)
       @KEY_GOTO_BOTTOM ||= ?\M-9.getbyte(0)
       #@KEY_ASK_FIND_FORWARD ||= ?\M-f.getbyte(0)

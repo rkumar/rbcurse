@@ -1,7 +1,7 @@
 require 'rbcurse/app'
 
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "MultiSplit Demo", :text_right =>"ColumnBrowse pattern"
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "MultiSplit Demo", :text_right =>"ColumnBrowse pattern"
   message_row(27)
   message "<TAB> and <BTAB> "
   oo = :HORIZONTAL_SPLIT

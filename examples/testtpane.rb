@@ -15,9 +15,6 @@
 # M-l in button form will scroll. M-h to scroll left.
 # dd to kill a tab, u to undo kill, or p/P to paste deleted tab
 #
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtabbedpane'
@@ -45,13 +42,16 @@ class TestTabbedPane
         col 8
         #button_type :ok
       end
+      @tab1 = @tp.add_tab "&TextView" #, textview
+      f1 = @tp.form(@tab1)
 
-        textview = TextView.new do
+        textview = TextView.new f1 do
           name   "myView" 
-          row 4
+          row 0
           col 0 
-          #width w-0
+          width w-0
           #height h-4
+          height h-2
           title "README.mrku"
           title_attrib 'bold'
           print_footer true
@@ -61,20 +61,19 @@ class TestTabbedPane
         textview.set_content content #, :WRAP_WORD
         #textview.show_caret = true
 
-      @tab1 = @tp.add_tab "&TextView", textview
-      #@tabl.add_component textview
-      #f1 = @tab1.form
+      #@tab1 = @tp.add_tab "&TextView" #, textview
+      #f1 = @tp.form(@tab1)
+      #textview.set_form(f1)
+      #@tp.configure_component(textview)
         
 
 
       #f2 = @tab2.form
+      #@tab2 = @tp.add_tab "&Settings" #, texta
+      #f2 = @tp.form(@tab2)
       r = 4
         texta = TextArea.new do
-          name   "myText" 
-          #row r
-          #col 2 
-          #width w-5
-          #height h-5
+          name "myText" 
           title "EditMe.txt"
           title_attrib 'bold'
           print_footer true
@@ -105,9 +104,25 @@ class TestTabbedPane
           col 5
         end
       end
-      tab3 = @tp.add_tab "S&ongs"
-      #f3 = tab3.form
-      #f3 = @tp.form tab3
+      x = RubyCurses::Field.new f3 do
+        name 'username'
+        row row+6
+        bgcolor 'white'
+        color 'black'
+        col 15
+        display_length 20
+        set_label Label.new f3, {'text' => 'User Name', 'mnemonic'=> 'u'}
+      end
+      x = RubyCurses::Field.new f3 do
+        name 'nick'
+        row row+7
+        bgcolor 'white'
+        color 'black'
+        col 15
+        display_length 10
+        set_label Label.new f3, {'text' => 'Nick Name', 'mnemonic'=> 'n'}
+      end
+
       data = [["Pathetique",3,"Tchaikovsky",3.21, true, "WIP"],
         ["Ali Maula Ali Maula",3,"NFAK",3.47, true, "WIP"],
         ["Tera Hijr Mera Nasib",92,"Razia Sultan",412, true, "Fin"],
@@ -138,17 +153,14 @@ class TestTabbedPane
       # We can skip sizing too for large components, so comp will fill the TP.
         atable = Table.new do
           name   "mytable" 
-          #row  row 
-          #col  0
-          #width 76
-          #height h - 4
           #title "A Table"
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
           cell_editing_allowed true
           editing_policy :EDITING_AUTO
           set_data data, colnames
         end
-        tab3.component = atable
+        tab3 = @tp.add_tab "S&ongs", atable
+        #tab3.component = atable
         sel_col = Variable.new 0
         sel_col.value = 0
         tcm = atable.get_table_column_model
@@ -160,7 +172,7 @@ class TestTabbedPane
           tcm.column(3).width 7
           tcm.column(4).width 5
           tcm.column(5).width 6
-      @help = "F1 to quit. M-s M-t M-e M-o, TAB, M-x to add tab  #{$0} Check logger too"
+      @help = "F1 to quit. M-s M-t M-e M-o, TAB. M-x to add tab  #{$0} M-h/M-l to scroll tabs"
             RubyCurses::Label.new @form, {'text' => @help, "row" => r+h+2, "col" => 2, "color" => "yellow"}
 
             # M-x when inside the buttons form will create a new tab

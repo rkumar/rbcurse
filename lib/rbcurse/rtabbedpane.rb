@@ -24,8 +24,6 @@ NOTE:
   #
   # TODO :  disable/hide tab ???
 =end
-require 'rubygems'
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
@@ -40,6 +38,7 @@ module RubyCurses
 
   # Multiple independent overlapping forms using the tabbed metaphor.
   class TabbedButton < RubyCurses::RadioButton
+    attr_accessor :display_tab_on_traversal
     def getvalue_for_paint
       @text
     end
@@ -54,16 +53,16 @@ module RubyCurses
         r,c = rowcol
         attribs = @attrs
         @highlight_foreground ||= $reversecolor
-        @highlight_background ||= 0
+        @highlight_background ||= $reversecolor # 0 
         _state = @state
         _state = :SELECTED if @variable.value == @value 
         case _state
         when :HIGHLIGHTED
-       $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}, v: #{@value}" )
+          $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}, v: #{@value}" )
           bgcolor = @highlight_background
           color = @highlight_foreground
-          bgcolor =  @bgcolor
-          color =  @color
+          bgcolor = @bgcolor
+          color =  "red" #@color
           attribs = Ncurses::A_BOLD
           setrowcol r,c  # show cursor on highlighted as we tab through
           ## but when tabbing thru selected one, then selected one doesn't show cursor
@@ -92,6 +91,16 @@ module RubyCurses
         #@form.window.printstring r, c, "%-*s" % [len, value], color, attribs
         #@graphic.printstring r+@graphic.top, c+@graphic.left, "%-*s" % [len, value], color, attribs
         #@graphic.printstring r-@graphic.top, c-@graphic.left, "%-*s" % [len, value], color, attribs
+
+        # add bar character on sides of selected  2011-10-5 
+        # mvwaddch was not doing anything ??
+        if _state == :HIGHLIGHTED
+          @graphic.printstring r, c-1, ">",  color, @attrs unless c-1 < @graphic.left
+          #@graphic.printstring r, c+len+1, "<",  color, @attrs
+        else
+          @graphic.printstring r, c-1, " ",  color, @attrs unless c-1 < @graphic.left
+          #@graphic.printstring r, c+len+1, " ",  color, @attrs
+        end
         @graphic.printstring r, c, "%-*s" % [len, value], color, attribs
         @graphic.modified = true
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -108,9 +117,11 @@ module RubyCurses
     # fire takes the focus into tab area so the next TAB goes back to first button
     # due to current_tab = tab (so next key stroke goes to tab)
     def on_enter
-      $log.debug " overridden on_enter of tabbedbutton #{@name} "
+      $log.debug " overridden on_enter of tabbedbutton #{@name}, foc #{@focussed}  "
       super
-      $log.debug " calling fire overridden on_enter of tabbedbutton"
+      #@state = :HIGHLIGHTED if @focussed
+      $log.debug " overridden on_enter of tabbedbutton #{@name} state #{@state}, foc #{@focussed}  "
+      $log.debug " calling fire overridden on_enter of tabbedbutton" if @display_tab_on_traversal
       fire if @display_tab_on_traversal
     end
     # In order to get tab display as we traverse buttons, we need to tamper with KEY_DOWN
@@ -119,11 +130,17 @@ module RubyCurses
       case ch
       when  KEY_DOWN
         # form will not do a next_field, it will ignore this
+        @state = :NORMAL # 2011-10-5 
+        @form.repaint
         return :NO_NEXT_FIELD
       when KEY_RIGHT
-        @form.select_next_field
+        ret =  @form.select_next_field
+        ret = @form.select_first_field if ret == :NO_NEXT_FIELD
+        return ret
       when KEY_LEFT
-        @form.select_prev_field
+        ret =  @form.select_prev_field
+        ret = @form.select_last_field if ret == :NO_PREV_FIELD
+        return ret
       when KEY_ENTER, 10, 13, 32  # added space bar also
         if respond_to? :fire
           fire
@@ -133,7 +150,7 @@ module RubyCurses
         return :UNHANDLED
       end
     end
- 
+    0
   end
   ## 
   # extending Widget from 2009-10-08 18:45 
@@ -145,6 +162,10 @@ module RubyCurses
     TAB_COL_OFFSET = 0 # what col should tab start on (to save space, flush on left)
     dsl_accessor :button_type      # ok, ok_cancel, yes_no
     dsl_accessor :buttons           # used if type :custom
+    
+    # set to true if you want tabs to show as you traverse the tab buttons
+    dsl_accessor :display_tab_on_traversal
+
     attr_reader :selected_index
     attr_reader :current_tab
     attr_reader :window
@@ -164,6 +185,7 @@ module RubyCurses
       @recreate_buttons = true
       install_keys
       @_events.push(*[:OPEN, :INSERT, :DELETE])
+      @on_main_form = true # 2011-10-4 we need to know this i think
     end
     def install_keys
       @form.bind_key([?d, ?d]) { ix = highlighted_tab_index; repeatm { remove_tab(ix) } }
@@ -184,13 +206,27 @@ module RubyCurses
       return tab
     end
     alias :add :add_tab
+
     ## insert a component at given index
     # index cannnot be greater than size of tab count
     def insert_tab text, component, index, aconfig={}, &block
       $log.debug " TAB insert #{text} at #{index} "
       @tabs[index] = Tab.new(text, self, aconfig, &block)
       tab = @tabs[index]
-      tab.component = component unless component.nil?
+
+      # trying out setting current tab when created  2011-10-4 
+      #  This situation happens when someone externally is setting data
+      #  in a tab and calling its repaint. When user presses DOWN from button
+      #  it was crashing. Old tab is the tab you see below. current_tab takes on 
+      #  either form or old_tab to distinguish whether we are on top buttons or
+      #  inside a tab.
+      @old_tab = tab
+
+      tform = form(tab) # this could go inside Tab constructor now 2011-10-4 
+      #tab.component = component unless component.nil? # changed on 2011-10-3  CLEAN
+      #component.form = tform unless component.nil? # changed on 2011-10-3  CLEAN
+      component.set_form( tform) unless component.nil? # changed on 2011-10-3 
+      configure_component component unless component.nil?
       tab.index = index # so i can undelete !!!
       fire_event tab, index, :INSERT
       @recreate_buttons = true
@@ -281,12 +317,16 @@ module RubyCurses
     # private - can't use externally
     def configure_component component
         #component.set_form @parent <<--- definitely NOT
-        component.form = @parent
+        #component.form = @parent # changed on 2011-10-2 
         component.rows_panned = component.cols_panned = 0
         component.parent_component = self # added 2010-02-27  so offsets can go down ?
-        component.should_create_buffer = true 
-        component.row = @row + TAB_ROW_OFFSET # 2
-        component.col = @col + TAB_COL_OFFSET
+
+        $log.debug "XXX: TABBED #{@row} #{@col} #{@height} #{@width} "
+        component.row ||= 0 # 2011-10-3 @row + TAB_ROW_OFFSET # 2
+        component.col ||= 0 #@col + TAB_COL_OFFSET
+        component.width  ||= @width #@col + TAB_COL_OFFSET
+        component.height  ||= @height - 2 #@col + TAB_COL_OFFSET
+        $log.debug "XXX: TABBED #{component.row} #{component.col} #{component.height} #{component.width} "
 
         # current_form likely to be nil XXX
         scr_top = component.row # for Pad, if Pad passed as in SplitPane
@@ -357,6 +397,9 @@ module RubyCurses
       r = @row
       col = @col + 1
       @buttons ||= []
+      #
+      # NOTE: since we remove buttons, setting any events on them is useless !
+      #
       if !@buttons.empty?
         @buttons.each {|e| @form.remove_widget(e) }
       end
@@ -389,11 +432,19 @@ module RubyCurses
         form.set_parent_buffer(@window) if form
 
         b = @buttons.last
-        b.command(b) { 
+        b.display_tab_on_traversal = @display_tab_on_traversal # 2011-10-4 
+        tab._button(b) # too late, user needs this when tab is created FIXME
+        b.command(b, @form) { 
           $log.debug " calling tab.repaint,button_form_repaint from button press #{b.name} #{b.state} "
           # form.rep essentially sees that buttons get correct attributes
           # when triggering M-<char>. This button should get highlighted.
           tab.repaint
+
+          # the on_leave of current button does not get fired, so it gets
+          #   left in a HIGHLIGHTED state, so two can show highlighted at the same time 2011-10-5 
+          #
+          @form.widgets.each { |tb| @form.on_leave(tb) if tb.state == :HIGHLIGHTED }
+
           button_form_repaint #( b.state == :HIGHLIGHTED )
           if @display_tab_on_traversal
             # set as old tab so ONLY on going down this becomes current_tab
@@ -402,6 +453,9 @@ module RubyCurses
             # next line means next key is IMMED  taken by the tab not main form
             @current_tab = tab
           end
+          $log.debug "TAB : form #{tab.form}, #{tab.form.widgets.first} "
+          c = tab.form.widgets.first
+          c.set_form_row; c.set_form_col
           fire_event tab, tab.index, :OPEN
         }
       end
@@ -435,17 +489,48 @@ module RubyCurses
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
       @form.navigation_policy = :NON_CYCLICAL
-      #xx @current_form = @form
- #xx     color = $datacolor
- #xx     @window.print_border @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       
       Ncurses::Panel.update_panels
       _recreate_buttons
  
+      @old_tab = @tabs.first
+      @old_tab.repaint if @old_tab
       button_form_repaint true
       @window.wrefresh ## ADDED  2009-11-02 23:29 
-      @old_tab = @tabs.first
-      @buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      #@buttons.first().fire unless @buttons.empty? # make the first form active to start with.
+      #@current_tab = nil # 2011-10-3 otherwise keys go to this form in the beginning
+      @current_tab = @form # 2011-10-4 buttons form should be first
+    end
+    # 
+    # Handle placing control in first or last button. 
+    # R
+    def on_enter
+      if $current_key == KEY_BTAB
+        c = @form.widgets.count-1
+        @form.select_field c
+      else
+        @form.select_field 0
+      end
+    end
+    def _on_enter
+      # if BTAB the last comp
+      if $current_key == KEY_BTAB
+        # FIXME last is not focusable, then ??
+        current_component = @buttons.last
+        @current_tab = @form
+        @old_tab = @tabs.last
+        #@form.select_last_field
+      else
+        current_component = @buttons.first
+        @current_tab = @form
+        @old_tab = @tabs.first
+        #@form.select_first_field
+      end
+      #set_form_row
+      current_component.on_enter
+      $log.debug " TP came to on_enter #{current_component}, #{current_component.state} "
+      current_component.set_form_col # XXX 
+      current_component.repaint
     end
     def button_form_repaint flag = true
       $log.debug " INSIDE button_form_repaint #{flag} "
@@ -495,8 +580,8 @@ module RubyCurses
       window.mvprintw(1,1, tab.text.tr('&', '')) if @print_subheader
       window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
       form.name = "Form::TAB-#{tab.text}" # 2010-02-02 19:59 
-      form.add_cols=@col
-      form.add_rows=@row
+      form.add_cols=@col + 0
+      form.add_rows=@row + 2 # 2011-10-3  position cursor correctly
       return form
     end
     ##
@@ -504,20 +589,69 @@ module RubyCurses
     # @form is the top button form
     # XXX stop this nonsense about current_form and current_tab
     # TP should only be concerned with tabs. what happens inside is none of its business
-    def handle_key(ch)
-      @current_tab ||= @form # first we cycle buttons
-          $log.debug " handle_key in tabbed pane got : #{ch}"
-          # needs to go to component
-          ret = @current_tab.handle_key(ch)
-          $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} , #{ch} "
+    def handle_key(ch) # tabbed pane TP
 
-          # components will usually return UNHANDLED for a tab or btab
-          # We need to convert it so the main form can use it
-          if @current_tab != @form
+
+      if @current_tab == @form         # on main form
+        return :UNHANDLED if ch == ?\M-\C-i.getbyte(0) # alt-tab to exit
+        ret = @form.handle_key ch
+        $log.debug "TP HNDLE KEY got ret #{ret}, ch #{ch} "
+        ret ||= :UNHANDLED
+        if ret == :UNHANDLED
+          $log.warn "unhandled key in TP main #{ch} "
+          case ch
+          when KEY_RIGHT, KEY_LEFT, KEY_TAB, KEY_BTAB
+          when KEY_UP
+          when KEY_DOWN
+          when KEY_TAB
+          when KEY_BTAB
+          end
+        elsif ret == :NO_NEXT_FIELD
+          case ch
+          when KEY_TAB
+            return :UNHANDLED
+          when KEY_RIGHT, KEY_DOWN, ?j.getbyte(0)
+
+            @current_tab = @old_tab 
+            if @current_tab
+              @current_tab.set_focus :FIRST
+            else
+              alert "Need to press enter on button"
+              if @current_tab.nil? ##or @current_tab.is_a?  Form
+                w = @form.widgets.first
+                w.fire if w.respond_to? :fire
+              end
+            end
+            return 0
+          when KEY_UP
+          when KEY_BTAB
+          end
+          return ret
+        elsif ret == :NO_PREV_FIELD
+          case ch
+          when KEY_LEFT, KEY_BTAB, ?k.getbyte(0)
+            $log.debug "LEFT BTAB when no previous field"
+            return :UNHANDLED
+          end
+          return ret
+        end
+        return 0
+      end
+      
+        $log.debug " handle_key in tabbed pane got : #{ch},  #{@current_tab}, f: #{@form}  "
+      @current_tab ||= @form # first we cycle buttons
+        $log.debug " handle_key in tabbed pane got : #{ch}, giving to #{@current_tab} "
+      # needs to go to component
+      ret = @current_tab.handle_key(ch)
+        $log.debug " -- form.handle_key in tabbed pane got ret : #{ret} , #{@current_tab} , #{ch} "
+
+      # components will usually return UNHANDLED for a tab or btab
+      # We need to convert it so the main form can use it
+      if @current_tab != @form
           if ret == :UNHANDLED
             if ch == KEY_TAB #or ch == KEY_DOWN
               ret = :NO_NEXT_FIELD
-            elsif ch == KEY_BTAB #or ch == KEY_UP # btab
+            elsif ch == KEY_BTAB or ch == ?k.getbyte(0) #or ch == KEY_UP # btab
               ret = :NO_PREV_FIELD
             end
           end
@@ -530,15 +664,18 @@ module RubyCurses
 
         case ret
         when :NO_NEXT_FIELD
+          #alert "came to no nex field" # CLEAN
           if @current_tab != @form
+            #alert "case 1 no next field req first" # changed on 2011-10-2  # 2011-10-04 16:12:34
             ## if no next field on a subform go to first button of main form
             @old_tab = @current_tab
             @current_tab = @form
             @form.req_first_field
-            #@form.select_next_field
+         
           else
             # on top button panel - no more buttons, go to tabs first field
             if @old_tab # in case of empty tabbed pane old_tab was nil
+            #alert "case 2 no next field set focus" # CLEANUP # 2011-10-04 16:12:46
               @current_tab = @old_tab
               @current_tab.set_focus :FIRST
             end
@@ -637,10 +774,11 @@ module RubyCurses
     class Tab
       attr_accessor :text
       attr_reader :config
-      attr_reader :component
+      attr_reader :component # 2011-10-4 DEPRECATED
       #attr_accessor :form
       attr_accessor :parent_component
       attr_accessor :index
+      attr_accessor :button  # so you can set an event on it 2011-10-4 
       def initialize text, parent_component,  aconfig={}, &block
         @text = text
         @config = aconfig
@@ -650,15 +788,19 @@ module RubyCurses
       end
       ## add a single component to the tab
       # Calling this a second time will overwrite the existing component
+      # @deprecated since 2011-10-4 1.3.1
       def component=(component)
+        @form.add_widget component
         raise "Component cannot be null" unless component
         raise "Component already associated with a form. Do not pass form in constructor." unless component.form.nil?
         $log.debug " calling configure component "
         @parent_component.configure_component component
-        @component = component
+        #@component = component # changed on 2011-10-3 
       end
+      # @deprecated since 2011-10-4 1.3.1
       def remove_component
-        @component = nil
+        @form.widgets.pop # 2011-10-4 
+        #@component = nil
       end
       # private
       def variable_set var, val
@@ -668,20 +810,22 @@ module RubyCurses
       # tab should handle key instead of TP.
       # Pass to component or form
       def handle_key ch # Tab
-        kh = @component || @form
+        #kh = @component || @form 2011-10-4 
+        kh = @form
+       $log.debug "DEBUG : handle_key Tab giving key to ( #{kh} ) "
         ret = kh.handle_key(ch)
-       $log.debug "DEBUG : handle_key Tab got ret #{ret} "
+       $log.debug "DEBUG : handle_key Tab ( #{kh} )got ret #{ret} "
         # forms seem to returning a nil when the pad has been updated. We need to copy it
         ret ||= 0
-        if ret == 0 || ret == :UNHANDLED
-          $log.debug "COMPONENT REPAINT CALLING " if $log.debug? 
-          @component.repaint if @component
+        if ret == :UNHANDLED
+          $log.debug "tab handle_key returns UNHANDLED" if $log.debug? 
+          #alert "Inside unhandled case, tab's for did not handle key"
+          #@component.repaint if @component
           #@form.window.refresh
-          #$log.debug "DEBUG calling display form(false) from handle_key XXX" if @form
+          #$log.debug "DEBUG calling display form(false) from handle_key XXXX" if @form
           #display_form false if @form # this caused others to go blank 2011-09-26 
         elsif ret != :UNHANDLED # FFI trying out, since forms with components not displaying changes
-          # since moving to FFI. 
-          display_form false if @form
+          display_form false if @form #  required for multi field forms, not single ones
         end
         # XXX i need to call repaint of compoent if updated !!
         return ret
@@ -690,29 +834,12 @@ module RubyCurses
         if @form
           $log.debug "DEBUG calling display form(true) from repaint XXX" if $log.debug?
           display_form
-        elsif @component
-          # we ask the component to paint its buffer only, no actual repainting
-          redraw
         else
           # pls use tp.form(tab) to get form explicity.
           # It could come here if tab precreated and user is yet to assign a component.
           # or has removed component and not yet set a new one.
           $log.error "Got neither component nor form."
           $log.error "Programmer error. A change in Tabbedpane requires you to create form explicitly using form = tpane.form(tab) syntax"
-        end
-      end
-      # force a redraw of a component when tabs changed
-      def redraw
-        # this kinda stuff should be inside widget or some util class
-        c = @component
-        if c.is_double_buffered?
-          c.set_buffer_modified
-          c.buffer_to_window
-        else
-          # force a repaint, if not buffered object e.g scrollpane.
-          $log.debug " TP: forcing repaint of non-buffered object #{c}  "
-          c.repaint_all
-          c.repaint
         end
       end
       ## Set focus on a component or form field when a user has tabbed off the last or first button
@@ -723,11 +850,13 @@ module RubyCurses
             $log.debug " calling display form(true) from handle_key NO_NEXT_FIELD: #{first_last} "
             first_last == :FIRST ? @form.req_first_field : @form.req_last_field
             display_form
+            if @form.widgets.count == 1 # not working trying to get cursor to show in first form.
+              component = @form.widgets.first
+              component.set_form_row
+              component.set_form_col
+            end
           else 
-            # move to component
-            #@current_form = @current_tab.component # temp HACK 2010-02-27 23:24 
-            @component.set_form_row
-            @component.set_form_col
+            raise "Form nil. Component cannot be directly added any longer. Pls use form"
           end
       end
     # On a tabbed button press, this will display the relevant form
@@ -744,7 +873,6 @@ module RubyCurses
         pad = form.window
       else
         return
-        pad = form.get_buffer() # component
       end
       pc = @parent_component
       form.repaint if flag #   added 2009-11-03 23:27  paint widgets in inside form
@@ -759,6 +887,9 @@ module RubyCurses
       $log.debug " ret = pad.copywin(pc.window.get_window, #{pminr}, #{pminc}, #{r}, #{c}, r+ #{maxr} - border_width, c+ #{maxc} -border_width,0). W:#{pc.window}, #{pc.window.get_window} "
       ret = pad.copywin(pc.window.get_window, pminr, pminc, r, c, r+maxr-border_width, c+maxc-border_width,0)
       $log.debug " display form after pad copy #{ret}. #{form.name} "
+      #pad.mvhline( 0,0, Ncurses::ACS_HLINE, pad.width-1)
+      pad.mvwaddch(0, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
+      pad.mvwaddch(0, pad.width-1, Ncurses::ACS_RTEE)
     end
 
     # 2011-09-19 @since 1.3.0 changed so that calling form throws an exception
@@ -782,6 +913,11 @@ module RubyCurses
     # used by TP to check form, since the other methods throws an exception
     def has_form?
       !@form.nil?
+    end
+
+    # @private avoid external use
+    def _button(b)
+      @button = b
     end
     end # class Tab
 
@@ -826,6 +962,7 @@ module RubyCurses
     end
     ## ScrollForm handle key, scrolling
     def handle_key ch
+      #alert("SCROLLFORM #{ch} , ai: #{@active_index} , #{get_current_field.name} ")
       $log.debug " inside ScrollForm handlekey #{ch} "
       # do the scrolling thing here top left prow and pcol of pad to be done
       # # XXX TODO check whether we can scroll before incrementing esp cols_panned etc
@@ -857,8 +994,20 @@ module RubyCurses
         @window.modified = true
         return 0
       end
+      case ch
+      when ?j.getbyte(0)
+        ch = KEY_DOWN
+      when ?k.getbyte(0)
+        ch = KEY_BTAB
+        @window.ungetch(KEY_BTAB)
+        return 0
+      when ?h.getbyte(0)
+        ch = KEY_LEFT
+      when ?l.getbyte(0)
+        ch = KEY_RIGHT
+      end
 
-      super
+      super 
     end
     def repaint
       $log.debug " scrollForm repaint calling parent"
@@ -919,8 +1068,10 @@ module RubyCurses
       return true
     end
     # when tabbing through buttons, we need to account for all that panning/scrolling goin' on
+    # Either of r or c can be nil (usually one will be)
     def setrowcol r, c
       # aha ! here's where i can check whether the cursor is falling off the viewable area
+      if c
       if c+@cols_panned < @orig_left
         # this essentially means this widget (button) is not in view, its off to the left
         $log.debug " setrowcol OVERRIDE #{c} #{@cols_panned} < #{@orig_left} "
@@ -933,7 +1084,10 @@ module RubyCurses
         $log.debug " aborting settrow col for now"
         return
       end
-      super r+@rows_panned, c+@cols_panned
+      end # if c
+      rr = r.nil? ? nil : r+@rows_panned
+      cc = c.nil? ? nil : c+@cols_panned
+      super rr, cc
     end
     def add_widget w
       super

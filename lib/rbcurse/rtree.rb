@@ -49,12 +49,14 @@ module RubyCurses
     dsl_property :row_selected_symbol # 2009-01-12 12:01 changed from selector to selected
     dsl_property :row_unselected_symbol # added 2009-01-12 12:00 
     dsl_property :left_margin
+    dsl_accessor :sanitization_required # 2011-10-6 
     #dsl_accessor :valign  # popup related
     #
     # will pressing a single key move to first matching row. setting it to false lets us use vim keys
     attr_accessor :one_key_selection # will pressing a single key move to first matching row
     # index of row selected, relates to internal representation, not tree. @see selected_row
     attr_reader :selected_index   # index of row that is selected. this relates to representation
+    attr_reader :treemodel        # returns treemodel for further actions 2011-10-2 
 
     def initialize form, config={}, &block
       @focusable = true
@@ -75,12 +77,16 @@ module RubyCurses
       super
       #@selection_mode ||= :single # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
+      @sanitization_required = true
+      @longest_line = 0
       
      
       @win_left = 0
       @win_top = 0
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
 
+      
+      bind(:PROPERTY_CHANGE){|e| @cell_renderer = nil } # will be recreated if anything changes 2011-09-28 V1.3.1  
       init_vars
 
       #if !@list.selected_index.nil? 
@@ -114,11 +120,15 @@ module RubyCurses
       bind_key(KEY_RETURN) { toggle_expanded_state() }
       bind_key(?o) { toggle_expanded_state() }
       bind_key(?f){ ask_selection_for_char() }
-      bind_key(?\M-v){ @one_key_selection = true }
+      bind_key(?\M-v){ @one_key_selection = !@one_key_selection }
       bind_key(KEY_DOWN){ next_row() }
       bind_key(KEY_UP){ previous_row() }
       bind_key(?O){ expand_children() }
       bind_key(?X){ collapse_children() }
+      bind_key(?>, :scroll_right)
+      bind_key(?<, :scroll_left)
+      bind_key(?\M-l, :scroll_right)
+      bind_key(?\M-h, :scroll_left)
       # TODO
       bind_key(?x){ collapse_parent() }
       bind_key(?p){ goto_parent() }
@@ -156,15 +166,28 @@ module RubyCurses
         return @height - 3
       end
     end
-    # this allows a user to use this 2 times !! XXX
-    def root node, asks_allow_children=false, &block
+    #
+    # Sets the given node as root and returns treemodel.
+    # Returns root if no argument given.
+    # Now we return root if already set
+    # Made node nillable so we can return root. 
+    #
+    # @raise ArgumentError if setting a root after its set
+    #   or passing nil if its not been set.
+    def root node=nil, asks_allow_children=false, &block
+      if @treemodel
+        return @treemodel.root unless node
+        raise ArgumentError, "Root already set"
+      end
+
       raise ArgumentError, "root: node cannot be nil" unless node
       @treemodel = RubyCurses::DefaultTreeModel.new(node, asks_allow_children, &block)
     end
+
     # pass data to create this tree model
     # used to be list
     def data alist=nil
-      #return @treemodel if alist.nil?
+
       # if nothing passed, print an empty root, rather than crashing
       alist = [] if alist.nil?
       @data = alist # data given by user
@@ -253,7 +276,9 @@ module RubyCurses
       window = @graphic  # 2010-01-04 12:37 BUFFERED
       startcol = @col 
       startrow = @row 
-      bordercolor = @border_color || $datacolor
+      @color_pair = get_color($datacolor)
+#      bordercolor = @border_color || $datacolor # changed 2011 dts  
+      bordercolor = @border_color || @color_pair # 2011-09-28 V1.3.1 
       borderatt = @border_attrib || Ncurses::A_NORMAL
                            
       window.print_border startrow, startcol, height, width, bordercolor, borderatt
@@ -265,7 +290,7 @@ module RubyCurses
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-      @color_pair = get_color($datacolor)
+      @color_pair ||= get_color($datacolor)
       @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     ### START FOR scrollable ###
@@ -417,12 +442,11 @@ module RubyCurses
     # a section of it.
     # FIXME: tree may not be clearing till end see appdirtree after divider movement
     def repaint
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
-      # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
+    
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
-      #$log.warn "neither form not target window given!!! TV paint 368" unless my_win
+   
       raise " #{@name} neither form, nor target window given TV paint " unless my_win
       raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
       @win_left = my_win.left
@@ -431,6 +455,7 @@ module RubyCurses
       $log.debug "rtree repaint  #{@name} graphic #{@graphic}"
       print_borders unless @suppress_borders # do this once only, unless everything changes
       maxlen = @maxlen || @width-@internal_width
+      maxlen -= @left_margin # 2011-10-6 
       tm = _list()
       select_default_values
       rc = row_count
@@ -438,6 +463,7 @@ module RubyCurses
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
+      @longest_line = @width #maxlen
       0.upto(h) do |hh|
         crow = tr+hh
         if crow < rc
@@ -452,24 +478,19 @@ module RubyCurses
               node = content
               object = content
               leaf = node.is_leaf?
+              # content passed is rejected by treecellrenderer 2011-10-6 
               content = node.user_object.to_s # may need to trim or truncate
               expanded = row_expanded? crow  
             elsif content.is_a? String
-              content = content.dup
-              content.chomp!
-              content.gsub!(/\t/, '  ') # don't display tab
-              content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
-              if !content.nil? 
-                if content.length > maxlen # only show maxlen
-                  content = content[@pcol..@pcol+maxlen-1] 
-                else
-                  content = content[@pcol..-1]
-                end
-              end
+              $log.warn "Removed this entire block since i don't think it was used XXX  "
+              # this block does not set object XXX
             else
               raise "repaint what is the class #{content.class} "
               content = content.to_s
             end
+            # this is redundant since data is taken by renderer directly
+            #sanitize content if @sanitization_required
+            #truncate value
             ## set the selector symbol if requested
             selection_symbol = ''
             if @show_selector
@@ -480,10 +501,13 @@ module RubyCurses
               end
               @graphic.printstring r+hh, c, selection_symbol, acolor,@attr
             end
+
             renderer = cell_renderer()
             renderer.display_length(@width-@internal_width-@left_margin) # just in case resizing of listbox
+            renderer.pcol = @pcol
             #renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, _focussed, selected
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, object, content, leaf,  focus_type, selected, expanded
+            @longest_line = renderer.actual_length if renderer.actual_length > @longest_line 
         else
           # clear rows
           @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
@@ -491,9 +515,8 @@ module RubyCurses
       end
       @table_changed = false
       @repaint_required = false
-      @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      buffer_to_window # RFED16 2010-02-17 23:16 
     end
+
     def list_data_changed
       if row_count == 0 # added on 2009-02-02 17:13 so cursor not hanging on last row which could be empty
         init_vars
@@ -707,6 +730,39 @@ module RubyCurses
         end
       end
     end
+
+    #
+    # To retrieve the node corresponding to a path specified as an array or string
+    # Do not mention the root.
+    # e.g. "ruby/1.9.2/io/console"
+    # or %w[ ruby 1.9.3 io console ]
+    # @since 1.4.0 2011-10-2 
+    def get_node_for_path(user_path)
+      case user_path
+      when String
+        user_path = user_path.split "/"
+      when Array
+      else
+        raise ArgumentError, "Should be Array or String delimited with /"
+      end
+      $log.debug "TREE #{user_path} " if $log.debug? 
+      root = @treemodel.root
+      found = nil
+      user_path.each { |e| 
+        success = false
+        root.children.each { |c| 
+          if c.user_object == e
+            found = c
+            success = true
+            root = c
+            break
+          end
+        }
+        return false unless success
+
+      }
+      return found
+    end
     private
     # please do not rely on this yet, name could change
     def _structure_changed tf=true
@@ -714,6 +770,7 @@ module RubyCurses
       @repaint_required = true
       #@list = nil
     end
+
 
 
     # ADD HERE

@@ -11,7 +11,7 @@ def _directories wd
   return ent
 end
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Yet Another File Manager", :text_right =>"Directory Lister", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Yet Another File Manager", :text_right =>"Directory Lister", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
   message "Press Enter to expand/collapse"
 
   pwd = Dir.getwd

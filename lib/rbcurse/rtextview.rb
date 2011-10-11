@@ -180,7 +180,9 @@ module RubyCurses
 
       $log.debug " #{@name} print_borders,  #{@graphic.name} "
       
-      bordercolor = @border_color || $datacolor
+      @color_pair = get_color($datacolor) # added 2011-09-28 as in rlistbox
+#      bordercolor = @border_color || $datacolor # changed 2011 dts  
+      bordercolor = @border_color || @color_pair # 2011-09-28 V1.3.1 
       borderatt = @border_attrib || Ncurses::A_NORMAL
       @graphic.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
@@ -188,20 +190,21 @@ module RubyCurses
     def print_title #:nodoc:
       return unless @title
       raise "textview needs width" unless @width
-      @color_pair ||= get_color($datacolor) # should we not use this ??? XXX
+      @color_pair ||= get_color($datacolor) # should we not use this ??? XXX 
       #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
       # check title.length and truncate if exceeds width
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil?
+#      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil? # changed 2011 dts  
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     def print_foot #:nodoc:
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
       #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-      @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
     ### FOR scrollable ###
@@ -213,17 +216,12 @@ module RubyCurses
     end
 
     def repaint # textview :nodoc:
-      if @screen_buffer.nil?
-        safe_create_buffer
-        @screen_buffer.name = "Pad::TV_PAD_#{@name}" unless @screen_buffer.nil?
-        $log.debug " textview creates pad #{@screen_buffer} #{@name}"
-      end
+      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col} "  
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
     #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
-      buffer_to_window
     end
     def getvalue
       @list
@@ -259,10 +257,12 @@ module RubyCurses
       when KEY_UP, ?k.getbyte(0)
         #select_prev_row
         ret = up
+        get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW
         check_curpos
         
       when KEY_DOWN, ?j.getbyte(0)
         ret = down
+        get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
         check_curpos
       when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
@@ -320,10 +320,9 @@ module RubyCurses
         begin
           ret = process_key ch, self
         rescue => err
-          $error_message = err
-          @form.window.print_error_message
           $log.error " TEXTVIEW ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
+          alert err.to_s
         end
         return :UNHANDLED if ret == :UNHANDLED
       end
@@ -487,10 +486,8 @@ module RubyCurses
       #@table_changed = false
       @repaint_required = false
       @repaint_footer_required = true
-      @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false 
 
-      # 2010-02-10 22:08 RFED16
     end
     # takes a block, this way anyone extending this class can just pass a block to do his job
     # This modifies the string
@@ -499,7 +496,7 @@ module RubyCurses
         content.chomp!
         # trying out since gsub giving #<ArgumentError: invalid byte sequence in UTF-8> 2011-09-11 
         content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
-        content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/[\t\n\r]/, '  ') # don't display tab
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
         content

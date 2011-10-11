@@ -15,6 +15,11 @@ require 'pathname'
   
    May later use a Label and Field.
 
+   NOTE : Pls avoid directly using this class. I am trying to redo this so ask, agree and say
+          can create their own window and be done with it. The hurdle in that is that ask calls
+          say, so when to close the window is not clear within say. Some shakeup is expected by
+          1.4.0 or so.
+
 =end
 module RubyCurses
 
@@ -83,7 +88,20 @@ module RubyCurses
     attr_accessor :name # for debugging
     def initialize win=nil, row=nil
       @window = win
-      @message_row = row
+      #@window.wrefresh
+      #Ncurses::Panel.update_panels
+      #@message_row = row
+      @message_row = 0 # 2011-10-8 
+    end
+    #
+    # create a window at bottom and show and hide it.
+    # Causing a stack overflow since Window creates a bottomline too !
+    #
+    def _create_footer_window h = 1 , w = Ncurses.COLS, t = Ncurses.LINES-1, l = 0
+      ewin = VER::Window.new(h, w , t, l)
+      #ewin.bkgd(Ncurses.COLOR_PAIR($promptcolor));
+      @window = ewin
+      return ewin
     end
 
     class QuestionError < StandardError
@@ -947,7 +965,10 @@ module RubyCurses
       end
     end
     def ask(question, answer_type=String, &details)
-      #clear_line 80
+     $log.debug "XXXX inside ask win #{@window} "
+      #@window.show #unless @window.visible?
+      @window ||= _create_footer_window
+    
       @question ||= Question.new(question, answer_type, &details)
       say(@question) #unless @question.echo == true
 
@@ -961,6 +982,7 @@ module RubyCurses
       end
 
       begin
+        # FIXME a C-c still returns default to user !
         @answer = @question.answer_or_default(get_response) 
         unless @question.valid_answer?(@answer)
           explain_error(:not_valid)
@@ -1010,9 +1032,37 @@ module RubyCurses
       rescue Question::NoAutoCompleteMatch
         explain_error(:no_completion)
         retry
+      rescue Interrupt
+        $log.warn "User interrupted ask() get_response does not want operation to proceed"
+        return nil
       ensure
         @question = nil    # Reset Question object.
+        hide # assuming this method made it visible, not sure if this is called.
       end
+    end
+    #
+    # bottomline user has to hide window if he called say(). 
+    #  Call this if you find the window persists after using some method from here
+    #   usually say or ask.
+    #
+    # @param [int, float] time to sleep before hiding window.
+    #
+    def hide wait=nil
+      if @window
+        sleep(wait) if wait
+        @window.hide 
+        @window.wrefresh
+        #Ncurses::Panel.update_panels
+      end
+    end
+    alias :hide_bottomline :hide
+    # 
+    # destroy window, to be called by app when shutting down
+    # since we are normally hiding the window only.
+    def destroy 
+      $log.debug "bottomline destroy... #{@window} "
+      @window.destroy if @window
+      @window = nil
     end
 
     #
@@ -1025,14 +1075,21 @@ module RubyCurses
     # question. Also, ansi color constants will not work. Be careful what ruby code
     # you pass in.
     #
+    # NOTE: This uses a window, so it will persist in the last row. You must call 
+    # hide_bottomline to remove the window. It is preferable to call say_with_pause
+    # from user programs
+    #
     def say statement, config={}
+      @window ||= _create_footer_window
+      #@window.show unless @window.visible? # this will need to be hidden manually NOTE
+      $log.debug "XXX: inside say win #{@window} !"
       case statement
       when Question
 
         if config.has_key? :color_pair
           $log.debug "INSIDE QUESTION 2 " if $log.debug? 
         else
-          $log.debug "XXXX SAY using #{statement.color_pair} " if $log.debug? 
+          $log.debug "XXXX SAY using colorpair: #{statement.color_pair} " if $log.debug? 
           config[:color_pair] = statement.color_pair
         end
       else
@@ -1041,15 +1098,22 @@ module RubyCurses
       statement =  statement.to_str
       template  = ERB.new(statement, nil, "%")
       statement = template.result(binding)
-      #puts statement
+    
       @prompt_length = statement.length # required by ask since it prints after 
       @statement = statement # 
       clear_line
       print_str statement, config
     end
+    #
+    # display some text at bottom and wait for a key before hiding window
+    #
     def say_with_pause statement, config={}
+      @window ||= _create_footer_window
       say statement, config
+      @window.wrefresh
+      Ncurses::Panel.update_panels
       ch=@window.getchar()
+      hide
     end
     # A helper method for sending the output stream and error and repeat
     # of the question.
@@ -1065,10 +1129,14 @@ module RubyCurses
       end
     end
 
+    #
+    # Internal method for printing a string
+    #
     def print_str(text, config={})
       win = config.fetch(:window, @window) # assuming its in App
-      x = config.fetch :x, @message_row # Ncurses.LINES-1
+      x = config.fetch :x, 0 # @message_row # Ncurses.LINES-1, 0 since one line window 2011-10-8 
       y = config.fetch :y, 0
+      $log.debug "XXX: print_str #{win} with text : #{text} at #{x}  #{y} "
       color = config[:color_pair] || $datacolor
       raise "no window for ask print in #{self.class} name: #{name} " unless win
       color=Ncurses.COLOR_PAIR(color);
@@ -1151,12 +1219,14 @@ module RubyCurses
             curpos -= 1 if curpos > 0
             len -= 1 if len > @prompt_length
             win.move r, c+len # since getchar is not going back on del and bs wmove to move FFIWINDOW
+            win.wrefresh
             next
           when KEY_RIGHT
             if curpos < str.length
               curpos += 1 #if curpos < str.length
               len += 1 
               win.move r, c+len # since getchar is not going back on del and bs
+              win.wrefresh
             end
             next
           when ?\C-a.getbyte(0)
@@ -1323,6 +1393,7 @@ module RubyCurses
             print_str(@question.echo * str.length, :y => @prompt_length+0)
           end
           win.move r, c+len # more for arrow keys, curpos may not be end
+          win.wrefresh # 2011-10-10 
           prevchar = ch
         end
               $log.debug "XXXW bottomline: after while loop"
@@ -1373,6 +1444,9 @@ module RubyCurses
       ret, str = rbgetstr
       if ret == 0
         return @question.change_case(@question.remove_whitespace(str))                
+      end
+      if ret == -1
+        raise Interrupt
       end
       return ""
     end
@@ -1441,22 +1515,28 @@ module RubyCurses
     end
     # Allows a selection in which options are shown over prompt. As user types
     # options are narrowed down.
+    # NOTE: For a directory we are not showing a slash, so currently you
+    # have to enter the slash manually when searching.
     # FIXME we can put remarks in fron as in memacs such as [No matches] or [single completion]
     # @param [Array]  a list of items to select from
     # NOTE: if you use this please copy it to your app. This does not conform to highline's
     # choose, and I'd like to somehow get it to be identical.
     #
     def choose list1, config={}
+      dirlist = true
       case list1
       when NilClass
-        list1 = Dir.glob("*")
+        #list1 = Dir.glob("*")
+        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
       when String
-        list1 = Dir.glob(list1)
+        list1 = Dir.glob(list1).collect { |f| File.directory?(f) ? f+"/" : f  }
       when Array
+        dirlist = false
         # let it be, that's how it should come
       else
         # Dir listing as default
-        list1 = Dir.glob("*")
+        #list1 = Dir.glob("*")
+        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
       end
       require 'rbcurse/rcommandwindow'
       prompt = config[:prompt] || "Choose: "
@@ -1466,12 +1546,24 @@ module RubyCurses
         w = rc.window
         rc.display_menu list1
         # earlier wmove bombed, now move is (window.rb 121)
-        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  l = list1.select{|e| e.index(str)==0}  ; rc.display_menu l; l} }
+        str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  
+          l = list1.select{|e| e.index(str)==0}  ; 
+          if (l.size == 0 || str[-1]=='/') && dirlist
+            # used to help complete directories so we can drill up and down
+            #l = Dir.glob(str+"*")
+            l = Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  }
+          end
+          rc.display_menu l; 
+          l
+        } }
         # need some validation here that its in the list TODO
       ensure
         rc.destroy
         rc = nil
+        hide_bottomline # since we called ask() we need to close bottomline
       end
+      hide_bottomline # since we called ask() we need to close bottomline
+      return str
     end
     def display_text_interactive text, config={}
       require 'rbcurse/rcommandwindow'
@@ -1630,10 +1722,6 @@ if __FILE__ == $PROGRAM_NAME
   App.new do 
     header = app_header "rbcurse 1.2.0", :text_center => "**** Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
     message "Press F1 to exit from here"
-  ########  $tt.window = @window; $tt.message_row = @message_row
-    #@tt = Bottomline.new @window, @message_row
-    #extend Forwardable
-    #def_delegators :@tt, :ask, :say, :agree, :choose
 
     #stack :margin_top => 2, :margin => 5, :width => 30 do
     #end # stack

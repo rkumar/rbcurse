@@ -4,7 +4,9 @@ require 'rbcurse/app'
   App.new do 
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
-    header = app_header "rbcurse 1.2.0", :text_center => "Menubar Demo", :text_right =>"enabled"
+    header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Menubar Demo", :text_right =>"enabled"
+    form = @form
+    mylabel = "a field"
 
     # TODO accelerators and 
     # getting a handle for later use
@@ -12,13 +14,36 @@ require 'rbcurse/app'
       #@toggle_key=KEY_F2
       menu "File" do
         item "Open", "O" do
-          command do
+          accelerator "Ctrl-O"
+          command do 
             alert "HA!! you wanted to open a file?"
+          end
+        end
+        menu "QuickOpen" do
+          item_list do
+            Dir.glob("*.rb")
+          end
+          command do |menuitem, text|
+            #alert " We gots #{text} "
+            fld = form.by_name[mylabel]
+            fld.text =text
+          end
+        end
+        menu "Close" do
+          item_list do
+            Dir.glob("t*.rb")
           end
         end
         item "New", "N" 
         separator
-        item "Close", "C" 
+        item "Exit", "x"  do 
+          command do
+            throw(:close)
+          end
+        end
+        item "Cancel Menu" do
+          accelerator "Ctrl-g"
+        end
         
       end # menu
       menu "Window" do
@@ -31,13 +56,20 @@ require 'rbcurse/app'
               alert "You clickses on Less"
             end
           end
+          menu "Size" do
+            item "Zoom", "Z"
+            item "Maximize", "X"
+            item "Minimize", "N"
+          end
         end
       end
     end # menubar
     mb.toggle_key = FFI::NCurses::KEY_F2
+    mb.color = :white
+    mb.bgcolor = :blue
     @form.set_menu_bar mb
     stack :margin_top => 10, :margin => 5 do
-      field "a field", :attr => 'reverse', :block_event => :CHANGE do |e|
+      field mylabel, :attr => 'reverse', :block_event => :CHANGE do |e|
         message e.to_s
 
         case e.text
@@ -53,7 +85,7 @@ require 'rbcurse/app'
       end
       @adock = nil
     keyarray = [
-      ["F1" , "Exit"], nil,
+      ["F10" , "Exit"], nil,
       ["F2", "Menu"], nil,
       ["M-e", "Disable"], ["M-x", "XXXX"],
       ["C-?", "Help"], nil

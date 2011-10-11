@@ -156,6 +156,11 @@ module RubyCurses
       bind_key(?b, :previous_column)
       list_bindings
     end
+
+    #
+    # set column names
+    # @param [Array] column names or headings
+    #
     def columns=(array)
       @_header_adjustment = 1
       @columns = array
@@ -168,7 +173,7 @@ module RubyCurses
     end
     alias :headings= :columns=
     ## 
-    # send in a list
+    # send in a list of data
     # 
     # @param [Array / Tabular] data to be displayed
     def set_content list
@@ -325,17 +330,11 @@ module RubyCurses
     end
 
     def repaint # Tabularwidget :nodoc:
-      if @screen_buffer.nil?
-        safe_create_buffer
-        @screen_buffer.name = "Pad::TABW_PAD_#{@name}" unless @screen_buffer.nil?
-        $log.debug " tabularwid creates pad #{@screen_buffer} #{@name}"
-      end
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
       #  raise "TV 175 graphic nil " unless @graphic
       print_foot if @print_footer && @repaint_footer_required
-      buffer_to_window
     end
     def getvalue
       @list
@@ -367,10 +366,12 @@ module RubyCurses
       when KEY_UP, ?k.getbyte(0)
         #select_prev_row
         ret = up
+        get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW
         check_curpos
         
       when KEY_DOWN, ?j.getbyte(0)
         ret = down
+        get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
         check_curpos
       when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
@@ -390,9 +391,9 @@ module RubyCurses
         blen = @buffer.rstrip.length
         set_form_col blen
         # search related 
-      when @KEY_ASK_FIND
+      when @KEY_ASK_FIND  # FIXME
         ask_search
-      when @KEY_FIND_MORE
+      when @KEY_FIND_MORE  # FIXME
         find_more
       when 10, 13, KEY_ENTER
         #fire_handler :PRESS, self
@@ -428,8 +429,9 @@ module RubyCurses
         begin
           ret = process_key ch, self
         rescue => err
-          $error_message = err
-          @form.window.print_error_message
+          $error_message.value = err.to_s
+#          @form.window.print_error_message # changed 2011 dts  
+          alert err.to_s
           $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
           # XXX caller app has no idea error occurred so can't do anything !
@@ -570,16 +572,16 @@ module RubyCurses
       @graphic = my_win unless @graphic
       @win_left = my_win.left
       @win_top = my_win.top
-      #_guess_col_widths
       tm = get_content
+      rc = tm.length
+      _estimate_column_widths if rc > 0  # will set preferred_width 2011-10-4 
       @left_margin ||= @row_selected_symbol.length
       @width ||= @preferred_width
+
       @height ||= [tm.length+3, 10].min
       _prepare_format
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
-      rc = tm.length
-      _estimate_column_widths if rc > 0
       _maxlen = @maxlen || @width-@internal_width
       $log.debug " #{@name} Tabularwidget repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tr = @toprow
@@ -621,7 +623,6 @@ module RubyCurses
       end
       @repaint_required        = false
       @repaint_footer_required = true
-      @buffer_modified         = true # required by form to call buffer_to_screen
       @repaint_all             = false
 
     end
@@ -630,12 +631,33 @@ module RubyCurses
     def print_data_row r, c, len, value, color, attr
       @graphic.printstring  r, c, "%-*s" % [len,value], color, attr
     end
+    #
+    # Truncates data to fit into display area.
+    #  Copied from listscrollable since we need to take care of left_margin
+    #  2011-10-6 This may need to be reflected in listbox and others FIXME
+    def truncate content  #:nodoc:
+      #maxlen = @maxlen || @width-2
+      _maxlen = @maxlen || @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
+      _maxlen -= @left_margin
+      if !content.nil? 
+        if content.length > _maxlen # only show maxlen
+          @longest_line = content.length if content.length > @longest_line
+          #content = content[@pcol..@pcol+_maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
+        else
+          # can this be avoided if pcol is 0 XXX
+          content.replace content[@pcol..-1] if @pcol > 0
+        end
+      end
+      content
+    end
 
     # print header row
     #  allows user to override
     def print_header_row r, c, len, value, color, attr
       #acolor = $promptcolor
-      @graphic.printstring  r, c, "%-*s" % [len ,value], color, attr
+      @graphic.printstring  r, c+@left_margin, "%-*s" % [len-@left_margin ,value], color, attr
     end
     def separator
       #return @separ if @separ
@@ -843,6 +865,8 @@ module RubyCurses
     # FIXME we can create this once and reuse
     #++
     def fire_action_event
+      return unless @list
+      return unless @table_row_sorter
       require 'rbcurse/ractionevent'
       # the header event must only be used if columns passed
       if header_row?
@@ -1023,6 +1047,25 @@ module RubyCurses
         @current_index == @max_index
       end
     end
+    # for some compatibility with Table
+    def set_data data, colnames_array
+      set_content data
+      columns = colnames_array
+    end
+    def get_column_name index
+      @columns[index]
+    end
+    alias :column_name :get_column_name
+    alias :column :get_column
+    def method_missing(name, *args)
+      name = name.to_s
+      case name 
+      when 'cell_editing_allowed', 'editing_policy'
+        # silently ignore to keep compatible with Table
+      else
+        raise NoMethodError, "Undefined method #{name} for TabularWidget"
+      end
+    end
 
   end # class tabluarw
 
@@ -1044,7 +1087,7 @@ App.new do
     b << ["russia","europe","a hot country" ] 
     #b.column_width 2, 30
   end
-  s = TabularWidget.new @form , :row => 12, :col => 32 do |b|
+  s = TabularWidget.new @form , :row => 12, :col => 32  do |b|
     b.columns = %w{ place continent text }
     b << ["india","asia","a warm country" ] 
     b << ["japan","asia","a cool country" ] 

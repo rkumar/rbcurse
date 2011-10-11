@@ -164,10 +164,6 @@ module RubyCurses
         @components << comp
         #comp.height = nil # nuking listboxes height since it gets calculated
         comp.parent_component = self 
-        comp.should_create_buffer = @_child_buffering 
-        # next 2 not sure, is it for first only
-        comp.ext_row_offset += @ext_row_offset + @row #- @subform1.window.top #0# screen_row
-        comp.ext_col_offset += @ext_col_offset + @col #-@subform1.window.left # 0# screen_col
         # dang ! this can go out of bounds ! XXX tab goes out
         index = @components.size - 1 # expected as base 0 in compute
         #index = @max_visible - 1 if index > @max_visible - 1
@@ -183,8 +179,7 @@ module RubyCurses
         else
           compute_component comp, index
         end
-        comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
-        comp.set_buffering(:screen_top => @row, :screen_left => @col)
+        comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form ) # removed on 2011-09-29 
         comp.min_height ||= 5
         comp.min_width ||= 5
         return self
@@ -339,12 +334,10 @@ module RubyCurses
             if @orientation == :VERTICAL_SPLIT
               @components.each do |e| 
                 e.height += delta
-                e.set_buffering(:bottom => e.height-1)
               end
             else
               e = @components.first
               e.height += delta
-              e.set_buffering(:bottom => e.height-1)
             end
           end
       end
@@ -370,7 +363,6 @@ module RubyCurses
             if @orientation == :HORIZONTAL_SPLIT
               @components.each do |e| 
                 e.width += delta
-                e.set_buffering(:right => e.width-1)
               end
             else
               # any change in width must effect col of others too ! 2010-08-31 21:57 AUG2010
@@ -402,9 +394,8 @@ module RubyCurses
           next if index < @_first_column_print
           break if index > @_last_column_print
           compute_component comp, index 
-        #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
+          comp.set_buffering(:target_window => @target_window || @form.window, :form => @form ) # 2011-09-29 
           #comp.set_buffering(:target_window => @target_window || @form.window, :bottom => comp.height-1, :right => comp.width-1, :form => @form )
-          comp.set_buffering(:screen_top => comp.row, :screen_left => comp.col)
           comp.repaint
         end
         #@balance = 0

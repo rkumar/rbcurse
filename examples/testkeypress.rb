@@ -36,8 +36,10 @@ if $0 == __FILE__
           auto_scroll true
           title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
         end
-      @help = "q to quit. Use any key of key combination to see what's caught.: #{$0} Check logger too"
-      RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
+      help = "q to quit. Check keys. F1..10, C-a..z, Alt a-zA-Z0-9, C-left,rt, Sh-F5..10 .: #{$0}"
+      help1 = "Press in quick succession: 1) M-[, w     and (2)  M-[, M-w.        (3)  M-Sh-O, w."  
+      RubyCurses::Label.new @form, {'text' => help, "row" => 21, "col" => 2, "color" => "yellow"}
+      RubyCurses::Label.new @form, {'text' => help1, "row" => 22, "col" => 2, "color" => "green"}
 
       @form.repaint
       @window.wrefresh

@@ -1,10 +1,15 @@
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-# this program tests out various widgets.
-require 'rubygems'
-#require 'ncurses' # FFI
+# This program tests out various widgets.
+# This is the old style of creating an application in which the user
+# has to start and stop ncurses. No shortcuts for widget constructors are available.
+#
+# The newer easier way is to use 'App' which manages the environment, and provides shortcuts
+# for all widgets. See app*.rb, alpmenu.rb, dbdemo.rb etc for samples.
+#
+# In case, you are running this in a directory that does not allow writing, set LOGDIR to 
+# your home directory, or temp directory so a log file can be generated.
+#
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rwidget'
 require 'rbcurse/rtextarea'
 require 'rbcurse/rtextview'
 require 'rbcurse/rmenu'
@@ -13,18 +18,48 @@ require 'rbcurse/listcellrenderer'
 require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
-require './qdfilechooser'
 require 'rbcurse/rlistbox'
 require 'rbcurse/rmessagebox'
+require 'rbcurse/rtree'
+require './appmethods.rb'
+require 'rbcurse/extras/scrollbar'
+def help_text
+      <<-eos
+               TEST2  HELP 
+
+      This is some help text for test2.
+
+      Alt-C/F10 -   Exit application 
+      Alt-!    -   Drop to shell
+      C-x c    -   Drop to shell
+      C-x l    -   list of files
+      C-x p    -   process list
+      C-x d    -   disk usage list
+      C-x s  -   Git status
+      C-x d  -   Git diff
+      C-x w  -   Git whatchanged
+      Alt-x    -   Command mode (<tab> to see commands and select)
+
+      Some commands for using bottom of screen as vim and emacs do.
+        To add
+
+      -----------------------------------------------------------------------
+      eos
+end
 if $0 == __FILE__
+
   include RubyCurses
+  include RubyCurses::Utils
 
   begin
   # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    #$log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
-    $log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
+    path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    $log = Logger.new(path)
     $log.level = Logger::DEBUG
+
+    @lookfeel = :classic # :dialog # or :classic
 
     @window = VER::Window.root_window
     # Initialize few color pairs 
@@ -35,12 +70,13 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors test2.rb --------- #{@window} "
       @form = Form.new @window
-      @form.window.printstring 0, 30, "Demo of some Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
+      title = (" "*30) + "Demo of some Ruby Curses Widgets - rbcurse " + Rbcurse::VERSION
+      Label.new @form, {'text' => title, "row" => 0, "col" => 0, :color => 'green', :bgcolor => 'black'}
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
         field = Field.new @form do
-          name   w 
+          name w 
           row  r 
           col  fc 
           display_length  30
@@ -52,13 +88,15 @@ if $0 == __FILE__
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => 27, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, 
+        "name"=>"message_label","row" => Ncurses.LINES-1, "col" => 1, "display_length" => 60,  
+        "height" => 2, 'color' => 'cyan'}
 
       $results = Variable.new
       $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
         r += 1
-        mylist = []
+        mylist = ["Release gem","Bump version","Fix bugs","Make enhancements", "Brag on rubyforum"]
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
         $listdata = Variable.new mylist
         listb = Listbox.new @form do
@@ -73,75 +111,66 @@ if $0 == __FILE__
           show_selector true
           row_selected_symbol "[X] "
           row_unselected_symbol "[ ] "
-          title "C-x to select"
+          title "C-Space to select"
           title_attrib 'reverse'
           cell_editing_allowed true
         end
+        Scrollbar.new @form, :parent => listb # 2011-10-1  added
         #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi clojure"
+        col2 = 42
         texta = TextArea.new @form do
           name   "mytext" 
           row  1 
-          col  52 
-          width 40
+          col  col2
+          width 50
           height 14
           title "Editable box"
-          title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
+          #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
           print_footer true
           bind(:CHANGE){|e| $message.value = e.to_s+" CP:"+e.source.curpos.to_s }
         end
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
         texta << " "
-        texta << " F1 to exit. or click cancel button"
+        texta << " F10 to exit. or click cancel button"
         texta << " Or alt-c"
 
-        alist = [true, false, true, false, true, false, true, false, true]
-        cblist = Variable.new alist
-        listcb = Listbox.new @form do
-          name   "cblist" 
-          row  1 
-          col  96 
-          width 8
-          height 10
-#         list mylist
-          list_variable cblist
-          #selection_mode :SINGLE
-          title "CList"
-          title_attrib 'reverse'
-          cell_renderer RubyCurses::CheckBoxCellRenderer.new nil, {"parent" => self, "display_length"=> @width-2}
-          cell_editing_allowed true
-          cell_editor RubyCurses::CellEditor.new(RubyCurses::CheckBox.new nil, {"focusable"=>false, "visible"=>false})
+        col3 = 92
+        treemodel = nil
+        atree = Tree.new @form, :title => "Tree", :row =>1, :col=>col3, :height => 14, :width => 15 do
+        treemodel = root "ruby language" do
+          branch "mri" do
+            leaf "1.9.1"
+            leaf "1.9.2"
+            leaf "1.9.3"
+          end
+          branch "jruby" do
+            leaf "1.5"
+            leaf "a really long leaf"
+
+          end
+          branch "ree" do
+            leaf "1.8"
+            leaf "1.9"
+            leaf "2.0"
+          end
         end
-        colist = ["Todo", "WIP", "Fin", "Cancel", "Postp"]
-        colistdata = ["Todo", "Todo", "WIP","WIP", "Postp", "Cancel","Cancel", "Postp"]
-        colistv = Variable.new colistdata
-        listcb = Listbox.new @form do
-          name   "colist" 
-          row  16
-          col  96 
-          width 12
-          height 10
-#         list mylist
-          list_variable colistv
-          #selection_mode :SINGLE
-          title "Status"
-          title_attrib 'bold'
-          cell_editing_allowed true
-          cell_renderer RubyCurses::ComboBoxCellRenderer.new nil, {"parent" => self, "display_length"=> width()-2}
-          cell_editor RubyCurses::CellEditor.new(RubyCurses::ComboBox.new nil, {"focusable"=>false, "visible"=>false, "list"=>colist, "display_length"=>width()-2})
-        end
+      end
+      root = treemodel.root
+      atree.set_expanded_state root, true
         #listcb.cell_editor.component.form = @form
 
+      w1 = Ncurses.COLS-col2-1
         @textview = TextView.new @form do
           name   "myView" 
-          row  16 
-          col  52 
-          width 40
-          height 10
+          row  15 
+          col  col2 
+          width w1
+          height 11
           title "README.mark"
-          title_attrib 'bold'
+          #title_attrib 'bold'
           print_footer true
           footer_attrib 'bold'
         end
@@ -150,7 +179,23 @@ if $0 == __FILE__
         #@textview.top_row 21
 
         # just for demo, lets scroll the text view as we scroll this.
-        listb.bind(:ENTER_ROW, @textview) { |alist, tview| tview.top_row alist.current_index }
+        listb.bind(:ENTER_ROW, @textview) { |alist, tview| tview.top_row alist.current_index
+         pb =  @form.by_name["pbar"]
+         pb.visible true
+         len = alist.current_index
+         pb.fraction(len/100.0)
+         i = ((len/100.0)*100).to_i
+         i = 100 if i > 100
+         pb.text = "completed:#{i}"
+        }
+        listb.bind(:LEAVE) { 
+          pb =  @form.by_name["pbar"]
+          pb.visible false
+          r = pb.row
+          c = pb.col
+          @window.wmove(r,c); @window.wclrtoeol
+          #@window.wrefresh
+        }
         
         # just for demo, lets scroll the text view to the line you enter
         @form.by_name["line"].bind(:LEAVE, @textview) { |fld, tv| raise(FieldValidationException, "#{fld.getvalue.to_i} Outside range 1,200") if fld.getvalue.to_i >200; tv.top_row(fld.getvalue.to_i) }
@@ -170,9 +215,9 @@ if $0 == __FILE__
         list_config 'color' => 'yellow', 'bgcolor'=>'red', 'height' => 4
       end
 
-      list = ListDataModel.new( %w[spotty tiger panther jaguar leopard ocelot lion])
-      list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}"  }
-      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"  }
+      list = ListDataModel.new( %w[white yellow cyan magenta red blue black])
+      list.bind(:LIST_DATA_EVENT) { |lde| $message.value = lde.to_s; $log.debug " STA: #{$message.value} #{lde}";   }
+      list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"; @form.widgets.each { |e| next unless e.is_a? Widget; e.color = obj.selected_item }; @mb.color = obj.selected_item }
 
       row += 1
       combo1 = ComboBox.new @form do
@@ -224,39 +269,45 @@ if $0 == __FILE__
       # a special case required since another form (combo popup also modifies)
       $message.update_command() { message_label.repaint }
 
-      @form.by_name["line"].display_length = 3
-      @form.by_name["line"].maxlen = 3
-      @form.by_name["line"].set_buffer  "24"
-      @form.by_name["name"].set_buffer  "Not focusable"
-      @form.by_name["name"].set_focusable(false)
-      @form.by_name["line"].chars_allowed = /\d/
-      #@form.by_name["regex"].type(:ALPHA)
-      @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/)
-      @form.by_name["regex"].set_buffer  "SYNOP"
-      @form.by_name["regex"].display_length = 10
-      @form.by_name["regex"].maxlen = 20
-      #@form.by_name["regex"].bgcolor 'cyan'
-      @form.by_name["password"].set_buffer ""
-      @form.by_name["password"].show '*'
-      @form.by_name["password"].color 'red'
-      #@form.by_name["password"].bgcolor 'blue'
-      @form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
-      @form.by_name["password"].null_allowed true
+      f = @form.by_name["line"]
+      f.display_length(3).set_buffer(24).valid_range(1..200).
+        maxlen(3).
+        type(:integer)
 
-      # a form level event, whenever any widget is focussed
+      @form.by_name["name"].set_buffer( "Not focusable").
+        set_focusable(false)
+      
+      @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/).
+        set_buffer( "SYNOP").
+        display_length(10).
+        maxlen = 20
+
+      @form.by_name["password"].set_buffer("").
+        show('*').
+        color('red').
+        values(%w[scotty tiger secret pass qwerty]).
+        null_allowed true
+
+      # a form level event, whenever any widget is focussed, make the label red
       @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = 'red' if f.respond_to? :label}
       @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if f.respond_to? :label}
 
       row += 1
-      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, 
+        "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
-      $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
+      $radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; 
+        combo1.bgcolor tv.value}
+      $radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+        e.bgcolor tv.value }; @mb.bgcolor = tv.value }
 
       # whenever updated set colorlabel and messagelabel to bold
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| 
+        attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
 
       align.bind(:ENTER_ROW) {|fld| message_label.justify fld.getvalue}
+
       align.bind(:ENTER_ROW) {|fld| 
         if fld.getvalue == 'right'
           checkbutton1.align_right true
@@ -270,14 +321,17 @@ if $0 == __FILE__
       # whenever updated set colorlabel and messagelabel to reverse
       #@cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
       # changing nil to normal since PROP CHAN handler will not fire if nil being set.
-      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
+      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| 
+        attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
+
       row += 1
+      dlen = 10
       radio1 = RadioButton.new @form do
         variable $radio
         text "red"
         value "red"
         color "red"
-        display_length 18  # helps when right aligning
+        display_length dlen  # helps when right aligning
         row row
         col col
       end
@@ -286,17 +340,18 @@ if $0 == __FILE__
         text "c&yan"
         value "cyan"
         color "cyan"
-        display_length 18  # helps when right aligning
+        display_length dlen  # helps when right aligning
         row row
         col col+24
       end
+
       row += 1
       radio2 = RadioButton.new @form do
         variable $radio
         text  "&green"
         value  "green"
         color "green"
-        display_length 18  # helps when right aligning
+        display_length dlen  # helps when right aligning
         row row
         col col
       end
@@ -305,7 +360,7 @@ if $0 == __FILE__
         text "magenta"
         value "magenta"
         color "magenta"
-        display_length 18  # helps when right aligning
+        display_length dlen  # helps when right aligning
         row row
         col col+24
       end
@@ -324,10 +379,29 @@ if $0 == __FILE__
         end
       }
 
+      # instead of using frozen, I will use a PropertyVeto
+      # to disallow changes to color itself
+      veto = lambda { |e, name|
+        if e.property_name == 'color'
+          if e.newvalue != name
+            raise PropertyVetoException.new("Cannot change this at all!", e)
+          end
+        elsif e.property_name == 'bgcolor'
+            raise PropertyVetoException.new("Cannot change this!", e)
+        end
+      }
+      [radio1, radio2, radio11, radio22].each { |r| 
+        r.bind(:PROPERTY_CHANGE) do |e| veto.call(e, r.text) end
+      }
+
+      # 
+      # define the menu
+      #
       @mb = RubyCurses::MenuBar.new
       filemenu = RubyCurses::Menu.new "File"
       filemenu.add(item = RubyCurses::MenuItem.new("Open",'O'))
       item.command(@form) {|it, form|  $message.value = "Open called on menu bar"; 
+        require './qdfilechooser'
         fchooser = QDFileChooser.new
         option = fchooser.show_open_dialog
         $message.value = "File Selection #{option}, #{fchooser.get_selected_file}"
@@ -364,14 +438,12 @@ if $0 == __FILE__
         str << " bugs as they crop up."
         testa.goto_start
         #testa.cursor_bol
-        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  
         str.each_char {|c| testa.putch(c)}
         testa.repaint
-        testa.handle_key KEY_DOWN # down
-        testa.handle_key KEY_DOWN # down
-        testa.handle_key KEY_DOWN # down
-        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
-        #testa.cursor_bol
+        3.times { testa.handle_key KEY_DOWN }
+        testa.handle_key ?\C-a.getbyte(0)  
+        
         str.each_char {|c| testa.putch(c)}
         $message.value = "Wrapping textarea"
         testa.repaint
@@ -380,7 +452,7 @@ if $0 == __FILE__
       filemenu.add(item = RubyCurses::MenuItem.new("Wrap",'W'))
       item.command(@form, texta) do |it, form, testa|  
         #testa.goto_start
-        testa.handle_key ?\C-a.getbyte(0)  # bol XXX should it be getbytes(0) now
+        testa.handle_key ?\C-a.getbyte(0)  
         testa.wrap_para
         testa.repaint
         throw(:menubarclose)
@@ -397,18 +469,41 @@ if $0 == __FILE__
      #item.text="Labelcb"
       # in next line, an explicit repaint is required since label is on another form.
       item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : 'normal'; label.attr(att); label.repaint}
-    
-      row += 2
+      @status_line = status_line :row => Ncurses.LINES-2
+      @status_line.command {
+        "%-20s | F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [Time.now, $message.value]
+      }
+      row += 1 #2
       ok_button = Button.new @form do
         text "OK"
         name "OK"
         row row
         col col
+        #attr 'reverse'
+        #highlight_background "white"
+        #highlight_foreground "blue"
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        alert("Hope you enjoyed this demo", {'title' => "Hello", :bgcolor => :blue, :color => :white})
+        #alert("Hope you enjoyed this demo ", {'title' => "Hello", :bgcolor => :blue, :color => :white})
+        sw = case @lookfeel
+             when :dialog
+               progress_dialog :color_pair => $reversecolor, :row_offset => 4, :col_offset => 5
+             else
+               status_window # at footer last 2 rows
+             end
+
+        sw.print  "I am adding some stuff to list", "And testing out StatusWindow"
+        sleep 1.0
         listb.list.insert 0, "hello ruby", "so long python", "farewell java", "RIP .Net"
+        sw.printstring 1,1, "And some more now ..."
+        sleep 0.5
+        listb.list.insert 0, "get milk", "make beds", "clean shark pond","sell summer house"
+        sleep 0.5
+        sw.print "This was a test of Window", "we are almost done now ..."
+        clock = %w[ | / - \ ]
+        listb.list.each_with_index { |e, index| sw.print e, clock[index%4]; sleep 0.1   }
+        sw.linger #@window
       }
 
       # using ampersand to set mnemonic
@@ -417,15 +512,31 @@ if $0 == __FILE__
         text "&Cancel"
         row row
         col col + 10
+        #attr 'reverse'
+        #highlight_background "white"
+        #highlight_foreground "blue"
         #surround_chars ['{ ',' }']  ## change the surround chars
       end
       cancel_button.command { |aeve| 
-        if confirm("Do your really want to quit?")== :YES
+        if @lookfeel == :dialog
+          ret = confirm("Do your really want to quit?") 
+        else
+          ret = confirm_window("Do your really want to quit?") 
+        end
+        if ret == :YES
           throw(:close); 
         else
           $message.value = "Quit aborted"
         end
       }
+      #col += 22
+      col += 15
+      require 'rbcurse/rprogress'
+      pbar = Progress.new @form, {:width => 20, :row => Ncurses.LINES-1, :col => Ncurses.COLS-20 , 
+        :bgcolor => 'white', :color => 'red', :name => "pbar"}
+      #len = 1
+      #pbar.fraction(len/100.0)
+      pbar.visible false
 
 
       filemenu.add(item)
@@ -443,7 +554,7 @@ if $0 == __FILE__
       @mb.add(editmenu)
       @mb.add(menu=RubyCurses::Menu.new("Others"))
       #item=RubyCurses::MenuItem.new "Save","S"
-      item = RubyCurses::MenuItem.new "Options"
+      item = RubyCurses::MenuItem.new "Options ..."
       item.command() do |it|  
         require './testtabp'
         tp = TestTabbedPane.new
@@ -452,49 +563,96 @@ if $0 == __FILE__
         $log.debug " returning with #{$config_hash}: #{$config_hash.inspect}"
       end
       menu.add(item)
-      item = RubyCurses::MenuItem.new "Config"
+      item = RubyCurses::MenuItem.new "Shell Command..."
+      item.command { shell_output }
       menu.add(item)
-      item = RubyCurses::MenuItem.new "Tables"
-      menu.add(item)
-      savemenu = RubyCurses::Menu.new "EditM"
-      item = RubyCurses::MenuItem.new "CutM"
+      savemenu = RubyCurses::Menu.new "Shell"
+      item = RubyCurses::MenuItem.new "Processes"
+      item.command { run_command "ps -l" }
       savemenu.add(item)
-      item = RubyCurses::MenuItem.new "DeleteM"
+      item = RubyCurses::MenuItem.new "Files"
+      item.command { run_command "ls -l" }
       savemenu.add(item)
-      item = RubyCurses::MenuItem.new "PasteM"
+      item = RubyCurses::MenuItem.new "Disk"
+      item.command { run_command "df -h" }
       savemenu.add(item)
       menu.add(savemenu)
 
-      savemenu2 = RubyCurses::Menu.new "EditM2"
-      item = RubyCurses::MenuItem.new "CutM2"
+      savemenu2 = RubyCurses::Menu.new "Git"
+      item = RubyCurses::MenuItem.new "Status"
+      item.command { run_command "git status" }
       savemenu2.add(item)
-      item = RubyCurses::MenuItem.new "DeleteM2"
+      item = RubyCurses::MenuItem.new "Diff"
+      item.command { run_command "git diff" }
       savemenu2.add(item)
-      item = RubyCurses::MenuItem.new "PasteM2"
+      item = RubyCurses::MenuItem.new "Name"
+      item.command { run_command "git diff --name-status" }
       savemenu2.add(item)
       savemenu.add(savemenu2)
-      # 2008-12-20 13:06 no longer hardcoding toggle key of menu_bar.
+      
       @mb.toggle_key = FFI::NCurses::KEY_F2
       @form.set_menu_bar  @mb
-      #@cell = CellRenderer.new "Hello", {"col" => 1, "row"=>29, "justify"=>:right, "display_length" => 30}
+     
       # END
+      @form.bind_key(FFI::NCurses::KEY_F3) { 
+        require 'rbcurse/extras/viewer'
+        RubyCurses::Viewer.view(path || "rbc13.log", :close_key => KEY_RETURN, :title => "<Enter> to close")
+      }
+      @form.bind_key(FFI::NCurses::KEY_F4) {  shell_output }
+      @form.bind_key(FFI::NCurses::KEY_F5) {  suspend }
+      @form.bind_key([?\C-x,?c]) {  suspend }
+      @form.bind_key(?\M-!) {  suspend }
+      @form.bind_key([?\C-x,?l]) {  run_command "ls -al" }
+      @form.bind_key([?\C-x,?p]) {  run_command "ps -l" }
+      @form.bind_key([?\C-x,?d]) {  run_command "df -h" }
+      @form.bind_key([?\C-x,?d]) {  run_command "git diff --name-status" }
+      @form.bind_key([?\C-x, ?s]) {  run_command "git status" }
+      @form.bind_key([?\C-x,?w]) {  run_command "git whatchanged" }
+      @form.bind_key(FFI::NCurses::KEY_F1) {  display_app_help help_text() }
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != KEY_F1 )
-        @form.handle_key(ch)
-        # print_error_message was taking away cursor, not clearing properly
-        if $error_message.get_value != ""
-          alert($error_message, {:bgcolor => :red, :color => :yellow}) if $error_message.get_value != ""
+
+      # the main loop
+
+      while((ch = @window.getchar()) != FFI::NCurses::KEY_F10 )
+        begin
+          @form.handle_key(ch)
+
+        rescue FieldValidationException => fve 
+          alert fve.to_s
+          
+          f = @form.get_current_field
+          # lets restore the value
+          if f.respond_to? :restore_original_value
+            f.restore_original_value
+            @form.repaint
+          end
           $error_message.value = ""
-          @form.repaint
+        rescue => err
+          $log.debug( err) if err
+          $log.debug(err.backtrace.join("\n")) if err
+          alert "Got an exception in test2: #{err} "
+          $error_message.value = ""
         end
+
+        # this should be avoided, we should not muffle the exception and set a variable
+        # However, we have been doing that
+        if $error_message.get_value != ""
+          if @lookfeel == :dialog
+            alert($error_message, {:bgcolor => :red, 'color' => 'yellow'}) if $error_message.get_value != ""
+          else
+            print_error_message $error_message, {:bgcolor => :red, :color => :yellow}
+          end
+          $error_message.value = ""
+        end
+
         @window.wrefresh
-      end
-    end
+      end # while loop
+    end # catch
   rescue => ex
   ensure
-    $log.debug " -==== EXCEPTION ===== -"
+    $log.debug " -==== EXCEPTION =====-"
     $log.debug( ex) if ex
     $log.debug(ex.backtrace.join("\n")) if ex
     @window.destroy if !@window.nil?

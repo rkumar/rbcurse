@@ -175,9 +175,7 @@ module RubyCurses
         $log.debug " file edit got cb : #{@current_buffer} "
         set_current_buffer
       rescue => err
-#        $error_message = "Error: #{err} " # changed 2010 dts  
-        $error_message.value = "Error: #{err} "
-        #@form.window.print_error_message
+        alert err.to_s
         Ncurses.beep
         return -1
       end
@@ -193,8 +191,9 @@ module RubyCurses
       @title = @current_buffer.title
       @list = @current_buffer.list
     end
-    def perror errmess=$error_message
-      @form.window.print_error_message errmess
+    def perror errmess
+      #@form.window.print_error_message errmess
+      alert errmess
     end
   end # class multitextview
   ##

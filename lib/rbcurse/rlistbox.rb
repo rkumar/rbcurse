@@ -58,9 +58,6 @@ module RubyCurses
     def each(&blk)
       @list.each(&blk)
     end
-    #def each 
-    #  @list.each { |item| yield item }
-    #end
     # not sure how to do this XXX  removed on 2009-01-14 12:28 
     #def <=>(other)
     #  @list <=> other
@@ -309,7 +306,13 @@ module RubyCurses
         when KEY_ENTER, 10, 13
           # if you press ENTER without selecting, it won't come here
           # it will fire button OK's fire, if that's the default button
-          fire_handler :PRESS, @listbox.focussed_index
+
+          # returns an array of indices if multiple selection
+          if @listbox.selection_mode == :multiple
+            fire_handler :PRESS, @listbox
+          else
+            fire_handler :PRESS, @listbox.focussed_index
+          end
           # since Listbox is handling enter, COMBO_SELECT will not be fired
         # $log.debug "popup ENTER :  #{field.name}" if !field.nil?
           @stop = true
@@ -462,8 +465,6 @@ module RubyCurses
       @win_left = 0
       @win_top = 0
 
-#x      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
-#x      print_borders unless @win.nil?   # in messagebox we don;t have window as yet!
       # next 2 lines carry a redundancy
       select_default_values   
       # when the combo box has a certain row in focus, the popup should have the same row in focus
@@ -471,6 +472,7 @@ module RubyCurses
       install_keys
       init_vars
       install_list_keys
+      bind(:PROPERTY_CHANGE){|e| @cell_renderer = nil } # will be recreated if anything changes 2011-09-28 V1.3.1  
 
       if @list && !@list.selected_index.nil? 
         set_focus_on @list.selected_index # the new version
@@ -627,7 +629,7 @@ module RubyCurses
       end
     end
     # added 2010-09-15 00:11 to make life easier
-    def_delegators :@list, :insert, :remove_all, :delete_at, :include?
+    def_delegators :@list, :insert, :remove_all, :delete_at, :include?, :each, :values
     # get element at
     # @param [Fixnum] index for element
     # @return [Object] element
@@ -661,7 +663,8 @@ module RubyCurses
       startcol = @col 
       startrow = @row 
       @color_pair = get_color($datacolor)
-      bordercolor = @border_color || $datacolor
+#      bordercolor = @border_color || $datacolor # changed 2011 dts  
+      bordercolor = @border_color || @color_pair
       borderatt = @border_attrib || Ncurses::A_NORMAL
 
       #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
@@ -737,7 +740,7 @@ module RubyCurses
       when @KEY_CLEAR_SELECTION
         clear_selection 
         @repaint_required = true
-      when 27, ?\C-c.getbyte(0)
+      when 27, ?\C-c.getbyte(0), ?\C-g.getbyte(0)
         editing_canceled @current_index if @cell_editing_allowed
         cancel_block # block
         $multiplier = 0
@@ -798,7 +801,6 @@ module RubyCurses
               return 0
             end
             ret = process_key ch, self
-      $log.debug "222 listbox #{@current_index} "
             return :UNHANDLED if ret == :UNHANDLED
           end
         end
@@ -848,7 +850,8 @@ module RubyCurses
     # @return [Boolean] false if no data
     def on_enter
       if @list.nil? || @list.size == 0
-        Ncurses.beep
+        #Ncurses.beep
+        get_window.ungetch($current_key) # 2011-10-4 push key back so form can go next
         return :UNHANDLED
       end
       on_enter_row @current_index
@@ -887,10 +890,10 @@ module RubyCurses
       editor.component.curpos = 0 # reset it after search, if user scrols down
       #editor.component.graphic = @graphic #  2010-01-05 00:36 TRYING OUT BUFFERED
       ## override is required if the listbox uses a buffer
-      if @should_create_buffer
-        $log.debug " overriding editors comp with GRAPHIC #{@graphic} "
-        editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
-      end
+      #if @should_create_buffer # removed on 2011-09-29 
+        #$log.debug " overriding editors comp with GRAPHIC #{@graphic} "
+        #editor.component.override_graphic(@graphic) #  2010-01-05 00:36 TRYING OUT BUFFERED
+      #end
       set_form_col 0 #@left_margin
 
       # set original value so we can cancel
@@ -952,7 +955,6 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint
-      safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
@@ -973,7 +975,7 @@ module RubyCurses
       $log.debug " rlistbox #{row_count} "
       if rc > 0     # just added in case no data passed
         tr = @toprow
-        acolor = get_color $datacolor
+        acolor = get_color $datacolor # should be set once, if color or bgcolor changs TODO FIXME
         h = scrollatrow()
         r,c = rowcol
         0.upto(h) do |hh|
@@ -1016,8 +1018,6 @@ module RubyCurses
       end # rc == 0
       #@table_changed = false
       @repaint_required = false
-      @buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      buffer_to_window # RFED16 2010-02-17 23:16 
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to
@@ -1140,7 +1140,8 @@ module RubyCurses
     # the earlier painted edited comp in yellow keeps showing until a key is pressed
  
     def set_buffering params
-      super
+      $log.warn "CALLED set_buffering in LISTBOX listbox " if $log.debug? 
+      super # removed from widget 2011-09-29 
       ## Ensuring that changes to top get reflect in editing comp
       #+ otherwise it raises an exception. Still the earlier cell_edit is being
       #+ printed where it was , until a key is moved
@@ -1160,6 +1161,23 @@ module RubyCurses
       @repaint_required = true
     end
 
+    # trying to simplify usage. The Java way has made listboxes very difficult to use
+    # Returns selected indices
+    # Indices are often required since the renderer may modify the values displayed
+    #
+    def get_selected_indices
+      @list_selection_model.get_selected_indices
+    end
+
+    # Returns selected values
+    #
+    def get_selected_values
+      selected = []
+      @list_selection_model.get_selected_indices.each { |i| selected << list_data_model[i] }
+      return selected
+    end
+    alias :selected_values :get_selected_values
+    alias :selected_indices :get_selected_indices
 
     # ADD HERE
   end # class listb

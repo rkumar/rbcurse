@@ -42,6 +42,7 @@ module RubyCurses
       super
       @color_pair = get_color $datacolor, @color, @bgcolor
       @scroll_pair = get_color $bottomcolor, :green, :white
+      #$log.debug "SCROLLBAR COLOR cp #{@color_pair} sp #{@scroll_pair} " if $log.debug? 
       @window = form.window
       @editable = false
       @focusable = false
@@ -54,6 +55,11 @@ module RubyCurses
           self.current_index = p.current_index
           @repaint_required = true  #requred otherwise at end when same value sent, prop handler
           # will not be fired (due to optimization).
+        end
+        # in some cases, on leaving a listbox or other component redraws itself to reduce
+        # selected or highlighted object, so the scrollbar gets overwritten. We need to repaint it.
+        @parent.bind :LEAVE do |p|
+          @repaint_required = true  
         end
       end
     end
@@ -82,10 +88,11 @@ module RubyCurses
       bc = $datacolor
       bordercolor = @border_color || bc
       borderatt = @border_attrib || Ncurses::A_REVERSE
+      #$log.debug "SCROLL bordercolor #{bordercolor} , #{borderatt} " if $log.debug? 
 
 
       @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-      $log.debug " XXX SCROLL #{@row} #{@col} #{@length} "
+      #$log.debug " XXX SCROLL #{@row} #{@col} #{@length} "
       @graphic.mvvline(@row+0, @col, 1, @length-0)
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
 
@@ -95,14 +102,16 @@ module RubyCurses
       @current_index = 0 if @current_index < 0
       @current_index = listlen-1 if @current_index >= listlen
       sclen = (pht/listlen)* @length
+      sclen = 1 if sclen < 1 # sometimes 0.7 for large lists 100 items 2011-10-1 
       scloc = (@current_index/listlen)* @length
       scloc = (@length - sclen) if scloc > @length - sclen # don't exceed end
       if @current_index == @list_length - 1
-        scloc = @length - sclen + 1
+        scloc = @length - sclen + 0 # earlier 1, but removed since sclen min 1 2011-10-1 
       end
       @graphic.attron(Ncurses.COLOR_PAIR(@scroll_pair) | borderatt)
       r = @row + scloc
       c = @col + 0
+      #$log.debug " XXX SCROLLBAR #{r} #{c} #{sclen} "
       @graphic.mvvline(r, c, 1, sclen)
       @graphic.attroff(Ncurses.COLOR_PAIR(@scroll_pair) | borderatt)
       @repaint_required = false

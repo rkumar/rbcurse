@@ -71,7 +71,7 @@ module RubyCurses
       else
         @form.window = @window
       end
-      acolor = get_color $reversecolor
+      acolor = get_color $reversecolor # this implicitly uses color and bgcolor fooling me often
       $log.debug " MESSAGE BOX #{@bgcolor} , #{@color} , #{acolor}"
       @window.bkgd(Ncurses.COLOR_PAIR(acolor));
       @window.wrefresh
@@ -241,7 +241,7 @@ module RubyCurses
         $log.debug " print_message: dl:#{display_length} "
       # XXX this needs to go up and decide height of window
       if @message_height.nil?
-        @message_height = (message.length/display_length)+1
+        @message_height = (message.length/display_length)+2
         #$log.debug " print_message: mh:#{@message_height}, ml: #{message.length}"
       end
       @message_height ||= 1
@@ -284,7 +284,7 @@ module RubyCurses
       c = @message_col
       disp_len = @layout[:width]-8
       defaultvalue = @default_value || ""
-      input_config = @config["input_config"] || {}
+      input_config = @config["input_config"] || {} # see test1.rb for usage example
       case @type.to_s 
       when "input"
         @input = RubyCurses::Field.new @form, input_config do
@@ -346,6 +346,7 @@ module RubyCurses
       #Ncurses::Panel.del_panel(panel) if !panel.nil?   
       panel.del_panel if !panel.nil?
       @window.delwin if !@window.nil?
+      Ncurses::Panel.update_panels # 2011-10-1 so window below doesn't have a black rectangle
     end
   end
 end

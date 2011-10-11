@@ -26,7 +26,6 @@ module RubyCurses
     dsl_accessor :height, :width, :top, :left  #  2009-01-06 00:05 after removing meth missing
 
     def initialize form=nil, aconfig={}, &block
-      #@form = form
       @config = aconfig
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
@@ -44,15 +43,6 @@ module RubyCurses
       @bottomline.name = "rcommandwindow's bl"
       extend Forwardable
       def_delegators :@bottomline, :ask, :say, :agree, :choose #, :display_text_interactive
-      #if @form.nil?
-        #@form = RubyCurses::Form.new @window
-      #else
-        #@form.window = @window
-      #end
-      #acolor = get_color $reversecolor
-      #color = get_color $datacolor
-      #@window.printstring 0,0,"hello there", $normalcolor, 'normal'
-      #@window.bkgd(Ncurses.COLOR_PAIR(acolor));
       if @box == :border
         @window.box 0,0
       elsif @box
@@ -66,9 +56,7 @@ module RubyCurses
       @window.wrefresh
       @panel = @window.panel
       Ncurses::Panel.update_panels
-      #@form.repaint
       @window.wrefresh
-      #handle_keys
       @row_offset = 0
       if @box
         @row_offset = 1
@@ -127,7 +115,6 @@ module RubyCurses
       when 0
         @start = 0
       end
-      #@form.repaint
       Ncurses::Panel.update_panels();
       Ncurses.doupdate();
       @window.wrefresh
@@ -166,7 +153,7 @@ module RubyCurses
     # do not go more than 3 columns and do not print more than window TODO FIXME
     def display_menu list, options={}
       indexing = options[:indexing]
-      max_cols = 3
+      max_cols = 3 #  maximum no of columns, we will reduce based on data size
       l_succ = "`"
       act_height = @height
       if @box
@@ -194,6 +181,13 @@ module RubyCurses
         h = act_height
         cols = (lh*1.0 / h).ceil
         cols = max_cols if cols > max_cols
+        # sometimes elements are large like directory paths, so check size
+        datasize = list.first.length
+        if datasize > @width/3 # keep safety margin since checking only first row
+          cols = 1
+        elsif datasize > @width/2
+          cols = [2,cols].min
+        end
         adv = (@width/cols).to_i
         colct = 0
         col = 1

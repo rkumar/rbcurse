@@ -142,9 +142,11 @@ module ListEditable
         # user requested this kill to be appened to last kill, so it can be yanked as one
         #$kill_ring.last << list
         last = $kill_ring.pop 
+        $log.debug "YANK: addto : last= #{last} , list= #{list} "
         case list
         when Array
-          list.insert 0, last
+          #list.insert 0, last
+          list.insert 0, *last # 2011-10-10 changed as it was wrong in textarea
           $kill_ring << list
         when String
           $kill_ring << [last, list]
@@ -154,6 +156,7 @@ module ListEditable
       end
       $kill_ring_pointer = $kill_ring.size
       $append_next_kill = false
+      $log.debug "YANK: kill_ring: #{$kill_ring} "
     end
 
     # pastes recent (last) entry of kill_ring.
@@ -163,6 +166,7 @@ module ListEditable
       return -1 if !@editable 
       return if $kill_ring.empty?
       row = $kill_ring.last
+      $log.debug "YANK: row #{row} "
       index = where
       case row
       when Array

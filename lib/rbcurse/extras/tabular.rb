@@ -26,6 +26,7 @@
 module RubyCurses
 
   class Tabular
+    GUESSCOLUMNS = 20
 
   def yield_or_eval &block
     return unless block
@@ -70,11 +71,12 @@ module RubyCurses
     # set columns names 
     # @param [Array<String>] column names, preferably padded out to width for column
     def columns=(array)
+      $log.debug "tabular got columns #{array.count} #{array.inspect} " if $log
       @columns = array
       @columns.each_with_index { |c,i| 
         @chash[i] = ColumnInfo.new(c, c.to_s.length) 
         @cw[i] ||= c.to_s.length
-        @calign[i] ||= :left
+        #@calign[i] ||= :left # 2011-09-27 prevent setting later on
       }
     end
     alias :headings= :columns=
@@ -82,14 +84,15 @@ module RubyCurses
     # set data as an array of arrays
     # @param [Array<Array>] data as array of arrays
     def data=(list)
-      puts "got data: #{list.size} "
-      puts list
+      puts "got data: #{list.size} " if !$log
+      puts list if !$log
       @list = list
     end
 
     # add a row of data 
     # @param [Array] an array containing entries for each column
     def add array
+      $log.debug "tabular got add  #{array.count} #{array.inspect} " if $log
       @list ||= []
       @list << array
     end
@@ -185,7 +188,7 @@ module RubyCurses
     private
     def _guess_col_widths  #:nodoc:
       @list.each_with_index { |r, i| 
-        break if i > 10
+        break if i > GUESSCOLUMNS
         next if r == :separator
         r.each_with_index { |c, j|
           x = c.to_s.length
@@ -210,12 +213,14 @@ module RubyCurses
         end
       }
       @fmstr = fmt.join(@y)
+      puts "format: #{@fmstr} "
     end
   end
 end
 
 if __FILE__ == $PROGRAM_NAME
   include RubyCurses
+  $log = nil
   t = Tabular.new(['a', 'b'], [1, 2], [3, 4])
   puts t.to_s
   puts 
@@ -223,6 +228,7 @@ if __FILE__ == $PROGRAM_NAME
   t.add %w{ rahul 32 r@ruby.org }
   t << %w{ _why 133 j@gnu.org }
   t << %w{ Jane 1331 jane@gnu.org }
+  t.column_width 1, 10
   t.align_column 1, :right
   puts t.to_s
   puts

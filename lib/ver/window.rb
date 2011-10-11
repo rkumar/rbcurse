@@ -3,23 +3,36 @@ require 'ver/panel'
 module VER
   class Window 
     attr_reader :width, :height, :top, :left
-    attr_accessor :layout
+    attr_accessor :layout # hash containing hwtl
     attr_reader   :panel   # reader requires so he can del it in end
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     attr_accessor :modified # has it been modified and may need a refresh
     attr_reader   :bottomline  # experimental here 2010-11-03 22:19 
 
-    def initialize(layout)
+    # @param [Array, Hash] window coordinates (ht, w, top, left)
+    # or 
+    # @param [int, int, int, int] window coordinates (ht, w, top, left)
+    # 2011-09-21 allowing array, or 4 ints,  in addition to hash @since 1.3.1
+    def initialize(*args)
+
+      case args.size
+      when 1
+        case args[0]
+        when Array, Hash
+         layout = args[0]
+        else
+          raise ArgumentError, "Window expects 4 ints, array of 4 ints, or Hash in constructor"
+        end
+      when 4
+        layout = { :height => args[0], :width => args[1], :top => args[2], :left => args[3] }
+      end
+
       @visible = true
       reset_layout(layout)
 
-      #@window = Ncurses::WINDOW.new(height, width, top, left)
-      #@window = Ncurses.newwin(height, width, top, left) # added FFI 2011-09-6 
-      @window = FFI::NCurses.newwin(height, width, top, left) # added FFI 2011-09-6 
-      #@panel = Ncurses::Panel.new_panel(@window)
+      @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
-      ## eeks XXX next line will wreak havoc when multiple windows opened like a mb or popup
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1 # ask (bottomline) uses 0 as default so you can have mismatch. XXX
@@ -34,7 +47,7 @@ module VER
       @name ||="#{self}"
       @modified = true
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
-      init_bottomline
+      #init_bottomline # bottomline to creates its own window 2011-10-8 
     end
     ##
     # this is an alternative constructor
@@ -51,6 +64,7 @@ module VER
     # not used as yet
     # this is an alternative constructor
     # created if you don't want to create a hash first
+    #  2011-09-21 V1.3.1 You can now send an array to Window constructor
     def self.create_window(h=0, w=0, t=0, l=0)
       layout = { :height => h, :width => w, :top => t, :left => l }
       @window = Window.new(layout)
@@ -175,22 +189,23 @@ module VER
     end
     def print(string, width = width)
       return unless visible?
-      @window.waddnstr(string.to_s, width)
+      waddnstr(string.to_s, width) # changed 2011 dts  
     end
 
     def print_yx(string, y = 0, x = 0)
-      @window.mvwaddnstr(y, x, string, width)
+      mvwaddnstr(y, x, string, width) # changed 2011 dts  
     end
 
     def print_empty_line
       return unless visible?
-      @window.printw(' ' * width)
+      printw(' ' * width)
     end
 
     def print_line(string)
       print(string.ljust(width))
     end
 
+    # @unused, pls remove
     def show_colored_chunks(chunks)
       return unless visible?
       chunks.each do |color, chunk|
@@ -235,10 +250,22 @@ module VER
       3 # is C-c
     end
 
+    #  2011-09-23 @since 1.3.1
+    # Added more combinations here. These 2 are just indicative
+    SPECIAL_KEYS = {
+      [27, 79, 50, 81]              => 20014, #  'F14',
+      [27, 79, 50, 82]              => 20015 # 'F15',
+    }
+
     # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
     # ALT combinations also send a 27 before the actual key
     # Please test with above combinations before using on your terminal
     # added by rkumar 2008-12-12 23:07 
+    #  2011-09-23 Redone Control-left, right, and Shift-F5..F10.
+    #  Checking for quick press of Alt-Sh-O followed by Alt or printable char
+    #  Checking for quick press of Alt-[ followed by Alt or printable char
+    #  I attempted keeping a hash of combination arrays but it fails in the above
+    #  2 cases, so abandoned.
     def getchar 
       while 1 
         ch = getch
@@ -252,21 +279,16 @@ module VER
             when 1
               @stack.clear
               return 27
-            when 2 # basically a ALT-O, this will be really slow since it waits for -1
+            when 2 # basically a ALT-O, or alt-[ (79 or 91) this will be really slow since it waits for -1
               ch = 128 + @stack.last
               @stack.clear
               return ch
-            when 3
-              $log.warn " SHOULD NOT COME HERE getchar():#{@stack}" 
+            else
+              # check up a hash of special keys
+              ret = SPECIAL_KEYS(@stack)
+              return ret if ret
+              $log.warn "INVALID UNKNOWN KEY: SHOULD NOT COME HERE getchar():#{@stack}" 
             end
-          #elsif [181, 179, 178].include? @stack.first
-          elsif @stack == [181] || @stack == [179] || @stack == [178]
-            ch = @stack.first
-            @stack.clear
-            return ch
-          elsif @stack == [179,49] # someone trying to spoof S-F9 with M3, 1
-            ch = @stack.shift
-            return ch
           end
           # possibly a 49 left over from M3-1
           unless @stack.empty?
@@ -284,7 +306,7 @@ module VER
         # this is the ALT combination
         if @stack.first == 27
           # experimental. 2 escapes in quick succession to make exit faster
-          if ch == 27
+          if @stack.size == 1 && ch == 27
             @stack.clear
             return ch
           end
@@ -306,55 +328,72 @@ module VER
               ch = KEY_F3
             when 83
               ch = KEY_F4
+            #when 27 # another alt-char following Alt-Sh-O
+            else
+              @stack.clear
+              @stack << ch
+              return 128 + 79
+
             end
             @stack.clear
             return ch
           elsif @stack == [27, 91]
+            # XXX 27, 91 also is Alt-[
             if ch == 90
               @stack.clear
               return KEY_BTAB # backtab
+            elsif ch == 53 || ch == 50 || ch == 51
+              # control left, right and shift function
+              @stack << ch
+              next
+            elsif ch == 27 # another alt-char immediately after Alt-[
+              $log.debug "getchar in 27, will return 128+91 " if $log.debug? 
+              @stack.clear
+              @stack << ch
+              return 128 + 91
+            else
+              $log.debug "getchar in other, will return 128+91: #{ch} " if $log.debug? 
+              # other cases Alt-[ followed by some char or key - merge with previous
+              @stack.clear
+              @stack << ch
+              return 128 + 91
+            end
+          elsif @stack == [27, 91, 53]
+            if ch == 68
+              @stack.clear
+              return C_LEFT  # control-left
+            elsif ch == 67
+              @stack.clear
+              return C_RIGHT  # -control-rt
+            end
+          elsif @stack == [27, 91, 51]
+            if ch == 49 && getch()== 126
+              @stack.clear
+              return 20009  # sh_f9
+            end
+          elsif @stack == [27, 91, 50]
+            if ch == 50 && getch()== 126
+              @stack.clear
+              return 20010  # sh-F10
+            end
+            if ch == 57 && getch()== 126
+              @stack.clear
+              return 20008  # sh-F8
+            elsif ch == 56 && getch()== 126
+              @stack.clear
+              return 20007  # sh-F7
+            elsif ch == 54 && getch()== 126
+              @stack.clear
+              return 20006  # sh-F6
+            elsif ch == 53 && getch()== 126
+              @stack.clear
+              return 20005  # sh-F5
             end
           end
-          # the usual Meta combos. (alt)
+          # the usual Meta combos. (alt) - this is screwing it up, just return it in some way
           ch = 128 + ch
           @stack.clear
-          # these correspond to M-5, M2 and M3 but can also be C-left. C-rt. S-F5-S-F10
-          if ch == 181 || ch == 178 || ch == 179 
-            @stack << ch
-            next
-          end
           return ch
-        elsif @stack.first == 181
-          if ch == 68
-            ch = C_LEFT
-            @stack.clear; return ch
-          elsif ch == 67
-            ch = C_RIGHT
-            @stack.clear; return ch
-          else
-            $log.error "We ate a key 181 M-5 expecting C-L or C-r, but got #{ch}. I can only return one "
-            @stack.clear;  # should we ungetch the ch FIXME
-            return 181
-          end
-        elsif @stack == [179, 49]
-          if ch == 126
-            @stack.clear; 
-            return S_F9
-          else
-            # FIXME
-            $log.error "getchar: We ate 2 keys 179 M-?, 49 expecting S-F9, but got #{ch}. I can only return one "
-          end
-        elsif sf == 179
-          if ch == 49
-            @stack << ch
-            next
-          else
-            #@stack.clear; # should i ungetch FIXME
-            @stack.shift # some combination like M-3 2
-            @stack << ch
-            return 179
-          end
-        elsif sf == 178
         end # stack.first == 27
         # append a 27 to stack, actually one can use a flag too
         if ch == 27
@@ -365,6 +404,7 @@ module VER
       end # while
     end # def
 
+    # doesn't seem to work, clears first line, not both
     def clear
       # return unless visible?
       move 0, 0
@@ -373,10 +413,13 @@ module VER
 
     # setup and reset
 
+    ## allow user to send an array
+    # I am tired of the hash layout (taken from ver).
     def reset_layout(layout)
       case layout
       when Array
         @height, @width, @top, @left = *layout
+        @layout = { :height => @height, :width => @width, :top => @top, :left => @top }
       when Hash
         @layout = layout
 
@@ -446,6 +489,7 @@ module VER
       Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
       #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
       delwin() if !@window.nil? # added FFI 2011-09-7 
+      Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
       $log.debug "win destroy end"
     end
     ## 
@@ -489,6 +533,16 @@ module VER
       mvwprintw(r, c, "%s", :string, string);
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
+    # @deprecated
+    def print_error_message text=$error_message.get_value
+      alert text
+    end
+    # added by rk 2008-11-29 19:01 
+    # @deprecated. use global method of same name in rdialog
+    def print_status_message text=$status_message
+      #VER::print_status_message text
+      alert text
+    end
     # added by rk 2008-11-29 19:01 
     # Since these methods write directly to window they are not advised
     # since clearing previous message we don't know how much to clear.
@@ -496,7 +550,7 @@ module VER
     #  2010-09-13 00:22 WE should not use these any longer.
     #  Application should create a label and map a Variable named
     #  $errormessage to it. We should only update the Variable
-    def print_error_message text=$error_message.get_value
+    def DEPRECATED_print_error_message text=$error_message.get_value
       r = $error_message_row || Ncurses.LINES-1
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
 
@@ -506,7 +560,8 @@ module VER
       $error_message_clear_pending = true
     end
     # added by rk 2008-11-29 19:01 
-    def print_status_message text=$status_message
+    # @deprecated. use global method of same name
+    def DEPRECATED_print_status_message text=$status_message
       r = $status_message_row || Ncurses.LINES-1
       clear_error r, $datacolor
       # print it in centre
@@ -515,7 +570,7 @@ module VER
     # Clear error message printed
     # I am not only clearing if something was printed. This is since
     # certain small forms like TabbedForm top form throw an error on printstring.
-    # 
+    # @deprecated 
     def clear_error r = $error_message_row, color = $datacolor
       return unless $error_message_clear_pending
       c = $error_message_col || (Ncurses.COLS-text.length)/2 
@@ -524,7 +579,7 @@ module VER
       $error_message_clear_pending = false
     end
     ##
-    # CAUTION : FOR MESSAGEBOXES ONLY !!!! XXX
+    # NOTE : FOR MESSAGEBOXES ONLY !!!! 
     def print_border_mb row, col, height, width, color, attr
       mvwaddch row, col, Ncurses::ACS_ULCORNER
       mvwhline( row, col+1, Ncurses::ACS_HLINE, width-6)
@@ -591,7 +646,7 @@ module VER
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
     # added RK 2009-10-08 23:57 for tabbedpanes
-    # THIS IS EXPERIMENTAL - 
+    # THIS IS EXPERIMENTAL -  XXX CLEANUP REMOVE
     # Acco to most sources, derwin and subwin are not thoroughly tested, avoid usage
     # subwin moving and resizing not functioning.
     def derwin(layout)
@@ -600,6 +655,7 @@ module VER
       $log.debug " #{self} EXP: returning a subwin in derwin: #{v} "
       return v
     end
+    ## REMOVE CLEANUP UNUSED
     def _subwin(layout)
       t = @layout[:top]
       l = @layout[:left]
@@ -641,12 +697,14 @@ module VER
       end
     end
   end
+  #-------------------------------- deprecated stuff ------------------ #
   ##
   # added RK 2009-10-08 23:57 for tabbedpanes
   # THIS IS EXPERIMENTAL - 
   # I have not called super in the initializer so any methods you try on subwin
   # that exist in the superclass which use @window will bomb
-  # @since 0.1.3
+  # @since 0.1.3 REMOVE UNUSED.
+  # @deprecated
   class SubWindow  < VER::Window
     attr_reader :width, :height, :top, :left
     attr_accessor :layout
@@ -702,6 +760,7 @@ module VER
   # but we keep printing an extra row in copywin. so Pad needs to maintain comp height
   # and padheight.
   # @since 0.1.3
+  # NOTE used only by TabbedPane. If we rewrite without using it in 1.3.1 then scrap.
   class Pad  < VER::Window
     # top and left correspond to screen's top and left wich will mostly be fixed
     attr_accessor :top, :left
@@ -857,6 +916,8 @@ module VER
     # also assuming only one win so, window not passed as param
     # @return return value of copywin which should be 0 (-1 is ERR)
     def copy_pad_to_win
+      $log.warn " DEPRECATED copy_pad_to_win" # CLEANUP
+      raise "DEPREC copy_pad_to_win deprecated. Will be removed. Let me know if it is needed"
       # check that we don't exceed other windows height/maxrow
       smr = smaxrow()
       # SHIT, this means the otherwin has to be a Pad, cannot be a window
@@ -930,7 +991,10 @@ module VER
       @modified = false
       return ret
     end
+    # @deprecated
     def copy_win_to_pad
+      $log.warn " DEPRECATED copy_win_to_pad" # CLEANUP 2011-09-29 
+      raise "DEPREC copy_win_to_pad deprecated. Will be removed. Let me know if it is needed"
       smr = smaxrow()
       if smr >= @window.smaxrow()
         smr = @window.smaxrow()-1
