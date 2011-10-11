@@ -105,6 +105,9 @@ module RubyCurses
         content = %x[#{cmd}]
       when '.png', '.out','.jpg', '.gif','.pdf'
         content = "File #{fp} not displayable"
+      when '.sqlite'
+        cmd = "sqlite3 #{fp} 'select name from sqlite_master;'"
+        content = %x[#{cmd}]
       else
         content = File.open(fp,"r").readlines
       end
