@@ -20,11 +20,14 @@ module RubyCurses
     dsl_accessor :color, :bgcolor
     dsl_accessor :row, :col
     dsl_accessor :parent    #usuall the table to get colors and other default info
+    attr_reader :actual_length
+    attr_accessor :pcol
 
     def initialize text="", config={}, &block
       @text = text
       @editable = false
       @focusable = false
+      @actual_length = 0
       config_setup config # @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
       init_vars
@@ -86,17 +89,6 @@ module RubyCurses
       prepare_default_colors focussed, selected
 
         value=value.to_s # ??
-        if @height && @height > 1
-        else
-          # ensure we do not exceed
-          if !@display_length.nil?
-            if value.length > @display_length
-              value = value[0..@display_length-1]
-            end
-          end
-          #lablist << value
-        end
-        len = @display_length || value.length
         #icon = object.is_leaf? ? "-" : "+"
         #icon = leaf ? "-" : "+"
 
@@ -116,7 +108,28 @@ module RubyCurses
           end
         end
         # adding 2 to level, that's the size of icon
+        # XXX FIXME if we put the icon here, then when we scroll right, the icon will show, it shoud not
+        # FIXME we ignore truncation etc on previous level and take the object as is !!!
         _value =  "%*s %s" % [ level+2, icon,  node.user_object ]
+        @actual_length = _value.length
+        pcol = @pcol
+        if pcol > 0
+          _len = @display_length || @parent.width-2
+          _value = _value[@pcol..@pcol+_len-1] 
+        end
+        _value ||= ""
+        if @height && @height > 1
+        else
+          # ensure we do not exceed
+          if !@display_length.nil?
+            if _value.length > @display_length
+              @actual_length = _value.length
+              _value = _value[0..@display_length-1]
+            end
+          end
+          #lablist << value
+        end
+        len = @display_length || _value.length
         graphic.printstring r, c, "%-*s" % [len, _value], @color_pair,@attr
         #_height = @height || 1
         #0.upto(_height-1) { |i| 

@@ -12,7 +12,7 @@ module ListScrollable
   attr_accessor :show_caret # 2010-01-23 23:06 our own fake insertion point
   def previous_row num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
     #return :UNHANDLED if @current_index == 0 # EVIL
-    return false if @current_index == 0 
+    return :NO_PREVIOUS_ROW if @current_index == 0 
     @oldrow = @current_index
     # NOTE that putting a multiplier inside, prevents an event from being triggered for each row's
     # on leave and on enter
@@ -29,7 +29,7 @@ module ListScrollable
     # next field. however, in long lists when user scrolls the sudden jumping to next is very annoying.
     # In combos, if focus was on last row, the combo closed which is not accceptable.
     #return :UNHANDLED if @current_index == rc-1 # EVIL !!!
-    return false if @current_index == rc-1 
+    return :NO_NEXT_ROW if @current_index == rc-1  # changed 2011-10-5 so process can do something
     @oldrow = @current_index
     @current_index += 1*num if @current_index < rc
     bounds_check
@@ -160,7 +160,7 @@ module ListScrollable
   def scroll_right
     $log.debug " inside scroll_right "
     hscrollcols = $multiplier > 0 ? $multiplier : @width/2
-    $log.debug " scroll_right  mult:#{$multiplier} , hscrollcols  #{hscrollcols}, w: #{@width} ll:#{@longest_line} "
+    $log.debug " scroll_right  mult:#{$multiplier} , hscrollcols  #{hscrollcols}, pcol #{@pcol} w: #{@width} ll:#{@longest_line} "
     #blen = @buffer.rstrip.length
     blen = @longest_line
     @pcol += hscrollcols if @pcol + @width < blen 
@@ -292,7 +292,11 @@ module ListScrollable
       @search_start_ix = start
       regex = Regexp.new(regex, Regexp::IGNORECASE) if @search_case
       start.upto(fend) do |ix| 
-        row = @list[ix].to_s
+        row1 = @list[ix].to_s
+
+        # 2011-09-29 crashing on a character F3 in log file
+        row = row1.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+
         m=row.match(regex)
         if !m.nil?
           @find_offset = m.offset(0)[0]
@@ -473,13 +477,16 @@ module ListScrollable
     end
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
+    # NOTE truncate does not take into account left_margin that some widgets might use
     def truncate content  #:nodoc:
-      maxlen = @maxlen || @width-2
+      #maxlen = @maxlen || @width-2
+      _maxlen = @maxlen || @width-@internal_width
+      _maxlen = @width-@internal_width if _maxlen > @width-@internal_width
       if !content.nil? 
-        if content.length > maxlen # only show maxlen
+        if content.length > _maxlen # only show maxlen
           @longest_line = content.length if content.length > @longest_line
-          #content = content[@pcol..@pcol+maxlen-1] 
-          content.replace content[@pcol..@pcol+maxlen-1] 
+          #content = content[@pcol..@pcol+_maxlen-1] 
+          content.replace content[@pcol..@pcol+_maxlen-1] 
         else
           # can this be avoided if pcol is 0 XXX
           content.replace content[@pcol..-1] if @pcol > 0

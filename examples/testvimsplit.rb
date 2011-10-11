@@ -46,6 +46,7 @@ class Tester
     @vim.add lb1, :FIRST, :AUTO #nil #0.7:AUTO
     @vim.add ["mercury","venus","earth","mars","jupiter", "saturn"], :FIRST, :AUTO
     @vim.add alist, :FIRST, 0.4, stfl
+    #@vim.add alist, :FIRST, nil, stfl
     @vim.add alist.shuffle, :FIRST, nil, stfl
     @vim.add lb2, :SECOND, :AUTO
     @vim.add str, :SECOND, :AUTO
@@ -69,14 +70,14 @@ class Tester
       k_button.command { |form| @vim.decrease_weight }
       
     #
-    @help = "F1 to quit. "
+    @help = "F10 to quit. "
     RubyCurses::Label.new @form, {'text' => @help, "row" => 1, "col" => 2, "color" => "yellow"}
     @form.repaint
     @window.wrefresh
     Ncurses::Panel.update_panels
     ctr = 0
     row = 2
-    while((ch = @window.getchar()) != KEY_F1 )
+    while((ch = @window.getchar()) != Ncurses::KEY_F10 )
       ret = @form.handle_key(ch)
       @window.wrefresh
       #ret = @vim.handle_key ch

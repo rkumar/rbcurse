@@ -8,8 +8,10 @@ require './rmail'
 # this will go into top namespace so will conflict with other apps!
 def testchoose
   # list filters as you type
-  $log.debug "called test1 " if $log.debug? 
-  str = choose "*", :title => "Files", :prompt => "Choose a file: "
+  $log.debug "called CHOOSE " if $log.debug? 
+  filter = "*"
+  filter = ENV['PWD']+"/*"
+  str = choose filter, :title => "Files", :prompt => "Choose a file: "
 end
 def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
@@ -70,7 +72,7 @@ App.new do
   $unread_hash = {}
   @tv = nil
   borderattrib = :reverse
-  @header = app_header "rbcurse 1.2.0", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white#, :attr =>  Ncurses::A_BLINK
+  @header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Yet Another Email Client that sucks", :text_right =>"", :color => :black, :bgcolor => :white
   message "Press F10 to exit ...................................................."
 
 
@@ -186,6 +188,8 @@ App.new do
     @tv.suppress_borders true
     @tv.border_attrib = borderattrib
   end # stack
+  @statusline = status_line :row => Ncurses.LINES-1
+  #@statusline.command { }
   @form.bind_key(?\M-v) { test11() }
   @form.bind_key(?\M-V) { testme() }
   @form.bind_key(?\M-c) { test1() }

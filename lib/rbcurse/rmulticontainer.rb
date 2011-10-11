@@ -77,10 +77,11 @@ module RubyCurses
           end
         rescue => err
 #          $error_message = err # changed 2010 dts  
-          $error_message.value = err
+          $error_message.value = err.to_s
           #@form.window.print_error_message PLEASE CREATE LABEL
           $log.error " Multicomponent process_key #{err} "
           $log.debug(err.backtrace.join("\n"))
+          alert err.to_s
         end
         return :UNHANDLED if ret == :UNHANDLED
       end
@@ -192,8 +193,9 @@ module RubyCurses
       @current_title = @current_component.title
       @current_component.repaint_all true
     end
-    def perror errmess=$error_message
-      @form.window.print_error_message errmess
+    def perror errmess
+      alert errmess
+      #@form.window.print_error_message errmess
     end
     def list_components
       $log.debug " TODO buffers_list: #{@bmanager.size}  "

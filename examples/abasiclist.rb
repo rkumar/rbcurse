@@ -3,8 +3,8 @@ require 'rbcurse/rbasiclistbox'
 
 # just a simple test to ensure that rbasiclistbox is running inside a container.
 App.new do 
-  header = app_header "rbcurse 1.2.0", :text_center => "Basic List Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
-  message "Press F1 to escape from here"
+  header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Basic List Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+  message "Press F10 to escape from here"
 
   list = %W{ bhikshu boddisattva avalokiteswara mu mun kwan paramita prajna samadhi sutra shakyamuni }
   vimsplit :row => 1, :col => 0, :suppress_borders => false, :width => 60, :height => Ncurses.LINES-2, :weight => 0.4, :orientation => :VERTICAL do |s|

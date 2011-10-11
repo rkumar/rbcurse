@@ -37,14 +37,15 @@ module RubyCurses
   #   work correctly.
   class TextArea < Widget
     include ListScrollable
+    # NOTE: common editing functions moved to listeditable 
     include ListEditable
     dsl_accessor :title
     dsl_accessor :title_attrib   # bold, reverse, normal
-    dsl_accessor :footer_attrib   # bold, reverse, normal added 2009-12-26 18:25 was this missing or delib
-    dsl_accessor :list    # the array of data to be sent by user
-    dsl_accessor :maxlen    # max display length of a row/line 
+    dsl_accessor :footer_attrib  # bold, reverse, normal added 2009-12-26 18:25 was this missing or delib
+    dsl_accessor :list           # the array of data to be sent by user
+    dsl_accessor :maxlen         # max display length of a row/line 
     attr_reader :toprow
-    dsl_accessor :auto_scroll # boolean, keeps view at end as data is inserted.
+    dsl_accessor :auto_scroll    # boolean, keeps view at end as data is inserted.
     dsl_accessor :print_footer
     dsl_accessor :editable          # allow editing
     dsl_accessor :suppress_borders # added 2010-02-12 12:21 values true or false
@@ -59,6 +60,8 @@ module RubyCurses
       @list = []
       @suppress_borders = false
       @row_offset = @col_offset = 1 # for cursor display on first entry, so not positioned on border
+      @_events ||= [] 
+      @_events.push :CHANGE
       super
       @orig_col = @col
       # this does result in a blank line if we insert after creating. That's required at 
@@ -69,7 +72,6 @@ module RubyCurses
       @content_rows = @list.length
       @win = @graphic # 2009-12-26 14:54 BUFFERED  replace form.window with graphic
       # 2010-01-10 19:35 compute locally if not set
-      @_events.push :CHANGE
       install_keys
       init_vars
     end
@@ -176,12 +178,15 @@ module RubyCurses
     # private
     def print_borders
       window = @graphic # 2009-12-26 14:54 BUFFERED
-      color = $datacolor
+      @color_pair = get_color($datacolor) # 2011-09-28 V1.3.1 
+      bordercolor = @border_color || @color_pair
+      borderatt = @border_attrib || Ncurses::A_NORMAL
+      #color = $datacolor
       #window.print_border @row, @col, @height, @width, color
       ## NOTE: If it bombs in next line, either no form passed
       ##+ or you using this embedded and need to set should_create_buffer true when
       ##+ creating. See examples/testscrollta.rb.
-      window.print_border @row, @col, @height-1, @width, color
+      window.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
 =begin
       hline = "+%s+" % [ "-"*(width-((1)*2)) ]
@@ -199,11 +204,12 @@ module RubyCurses
     def print_title
       # truncate title if longer than width
       return unless @title
+      @color_pair ||= get_color($datacolor)
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil?
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     # text_area print footer
     def print_foot
@@ -212,28 +218,44 @@ module RubyCurses
       #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       # changed 2010-01-02 19:31 BUFFERED we were exceeding 1
       #@graphic.printstring( @row + @height, @col+2, footer, $datacolor, @footer_attrib) 
-      @graphic.printstring( @row + @height-1, @col+2, footer, $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height-1, @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
       @repaint_footer_required = false
     end
     ### FOR scrollable ###
     def get_content
       @list
     end
+    #
+    # sets content of textarea. I don't know why this was not existing all this while
+    # Name to be consistent with textview. Okay, this does not wrap the words, we assume
+    # its short enough. FIXME. Avoid using currently till i firm this.
+    # NOTE: does not wrap, and does not trigger events
+    # Added on 2011-10-10 
+    # @since 1.4.0
+    # @param [String, Array] String is an existing filename, Array is content to be replaced
+    def set_content lines
+      case lines
+      when String
+        if File.exists? lines
+          lines = File.open(lines,"r").readlines
+        else
+          raise "set_content String param should be a filename"
+        end
+      when Array
+      else
+        raise "Don't know how to handle data in set_content: #{lines.class} "
+      end
+      @list.replace lines
+      @repaint_required = true
+    end
     def get_window
       @graphic
     end
     ### FOR scrollable ###
     def repaint # textarea
-      if @screen_buffer.nil? and @should_create_buffer
-        safe_create_buffer
-        @screen_buffer.name = "Pad::TXTA_PAD_#{@name}"
-        $log.debug " textarea creates pad #{@screen_buffer} #{@name}"
-      end
-      
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print if only col move
       paint if @repaint_required
       print_foot if @print_footer && !@suppress_borders && (@repaint_footer_required || @repaint_required)
-      buffer_to_window # 2010-02-12 14:54 RFED16
     end
     def getvalue
       @list
@@ -243,8 +265,10 @@ module RubyCurses
       return if @keys_mapped
       bind_key(Ncurses::KEY_LEFT){ cursor_backward }
       bind_key(Ncurses::KEY_RIGHT){ cursor_forward }
-      bind_key(Ncurses::KEY_UP){ up }
-      bind_key(Ncurses::KEY_DOWN){ down }
+      bind_key(Ncurses::KEY_UP){ ret = up;  get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW }
+      # the next was irritating if user wanted to add a row ! 2011-10-10 
+      #bind_key(Ncurses::KEY_DOWN){ ret = down ; get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW }
+      bind_key(Ncurses::KEY_DOWN){ ret = down ; }
       bind_key(?\C-a){ cursor_bol }
       bind_key(?\C-e){ cursor_eol }
       bind_key(?\C-n) { scroll_forward }
@@ -293,10 +317,6 @@ module RubyCurses
       case ch
       when KEY_ENTER, 10, KEY_RETURN
         insert_break
-      #when KEY_LEFT
-        #cursor_backward
-      #when KEY_RIGHT
-        #cursor_forward
       when Ncurses.KEY_BACKSPACE, Ncurses.KEY_BSPACE
         if @editable   # checking here means that i can programmatically bypass!!
           delete_prev_char 
@@ -322,19 +342,9 @@ module RubyCurses
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
       when ?\C-_.getbyte(0) # changed from C-u so i can use C-u for multipliers
-        if @undo_handler
-          @undo_handler.undo
-        else
-          undo_delete
-        end
+        undo
       when ?\C-r.getbyte(0) # redo if UndoHandler installed
-        return unless @undo_handler
-        @undo_handler.redo
-      #when ?\C-a.getbyte(0)
-        #cursor_bol
-      #when ?\C-e.getbyte(0)
-        #cursor_eol
-        
+        text_redo # won't accept name redo
       #when @KEY_ASK_FIND_FORWARD
       #  ask_search_forward
       #when @KEY_ASK_FIND_BACKWARD
@@ -793,7 +803,7 @@ module RubyCurses
     def cursor_eol
        _maxlen = @maxlen || @width - @internal_width
       $log.error "ERROR !!! bufferlen gt _maxlen #{@buffer.length}, #{_maxlen}" if @buffer.length > _maxlen
-      set_form_col current_line().chomp().length()-1
+      set_form_col current_line().chomp().length() #-1 needs to be one ahead 2011-10-10 TRYING OUT XXX
     end
     def cursor_bol
       set_form_col 0
@@ -838,6 +848,7 @@ module RubyCurses
       $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{_maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
+      raise "textarea height not specified" unless @height
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
@@ -881,7 +892,6 @@ module RubyCurses
       @table_changed = false
       @repaint_required = false
       @repaint_footer_required = true # 2010-01-23 22:41 
-      @buffer_modified = true # required by form to call buffer_to_screen
       @repaint_all = false # added 2010-01-14 for redrawing everything
     end
     def ask_search_forward
@@ -893,6 +903,17 @@ module RubyCurses
           set_focus_on(ix)
           set_form_col @find_offset
         end
+    end
+    def undo
+      if @undo_handler
+        @undo_handler.undo
+      else
+        undo_delete
+      end
+    end
+    def text_redo
+      return unless @undo_handler
+      @undo_handler.redo
     end
   end # class textarea
   ##

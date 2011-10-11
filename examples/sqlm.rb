@@ -125,24 +125,6 @@ class Datasource
   end
  
 end
-def get_key_labels
-  key_labels = [
-    ['C-q', 'Exit'], nil,
-    ['M-s', 'Save'], ['M-m', 'Move']
-  ]
-  return key_labels
-end
-def get_key_labels_table
-  key_labels = [
-    ['M-n','NewRow'], ['M-d','DelRow'],
-    ['C-x','Select'], nil,
-    ['M-0', 'Top'], ['M-9', 'End'],
-    ['C-p', 'PgUp'], ['C-n', 'PgDn'],
-    ['M-Tab','Nxt Fld'], ['Tab','Nxt Col'],
-    ['+','Widen'], ['-','Narrow']
-  ]
-  return key_labels
-end
 class Sqlc
   def initialize
     @window = VER::Window.root_window
@@ -175,7 +157,7 @@ class Sqlc
       height ta_ht
       title "Sql Query"
       title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
-      help_text "Enter query and press Run or Meta-r"
+      help_text "Enter query and press Run or Meta-r. Ctrl-q to quit"
     end
     sqlarea << "select * from contacts"
     buttrow = r+ta_ht+1 #Ncurses.LINES-4
@@ -352,7 +334,7 @@ class Sqlc
     while((ch = @window.getchar()) != ?\C-q.getbyte(0) )
       break if ch == KEY_F1
       s = keycode_tos ch
-      status_row.text = "Pressed #{ch}, #{s}. C-q to quit, Alt-Tab to exit table, Alt-: for buffers "
+      status_row.text = "C-q to quit, Alt-Tab to exit table, Alt-: for buffers. Alt-N/P next/previous "
       @form.handle_key(ch)
 
       @form.repaint

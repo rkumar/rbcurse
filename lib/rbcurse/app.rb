@@ -9,7 +9,6 @@ Todo:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 
@@ -19,9 +18,8 @@ $tt.name = "$tt"
 require 'forwardable'
 module Kernel
   extend Forwardable
-  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause
+  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause, :hide_bottomline
 end
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 include RubyCurses::Utils
 include Io
@@ -83,9 +81,6 @@ module RubyCurses
 
     extend Forwardable
     def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list
-    #@tt = Bottomline.new @window, @message_row
-    #extend Forwardable
-    #def_delegators :@tt, :ask, :say, :agree, :choose
 
     # TODO: i should be able to pass window coords here in config
     # :title
@@ -122,11 +117,12 @@ module RubyCurses
         colors = Ncurses.COLORS
         $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
+=begin
+# trying without 2011-10-8 
         require 'rbcurse/extras/stdscrwindow'
         awin = StdscrWindow.new
         $tt.window = awin; $tt.message_row = @message_row
-      # window created in run !!!
-      #$tt.window = @window; $tt.message_row = @message_row
+=end
     end
     def logger; return $log; end
     def close
@@ -134,6 +130,7 @@ module RubyCurses
       @window.destroy if !@window.nil?
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       if @stop_ncurses_on_close
+        $tt.destroy  # added on 2011-10-9 since we created a window, but only hid it after use
         VER::stop_ncurses
         $log.debug " CLOSING NCURSES"
       end
@@ -187,19 +184,24 @@ module RubyCurses
     # updates a global var with text. Calling app has to set up a Variable with that name and attach to 
     # a label so it can be printed.
     def message text
+      $status_message.value = text # trying out 2011-10-9 
       @message.value = text
     end
     def message_row row
-      @message_label.row = row
+      raise "Please use create_message_label first as message_label is no longer default behaviour" unless @message_label
+      @message_label.row = row 
     end
     # during a process, when you wish to update status, since ordinarily the thread is busy
     # and form does not get control back, so the window won't refresh.
     # NOTE: use this only if +message+ is not working
     # XXX Not sure if this is working after move to ffi-ncurses, check the demos
     def message_immediate text
+      $status_message.value = text # trying out 2011-10-9 user needs to use in statusline command
       message text
-      @message_label.repaint
-      @window.refresh
+      if @message_label
+        @message_label.repaint
+        @window.refresh
+      end
     end
     # NOTE XXX using stdscr results in the screen going black if a dialog
     # or other window is popped up, this was great but has not worked out.
@@ -208,23 +210,29 @@ module RubyCurses
     # so at end of printing raw_messages, use message() for final status.
     # Usage: application is inside a long processing loop and wishes to print ongoing status
     # (similar to message_immediate) but faster and less involved
+    # @deprecated since it uses stdscr. Use say_with_pause or use rdialogs status_window, see test2.rb
     def raw_message text
+      $log.warn "WARNING: don't use this method as it uses stdscr. Use rdialogs statuswindow."
+      row = @message_label ? @message_label.row : Ncurses.LINES-1
       # experimentally trying stdscr instead of label
       scr = FFI::NCurses.stdscr
       text = "%-80s" % text
-      Ncurses.mvprintw @message_label.row ,0, text
+      Ncurses.mvprintw row ,0, text
       #@_stext ||= ""
       #@_stext <<  text
       ## appending is quite a pain, maybe we should make it separate.
       #stext = "%-80s" % @_stext
-      #Ncurses.mvprintw @message_label.row ,0, stext[-80..-1]
+      #Ncurses.mvprintw row ,0, stext[-80..-1]
       #scr.refresh() # NW w FFI XXX
       #FFI::NCurses.refresh
     end
     # shows a simple progress bar on last row, using stdscr
     # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
     # If Array of two numbers is given then also print part/total on left of bar
+    # @deprecated - don't use stdscr at all, use rdialogs status_window (see test2.rb)
     def raw_progress arg
+      $log.warning "WARNING: don't use this method as it uses stdscr"
+      row = @message_label ? @message_label.row : Ncurses.LINES-1
       s = nil
       case arg
       when Array
@@ -241,8 +249,8 @@ module RubyCurses
       startcol = endcol - 12
       stext = ("=" * (pc*10).to_i) 
       text = "[" + "%-10s" % stext + "]"
-      Ncurses.mvprintw( @message_label.row ,startcol-10, s) if s
-      Ncurses.mvprintw @message_label.row ,startcol, text
+      Ncurses.mvprintw( row ,startcol-10, s) if s
+      Ncurses.mvprintw row ,startcol, text
       #scr.refresh() # XXX FFI NW
 
     end
@@ -410,7 +418,7 @@ module RubyCurses
           alert "#{self.class} does not respond to #{cmd} "
           ret = false
           ret = execute_this(cmd, *cmdline) if respond_to?(:execute_this, true)
-          say("#{self.class} does not respond to #{cmd} ", :color_pair => $promptcolor) unless ret
+          say_with_pause("#{self.class} does not respond to #{cmd} ", :color_pair => $promptcolor) unless ret
           # should be able to say in red as error
         end
       end
@@ -726,10 +734,13 @@ module RubyCurses
       require 'rbcurse/applicationheader'
       header = ApplicationHeader.new @form, title, config, &block
     end
+    
+    # prints pine-like key labels
     def dock labels, config={}, &block
       require 'rbcurse/keylabelprinter'
       klp = RubyCurses::KeyLabelPrinter.new @form, labels, config, &block
     end
+
     def link *args, &block
       require 'rbcurse/extras/rlink'
       config = {}
@@ -1060,16 +1071,18 @@ module RubyCurses
       return cmd if opts.include? cmd
       matches = opts.grep Regexp.new("^#{cmd}")
     end
+    # Now i am not creating this unless user wants it. Pls avoid it.
+    # Use either say_with_pause, or put $status_message in command of statusline
+    # @deprecated
+    def create_message_label row=Ncurses.LINES-1
+      @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => row, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
+    end
     def run &block
       begin
 
         # check if user has passed window coord in config, else root window
         @window = VER::Window.root_window
-        #$tt.window = @window; $tt.message_row = @message_row
         awin = @window
-        #require 'rbcurse/extras/stdscrwindow'
-        #awin = StdscrWindow.new
-        #$tt.window = awin; $tt.message_row = @message_row
         catch(:close) do
           @form = Form.new @window
           @form.bind_key([?\C-x, ?c]) { suspend(false) do
@@ -1103,7 +1116,7 @@ module RubyCurses
                 rcmd = _resolve_command(opts, cmd) if !opts.include?(cmd)
                 if rcmd.size == 1
                   cmd = rcmd.first
-                else
+                elsif !rcmd.empty?
                   say_with_pause "Cannot resolve #{cmd}. Matches are: #{rcmd} "
                 end
               end
@@ -1121,14 +1134,17 @@ module RubyCurses
                   end
                 end
               else
-                say("Command [#{cmd}] not supported by #{self.class} ")
+                say_with_pause("Command [#{cmd}] not supported by #{self.class} ", :color_pair => $promptcolor)
               end
             end
           }
           @form.bind_key(KEY_F1){ display_app_help }
+          @form.bind_key([?q,?q]){ throw :close } if $log.debug?
+
           @message = Variable.new
           @message.value = ""
-          @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => Ncurses.LINES-1, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
+          $status_message ||= Variable.new # remember there are multiple levels of apps
+          $status_message.value = ""
           $error_message.update_command { @message.set_value($error_message.value) }
           if block
             begin

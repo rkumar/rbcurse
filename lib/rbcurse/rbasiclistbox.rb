@@ -16,7 +16,6 @@ require 'rbcurse/listcellrenderer'
 require 'forwardable'
 
 
-#include Ncurses # FFI 2011-09-8 
 module RubyCurses
   extend self
   ##
@@ -34,9 +33,9 @@ module RubyCurses
   class BasicListbox < Widget
 
     require 'rbcurse/listscrollable'
-    #require 'rbcurse/listselectable'
-    #require 'rbcurse/defaultlistselectionmodel'
+    require 'rbcurse/extras/listselectable'             # added 2011-10-8 
     include ListScrollable
+    include NewListSelectable                           # added 2011-10-8 
     extend Forwardable
     dsl_accessor :height
     dsl_accessor :title
@@ -94,8 +93,6 @@ module RubyCurses
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @selection_mode ||= :multiple # default is multiple, anything else given becomes single
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
-      # moving down to repaint so that scrollpane can set should_buffered
-      # added 2010-02-17 23:05  RFED16 so we don't need a form.
       @win_left = 0
       @win_top = 0
 
@@ -140,6 +137,7 @@ module RubyCurses
       bind_key(32){ toggle_row_selection() }
       bind_key(10){ fire_action_event }
       bind_key(13){ fire_action_event }
+      list_bindings
       @keys_mapped = true
 
     end
@@ -185,11 +183,15 @@ module RubyCurses
       else
         raise ArgumentError, "Listbox list(): do not know how to handle #{alist.class} " 
       end
-      # added on 2009-01-13 23:19 since updates are not automatic now
-      #create_default_list_selection_model
-      #@list_selection_model.selection_mode = @tmp_selection_mode if @tmp_selection_mode
+      clear_selection
+    
       @repaint_required = true
       @list
+    end
+    # conv method to insert data, trying to keep names same across along with Tabular, TextView,
+    # TextArea and listbox. Don;t use this till i am certain.
+    def data=(val)
+      list(val)
     end
     # get element at
     # @param [Fixnum] index for element
@@ -375,6 +377,7 @@ module RubyCurses
         Ncurses.beep
         return :UNHANDLED
       end
+      super  # forgot this 2011-10-9 that's why events not firign
       on_enter_row @current_index
       set_form_row # added 2009-01-11 23:41 
       true
@@ -404,7 +407,6 @@ module RubyCurses
     # processing. also, it pans the data horizontally giving the renderer
     # a section of it.
     def repaint #:nodoc:
-      #safe_create_buffer # 2010-01-04 12:36 BUFFERED moved here 2010-01-05 18:07 
       return unless @repaint_required
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
@@ -467,8 +469,6 @@ module RubyCurses
       end # rc == 0
       #@table_changed = false
       @repaint_required = false
-      #@buffer_modified = true # required by form to call buffer_to_screen BUFFERED
-      #buffer_to_window # RFED16 2010-02-17 23:16 
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to
@@ -484,7 +484,7 @@ module RubyCurses
         value.to_s if value
       end
     end
-    # takes a block, this way anyone extending this class can just pass a block to do his job
+    # takes a block, this way anyone extending this klass can just pass a block to do his job
     # This modifies the string
     def sanitize content #:nodoc:
       if content.is_a? String
@@ -531,8 +531,6 @@ module RubyCurses
     def set_form_col col1=0               #:nodoc:
       @cols_panned ||= 0 
       # editable listboxes will involve changing cursor and the form issue
-      ## added win_col on 2010-01-04 23:28 for embedded forms BUFFERED TRYING OUT
-      #win_col=@form.window.left
       win_col = 0 
       col2 = win_col + @col + @col_offset + col1 + @cols_panned + @left_margin
       $log.debug " set_form_col in rlistbox #{@col}+ left_margin #{@left_margin} ( #{col2} ) "
@@ -543,17 +541,25 @@ module RubyCurses
     
     # change selection of current row on pressing space bar
     # If mode is multiple, then other selections are cleared and this is added
-    def toggle_row_selection crow=@current_index
+    # NOTE: 2011-10-8 allow multiple select on spacebar. Using C-Space was quite unfriendly
+    # although it will still work
+    def OLDtoggle_row_selection crow=@current_index
       @repaint_required = true
+      row = crow
       case @selection_mode 
       when :multiple
-        clear_selection
-        @selected_indices[0] = crow #@current_index
+        add_to_selection
+        #clear_selection
+        #@selected_indices[0] = crow #@current_index
       else
         if @selected_index == crow #@current_index
           @selected_index = nil
+          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_index = crow #@current_index
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       end
     end
@@ -562,24 +568,29 @@ module RubyCurses
     # add an item to selection, if selection mode is multiple
     # if item already selected, it is deselected, else selected
     # typically bound to Ctrl-Space
-    def add_to_selection
+    def OLDadd_to_selection
+      crow = @current_index
       case @selection_mode 
       when :multiple
         if @selected_indices.include? @current_index
           @selected_indices.delete @current_index
+          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_indices << @current_index
+          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
       end
       @repaint_required = true
     end
     # clears selected indices
-    def clear_selection
+    def OLDclear_selection
       @selected_indices = []
       @repaint_required = true
     end
-    def is_row_selected crow=@current_index
+    def OLDis_row_selected crow=@current_index
       case @selection_mode 
       when :multiple
         @selected_indices.include? crow
@@ -602,6 +613,19 @@ module RubyCurses
       @current_index = row
       @repaint_required = true # fire list_select XXX
     end
+    # Returns selected indices
+    # Indices are often required since the renderer may modify the values displayed
+    #
+    def get_selected_indices; @selected_indices; end
+
+    # Returns selected values
+    #
+    def get_selected_values
+      selected = []
+      @selected_indices.each { |i| selected << @list[i] }
+      return selected
+    end
+    alias :selected_values :get_selected_values
  
 
 
@@ -647,9 +671,6 @@ module RubyCurses
       @attrs[:selected] = $row_selected_attr
       @attrs[:focussed] = $row_focussed_attr
 
-    end
-    def getvalue
-      @text
     end
     ##
     # sets @color_pair and @attr

@@ -24,7 +24,7 @@ class Testy
     app = App.new 
     $log.debug " APP : value #{value}" if $log.debug? 
     header = app.app_header "rbcurse #{Rbcurse::VERSION} " , :text_center => " #{@value} Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
-    app.message "Press F1 to exit from here #{@value} "
+    app.message "Press F10 to exit from here #{@value} "
 
     app.stack :margin_top => 2, :margin => 5, :width => 30 do |s|
       app.label "Hello: ", :attr => :reverse

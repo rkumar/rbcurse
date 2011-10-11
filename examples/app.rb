@@ -22,7 +22,6 @@ module RubyCurses
 
   ##
   #
-  # @since 1.1.6
   # TODO - 
   # what of internal objects that don't want a form !
   # - stack and flow should be objects in Form, put in widget when creating

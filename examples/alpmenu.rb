@@ -3,7 +3,7 @@ require 'rbcurse/app'
   App.new do 
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
-    header = app_header "rbcurse 1.2.0", :text_center => "Alpine Menu Demo", :text_right =>""
+    header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Alpine Menu Demo", :text_right =>""
     message_row(27)
 
     stack :margin_top => 10, :margin => 15 do
