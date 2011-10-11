@@ -46,6 +46,8 @@ module RubyCurses
       bind_key(?+, :ask_select)
       bind_key(?-, :ask_unselect)
       bind_key(?I) { @hide_dot_files = !@hide_dot_files; prune_entries; }
+      #bind_key(?v, :view_current)  # does not respond to ??? XXX
+      bind_key(?v) {view_current} 
       super
     end
     # changing the current path, refreshes files
@@ -83,10 +85,8 @@ module RubyCurses
       list @entries
       @list.insert 0, @_header
       @title = @current_path
-      #@current_index = @_first_data_index
-      # this next line will keep the cursor on header after sorting
-      # earlier cursor would appear in header but selection would be data row
-      @current_index = @_header_row_index # FFI 2011-09-16 keeping cursor synched with selection
+      @current_index = @_first_data_index
+      set_form_row
     end
     # called by parent's repaint
     def convert_value_to_text file, crow
@@ -227,7 +227,11 @@ module RubyCurses
           @reverse = false
         end
         sort_by header.strip, @reverse
+        # this next line will keep the cursor on header after sorting
+        # earlier cursor would appear in header but selection would be data row
+        @current_index = @_header_row_index # FFI 2011-09-16 keeping cursor synched with selection
         @_last_header_sorted = header
+        set_form_row
         return
       end
       value = current_value
@@ -399,6 +403,12 @@ module RubyCurses
     populate @current_path
     set_form_row
   end
+  def view_current
+    file = self.current_value
+    require 'rbcurse/extras/viewer.rb'
+    RubyCurses::Viewer.view("#{current_path}/#{file}", :close_key => KEY_RETURN, :title => "<Enter> to close, M-l M-h to scroll")
+  end
+    # ADD HERE 
     ##
   end # class
 
@@ -452,7 +462,6 @@ module RubyCurses
         graphic.printstring r, c, "%-*s" % [len, value], @color_pair,@attr
       end
     end
-    # ADD HERE 
   end
 end # module
 # set filetype=ruby
