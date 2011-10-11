@@ -354,7 +354,7 @@ module RubyCurses
           if respond_to? blk
             return send(blk, *@key_args[keycode])
           else
-            alert "This does not respond to #{blk.to_s} "
+            alert "This ( #{self.class} ) does not respond to #{blk.to_s} "
           end
         else
           $log.debug "rwidget BLOCK called _process_key " if $log.debug? 
