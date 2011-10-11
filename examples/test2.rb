@@ -1,8 +1,15 @@
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-# this program tests out various widgets.
+# This program tests out various widgets.
+# This is the old style of creating an application in which the user
+# has to start and stop ncurses. No shortcuts for widget constructors are available.
+#
+# The newer easier way is to use 'App' which manages the environment, and provides shortcuts
+# for all widgets. See app*.rb, alpmenu.rb, dbdemo.rb etc for samples.
+#
+# In case, you are running this in a directory that does not allow writing, set LOGDIR to 
+# your home directory, or temp directory so a log file can be generated.
+#
 require 'logger'
 require 'rbcurse'
-#require 'rbcurse/rwidget'
 require 'rbcurse/rtextarea'
 require 'rbcurse/rtextview'
 require 'rbcurse/rmenu'
@@ -22,7 +29,7 @@ def help_text
 
       This is some help text for test2.
 
-      Alt-C/F1 -   Exit application (F1 will become help in 1.3.1)
+      Alt-C/F10 -   Exit application 
       Alt-!    -   Drop to shell
       C-x c    -   Drop to shell
       C-x l    -   list of files
@@ -50,8 +57,6 @@ if $0 == __FILE__
     path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
     file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
     $log = Logger.new(path)
-    ##$log = Logger.new(ENV['LOGDIR'] || "" + "rbc13.log")
-    #$log = Logger.new((File.join(ENV['LOGDIR'] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
     @lookfeel = :classic # :dialog # or :classic
@@ -65,9 +70,8 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors test2.rb --------- #{@window} "
       @form = Form.new @window
-      #@form.window.printstring 0, 30, "Demo of some Ruby Curses Widgets - rbcurse", $normalcolor, 'reverse'
-      title = "Demo of some Ruby Curses Widgets - rbcurse"
-      Label.new @form, {'text' => title, "row" => 0, "col" => 30, :color => 'black', :bgcolor => 'white'}
+      title = (" "*30) + "Demo of some Ruby Curses Widgets - rbcurse " + Rbcurse::VERSION
+      Label.new @form, {'text' => title, "row" => 0, "col" => 0, :color => 'green', :bgcolor => 'black'}
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
@@ -84,7 +88,9 @@ if $0 == __FILE__
 
       $message = Variable.new
       $message.value = "Message Comes Here"
-      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, "name"=>"message_label","row" => Ncurses.LINES-1, "col" => 1, "display_length" => 60,  "height" => 2, 'color' => 'cyan'}
+      message_label = RubyCurses::Label.new @form, {'text_variable' => $message, 
+        "name"=>"message_label","row" => Ncurses.LINES-1, "col" => 1, "display_length" => 60,  
+        "height" => 2, 'color' => 'cyan'}
 
       $results = Variable.new
       $results.value = "A variable"
@@ -128,7 +134,7 @@ if $0 == __FILE__
         texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
         texta << "Let me not defer it or neglect it, for I shall not pass this way again."
         texta << " "
-        texta << " F1 to exit. or click cancel button"
+        texta << " F10 to exit. or click cancel button"
         texta << " Or alt-c"
 
         col3 = 92
@@ -465,11 +471,9 @@ if $0 == __FILE__
       item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : 'normal'; label.attr(att); label.repaint}
       @status_line = status_line :row => Ncurses.LINES-2
       @status_line.command {
-        "%-20s | F2 Menu | F3 View | F4 Shell | F5 Sh | F9 Help | %20s" % [Time.now, $message.value]
+        "%-20s | F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [Time.now, $message.value]
       }
       row += 1 #2
-      #ftext = "------------------------| F2 Menu | F3 View | F4 Shell | F5 Sh | F9 Help |-------"
-      #@form.window.printstring row, 0, "%-*s" % [Ncurses.COLS, ftext], $datacolor, Ncurses::A_REVERSE
       ok_button = Button.new @form do
         text "OK"
         name "OK"
@@ -604,14 +608,14 @@ if $0 == __FILE__
       @form.bind_key([?\C-x,?d]) {  run_command "git diff --name-status" }
       @form.bind_key([?\C-x, ?s]) {  run_command "git status" }
       @form.bind_key([?\C-x,?w]) {  run_command "git whatchanged" }
-      @form.bind_key(FFI::NCurses::KEY_F9) {  display_app_help help_text() }
+      @form.bind_key(FFI::NCurses::KEY_F1) {  display_app_help help_text() }
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
 
       # the main loop
 
-      while((ch = @window.getchar()) != KEY_F1 )
+      while((ch = @window.getchar()) != FFI::NCurses::KEY_F10 )
         begin
           @form.handle_key(ch)
 
