@@ -69,5 +69,7 @@ App.new do
     #@l = list_box :height => ht, :border_attrib => borderattrib, :selection_mode => :multiple
     s.add dl, :SECOND
     end # vimsplit
-  end # flow
+  end # stack
+  sl = status_line :row => Ncurses.LINES-1
+  sl.command { "%-20s | %-20s | v View" % [Time.now, File.absolute_path(dl.current_path)] }
 end # app
