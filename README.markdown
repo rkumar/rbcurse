@@ -4,6 +4,10 @@
 
 I have moved rbcurse to ffi-ncurses (earlier ncurses gem) since 1.3.0.
 
+Please report bugs on github/rkumar/rbcurse mentioning version. Your program dependency
+should be an explicit rbcurse version since I am doing a lot of improvements, cleaning up
+etc in the code base.
+
 If you are looking for the ncurses version, please goto
 branch rbcurse1.2.0. I am not likely to support that henceforth due to the difficulty in installing ncurses gem.
 
