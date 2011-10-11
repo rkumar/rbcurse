@@ -73,10 +73,11 @@ module RubyCurses
       v_form.repaint
       v_window.wrefresh
       Ncurses::Panel.update_panels
-      config[:close_key] ||= ?q.ord # if not specified then use q also to close
+      # allow closing using q and Ctrl-q in addition to any key specified
+      #  user should not need to specify key, since that becomes inconsistent across usages
       begin
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
-          break if ch == config[:close_key]
+          break if ch == config[:close_key] || ch == ?q.ord
           # if you've asked for RETURN then i also check for 10 and 13
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_RETURN
           v_form.handle_key ch
