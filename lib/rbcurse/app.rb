@@ -1139,6 +1139,7 @@ module RubyCurses
             end
           }
           @form.bind_key(KEY_F1){ display_app_help }
+          @form.bind_key([?q,?q]){ throw :close } if $log.debug?
 
           @message = Variable.new
           @message.value = ""
