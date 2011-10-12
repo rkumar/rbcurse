@@ -231,7 +231,8 @@ App.new do
     if !$current_db
       text = "Select DB first. Press Alt-D"
     end
-    tlist = basiclist :name => "tlist", :list => [text], :title => "Tables", :height => 10
+    tlist = basiclist :name => "tlist", :list => [text], :title => "Tables", :height => 10,
+      :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE
     tlist.bind(:PRESS) do |eve|
       if $current_db
       # get data of table
@@ -245,7 +246,8 @@ App.new do
       #$current_table = eve.text if $db
     end
     clist = basiclist :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
-      :selection_mode => :multiple
+      :selection_mode => :multiple,
+      :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE
     tlist.bind(:LIST_SELECTION_EVENT) do |eve|
       $selected_table = eve.source[eve.firstrow]
       $current_table = $selected_table
