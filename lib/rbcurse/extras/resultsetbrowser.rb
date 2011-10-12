@@ -207,14 +207,22 @@ module RubyCurses
       ta = config.fetch(:title_attrib, 'bold')
       fa = config.fetch(:footer_attrib, 'bold')
 
-      wh = 20
-      ww = 100 # Ncurses.COLS-4
+      wh = Ncurses.LINES-0
+      ww = Ncurses.COLS-0
       layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
-      v_window = VER::Window.new(layout) # copywin gives -1 and prints nothing
-      #v_window = VER::Window.root_window
-      #v_form = RubyCurses::Form.new v_window
+      #v_window = config[:window] # using previous window cause crash seg fault
+      #v_window ||= VER::Window.new(layout) # copywin gives -1 and prints nothing
+      v_window = VER::Window.root_window
+      v_window.printstring 0, 30, "Database Browser Demo", $datacolor
+      @form = RubyCurses::Form.new v_window # only for some widgets that are not editable
+      header = app_header "rbcurse ", :text_center => "ResultsetBrowser Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+      sl = status_line :row => v_window.height == 0 ? Ncurses.LINES-1 : v.window.height-1
+      sl.command { "Record Navigation: C-n C-p. Scrolling M-n, M-p, M-l, M-h" }
+      
+      @form.repaint
+
       #rb = ResultsetBrowser.new v_form, :row => 2, :col => 2
-      rb = ResultsetBrowser.new v_window, :row => 2, :col => 2, :height => 15, :width => 75
+      rb = ResultsetBrowser.new v_window, :row => 2, :col => 2, :height => 20, :width => 95
       rb.columns = columns
       rb.data = rows
       rb.repaint
@@ -248,7 +256,7 @@ require 'rbcurse/app'
 
 App.new do 
   header = app_header "rbcurse ", :text_center => "ResultsetBrowser Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
-  message "Press F1 to exit from here"
+  message "Press F10 to exit from here"
   columns = ["Name","Age","City", "Country"]
   data    = [
              [ "Rahul",31, "Delhi","India"], 
@@ -260,7 +268,7 @@ App.new do
     #RubyCurses::Browser.browse("dummy", "atable", columns, data,  :close_key => FFI::NCurses::KEY_F10, :title => "Enter to close") do |t|
   sql = "select id, type, priority, title from bugs"
   sql = "select * from bugs"
-    RubyCurses::Browser.browse_sql("../../../bugzy.sqlite", "bugs", sql, :close_key => FFI::NCurses::KEY_F10, :title => "Enter to close") do |t|
+    RubyCurses::Browser.browse_sql("../../../bugzy.sqlite", "bugs", sql, :close_key => FFI::NCurses::KEY_F10, :title => "Enter to close", :window => @window) do |t|
       # you may configure textview further here.
       #t.suppress_borders true
       #t.color = :black
