@@ -9,7 +9,12 @@ module RubyCurses
   class StatusLine < Widget
 
     def initialize form, config={}, &block
-      @row = Ncurses.LINES-3
+      if form.window.height == 0
+        @row = Ncurses.LINES-3 # fix, what about smaller windows, use window dimensions and watch out for 0,0
+      else
+        @row = form.window.height-3 # fix, what about smaller windows, use window dimensions and watch out for 0,0
+      end
+       # in root windows FIXME
       @col = 0
       super
       @focusable = false
@@ -33,9 +38,11 @@ module RubyCurses
     #   rather whenever form.repaint is called.
     def repaint
       @color_pair ||= get_color($datacolor, @color, @bgcolor) 
+      len = @form.window.width
+      len = Ncurses.COLS if len == 0
 
       # first print dashes through
-      @form.window.printstring @row, @col, "%s" % "-" * Ncurses.COLS, @color_pair, Ncurses::A_REVERSE
+      @form.window.printstring @row, @col, "%s" % "-" * len, @color_pair, Ncurses::A_REVERSE
 
       # now call the block to get current values
       if @command
