@@ -1180,7 +1180,14 @@ module RubyCurses
     # not be triggered. The highlighted part
     def on_enter f
       return if f.nil? || !f.focusable # added focusable, else label was firing 2010-09
+
       f.state = :HIGHLIGHTED
+      # If the widget has a color defined for focussed, set repaint
+      #  otherwise it will not be repainted unless user edits !
+      if f.highlight_background || f.highlight_foreground
+        f.repaint_required true
+      end
+
       f.modified false
       #f.set_modified false
       f.on_enter if f.respond_to? :on_enter
@@ -1504,7 +1511,7 @@ module RubyCurses
           field =  get_current_field
           if $log.debug?
             keycode = keycode_tos(ch)
-            $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}, field: giving to: #{field}, #{field.name}  "
+            $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}, field: giving to: #{field}, #{field.name}  " if field
           end
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
@@ -1648,8 +1655,6 @@ module RubyCurses
 
     dsl_accessor :chars_allowed           # regex, what characters to allow, will ignore all else
     dsl_accessor :display_length          # how much to display
-    #dsl_property :bgcolor                # background color 'red' 'black' 'cyan' etc # 2011-09-29 IN WIDGET
-    #dsl_property :color                  # foreground colors from Ncurses COLOR_xxxx
     dsl_accessor :show                    # what charactr to show for each char entered (password field)
     dsl_accessor :null_allowed            # allow nulls, don't validate if null # added 2008-12-22 12:38 
 
@@ -1842,7 +1847,7 @@ module RubyCurses
 
   def repaint
     return unless @repaint_required  # 2010-11-20 13:13 its writing over a window i think TESTING
-    #$log.debug("repaint FIELD: #{id}, #{name},  #{focusable}")
+    #$log.debug("repaint FIELD: #{id}, #{name},  #{focusable} st: #{@state} ")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
     @display_length = 1 if display_length == 0
@@ -1855,8 +1860,13 @@ module RubyCurses
         printval = printval[@pcol..-1]
       end
     end
-    #printval = printval[0..display_length-1] if printval.length > display_length
+  
     acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
+    if @state == :HIGHLIGHTED
+      bgcolor = @highlight_background || @bgcolor
+      color = @highlight_foreground || @color
+      acolor = get_color(acolor, color, bgcolor)
+    end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
     #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
     @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
