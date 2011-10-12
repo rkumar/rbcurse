@@ -32,8 +32,8 @@ module RubyCurses
     attr_accessor :pmincol # advance / scroll columns
     # the pad prints from this row to window, usually 0
     attr_accessor :pminrow # advance / scroll rows (vertically)
-    attr_accessor :display_w # width of screen display
-    attr_accessor :display_h # ht of screen display
+    #attr_accessor :display_w # width of screen display NOW METHODS
+    #attr_accessor :display_h # ht of screen display
     attr_accessor :row_offset, :col_offset
     attr_accessor :scroll_unit # by how much should be scroll
     attr_reader :orig_top, :orig_left
@@ -52,12 +52,23 @@ module RubyCurses
       # take display dimensions from window. It is safe to override immediately after form creation
       @display_h = win.height
       @display_w = win.width
-      @display_h = (Ncurses.LINES - win.top - 2) if @display_h == 0
-      @display_w = (Ncurses.COLS - win.left - 2) if @display_w == 0
+      if @display_h == 0
+        @display_h = (Ncurses.LINES - win.top - 2) if @display_h == 0
+      else
+        @display_h = win.height - 2
+      end
+      if @display_w == 0
+        @display_w = (Ncurses.COLS - win.left - 2) if @display_w == 0
+      else
+        # copywin fails unless u use rootwindow, so what gives in this case
+        @display_w = win.width - 2
+      end
       
       init_vars
     end
     def init_vars
+      # maybe we should use C-x combinations rather than these keys which might be used
+      #  by other widgets, apps
       bind_key(?\M-h, :scroll_left)
       bind_key(?\M-l, :scroll_right)
       bind_key(?\M-n, :scroll_down)
@@ -80,6 +91,34 @@ module RubyCurses
       @top = @orig_top = t
       @left = @orig_left = l
       create_pad
+    end
+    def display_h(*val)
+      if val.empty?
+        return @display_h
+      else
+        #raise ArgumentError "display_h should be ... " if val[0] ...
+        oldvalue = @display_h
+        @display_h = val[0]
+        @display_h = [@display_h, @target_window.height - 2].min
+        #fire_property_handler(:display_h, oldvalue, @display_h)
+      end
+      self
+    end
+    #
+    # By default we are determining these 2 values based on window's dims.
+    # However, if you use a widget that is smaller than the window, then
+    # you will want to overwrite these values. 
+    def display_w(*val)
+      if val.empty?
+        return @display_w
+      else
+        #raise ArgumentError "display_h should be ... " if val[0] ...
+        oldvalue = @display_w
+        @display_w = val[0]
+        @display_w = [@display_w, @target_window.width - 2].min
+        #fire_property_handler(:display_h, oldvalue, @display_h)
+      end
+      self
     end
     ## 
     # create a pad to work on. 
@@ -171,12 +210,14 @@ module RubyCurses
     #  super may need target window
     def repaint
       print_border if @repaint_all and @print_border_flag
-      print_footer
+      print_footer if @print_border_flag
       $log.debug " scrollForm repaint calling parent #{@row} #{@col}+ #{@cols_panned} #{@col_offset} "
       super
       prefresh
-      _print_more_data_marker true
-      _print_more_columns_marker true
+      if @print_border_flag
+        _print_more_data_marker true
+        _print_more_columns_marker true
+      end
       #$log.debug " @target_window.wmove #{@row+@rows_panned+@row_offset}, #{@col+@cols_panned+@col_offset}  "
       @target_window.wmove @row+@rows_panned+@row_offset, @col+@cols_panned+@col_offset
       @window.modified = false
@@ -215,6 +256,8 @@ module RubyCurses
       # this works but if want to avoid copying border
       #ret = @window.prefresh(@pminrow, @pmincol, @top+@row_offset, @left+@col_offset, @top + @display_h - @row_offset , @left + @display_w - @col_offset)
       #
+      $log.debug "ret = @window.copywin( #{@pminrow} , #{@pmincol} , #{@top+@row_offset} , #{@left+@col_offset} , 
+            #{@top} + #{@display_h} - #{@row_offset} , #{@left} + #{@display_w} - #{@col_offset} ,  0)"
       ## Haha , we are back to the old notorious copywin which has given mankind
       # so much grief that it should be removed in the next round of creation.
       ret = @window.copywin(@target_window.get_window, @pminrow, @pmincol, @top+@row_offset, @left+@col_offset, 
@@ -291,7 +334,7 @@ module RubyCurses
       return false if c+@cols_panned > @orig_left + @display_w
       # XXX TODO for rows UNTESTED for rows
       return false if r + @rows_panned < @orig_top
-      return false if r + @rows_panned > @orig_top + @display_h
+      return false if r + @rows_panned > @orig_top + @display_h - 2
 
       return true
     end
