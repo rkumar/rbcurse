@@ -89,25 +89,8 @@ if $0 == __FILE__
       # a special case required since another form (combo popup also modifies)
       $message.update_command() { message_label.repaint }
 
-      #@form.by_name["line"].display_length = 3
-      #@form.by_name["line"].maxlen = 3
-      #@form.by_name["line"].set_buffer  "24"
       @form.by_name["detail"].set_buffer  "This form has more components"
       @form.by_name["descr"].set_buffer  "Use M-l/h and M-n/p for scrolling"
-      #@form.by_name["name"].set_focusable(false)
-      #@form.by_name["line"].chars_allowed = /\d/
-      ##@form.by_name["regex"].type(:ALPHA)
-      #@form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/)
-      #@form.by_name["regex"].set_buffer  "SYNOP"
-      #@form.by_name["regex"].display_length = 10
-      #@form.by_name["regex"].maxlen = 20
-      ##@form.by_name["regex"].bgcolor 'cyan'
-      #@form.by_name["password"].set_buffer ""
-      #@form.by_name["password"].show '*'
-      #@form.by_name["password"].color 'red'
-      ##@form.by_name["password"].bgcolor 'blue'
-      #@form.by_name["password"].values(%w[scotty tiger secret pass qwerty])
-      #@form.by_name["password"].null_allowed true
 
       # a form level event, whenever any widget is focussed
       @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = 'red' if f.respond_to? :label}
