@@ -53,12 +53,12 @@ module RubyCurses
       @display_h = win.height
       @display_w = win.width
       if @display_h == 0
-        @display_h = (Ncurses.LINES - win.top - 2) if @display_h == 0
+        @display_h = (Ncurses.LINES - win.top - 2)
       else
         @display_h = win.height - 2
       end
       if @display_w == 0
-        @display_w = (Ncurses.COLS - win.left - 2) if @display_w == 0
+        @display_w = (Ncurses.COLS - win.left - 2) 
       else
         # copywin fails unless u use rootwindow, so what gives in this case
         @display_w = win.width - 2
@@ -99,7 +99,9 @@ module RubyCurses
         #raise ArgumentError "display_h should be ... " if val[0] ...
         oldvalue = @display_h
         @display_h = val[0]
-        @display_h = [@display_h, @target_window.height - 2].min
+        $log.debug "XXX:given display_h to #{@display_h} "
+        @display_h = [@display_h, @target_window.height - 2].min unless @target_window.height == 0
+        $log.debug "XXX:set display_h to #{@display_h} "
         #fire_property_handler(:display_h, oldvalue, @display_h)
       end
       self
@@ -115,7 +117,8 @@ module RubyCurses
         #raise ArgumentError "display_h should be ... " if val[0] ...
         oldvalue = @display_w
         @display_w = val[0]
-        @display_w = [@display_w, @target_window.width - 2].min
+        @display_w = [@display_w, @target_window.width - 2].min unless @target_window.width == 0
+        $log.debug "XXX:set display_w to #{@display_w} "
         #fire_property_handler(:display_h, oldvalue, @display_h)
       end
       self
@@ -256,8 +259,7 @@ module RubyCurses
       # this works but if want to avoid copying border
       #ret = @window.prefresh(@pminrow, @pmincol, @top+@row_offset, @left+@col_offset, @top + @display_h - @row_offset , @left + @display_w - @col_offset)
       #
-      $log.debug "ret = @window.copywin( #{@pminrow} , #{@pmincol} , #{@top+@row_offset} , #{@left+@col_offset} , 
-            #{@top} + #{@display_h} - #{@row_offset} , #{@left} + #{@display_w} - #{@col_offset} ,  0)"
+      $log.debug "ret = @window.copywin( #{@pminrow} , #{@pmincol} , #{@top+@row_offset} , #{@left+@col_offset} , #{@top} + #{@display_h} - #{@row_offset} , #{@left} + #{@display_w} - #{@col_offset} ,  0)"
       ## Haha , we are back to the old notorious copywin which has given mankind
       # so much grief that it should be removed in the next round of creation.
       ret = @window.copywin(@target_window.get_window, @pminrow, @pmincol, @top+@row_offset, @left+@col_offset, 
