@@ -46,13 +46,16 @@ module RubyCurses
     def print_header(htext, r = 0, c = 0)
     $log.debug " def print_header(#{htext}, posy = 0, posx = 0)"
       win = @window
-      len = Ncurses.COLS-0
+      len = @window.width
+      len = Ncurses.COLS-0 if len == 0
       @form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
     end
     def print_top_right(htext)
     $log.debug " def print_top_right(#{htext})"
       hlen = htext.length
       len = Ncurses.COLS-1
+      len = @window.width
+      len = Ncurses.COLS-1 if len == 0
       @form.window.printstring 0, len-hlen, htext, @color_pair, @attr
     end
     ##
