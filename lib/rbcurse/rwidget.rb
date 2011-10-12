@@ -494,11 +494,27 @@ module RubyCurses
       end
     end # module config
     
+    # Adding widget shortcuts here for non-App cases 2011-10-12 
     #
     # prints a status line at bottom where mode's statuses et can be reflected
     def status_line config={}, &block
       require 'rbcurse/extras/statusline'
       sl = RubyCurses::StatusLine.new @form, config, &block
+    end
+
+    # add a standard application header
+    # == Example
+    #    header = app_header "rbcurse ", :text_center => "Browser Demo", :text_right =>"New Improved!", 
+    #         :color => :black, :bgcolor => :white, :attr => :bold 
+    def app_header title, config={}, &block
+      require 'rbcurse/applicationheader'
+      header = ApplicationHeader.new @form, title, config, &block
+    end
+    
+    # prints pine-like key labels
+    def dock labels, config={}, &block
+      require 'rbcurse/keylabelprinter'
+      klp = RubyCurses::KeyLabelPrinter.new @form, labels, config, &block
     end
 
     ##
