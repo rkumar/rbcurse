@@ -512,26 +512,6 @@ module RubyCurses
         @form.select_field 0
       end
     end
-    def _on_enter
-      # if BTAB the last comp
-      if $current_key == KEY_BTAB
-        # FIXME last is not focusable, then ??
-        current_component = @buttons.last
-        @current_tab = @form
-        @old_tab = @tabs.last
-        #@form.select_last_field
-      else
-        current_component = @buttons.first
-        @current_tab = @form
-        @old_tab = @tabs.first
-        #@form.select_first_field
-      end
-      #set_form_row
-      current_component.on_enter
-      $log.debug " TP came to on_enter #{current_component}, #{current_component.state} "
-      current_component.set_form_col # XXX 
-      current_component.repaint
-    end
     def button_form_repaint flag = true
       $log.debug " INSIDE button_form_repaint #{flag} "
       #if flag
