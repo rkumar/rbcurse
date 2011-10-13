@@ -97,8 +97,10 @@ module RubyCurses
       bind_key(?n, :find_more)
       bind_key([?\C-x, ?>], :scroll_right)
       bind_key([?\C-x, ?<], :scroll_left)
+      bind_key(?\M-l, :scroll_right)
+      bind_key(?\M-h, :scroll_left)
       bind_key([?\C-x, ?\C-s], :saveas)
-      bind_key(?r) { getstr("Enter a word: ") }
+      #bind_key(?r) { getstr("Enter a word: ") }
       bind_key(?m, :disp_menu)
     end
     ## 
@@ -304,14 +306,6 @@ module RubyCurses
         # storing digits entered so we can multiply motion actions
         $multiplier *= 10 ; $multiplier += (ch-48)
         return 0
-      #when ?\C-u.getbyte(0)
-        ## multiplier. Series is 4 16 64
-        #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
-        #return 0
-      when ?\M-l.getbyte(0) # just added 2010-03-05 not perfect
-        scroll_right # scroll data horizontally 
-      when ?\M-h.getbyte(0)
-        scroll_left
       when ?\C-c.getbyte(0)
         $multiplier = 0
         return 0
@@ -534,6 +528,7 @@ module RubyCurses
     end
     # this is just a test of the simple "most" menu
     # How can application add to this, or override
+    # TODO: use another window at bottom, statuswindow
     def disp_menu  #:nodoc:
       require 'rbcurse/extras/menutree'
       # we need to put this into data-structure so that i can be manipulated by calling apps
