@@ -41,6 +41,7 @@ module RubyCurses
       @current_record = 0
       super
       @win = @graphic
+      @datatypes = nil; # to be set when we query data, an array one for each column
 
       bind(:PRESS){ |eve| 
         s = eve.source
@@ -75,6 +76,8 @@ module RubyCurses
       #bind_key(?r) { getstr("Enter a word: ") }
       #bind_key(?m, :disp_menu)
     end
+    # connect to database, run sql and set data, columns and datatypes
+    # Similar can be done with another database
     def sqlite dbname, table, sql
       raise "file not found" unless File.exist? dbname
       require 'sqlite3'
@@ -83,30 +86,30 @@ module RubyCurses
       #$log.debug "XXX COLUMNS #{sql}  "
       content = rows
       return nil if content.nil? or content[0].nil?
-      datatypes = content[0].types 
-      #self.browse db, tablename, columns, rows, config
+      self.datatypes = content[0].types 
       set_content rows, columns
-
     end
     ## 
-    # send in a list
+    # send in a dataset (array of arrays) and array of column names
     # e.g.         set_content File.open("README.txt","r").readlines
     # set wrap at time of passing :WRAP_NONE :WRAP_WORD
     # XXX if we widen the textview later, as in a vimsplit that data
     # will still be wrapped at this width !!
     def set_content list, columns
-      #@list = list
       @rows = list
       @columns = columns
       @current_record = 0
       init_vars
     end
     def data=(list)
-      #@list = list
       @rows = list
     end
     def columns=(list)
       @columns = list
+    end
+    # set array of datatypes, one per column
+    def datatypes=(list)
+      @datatypes = list
     end
     def remove_all
       #@list = []
@@ -170,25 +173,29 @@ module RubyCurses
     end
     #
     # prepares row data for paint to print
+    # Creates a string for each row, which is great for textview operation, all of them 
+    #  work just fine. But does not allow paint to know what part is title and what is 
+    #  data
     #
     def get_content
-      types=@rows[0].types
       id = @current_record
 
       row = @rows[id]
+      @lens = []
       a = []
       f = "%14s %-*s"
       #f = "%14s %-20s"
       @columns.each_with_index { |e, i| 
         value = row[i]
         len = value.to_s.length
-        type = types[i]
+        type = @datatypes[i]
         if type == "TEXT"
           value = value.gsub(/\n/," ") if value
         end
+        @lens << len
         a << f % [e, len,  value]
       }
-      @list = a
+      @list = a # this keeps it compatible with textview operations. 
       return a
     end
 
@@ -200,6 +207,7 @@ module RubyCurses
     
       #@left_margin ||= @row_selected_symbol.length
       @left_margin = 0
+      @fieldbgcolor ||= get_color($datacolor,@bgcolor, 'cyan')
       my_win = nil
       if @form
         my_win = @form.window
@@ -232,24 +240,37 @@ module RubyCurses
               truncate content
 
               if selected
-                $log.debug "XXX: SELECTED #{crow} "
                 @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
-
-                elsif focussed
-                # take care of left_margin in next  prints XXX
-                #@graphic.printstring r+hh, c+@left_margin, content, acolor, @focussed_attrib || 'reverse'
-                  @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'bold'
-
+              elsif focussed
+                @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'bold'
               else
-                # take care of left_margin in next  prints XXX
-                #@graphic.printstring r+hh, c+@left_margin, content, acolor,@attr
                 @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @attr
               end
+
+              # paint field portion separately, take care of when panned
+              # hl only field length, not whole thing.
+              startpoint = [c+14+1-@pcol,c].max # don't let it go < 0
+              clen = @lens[crow]
+              # take into account when we've scrolled off right
+              clen -= @pcol-14-1 if 14+1-@pcol < 0
+              hlwidth = [clen,@width-@internal_width-14-1+@pcol, @width-@internal_width].min
+              hlwidth = 0 if hlwidth < 0
+              
+              @graphic.mvchgat(y=r+hh, x=startpoint, hlwidth, Ncurses::A_NORMAL, @fieldbgcolor, nil)
             
-            else
-              # clear rows
-              @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
-            end
+              # highlighting search results.
+              if @search_found_ix == tr+hh
+                if !@find_offset.nil?
+                  # handle exceed bounds, and if scrolling
+                  if @find_offset1 < maxlen+@pcol and @find_offset > @pcol
+                      @graphic.mvchgat(y=r+hh, x=c+@find_offset-@pcol, @find_offset1-@find_offset, Ncurses::A_NORMAL, $reversecolor, nil)
+                    end
+                  end
+                end
+        else
+          # clear rows
+          @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
+        end
 
       end
       @repaint_required = false
