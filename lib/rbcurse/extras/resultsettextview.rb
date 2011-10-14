@@ -4,12 +4,8 @@
   * Author: rkumar (arunachalesha)
   * file created 2009-01-08 15:23  
   * major change: 2010-02-10 19:43 simplifying the buffer stuff.
-  * FIXME : since currently paint is directly doing copywin, there are no checks
-    to prevent crashing or -1 when panning. We need to integrate it back to a call to Pad.
-  * unnecessary repainting when moving cursor, evn if no change in coords and data
-  * on reentering cursor does not go to where it last was (test2.rb) - sure it used to.
-TODO 
-   * border, and footer could be objects (classes) at some future stage.
+  * major change: 2011-10-14 reducing repaint, calling only if scrolled
+      also, printing row focus and selection outside of repaint so only 2 rows affected.
   --------
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
@@ -22,44 +18,102 @@ module RubyCurses
   extend self
 
   ##
-  # A viewable read only box. Can scroll. 
-  # Intention is to be able to change content dynamically - the entire list.
-  # Use set_content to set content, or just update the list attrib
-  # TODO - 
-  #      - goto line - DONE
+  # An extension of textview that allows viewing a resultset, one record
+  # at a time, paging records.
+
   class ResultsetTextView < TextView 
+
+    # The offset of the current record in the resultset, starting 0
     attr_accessor :current_record
-    dsl_accessor :row_selected_symbol
+
+    # not used, and may not be used since i would have to reserve on more column for this
+    #dsl_accessor :row_selected_symbol
+    # Should the row focussed on show a highlight or not, default is false
+    #  By default, the cursor will be placed on focussed row.
+    dsl_accessor :should_show_focus
+    #
+    # Attribute of selected row 'reverse' 'bold'
+    #  By default, it is reverse.
+    dsl_accessor :selected_attrib    
+    # Attribute of focussed row 'reverse' 'bold'
+    #  By default, it is not set.
+    dsl_accessor :focussed_attrib    # attribute of focussed row 'bold' 'underline'
+    dsl_accessor :editing_allowed    # can user edit values and store in database
 
     def initialize form = nil, config={}, &block
       @row_offset = @col_offset = 1 
       @row = 0
       @col = 0
-      @show_focus = true  # highlight row under focus
-      @list = []
-      @rows = nil
-      @current_record = 0
+      @should_show_focus = false # don;t show focus and unfocus by default
+      @list = [] # this is not only the currently visible record
+      @rows = nil  # this is the entire resultset
+      @old_record = @current_record = 0 # index of currently displayed record from resultset
+      @editing_allowed = true
       super
       @win = @graphic
       @datatypes = nil; # to be set when we query data, an array one for each column
+
+      @widget_scrolled = true
+      @record_changed = false
 
       bind(:PRESS){ |eve| 
         s = eve.source
         r = s.current_record
         col = @columns[@current_index]
-        alert "You clicked on #{r} , #{col} , #{eve.text} "
+        #alert "You clicked on #{r} , #{col} , #{eve.text} "
+        if @editing_allowed
+          edit_record 
+        else
+          say "You clicked on #{r} , #{col} , #{eve.text}. If editing_allowed was true you could have modified the db "
+        end
       }
-      #@_events.push :CHANGE # thru vieditable
-      #@_events << :PRESS # new, in case we want to use this for lists and allow ENTER
-      #@_events << :ENTER_ROW # new, should be there in listscrollable ??
-      #install_keys # do something about this nonsense FIXME
-      #init_vars
-      #map_keys
+      #@selected_attrib = 'standout'
+      #@focussed_attrib = 'underline'
+    end
+    def edit_record
+        col = @columns[@current_index]
+        text = @rows[@current_record][@current_index]
+        value = ask("Edit #{col}: "){ |q| q.default = text }
+        if value && value != "" && value != text
+          @rows[@current_record][@current_index] = value
+          @widget_scrolled = true # force repaint of data
+          begin
+            sql_update @tablename, id=@rows[@current_record][0], col, value
+            say_with_wait "Update to database successful"
+          rescue => err
+            alert "UPDATE ERROR:#{err.to_s} "
+          end
+        else
+          say_with_pause "Editing aborted", :color_pair => $errorcolor
+        end
+    end
+    ##
+    # update a row from bugs based on id, giving one fieldname and value
+    # @param [Fixnum] id unique key
+    # @param [String] fieldname 
+    # @param [String] value to update
+    # @example sql_update "bugs", 9, :name, "Roger"
+    # I need to know keyfields for 2 reasons , disallow update and use in update XXX
+    def sql_update table, id, field, value
+      # 2010-09-12 11:42 added to_s to now, due to change in sqlite3 1.3.x
+      alert "No database connection" unless @db
+      return unless @db
+      ret = @db.execute( "update #{table} set #{field} = ? where id = ?", [value, id])
+      $log.debug "SQLITE ret value : #{ret}, #{table} #{field} #{id} #{value}  "
+    end
+
+    def repaint_all tf
+      super
+      @widget_scrolled = true
     end
     def next_record
+      @old_record = @current_record
+      @record_changed = true
       @current_record += 1 if @current_record < @rows.count-1; @repaint_required = true
     end
     def previous_record
+      @old_record = @current_record
+      @record_changed = true
       @current_record -= 1 if @current_record > 0 ; @repaint_required = true
     end
     def map_keys
@@ -83,6 +137,9 @@ module RubyCurses
       require 'sqlite3'
       db = SQLite3::Database.new(dbname)
       columns, *rows = db.execute2(sql)
+      @db = db # for update
+      @dbname = dbname
+      @tablename = table
       #$log.debug "XXX COLUMNS #{sql}  "
       content = rows
       return nil if content.nil? or content[0].nil?
@@ -112,27 +169,24 @@ module RubyCurses
       @datatypes = list
     end
     def remove_all
-      #@list = []
-      #init_vars
+      $log.warn "ResultsetTextView remove_all not yet tested XXX"
+      @list = []
+      @rows = []
+      init_vars
       @repaint_required = true
     end
-    #def row_count
-      #@list.length
-    #end
-    ##
-    # returns row of first match of given regex (or nil if not found)
-    ## returns the position where cursor was to be positioned by default
-    # It may no longer work like that. 
-    #def rowcol #:nodoc:
-      #return @row+@row_offset, @col+@col_offset
-    #end
 
     def repaint # textview :nodoc:
-      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col} "  
+      #$log.debug "TEXTVIEW repaint r c #{@row}, #{@col} "  
+      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col}, key: #{$current_key}, reqd #{@repaint_required} "  
 
-      #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
+      # TRYING OUT dangerous 2011-10-13 
+      @repaint_required = false
+      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed
+
+
       paint if @repaint_required
-    #  raise "TV 175 graphic nil " unless @graphic
+
       print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
     end
     def getvalue
@@ -144,7 +198,13 @@ module RubyCurses
       @rows[@current_record][@current_index]
     end
     def fire_action_event
+      @old_selected_index = @selected_index
+      print_unselected_row
+      color_field @old_selected_index 
       @selected_index = @current_index
+
+      #print_selected_row
+      highlight_selected_row
       @repaint_required = true
       super
     end
@@ -205,6 +265,7 @@ module RubyCurses
     ##+ what is calculated in divider_location.
     def paint  #:nodoc:
     
+      $log.debug "XXX TEXTVIEW PAINT HAPPENING #{@current_index} "
       #@left_margin ||= @row_selected_symbol.length
       @left_margin = 0
       @fieldbgcolor ||= get_color($datacolor,@bgcolor, 'cyan')
@@ -239,14 +300,21 @@ module RubyCurses
               sanitize content if @sanitization_required
               truncate content
 
-              if selected
-                @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
-              elsif focussed
-                @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'bold'
-              else
-                @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @attr
-              end
+              @graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @attr
 
+              if selected
+                #print_selected_row r+hh, c+@left_margin, content, acolor
+                highlight_selected_row r+hh, c
+                #@graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
+              elsif focussed
+                # i am keeping this here just since sometimes repaint gets called
+                highlight_focussed_row :FOCUSSED, r+hh, c
+              end
+                #print_focussed_row :FOCUSSED, nil, nil, content, acolor
+                #@graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'bold'
+
+              color_field crow
+=begin
               # paint field portion separately, take care of when panned
               # hl only field length, not whole thing.
               startpoint = [c+14+1-@pcol,c].max # don't let it go < 0
@@ -257,6 +325,8 @@ module RubyCurses
               hlwidth = 0 if hlwidth < 0
               
               @graphic.mvchgat(y=r+hh, x=startpoint, hlwidth, Ncurses::A_NORMAL, @fieldbgcolor, nil)
+              #@graphic.mvchgat(y=r+hh, x=startpoint, hlwidth, Ncurses::A_BOLD, acolor, nil)
+=end
             
               # highlighting search results.
               if @search_found_ix == tr+hh
@@ -276,10 +346,176 @@ module RubyCurses
       @repaint_required = false
       @repaint_footer_required = true
       @repaint_all = false 
+      # 2011-10-13 
+      @widget_scrolled = false
+      @record_changed = false
+      @old_pcol = @pcol
 
+    end
+    def color_field index
+      return unless index
+      _r,c = rowcol
+      r = _convert_index_to_printable_row index
+      return unless r
+      # paint field portion separately, take care of when panned
+      # hl only field length, not whole thing.
+      startpoint = [c+14+1-@pcol,c].max # don't let it go < 0
+      clen = @lens[index]
+      # take into account when we've scrolled off right
+      clen -= @pcol-14-1 if 14+1-@pcol < 0
+      hlwidth = [clen,@width-@internal_width-14-1+@pcol, @width-@internal_width].min
+      hlwidth = 0 if hlwidth < 0
+
+      @graphic.mvchgat(y=r, x=startpoint, hlwidth, Ncurses::A_NORMAL, @fieldbgcolor, nil)
+    end
+    def is_visible? index
+      (0..scrollatrow()).include? index - @toprow
+    end
+    # offset in widget like 0..scrollatrow
+    # NOTE can return nil, if user scrolls forward or backward
+    # @private
+    def _convert_index_to_visible_row index=@current_index
+      pos = index - @toprow
+      return nil if pos < 0 || pos > scrollatrow()
+      return pos
+    end
+    # actual position to write on window
+    # NOTE can return nil, if user scrolls forward or backward
+    def _convert_index_to_printable_row index=@current_index
+      r,c = rowcol
+      pos = _convert_index_to_visible_row(index)
+      return nil unless pos
+      pos = r + pos
+      return pos
+    end
+    # the idea here is to be able to call externally or from loop
+    # However, for that content has to be truncated here, not in loop
+    def print_focussed_row type,  r=nil, c=nil, content=nil, acolor=nil
+      return unless @should_show_focus
+      case type
+      when :FOCUSSED
+        r = _convert_index_to_printable_row() unless r
+        attrib = @focussed_attrib || 'bold'
+        ix = @current_index
+
+      when :UNFOCUSSED
+        return if @oldrow.nil? || @oldrow == @current_index
+        r = _convert_index_to_printable_row(@oldrow) unless r
+        return unless r # row is not longer visible
+        ix = @oldrow
+        attrib = @attr
+      end
+      unless c
+        _r, c = rowcol
+      end
+      if content.nil?
+        content = @list[ix]
+        content = content.dup
+        sanitize content if @sanitization_required
+        truncate content
+      end
+      acolor ||= get_color $datacolor
+      #@graphic.printstring r+hh, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'bold'
+      @graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width, content], acolor, attrib
+    end
+
+    # this only highlights the selcted row, does not print data again
+    # so its safer and should be used instead of print_selected_row
+    def highlight_selected_row r=nil, c=nil, content=nil, acolor=nil
+      return unless @selected_index # no selection
+      r = _convert_index_to_printable_row(@selected_index) unless r
+      return unless r # not on screen
+      unless c
+        _r, c = rowcol
+      end
+      acolor ||= get_color $datacolor
+      att = FFI::NCurses::A_REVERSE
+      att = get_attrib(@selected_attrib) if @selected_attrib
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
+      #@graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
+    end
+    def highlight_focussed_row type, r=nil, c=nil, content=nil, acolor=nil
+      return unless @should_show_focus
+      case type
+      when :FOCUSSED
+        r = _convert_index_to_printable_row() unless r
+        attrib = @focussed_attrib || 'bold'
+        ix = @current_index
+
+      when :UNFOCUSSED
+        return if @oldrow.nil? || @oldrow == @current_index
+        r = _convert_index_to_printable_row(@oldrow) unless r
+        return unless r # row is not longer visible
+        ix = @oldrow
+        attrib = @attr
+      end
+      unless c
+        _r, c = rowcol
+      end
+      acolor ||= get_color $datacolor
+      att = get_attrib(attrib) #if @focussed_attrib
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
+      #@graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
+    end
+    # I am doing this so i can call this from outside, so repaint
+    # is obviated
+    def print_selected_row r=nil, c=nil, content=nil, acolor=nil
+      return unless @selected_index # no selection
+      r = _convert_index_to_printable_row(@selected_index) unless r
+      return unless r # not on screen
+      unless c
+        _r, c = rowcol
+      end
+      if content.nil?
+        content = @list[_convert_index_to_visible_row(@selected_index)]
+        content = content.dup
+        sanitize content if @sanitization_required
+        truncate content
+      end
+      acolor ||= get_color $datacolor
+      @graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
+    end
+    def print_unselected_row r=nil, c=nil, content=nil, acolor=nil
+      return unless @old_selected_index # no selection
+      r = _convert_index_to_printable_row(@old_selected_index) unless r
+      return unless r # not on screen
+      unless c
+        _r, c = rowcol
+      end
+      if content.nil?
+        #content = @list[_convert_index_to_visible_row(@old_selected_index)]
+        content = @list[@old_selected_index]
+        content = content.dup
+        sanitize content if @sanitization_required
+        truncate content
+      end
+      acolor ||= get_color $datacolor
+      print_normal_row r, c, content, acolor
+    end
+    def print_normal_row r, c, content, acolor
+      @graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @attr
     end
     def is_row_selected row
       @selected_index == row
+    end
+    def on_enter_row arow
+      if @should_show_focus
+        #print_focussed_row :FOCUSSED
+        #print_focussed_row :UNFOCUSSED
+        $log.debug "XXX: PRINT CALLING FOCUSSED "
+        highlight_focussed_row :FOCUSSED
+        unless @oldrow == @selected_index
+          highlight_focussed_row :UNFOCUSSED
+          color_field @oldrow
+        end
+      end
+      super
+    end
+    # no such method in superclass !!! XXX FIXME no such event too
+    def on_leave_row arow
+      #print_focussed_row :UNFOCUSSED
+      #print_normal_row
+      #super
     end
     # this is just a test of the simple "most" menu
     # How can application add to this, or override
