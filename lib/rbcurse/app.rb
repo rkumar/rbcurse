@@ -151,7 +151,7 @@ module RubyCurses
         $log.debug  "#{ch} got (#{str})"
         yield ch if block # <<<----
         @form.handle_key ch
-        @form.repaint
+        #@form.repaint # was this duplicate ?? handle calls repaint not needed
         @window.wrefresh
       end
     end
