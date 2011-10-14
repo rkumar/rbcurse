@@ -967,7 +967,7 @@ module RubyCurses
     def ask(question, answer_type=String, &details)
      $log.debug "XXXX inside ask win #{@window} "
       @window ||= _create_footer_window
-        @window.show 
+      #@window.show #unless @window.visible?
     
       @question ||= Question.new(question, answer_type, &details)
       say(@question) #unless @question.echo == true
@@ -1056,11 +1056,13 @@ module RubyCurses
       if @window
         $log.debug "XXX: HIDE BOTTOMLINE INSIDE"
         sleep(wait) if wait
-        if @window.visible?
-        @window.hide 
-        @window.wrefresh
+        #if @window.visible?
+        #@window.hide    # THIS HAS SUDDENLY STOPPED WORKING
+        @window.destroy
+        @window = nil
+        #@window.wrefresh
         #Ncurses::Panel.update_panels
-        end
+        #end
       end
     end
     alias :hide_bottomline :hide
@@ -1089,7 +1091,7 @@ module RubyCurses
     #
     def say statement, config={}
       @window ||= _create_footer_window
-      @window.show 
+      #@window.show #unless @window.visible?
       $log.debug "XXX: inside say win #{@window} !"
       case statement
       when Question
@@ -1117,6 +1119,7 @@ module RubyCurses
     #
     def say_with_pause statement, config={}
       @window ||= _create_footer_window
+      #@window.show #unless @window.visible? # 2011-10-14 23:52:52
       say statement, config
       @window.wrefresh
       Ncurses::Panel.update_panels
@@ -1129,6 +1132,7 @@ module RubyCurses
     #  the will flicker on screen, but not for too long.
     def say_with_wait statement, config={}
       @window ||= _create_footer_window
+      #@window.show #unless @window.visible? # 2011-10-14 23:52:59
       say statement, config
       @window.wrefresh
       Ncurses::Panel.update_panels
@@ -1593,7 +1597,7 @@ module RubyCurses
         hide_bottomline # since we called ask() we need to close bottomline
       end
         $log.debug "XXX: HIDE B AT END OF ASK"
-      hide_bottomline # since we called ask() we need to close bottomline
+      #hide_bottomline # since we called ask() we need to close bottomline
       return str
     end
     def display_text_interactive text, config={}
