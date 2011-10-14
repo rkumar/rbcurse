@@ -966,8 +966,8 @@ module RubyCurses
     end
     def ask(question, answer_type=String, &details)
      $log.debug "XXXX inside ask win #{@window} "
-      #@window.show #unless @window.visible?
       @window ||= _create_footer_window
+        @window.show 
     
       @question ||= Question.new(question, answer_type, &details)
       say(@question) #unless @question.echo == true
@@ -975,6 +975,7 @@ module RubyCurses
       @completion_proc = @question.completion_proc
       @change_proc = @question.change_proc
       @default = @question.default
+      $log.debug "XXX: ASK RBGETS got default: #{@default} "
       @helptext = @question.helptext
       @answer_type = @question.answer_type
       if @question.answer_type.is_a? Array
@@ -1037,7 +1038,8 @@ module RubyCurses
         return nil
       ensure
         @question = nil    # Reset Question object.
-        hide # assuming this method made it visible, not sure if this is called.
+        $log.debug "XXX: HIDE B AT ENSURE OF ASK"
+        hide_bottomline # assuming this method made it visible, not sure if this is called.
       end
     end
     #
@@ -1045,14 +1047,20 @@ module RubyCurses
     #  Call this if you find the window persists after using some method from here
     #   usually say or ask.
     #
+    #   NOTE: after callign this you must call window.show. Otherwise, next time
+    #   you call this, it will not hide.
+    #
     # @param [int, float] time to sleep before hiding window.
     #
     def hide wait=nil
       if @window
+        $log.debug "XXX: HIDE BOTTOMLINE INSIDE"
         sleep(wait) if wait
+        if @window.visible?
         @window.hide 
         @window.wrefresh
         #Ncurses::Panel.update_panels
+        end
       end
     end
     alias :hide_bottomline :hide
@@ -1081,7 +1089,7 @@ module RubyCurses
     #
     def say statement, config={}
       @window ||= _create_footer_window
-      #@window.show unless @window.visible? # this will need to be hidden manually NOTE
+      @window.show 
       $log.debug "XXX: inside say win #{@window} !"
       case statement
       when Question
@@ -1113,7 +1121,19 @@ module RubyCurses
       @window.wrefresh
       Ncurses::Panel.update_panels
       ch=@window.getchar()
-      hide
+      hide_bottomline
+    end
+    # since say does not leave the screen, it is not exactly recommended
+    #  as it will hide what's below. It's better to call pause, or this, which
+    #  will quickly go off. If the message is not important enough to ask for a pause,
+    #  the will flicker on screen, but not for too long.
+    def say_with_wait statement, config={}
+      @window ||= _create_footer_window
+      say statement, config
+      @window.wrefresh
+      Ncurses::Panel.update_panels
+      sleep 0.5
+      hide_bottomline
     end
     # A helper method for sending the output stream and error and repeat
     # of the question.
@@ -1166,6 +1186,7 @@ module RubyCurses
       ins_mode = false
       oldstr = nil # for tab completion, origal word entered by user
       default = @default || ""
+      $log.debug "XXX: RBGETS got default: #{@default} "
       if @default && @history
         if !@history.include?(default)
           @history_list.push default 
@@ -1339,6 +1360,13 @@ module RubyCurses
               curpos = str.length
               len += str.length - olen
               clear_line len+maxlen+1, @prompt_length
+            else # try to pick up default, seems we don't get it 2011-10-14 
+              olen = str.length
+              str = @default
+              str = str.dup
+              curpos = str.length
+              len += str.length - olen
+              clear_line len+maxlen+1, @prompt_length
             end
           when KEY_DOWN
             if @history && !@history.empty?
@@ -1441,6 +1469,7 @@ module RubyCurses
 
       #if @question.character.nil?
       #  if @question.echo == true #and @question.limit.nil?
+      $log.debug "XXX: before RBGETS got default: #{@default} "
       ret, str = rbgetstr
       if ret == 0
         return @question.change_case(@question.remove_whitespace(str))                
@@ -1560,8 +1589,10 @@ module RubyCurses
       ensure
         rc.destroy
         rc = nil
+        $log.debug "XXX: HIDE B IN ENSURE"
         hide_bottomline # since we called ask() we need to close bottomline
       end
+        $log.debug "XXX: HIDE B AT END OF ASK"
       hide_bottomline # since we called ask() we need to close bottomline
       return str
     end
