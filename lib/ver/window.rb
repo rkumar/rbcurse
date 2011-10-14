@@ -455,14 +455,18 @@ module VER
     # Ncurses panel
 
     def hide
+      return unless visible? # added 2011-10-14 these 2 are not behaving properly
       Ncurses::Panel.hide_panel @panel.pointer
-      Ncurses.refresh # wnoutrefresh
+      #Ncurses.refresh # wnoutrefresh
+      Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
       @visible = false
     end
 
     def show
+      return if visible? # added 2011-10-14 these 2 are not behaving properly
       Ncurses::Panel.show_panel @panel.pointer
-      Ncurses.refresh # wnoutrefresh
+      #Ncurses.refresh # wnoutrefresh
+      Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
       @visible = true
     end
 
