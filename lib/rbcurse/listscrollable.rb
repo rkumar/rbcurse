@@ -79,6 +79,7 @@ module ListScrollable
   def bounds_check
     h = scrollatrow()
     rc = row_count
+    @old_toprow = @toprow
 
     @current_index = 0 if @current_index < 0  # not lt 0
     @current_index = rc-1 if @current_index >= rc && rc>0 # not gt rowcount
@@ -91,14 +92,19 @@ module ListScrollable
       @toprow = @current_index
     end
  
+    @row_changed = false
     if @oldrow != @current_index
-
       on_leave_row @oldrow if respond_to? :on_leave_row     # to be defined by widget that has included this
       on_enter_row @current_index   if respond_to? :on_enter_row  # to be defined by widget that has included this
+      set_form_row
+      @row_changed = true
     end
-    set_form_row
-    #set_form_col 0 # added 2009-02-15 23:33  # this works for lists but we don't want this in TextArea's
-    @repaint_required = true
+    #set_form_row # 2011-10-13 
+
+    if @old_toprow != @toprow # only if scrolling has happened should we repaint
+      @repaint_required = true #if @old_toprow != @toprow # only if scrolling has happened should we repaint
+      @widget_scrolled = true
+    end
   end
   # the cursor should be appropriately positioned
   def set_form_row
