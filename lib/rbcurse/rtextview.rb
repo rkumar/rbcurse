@@ -218,7 +218,7 @@ module RubyCurses
     end
 
     def repaint # textview :nodoc:
-      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col} "  
+      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col}, key: #{$current_key}, reqd #{@repaint_required} "  
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       paint if @repaint_required
@@ -234,6 +234,7 @@ module RubyCurses
     # textview
     def handle_key ch #:nodoc:
       $log.debug " textview got ch #{ch} "
+      @old_pcol = @pcol
       @buffer = @list[@current_index]
       if @buffer.nil? and row_count == 0
         @list << "\r"
@@ -427,6 +428,7 @@ module RubyCurses
     ##+ what is calculated in divider_location.
     def paint  #:nodoc:
     
+      $log.debug "XXX TEXTVIEW PAINT HAPPENING"
       my_win = nil
       if @form
         my_win = @form.window
@@ -580,6 +582,8 @@ module RubyCurses
       @repaint_required = true
     end
     # added 2010-09-30 18:48 so standard with other components, esp on enter 
+    # NOTE: the on_enter repaint required causes this to be repainted 2 times
+    # if its the first object, once with the entire form, then with on_enter.
     def on_enter
       if @list.nil? || @list.size == 0
         Ncurses.beep
