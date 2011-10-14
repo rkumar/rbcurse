@@ -1,5 +1,6 @@
 require 'rbcurse/app'
 require 'sqlite3'
+require 'rbcurse/extras/resultsettextview.rb'
 require 'rbcurse/undomanager'
 
 # @return array of table names from selected db file
@@ -226,6 +227,7 @@ App.new do
   mb.color = :white
   mb.bgcolor = :blue
   @form.set_menu_bar mb
+  tv = nil
   stack :margin => 0 do
     text = "No tables"
     if !$current_db
@@ -237,6 +239,7 @@ App.new do
       if $current_db
       # get data of table
         view_data eve.text
+        tv.sqlite $current_db, eve.text, "select * from #{eve.text} "
       else
         ask_databases
       end
@@ -364,7 +367,7 @@ App.new do
     @form.bind_key(?\M-d) do
       ask_databases
     end
-    @form.bind_key(Ncurses::KEY_F4) do
+    @form.bind_key(FFI::NCurses::KEY_F4) do
       $where_string = nil
       $order_string = nil
       if $where_columns
@@ -387,7 +390,7 @@ App.new do
     end
   end # stack
   stack :margin => 50, :width => :EXPAND  do
-    tarea = textarea :name => 'tarea', :height => 20, :title => 'Sql Statement'
+    tarea = textarea :name => 'tarea', :height => 5, :title => 'Sql Statement'
     undom = SimpleUndo.new tarea
     tarea.bind_key(Ncurses::KEY_F4) do
       text = tarea.get_text
@@ -428,7 +431,7 @@ App.new do
       @adock.mode :normal
     } # M-z
     flow do
-      button_row = 17
+      #button_row = 17
       button "Save" do
         @cmd_history ||= []
           filename = ask("File to append contents to: ") { |q| q.default = @oldfilename; q.history = @cmd_history }
@@ -458,5 +461,12 @@ App.new do
       #ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
       #end
     end
+    blank
+    #tv = RubyCurses::ResultsetTextView.new @form, :row => 1,  :col => 1, :width => 50, :height => 16
+    tv = resultsettextview :name => 'resultset', :height => 18 , :title => 'DB Browser'
+    #sql = "select * from bugs"
+    #file = "bugzy.sqlite"
+    #tv.sqlite file, "bugs", sql
+
   end
 end # app
