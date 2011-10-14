@@ -18,7 +18,7 @@ $tt.name = "$tt"
 require 'forwardable'
 module Kernel
   extend Forwardable
-  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause, :hide_bottomline
+  def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list, :say_with_pause, :hide_bottomline, :say_with_wait
 end
 include RubyCurses
 include RubyCurses::Utils
@@ -628,6 +628,26 @@ module RubyCurses
       useform = nil
       useform = @form if @current_object.empty?
       w = TextView.new useform, config
+      if block
+        w.bind(block_event, &block)
+      end
+      return w
+    end
+    def resultsettextview *args, &block
+      require 'rbcurse/extras/resultsettextview'
+      config = {}
+      # TODO confirm events many more
+      events = [ :PRESS, :LEAVE, :ENTER ]
+      block_event = events[0]
+      _process_args args, config, block_event, events
+      config[:width] = config[:display_length] unless config.has_key? :width
+      _position(config)
+      # if no width given, expand to flows width
+      config[:width] ||= @stack.last.width if @stack.last
+      raise "height needed for resultsettextview" if !config.has_key? :height
+      useform = nil
+      useform = @form if @current_object.empty?
+      w = ResultsetTextView.new useform, config
       if block
         w.bind(block_event, &block)
       end
