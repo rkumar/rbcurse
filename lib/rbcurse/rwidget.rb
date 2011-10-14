@@ -271,6 +271,51 @@ module RubyCurses
         acolor = ColorMap.get_color(color, bgcolor)
         return acolor
       end
+      #
+      # convert a string to integer attribute
+      # @param [String] e.g. reverse bold normal underline
+      #     if a Fixnum is passed, it is returned as is assuming to be 
+      #     an attrib
+      def get_attrib str
+        # next line allows us to do a one time conversion and keep the value
+        #  in the same variable
+        if str.is_a? Fixnum
+          if [
+            FFI::NCurses::A_BOLD,
+            FFI::NCurses::A_REVERSE,    
+            FFI::NCurses::A_NORMAL,
+            FFI::NCurses::A_UNDERLINE,
+            FFI::NCurses::A_STANDOUT,    
+            FFI::NCurses::A_DIM,    
+            FFI::NCurses::A_BLINK
+          ].include? str
+          return str
+          else
+            raise ArgumentError, "get_attrib got a wrong value: #{str} "
+          end
+        end
+
+
+        case str.to_s.downcase
+        when 'bold'
+          att = FFI::NCurses::A_BOLD
+        when 'reverse'
+          att = FFI::NCurses::A_REVERSE    
+        when 'normal'
+          att = FFI::NCurses::A_NORMAL
+        when 'underline'
+          att = FFI::NCurses::A_UNDERLINE
+        when 'standout'
+          att = FFI::NCurses::A_STANDOUT    
+        when 'dim'
+          att = FFI::NCurses::A_DIM    
+        when 'blink'
+          att = FFI::NCurses::A_BLINK    # unlikely to work
+        else
+          att = FFI::NCurses::A_NORMAL
+        end
+        return att
+      end
       ## repeats the given action based on how value of universal numerica argument
       ##+ set using the C-u key. Or in vim-mode using numeric keys
       def repeatm
@@ -689,31 +734,6 @@ module RubyCurses
       Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
-    # @deprecated pls call windows method
-    def printstring(win, r,c,string, color, att = Ncurses::A_NORMAL)
-
-      att = Ncurses::A_NORMAL if att.nil?
-      case att.to_s.downcase
-      when 'underline'
-        att = Ncurses::A_UNDERLINE
-        $log.debug "UL att #{att}"
-      when 'bold'
-        att = Ncurses::A_BOLD
-      when 'blink'
-        att = Ncurses::A_BLINK
-      when 'reverse'
-        att = Ncurses::A_REVERSE
-      else
-        att = Ncurses::A_NORMAL
-      end
-      #$log.debug "att #{att}"
-
-      #att = bold ? Ncurses::A_BLINK|Ncurses::A_BOLD : Ncurses::A_NORMAL
-      #     att = bold ? Ncurses::A_BOLD : Ncurses::A_NORMAL
-      win.attron(Ncurses.COLOR_PAIR(color) | att)
-      win.mvprintw(r, c, "%s", string);
-      win.attroff(Ncurses.COLOR_PAIR(color) | att)
-    end
     # in those rare cases where we create widget without a form, and later give it to 
     # some other program which sets the form. Dirty, we should perhaps create widgets
     # without forms, and add explicitly. 
@@ -1087,6 +1107,7 @@ module RubyCurses
       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} " if $log.debug? 
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
+        $log.debug "XXX: FORM CALLING REPAINT OF WIDGET #{f} IN LOOP"
         f.repaint
         f._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
       end
