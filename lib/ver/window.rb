@@ -321,13 +321,13 @@ module VER
             # xterm-color
             case ch
             when 80
-              ch = KEY_F1
+              ch = FFI::NCurses::KEY_F1
             when 81
-              ch = KEY_F2
+              ch = FFI::NCurses::KEY_F2
             when 82
-              ch = KEY_F3
+              ch = FFI::NCurses::KEY_F3
             when 83
-              ch = KEY_F4
+              ch = FFI::NCurses::KEY_F4
             #when 27 # another alt-char following Alt-Sh-O
             else
               @stack.clear
@@ -455,7 +455,7 @@ module VER
     # Ncurses panel
 
     def hide
-      return unless visible? # added 2011-10-14 these 2 are not behaving properly
+      #return unless visible? # added 2011-10-14 these 2 are not behaving properly
       Ncurses::Panel.hide_panel @panel.pointer
       #Ncurses.refresh # wnoutrefresh
       Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
@@ -463,7 +463,7 @@ module VER
     end
 
     def show
-      return if visible? # added 2011-10-14 these 2 are not behaving properly
+      #return if visible? # added 2011-10-14 these 2 are not behaving properly
       Ncurses::Panel.show_panel @panel.pointer
       #Ncurses.refresh # wnoutrefresh
       Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
