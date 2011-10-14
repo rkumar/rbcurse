@@ -61,16 +61,16 @@ module RubyCurses
         r = s.current_record
         col = @columns[@current_index]
         #alert "You clicked on #{r} , #{col} , #{eve.text} "
-        if @editing_allowed
-          edit_record 
-        else
-          say "You clicked on #{r} , #{col} , #{eve.text}. If editing_allowed was true you could have modified the db "
-        end
+        #edit_record 
       }
       #@selected_attrib = 'standout'
       #@focussed_attrib = 'underline'
     end
     def edit_record
+        unless @editing_allowed
+          say "You clicked on #{r} , #{col} , #{eve.text}. If editing_allowed was true you could have modified the db "
+          return
+        end
         col = @columns[@current_index]
         text = @rows[@current_record][@current_index]
         value = ask("Edit #{col}: "){ |q| q.default = text }
@@ -124,6 +124,7 @@ module RubyCurses
       bind_key([?\C-x, ?p], :previous_record) 
       bind_key(?\M-, , :previous_record ) 
       bind_key(?\M-., :next_record) 
+      bind_key('C', :edit_record) 
       #bind_key([?\C-x, ?>], :scroll_right)
       #bind_key([?\C-x, ?<], :scroll_left)
       #bind_key([?\C-x, ?\C-s], :saveas)
@@ -140,7 +141,7 @@ module RubyCurses
       @db = db # for update
       @dbname = dbname
       @tablename = table
-      #$log.debug "XXX COLUMNS #{sql}  "
+      $log.debug "XXX sql #{sql}, #{rows.count}  "
       content = rows
       return nil if content.nil? or content[0].nil?
       self.datatypes = content[0].types 
@@ -198,13 +199,21 @@ module RubyCurses
       @rows[@current_record][@current_index]
     end
     def fire_action_event
-      @old_selected_index = @selected_index
-      print_unselected_row
-      color_field @old_selected_index 
+      if @current_index == @selected_index
+        @old_selected_index = @current_index
+        #highlight_unselected_row
+        unhighlight_row @current_index
+        color_field @current_index 
+        @selected_index = nil
+        return
+      end
+      unhighlight_row @selected_index
+      color_field @selected_index 
       @selected_index = @current_index
+      highlight_selected_row
+      @old_selected_index = @selected_index
 
       #print_selected_row
-      highlight_selected_row
       @repaint_required = true
       super
     end
@@ -238,6 +247,7 @@ module RubyCurses
     #  data
     #
     def get_content
+      return nil unless @rows
       id = @current_record
 
       row = @rows[id]
@@ -283,6 +293,7 @@ module RubyCurses
       maxlen = @maxlen || @width-@internal_width
       #$log.debug " #{@name} textview repaint width is #{@width}, height is #{@height} , maxlen #{maxlen}/ #{@maxlen}, #{@graphic.name} roff #{@row_offset} coff #{@col_offset}" 
       tm = get_content
+      return unless tm  # no data
       rc = tm.size # row_count
       tr = @toprow
       acolor = get_color $datacolor
@@ -432,7 +443,6 @@ module RubyCurses
       att = FFI::NCurses::A_REVERSE
       att = get_attrib(@selected_attrib) if @selected_attrib
       @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
-      #@graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
     end
     def highlight_focussed_row type, r=nil, c=nil, content=nil, acolor=nil
       return unless @should_show_focus
@@ -456,6 +466,18 @@ module RubyCurses
       att = get_attrib(attrib) #if @focussed_attrib
       @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
       #@graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
+    end
+    def unhighlight_row index,  r=nil, c=nil, content=nil, acolor=nil
+      return unless index # no selection
+      r = _convert_index_to_printable_row(index) unless r
+      return unless r # not on screen
+      unless c
+        _r, c = rowcol
+      end
+      acolor ||= get_color $datacolor
+      att = FFI::NCurses::A_NORMAL
+      att = get_attrib(@normal_attrib) if @normal_attrib
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
     end
     # I am doing this so i can call this from outside, so repaint
     # is obviated
