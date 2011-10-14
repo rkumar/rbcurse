@@ -1,6 +1,7 @@
 require 'rbcurse/extras/resultsettextview.rb'
 require 'fileutils'
 
+=begin
 # See tabbed pane, and add_cols nad add_rows, on_entr and set_form_row to see cursor issue
 # remove main form 
 # don't make a widget just an object
@@ -251,6 +252,7 @@ module RubyCurses
     end
   end  # class
 end # module
+=end
 if __FILE__ == $PROGRAM_NAME
 require 'rbcurse/app'
 
@@ -269,7 +271,7 @@ App.new do
   sql = "select id, type, priority, title from bugs"
   sql = "select * from bugs"
   file = "bugzy.sqlite"
-  tv = RubyCurses::ResultsetTextView.new @form, :row => 1,  :col => 1, :width => 50, :height => 16, :row_selected_symbol => '>'
+  tv = RubyCurses::ResultsetTextView.new @form, :row => 1,  :col => 1, :width => 50, :height => 16
   tv.sqlite file, "bugs", sql
     #RubyCurses::Browser.browse_sql("bugzy.sqlite", "bugs", sql, :close_key => FFI::NCurses::KEY_F10, :title => "Enter to close", :window => @window) do |t|
     #end
