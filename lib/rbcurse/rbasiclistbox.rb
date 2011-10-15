@@ -69,6 +69,7 @@ module RubyCurses
     # index of selected rows, if multiple selection asked for
     attr_reader :selected_indices
 
+    dsl_accessor :should_show_focus
 
     # basic listbox constructor
     #
@@ -89,6 +90,7 @@ module RubyCurses
       @selected_indices = []
       @selected_index = nil
       @row_offset = @col_offset = 1
+      @should_show_focus = true # Here's its on since the cellrenderer will show it on repaint
       super
       @_events.push(*[:ENTER_ROW, :LEAVE_ROW, :LIST_SELECTION_EVENT, :PRESS])
       @selection_mode ||= :multiple # default is multiple, anything else given becomes single
@@ -101,6 +103,8 @@ module RubyCurses
       # when the combo box has a certain row in focus, the popup should have the same row in focus
 
       init_vars
+      @internal_width = 2
+      @internal_width = 0 if @suppress_borders
 
       if @list && !@selected_index.nil?  # XXX
         set_focus_on @selected_index # the new version
@@ -110,6 +114,7 @@ module RubyCurses
     # and when list data changed, so only put relevant resets here.
     def init_vars
       @repaint_required = true
+      @widget_scrolled = true  # 2011-10-15 
       @toprow = @pcol = 0
       if @show_selector
         @row_selected_symbol ||= '>'
@@ -186,6 +191,7 @@ module RubyCurses
       clear_selection
     
       @repaint_required = true
+      @widget_scrolled = true  # 2011-10-15 
       @list
     end
     # conv method to insert data, trying to keep names same across along with Tabular, TextView,
@@ -383,6 +389,13 @@ module RubyCurses
       true
     end
     def on_enter_row arow
+      # copied from resultsettextview, can this not be in one place like listscrollable ? FIXME
+      if @should_show_focus
+        highlight_focussed_row :FOCUSSED
+        unless @oldrow == @selected_index
+          highlight_focussed_row :UNFOCUSSED
+        end
+      end
       fire_handler :ENTER_ROW, self
       @repaint_required = true
     end
@@ -408,6 +421,17 @@ module RubyCurses
     # a section of it.
     def repaint #:nodoc:
       return unless @repaint_required
+      #
+      # TRYING OUT dangerous 2011-10-15 
+      @repaint_required = false
+      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed
+
+      unless @repaint_required
+        unhighlight_row @old_selected_index
+        highlight_selected_row
+      end
+      return unless @repaint_required
+      $log.debug "BASICLIST REPAINT WILL HAPPEN #{current_index} "
       # not sure where to put this, once for all or repeat 2010-02-17 23:07 RFED16
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
@@ -419,7 +443,7 @@ module RubyCurses
       # we are making sure display len does not exceed width XXX hope this does not wreak havoc elsewhere
       _dl = [@display_length || 100, @width-2].min # 2011-09-17 RK overwriting when we move grabbar in vimsplit
 
-      $log.debug "basicrlistbox repaint  #{@name} graphic #{@graphic}"
+      $log.debug "basiclistbox repaint  #{@name} graphic #{@graphic}"
       #$log.debug "XXX repaint to_print #{@to_print_borders} "
       print_borders unless @suppress_borders # do this once only, unless everything changes
       #maxlen = @maxlen || @width-2
@@ -467,8 +491,35 @@ module RubyCurses
           end
         end
       end # rc == 0
-      #@table_changed = false
       @repaint_required = false
+      # 2011-10-13 
+      @widget_scrolled = false
+      @record_changed = false
+      @old_pcol = @pcol
+    end
+    def highlight_selected_row r=nil, c=nil, acolor=nil
+      return unless @selected_index # no selection
+      r = _convert_index_to_printable_row(@selected_index) unless r
+      return unless r # not on screen
+      unless c
+        _r, c = rowcol
+      end
+      acolor ||= get_color $datacolor, @selected_color, @selected_bgcolor
+      att = FFI::NCurses::A_REVERSE
+      att = get_attrib(@selected_attrib) if @selected_attrib
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
+    end
+    def unhighlight_row index,  r=nil, c=nil, acolor=nil
+      return unless index # no selection
+      r = _convert_index_to_printable_row(index) unless r
+      return unless r # not on screen
+      unless c
+        _r, c = rowcol
+      end
+      acolor ||= get_color $datacolor
+      att = FFI::NCurses::A_NORMAL
+      att = get_attrib(@normal_attrib) if @normal_attrib
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to
@@ -523,6 +574,7 @@ module RubyCurses
         @current_index = 0
         set_form_row
       end
+      @widget_scrolled = true  # 2011-10-15 
       @repaint_required = true
     end
 
