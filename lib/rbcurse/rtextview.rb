@@ -460,7 +460,7 @@ module RubyCurses
             # rlistbox does
             # scrolling fails if you do not dup, since content gets truncated
             content = content.dup
-            sanitize content if @sanitization_required
+            sanitize(content) if @sanitization_required
             truncate content
             @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], acolor, @attr
 
@@ -489,11 +489,13 @@ module RubyCurses
     # takes a block, this way anyone extending this class can just pass a block to do his job
     # This modifies the string
     def sanitize content  #:nodoc:
+
       if content.is_a? String
         content.chomp!
         # trying out since gsub giving #<ArgumentError: invalid byte sequence in UTF-8> 2011-09-11 
-        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
-        content.gsub!(/[\t\n\r]/, '  ') # don't display tab
+        
+        content.replace(content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?"))
+        content.gsub!(/[\t\n\r]/, '  ') # don't display tab or newlines
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
         content
