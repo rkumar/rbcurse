@@ -472,7 +472,14 @@ module RubyCurses
       install_keys
       init_vars
       install_list_keys
-      bind(:PROPERTY_CHANGE){|e| @cell_renderer = nil } # will be recreated if anything changes 2011-09-28 V1.3.1  
+      # OMG What about people whove installed custom renders such as rfe.rb 2011-10-15 
+      #bind(:PROPERTY_CHANGE){|e| @cell_renderer = nil } # will be recreated if anything changes 2011-09-28 V1.3.1  
+      bind(:PROPERTY_CHANGE){|e| 
+        # I can't delete the cell renderer, but this may not have full effect if one color is passed.
+        if @cell_renderer.respond_to? e.property_name
+          @cell_renderer.send(e.property_name.to_sym, e.newvalue)
+        end
+      } # will be recreated if anything changes 2011-09-28 V1.3.1  
 
       if @list && !@list.selected_index.nil? 
         set_focus_on @list.selected_index # the new version
