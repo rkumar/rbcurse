@@ -23,6 +23,7 @@ module RubyCurses
       @repaint_required = true
       case @selection_mode 
       when :multiple
+        @widget_scrolled = true # FIXME we need a better name
         if @selected_indices.include? crow
           @selected_indices.delete crow
           lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
@@ -34,10 +35,12 @@ module RubyCurses
         end
       else
         if @selected_index == crow 
+          @old_selected_index = @selected_index # 2011-10-15 so we can unhighlight
           @selected_index = nil
           lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
           fire_handler :LIST_SELECTION_EVENT, lse
         else
+          @old_selected_index = @selected_index # 2011-10-15 so we can unhighlight
           @selected_index = crow 
           lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
           fire_handler :LIST_SELECTION_EVENT, lse
@@ -57,6 +60,7 @@ module RubyCurses
       max = [@last_clicked, crow].max
       case @selection_mode 
       when :multiple
+        @widget_scrolled = true # FIXME we need a better name
         if @selected_indices.include? crow
           # delete from last_clicked until this one in any direction
           min.upto(max){ |i| @selected_indices.delete i }
@@ -79,11 +83,13 @@ module RubyCurses
       return if @selected_indices.nil? || @selected_indices.empty?
       @selected_indices = []
       @selected_index = nil
+      @old_selected_index = nil
       # Not sure what event type I should give, DELETE or a new one, user should
       #  understand that selection has been cleared, and ignore first two params
       lse = ListSelectionEvent.new(0, @list.size, self, :CLEAR)
       fire_handler :LIST_SELECTION_EVENT, lse
       @repaint_required = true
+      @widget_scrolled = true # FIXME we need a better name
     end
     def is_row_selected crow=@current_index-@_header_adjustment
       case @selection_mode 
@@ -114,6 +120,7 @@ module RubyCurses
     # should only be used if multiple selection interval
     def add_selection_interval ix0, ix1
       return if @selection_mode != :multiple
+      @widget_scrolled = true # FIXME we need a better name
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
@@ -212,6 +219,7 @@ module RubyCurses
     def list_init_vars
       @selected_indices = []
       @selected_index = nil
+      @old_selected_index = nil
       #@row_selected_symbol = ''
       if @show_selector
         @row_selected_symbol ||= '*'
