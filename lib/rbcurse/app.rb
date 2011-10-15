@@ -93,7 +93,7 @@ module RubyCurses
       @variables = {}
       # if we are creating child objects then we will not use outer form. this object will manage
       @current_object = [] 
-      @_system_commands = %w{ bind_global bind_component }
+      @_system_commands = %w{ bind_global bind_component field_help_text }
 
       init_vars
       $log.debug "XXX APP CONFIG: #{@config}  " if $log.debug? 
@@ -369,10 +369,21 @@ module RubyCurses
       #message "Bound #{str} to #{cmd} "
     end
     def bind_component
+      say_with_pause "Todo. <press>"
       # the idea here is to get the current component
       # and bind some keys to some methods.
       # however, how do we divine the methods we can map to
       # and also in some cases the components itself has multiple components
+    end
+    # displays help_text associated with field. 2011-10-15 
+    def field_help_text
+      f = @form.get_current_field
+      if f.respond_to?('help_text')
+        h = f.help_text
+        alert "#{h}"
+      else
+        alert "Could not get field #{f} or does not respond to helptext"
+      end
     end
     # prompts user for a command. we need to get this back to the calling app
     # or have some block stuff TODO
@@ -412,7 +423,7 @@ module RubyCurses
           if cmd == "close"
             throw :close # other seg faults in del_panel window.destroy executes 2x
           else
-            send cmd, *cmdline
+            res = send cmd, *cmdline
           end
         else
           alert "#{self.class} does not respond to #{cmd} "
@@ -613,8 +624,14 @@ module RubyCurses
       end
       return w
     end
-    def textview *args, &block
-      require 'rbcurse/rtextview'
+    # similar definitions for textview and resultsettextview
+    {
+      'rbcurse/rtextview' => 'TextView',
+      'rbcurse/extras/resultsettextview' => 'ResultsetTextView'
+    }.each_pair {|k,p|
+      eval(
+           "def #{p.downcase} *args, &block
+              require \"#{k}\"
       config = {}
       # TODO confirm events many more
       events = [ :PRESS, :LEAVE, :ENTER ]
@@ -624,35 +641,17 @@ module RubyCurses
       _position(config)
       # if no width given, expand to flows width
       config[:width] ||= @stack.last.width if @stack.last
-      raise "height needed for textview" if !config.has_key? :height
+      raise \"height needed for #{p.downcase}\" if !config.has_key? :height
       useform = nil
       useform = @form if @current_object.empty?
-      w = TextView.new useform, config
+      w = #{p}.new useform, config
       if block
         w.bind(block_event, &block)
       end
       return w
-    end
-    def resultsettextview *args, &block
-      require 'rbcurse/extras/resultsettextview'
-      config = {}
-      # TODO confirm events many more
-      events = [ :PRESS, :LEAVE, :ENTER ]
-      block_event = events[0]
-      _process_args args, config, block_event, events
-      config[:width] = config[:display_length] unless config.has_key? :width
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      raise "height needed for resultsettextview" if !config.has_key? :height
-      useform = nil
-      useform = @form if @current_object.empty?
-      w = ResultsetTextView.new useform, config
-      if block
-        w.bind(block_event, &block)
-      end
-      return w
-    end
+           end"
+           )
+    }
     # progress bar
     def progress *args, &block
       require 'rbcurse/rprogress'
@@ -1146,7 +1145,7 @@ module RubyCurses
                 begin
                   send cmd, *cmdline
                 rescue => exc
-                  $log.debug "ERR EXC: send throwing an exception now. Duh. IMAP keeps crashing haha !! #{exc}  " if $log.debug? 
+                  $log.error "ERR EXC: send throwing an exception now. Duh. IMAP keeps crashing haha !! #{exc}  " if $log.debug? 
                   if exc
                     $log.debug( exc) 
                     $log.debug(exc.backtrace.join("\n")) 
