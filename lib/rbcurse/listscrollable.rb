@@ -477,6 +477,7 @@ module ListScrollable
       if content.is_a? String
         content.chomp!
         content.gsub!(/\t/, '  ') # don't display tab
+        content.gsub!(/\n/, '  ') # don't display newline, rarely works
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
         content
@@ -500,6 +501,59 @@ module ListScrollable
         end
       end
       content
+    end
+    #
+    # Is the given index in the visible area
+    # UNTESTED XXX
+    def is_visible? index
+      #(0..scrollatrow()).include? index - @toprow
+      j = index - @toprow
+      j >= 0 && j <= scrollatrow()
+    end
+    # offset in widget like 0..scrollatrow
+    # NOTE can return nil, if user scrolls forward or backward
+    # @private
+    def _convert_index_to_visible_row index=@current_index
+      pos = index - @toprow
+      return nil if pos < 0 || pos > scrollatrow()
+      return pos
+    end
+    # actual position to write on window
+    # NOTE can return nil, if user scrolls forward or backward
+    def _convert_index_to_printable_row index=@current_index
+      r,c = rowcol
+      pos = _convert_index_to_visible_row(index)
+      return nil unless pos
+      pos = r + pos
+      return pos
+    end
+
+    # highlights the focussed (current) and unfocussed (oldrow)
+    #  NOTE: when multiselecting ... it will remove selection
+    #  so be careful when calling.
+    def highlight_focussed_row type, r=nil, c=nil, acolor=nil
+      return unless @should_show_focus
+      case type
+      when :FOCUSSED
+        ix = @current_index
+        return if is_row_selected ix
+        r = _convert_index_to_printable_row() unless r
+        attrib = @focussed_attrib || 'bold'
+
+      when :UNFOCUSSED
+        return if @oldrow.nil? || @oldrow == @current_index
+        ix = @oldrow
+        return if is_row_selected ix
+        r = _convert_index_to_printable_row(@oldrow) unless r
+        return unless r # row is not longer visible
+        attrib = @attr
+      end
+      unless c
+        _r, c = rowcol
+      end
+      acolor ||= get_color $datacolor
+      att = get_attrib(attrib) #if @focussed_attrib
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
     end
      
 
