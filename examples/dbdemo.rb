@@ -108,10 +108,16 @@ App.new do
   $current_table = nil
   $current_db = nil # "testd.db"
   connect $current_db if $current_db
+  def which_field
+    alert "curent field is #{form.get_current_field} "
+  end
 
+  def get_commands
+    %w{ which_field }
+  end
   def help_text
     <<-eos
-               APPEMAIL HELP 
+               DBDEMO HELP 
 
       This is some help text for appemail.
       We are testing out this feature.
@@ -234,7 +240,8 @@ App.new do
       text = "Select DB first. Press Alt-D"
     end
     tlist = basiclist :name => "tlist", :list => [text], :title => "Tables", :height => 10,
-      :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE
+      :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
+      :help_text => "Enter to View complete table, Space to select table and view columns"
     tlist.bind(:PRESS) do |eve|
       if $current_db
       # get data of table
@@ -250,7 +257,8 @@ App.new do
     end
     clist = basiclist :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
       :selection_mode => :multiple,
-      :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE
+      :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
+      :help_text => "Enter to View selected fields, Space to select columns, w - where, o-order"
     tlist.bind(:LIST_SELECTION_EVENT) do |eve|
       $selected_table = eve.source[eve.firstrow]
       $current_table = $selected_table
@@ -463,7 +471,8 @@ App.new do
     end
     blank
     #tv = RubyCurses::ResultsetTextView.new @form, :row => 1,  :col => 1, :width => 50, :height => 16
-    tv = resultsettextview :name => 'resultset', :height => 18 , :title => 'DB Browser'
+    tv = resultsettextview :name => 'resultset', :height => 18 , :title => 'DB Browser',
+     :help_text => "C to edit a column, Navigation: M-lhjk, Next Record M-. Previous M-,"
     #sql = "select * from bugs"
     #file = "bugzy.sqlite"
     #tv.sqlite file, "bugs", sql
