@@ -1365,12 +1365,14 @@ module RubyCurses
               len += str.length - olen
               clear_line len+maxlen+1, @prompt_length
             else # try to pick up default, seems we don't get it 2011-10-14 
-              olen = str.length
-              str = @default
-              str = str.dup
-              curpos = str.length
-              len += str.length - olen
-              clear_line len+maxlen+1, @prompt_length
+              if @default
+                olen = str.length
+                str = @default
+                str = str.dup
+                curpos = str.length
+                len += str.length - olen
+                clear_line len+maxlen+1, @prompt_length
+              end
             end
           when KEY_DOWN
             if @history && !@history.empty?
