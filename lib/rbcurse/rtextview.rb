@@ -76,6 +76,7 @@ module RubyCurses
       @curpos = @pcol = @toprow = @current_index = 0
       @repaint_all=true 
       @repaint_required=true 
+      @widget_scrolled = true
       ## 2010-02-10 20:20 RFED16 taking care if no border requested
       @row_offset = @col_offset = 0 if @suppress_borders == true
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
@@ -205,7 +206,7 @@ module RubyCurses
     def print_foot #:nodoc:
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
       @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
@@ -218,11 +219,16 @@ module RubyCurses
     end
 
     def repaint # textview :nodoc:
-      $log.debug "TEXTVIEW repaint r c #{@row}, #{@col}, key: #{$current_key}, reqd #{@repaint_required} "  
+      #$log.debug "TEXTVIEW repaint r c #{@row}, #{@col}, key: #{$current_key}, reqd #{@repaint_required} "  
 
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
+      # TRYING OUT dangerous 2011-10-13 
+      @repaint_required = false
+      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed
+
       paint if @repaint_required
-    #  raise "TV 175 graphic nil " unless @graphic
+
+      @repaint_footer_required = true if @oldrow != @current_index # 2011-10-15 
       print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
     end
     def getvalue
@@ -429,7 +435,7 @@ module RubyCurses
     ##+ what is calculated in divider_location.
     def paint  #:nodoc:
     
-      $log.debug "XXX TEXTVIEW PAINT HAPPENING"
+      $log.debug "XXX TEXTVIEW PAINT HAPPENING #{@current_index} "
       my_win = nil
       if @form
         my_win = @form.window
@@ -479,11 +485,15 @@ module RubyCurses
           @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
         end
       end
-      #show_caret_func
-      #@table_changed = false
+
+
       @repaint_required = false
       @repaint_footer_required = true
       @repaint_all = false 
+      # 2011-10-15 
+      @widget_scrolled = false
+      @record_changed = false
+      @old_pcol = @pcol
 
     end
     # takes a block, this way anyone extending this class can just pass a block to do his job
