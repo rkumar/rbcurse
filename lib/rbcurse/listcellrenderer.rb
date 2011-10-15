@@ -66,7 +66,8 @@ module RubyCurses
       create_color_pairs unless @pairs
       raise ArgumentError, "pairs hash is null. Changes have happened in listcellrenderer" unless @pairs
       @color_pair = @pairs[:normal]
-      @attr = $row_attr
+      #@attr = $row_attr
+      @attr = @row_attr || $row_attr # changed 2011-10-15 since we seem to be ignoring row_attr changes
       # give precedence to a selected row
       if selected
         @color_pair = @pairs[:selected]
