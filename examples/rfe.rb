@@ -817,7 +817,7 @@ class RFe
       status_row.text = "Pressed #{ch} , #{s}"
       @form.handle_key(ch)
 
-      @form.repaint
+      #@form.repaint
       @window.wrefresh
     end
     ensure
