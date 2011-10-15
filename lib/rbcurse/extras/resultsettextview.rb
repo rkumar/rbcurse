@@ -379,29 +379,9 @@ module RubyCurses
 
       @graphic.mvchgat(y=r, x=startpoint, hlwidth, Ncurses::A_NORMAL, @fieldbgcolor, nil)
     end
-    def is_visible? index
-      (0..scrollatrow()).include? index - @toprow
-    end
-    # offset in widget like 0..scrollatrow
-    # NOTE can return nil, if user scrolls forward or backward
-    # @private
-    def _convert_index_to_visible_row index=@current_index
-      pos = index - @toprow
-      return nil if pos < 0 || pos > scrollatrow()
-      return pos
-    end
-    # actual position to write on window
-    # NOTE can return nil, if user scrolls forward or backward
-    def _convert_index_to_printable_row index=@current_index
-      r,c = rowcol
-      pos = _convert_index_to_visible_row(index)
-      return nil unless pos
-      pos = r + pos
-      return pos
-    end
     # the idea here is to be able to call externally or from loop
     # However, for that content has to be truncated here, not in loop
-    def print_focussed_row type,  r=nil, c=nil, content=nil, acolor=nil
+    def DELprint_focussed_row type,  r=nil, c=nil, content=nil, acolor=nil
       return unless @should_show_focus
       case type
       when :FOCUSSED
@@ -432,7 +412,7 @@ module RubyCurses
 
     # this only highlights the selcted row, does not print data again
     # so its safer and should be used instead of print_selected_row
-    def highlight_selected_row r=nil, c=nil, content=nil, acolor=nil
+    def highlight_selected_row r=nil, c=nil, acolor=nil
       return unless @selected_index # no selection
       r = _convert_index_to_printable_row(@selected_index) unless r
       return unless r # not on screen
@@ -444,7 +424,7 @@ module RubyCurses
       att = get_attrib(@selected_attrib) if @selected_attrib
       @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
     end
-    def highlight_focussed_row type, r=nil, c=nil, content=nil, acolor=nil
+    def highlight_focussed_row type, r=nil, c=nil, acolor=nil
       return unless @should_show_focus
       case type
       when :FOCUSSED
@@ -467,7 +447,7 @@ module RubyCurses
       @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
       #@graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
     end
-    def unhighlight_row index,  r=nil, c=nil, content=nil, acolor=nil
+    def unhighlight_row index,  r=nil, c=nil, acolor=nil
       return unless index # no selection
       r = _convert_index_to_printable_row(index) unless r
       return unless r # not on screen
@@ -479,52 +459,11 @@ module RubyCurses
       att = get_attrib(@normal_attrib) if @normal_attrib
       @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
     end
-    # I am doing this so i can call this from outside, so repaint
-    # is obviated
-    def print_selected_row r=nil, c=nil, content=nil, acolor=nil
-      return unless @selected_index # no selection
-      r = _convert_index_to_printable_row(@selected_index) unless r
-      return unless r # not on screen
-      unless c
-        _r, c = rowcol
-      end
-      if content.nil?
-        content = @list[_convert_index_to_visible_row(@selected_index)]
-        content = content.dup
-        sanitize content if @sanitization_required
-        truncate content
-      end
-      acolor ||= get_color $datacolor
-      @graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @focussed_attrib || 'reverse'
-    end
-    def print_unselected_row r=nil, c=nil, content=nil, acolor=nil
-      return unless @old_selected_index # no selection
-      r = _convert_index_to_printable_row(@old_selected_index) unless r
-      return unless r # not on screen
-      unless c
-        _r, c = rowcol
-      end
-      if content.nil?
-        #content = @list[_convert_index_to_visible_row(@old_selected_index)]
-        content = @list[@old_selected_index]
-        content = content.dup
-        sanitize content if @sanitization_required
-        truncate content
-      end
-      acolor ||= get_color $datacolor
-      print_normal_row r, c, content, acolor
-    end
-    def print_normal_row r, c, content, acolor
-      @graphic.printstring r, c+@left_margin, "%-*s" % [@width-@internal_width,content], acolor, @attr
-    end
     def is_row_selected row
       @selected_index == row
     end
     def on_enter_row arow
       if @should_show_focus
-        #print_focussed_row :FOCUSSED
-        #print_focussed_row :UNFOCUSSED
-        $log.debug "XXX: PRINT CALLING FOCUSSED "
         highlight_focussed_row :FOCUSSED
         unless @oldrow == @selected_index
           highlight_focussed_row :UNFOCUSSED
