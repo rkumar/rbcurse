@@ -265,7 +265,8 @@ module RubyCurses
         
       when KEY_DOWN, ?j.getbyte(0)
         ret = down
-        get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
+        # This should be configurable, or only if all rows are visible
+        #get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
         check_curpos
       when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
