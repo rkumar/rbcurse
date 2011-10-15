@@ -241,7 +241,8 @@ App.new do
     end
     tlist = basiclist :name => "tlist", :list => [text], :title => "Tables", :height => 10,
       :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
-      :help_text => "Enter to View complete table, Space to select table and view columns"
+      :help_text => "Enter to View complete table, Space to select table and view columns",
+      :should_show_focus => true
     tlist.bind(:PRESS) do |eve|
       if $current_db
       # get data of table
