@@ -479,11 +479,7 @@ App.new do
     end
     blank
     #tv = RubyCurses::ResultsetTextView.new @form, :row => 1,  :col => 1, :width => 50, :height => 16
-    tv = resultsettextview :name => 'resultset', :height => 18 , :title => 'DB Browser',
-     :help_text => "C to edit a column, Navigation: M-lhjk, Next Record M-. Previous M-,"
-    #sql = "select * from bugs"
-    #file = "bugzy.sqlite"
-    #tv.sqlite file, "bugs", sql
+    tv = resultsettextview :name => 'resultset', :height => 18 , :title => 'DB Browser', :print_footer => true
 
   end
 end # app
