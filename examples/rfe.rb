@@ -81,6 +81,7 @@ class FileExplorer
     end
   end
   def goto_previous_dir
+    #alert "Previous dirs contain #{@prev_dirs} "
     d = @prev_dirs.pop
     if !d.nil? and d == @wdir
       d = @prev_dirs.pop
@@ -246,6 +247,7 @@ class FileExplorer
       title wdir
       #title_attrib 'reverse'
       cell_renderer RfeRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => rfe, "display_length"=> wid-2}
+      KEY_ROW_SELECTOR 0 # C-space since space used for preview
     end
     @list = lista
     lista.bind(:ENTER) {|l| @rfe.current_list(self); l.title_attrib 'reverse';  }
@@ -270,6 +272,7 @@ class FileExplorer
   end
   def filepath ix=current_index()
     f = filename(ix)
+    return unless f
     if f[0,1]=='/'
       f
     else
@@ -483,6 +486,8 @@ class RFe
       fp = @current_list.filepath
       content = get_contents(fp)
       rescue => err
+        $log.debug err.to_s
+        $log.debug(err.backtrace.join("\n"))
         alert err.to_s
         return
       end
@@ -569,6 +574,10 @@ class RFe
     when 'x'
       str= "exec #{fp}"
       exec_popup fp
+    when 'p'
+      page fp
+    when 'q'
+      qlmanage fp
     end
   end
   def opt_dir c
@@ -643,7 +652,50 @@ class RFe
   end
   def edit fp=@current_list.filepath
     $log.debug " edit #{fp}"
-    shell_out "/opt/local/bin/vim #{fp}"
+    editor = ENV['EDITOR'] || 'vi'
+    vimp = %x[which #{editor}].chomp
+    shell_out "#{vimp} #{fp}"
+  end
+  def page fp=@current_list.filepath
+    ft=%x[file #{fp}]
+    if ft.index("text")
+      pager = ENV['PAGER'] || 'less'
+      vimp = %x[which #{pager}].chomp
+      shell_out "#{vimp} #{fp}"
+    elsif ft.index(/zip/i)
+      shell_out "tar tvf #{fp} | less"
+    elsif ft.index(/directory/i)
+      shell_out "ls -lh  #{fp} | less"
+    else
+      alert "#{fp} is not text, not paging "
+      #use_on_file "als", fp # only zip or archive
+    end
+  end
+  def qlmanage fp=@current_list.filepath
+      begin
+        a=%x[which qlmanage]
+        if a != ""
+          cmd="qlmanage -p #{@current_list.filepath} 2>/dev/null"
+          %x[#{cmd}]
+        else
+          alert "qlmanage not present on your system. Trying pager"
+          page fp
+        end
+      rescue Interrupt
+      rescue => err
+        alert err.to_s
+      end
+  end
+  # also if calling program gives output but does not stop
+  # or take control, then nothing will show up
+  def use_on_file prog, args, fp=@current_list.filepath
+    vimp = %x[which #{prog}].chomp
+    if vimp != ""
+      alert "using #{prog} "
+      shell_out "#{vimp} #{args } #{fp}"
+    else
+      alert "could not locate #{prog} "
+    end
   end
   def stopping?
     @stopping
@@ -692,7 +744,7 @@ class RFe
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
         if ch < 33 || ch > 126
           Ncurses.beep
-        elsif "cmdsuvrex".index(ch.chr) == nil
+        elsif "cmdsuvrexpq".index(ch.chr) == nil
           Ncurses.beep
         else
           opt_file ch.chr
@@ -721,12 +773,11 @@ class RFe
     @form.bind_key(127){
       @current_list.goto_previous_dir
     }
+    # form gives this to list which consumes it for selection.
+    # need to bind to list's LIST_SELECTION_EVENT
     @form.bind_key(32){
-      begin
-      cmd="qlmanage -p #{@current_list.filepath} 2>/dev/null"
-      %x[#{cmd}]
-      rescue Interrupt
-      end
+      fp = @current_list.filepath
+      page fp
     }
     @form.bind_key(FFI::NCurses::KEY_F3){
       begin 
@@ -737,19 +788,30 @@ class RFe
     }
     @form.bind_key(FFI::NCurses::KEY_F1){
       #Io.view(["this is some help text","hello there"])
+      color0 = get_color($promptcolor, 'black','cyan')
+      color1 = get_color($reversecolor, 'green','black')
+      color2 = get_color($reversecolor, 'blue','black')
       arr = []
-      arr << "  FILE BROWSER HELP  "
+      #arr << "  FILE BROWSER HELP  "
+      arr << [color0,"        FILE BROWSER HELP      ", FFI::NCurses::A_BOLD]
       arr << "           "
-      arr << " <tab>   - switch between windows"
-      arr << " <enter> - open dir"
-      arr << " F3      - view file/dir/zip contents (toggle) "
-      arr << " F4      - edit file content"
-      arr << " <char>  - first file starting with <char>"
-      arr << " M-v     - Vim like bindings for navigation (toggle)"
+      arr << [[color1," <tab>   ",nil],[color2, "- switch between windows", nil]]
+      arr << [[color1," <enter> ",nil],[color2, "- open dir", nil]]
+      arr << [[color1," F3      ",nil],[color2, "- view file/dir/zip contents (toggle) ", nil]]
+      arr << [[color1," F4      ",nil],[color2, "- edit file content", nil]]
+      arr << [[color1," <char>  ", nil],[color2, "first file starting with <char>",nil]]
+      #arr << "         VIM MODE                              "
+      arr << [color0,"         VIM MODE  ", FFI::NCurses::A_BOLD]
+      arr << [[color1," M",nil],[color2, "-v     - Vim like bindings for navigation (toggle)", nil]]
+      arr << "   jk gg G up down motion, C-n C-p, Alt-0, Alt-9           "
+      arr << [[color1,"   p or Space ",nil],[color2, "- use pager on current file", nil]]
+      arr << [[color1,"   q      ",nil],[color2, "- use qlmanage on file ",nil],[$promptcolor, " (OSX)", nil]]
+      arr << [[color1,"   f<char> ",nil],[color2, "- first file starting with <char>", nil]]
 
       arr << "           "
       arr << " < > ^ V - move help window "
       arr << "           "
+      # next line does not work due to chunks
       w = arr.max_by(&:length).length
       #arr = ["this is some help text","hello there"]
 
@@ -760,7 +822,8 @@ class RFe
       #t.color = :black
       #t.bgcolor = :white
       # or
-      t.attr = :reverse
+      #t.attr = :reverse
+      t.attr = :normal
       #t.bind_key(KEY_F1){ alert "closing up!"; throw :close }
       # just for kicks move window around
       t.bind_key('<'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
@@ -795,6 +858,13 @@ class RFe
     @form.bind_key(FFI::NCurses::KEY_F8){
       system_popup()
     }
+    # will work if you are in vim mode
+    @form.bind_key(?p){
+      page
+    }
+    @form.bind_key(?q){
+      qlmanage
+    }
     # will no longer come here. list event has to be used
     #@form.bind_key(?\C-m){ # listbox has eaten it up
     @lista.list.bind(:PRESS){
@@ -809,7 +879,11 @@ class RFe
         @current_list.change_dir dir
       end
     }
+    gw = get_color($reversecolor, 'green', 'black')
+    bw = get_color($datacolor, 'blue', 'black')
     @klp = RubyCurses::KeyLabelPrinter.new @form, get_key_labels
+    @klp.footer_color_pair = bw
+    @klp.footer_mnemonic_color_pair = gw 
     @klp.set_key_labels get_key_labels(:file), :file
     @klp.set_key_labels get_key_labels(:view), :view
     @klp.set_key_labels get_key_labels(:dir), :dir
@@ -826,12 +900,14 @@ class RFe
       s = keycode_tos ch
       #status_row.text = "|  Pressed #{ch} , #{s}"
       @form.handle_key(ch)
+
+      # the following is just a test of show_colored_chunks
       #count = @current_list.list.size
       count1 = @lista.list.size
       count2 = @listb.list.size
       x, y = FFI::NCurses::getyx @window.get_window
-      chunks[0]=[color0, "%-30s" % status_row.text]
-      chunks[1]=[color1, "%-18s" % " |   #{ch}, #{s} |"]
+      chunks[0]=[color0, "%-30s" % status_row.text, FFI::NCurses::A_BOLD]
+      chunks[1]=[color1, "%-18s" % " |   #{ch}, #{s} |", FFI::NCurses::A_NORMAL]
       chunks[2]=[color0, "   Total: #{count1}, #{count2}"]
       @window.wmove(Ncurses.LINES-3,0)
       @window.color_set(color0, nil)
@@ -870,13 +946,13 @@ def get_key_labels categ=nil
   key_labels = [
     ['C-q', 'Exit'], ['C-v', 'View'], 
     ['C-f', 'File'], ['C-d', 'Dir'],
-    ['C-x','Select'], nil,
+    ['C-Sp','Select'], ['Spc', "Preview"],
     ['F3', 'View'], ['F4', 'Edit'],
     ['F5', 'Filter'], ['F6', 'Sort'],
     ['F7', 'Grep'], ['F8', 'System'],
     ['M-0', 'Top'], ['M-9', 'End'],
     ['C-p', 'PgUp'], ['C-n', 'PgDn'],
-    ['M-v', 'Vim Mode'], nil
+    ['M-v', 'Vim Mode'], ['BSpc', 'PrevDir']
   ]
   elsif categ == :file
   key_labels = [
@@ -968,6 +1044,10 @@ def filter
   @current_list.filter_pattern = f
   @current_list.rescan
 end
+
+# ask user for pattern to grep through files
+#  and display file names in same list
+
 def grep_popup
   last_regex = @last_regex || ""
   last_pattern = @last_pattern || "*"
@@ -1014,16 +1094,25 @@ def grep_popup
     flags=""
     flags << " -i "  if mform.by_name["case insensitive"].value==true
     flags << " -R " if mform.by_name["Recurse"].value==true
+    # sometimes grep pukes "No such file or directory if you specify some
+    #  filespec that is not present. I don't want it to come in filestr
+    #  so i am not piping stderr to stdout
     cmd = "cd #{@current_list.cur_dir()};grep -l #{flags} #{inp} #{fp}"
     filestr = %x[ #{cmd} ]
     files = nil
     files = filestr.split(/\n/) unless filestr.nil?
     #view filestr
+    if !files || files.empty?
+      alert "Sorry! No files for regex #{inp}"
+      return
+    end
     @current_list.title "grep #{inp}"
     @current_list.populate files
+    # Use backspace to go back
   end
   return mb.selected_index, mform.by_name["regex"].getvalue, mform.by_name["filepattern"].getvalue, mform.by_name["Recurse"].value, mform.by_name["case insensitive"].value
 end
+
 def system_popup
   deflt = @last_system || ""
   options=["run in shell","view output","file explorer"]
