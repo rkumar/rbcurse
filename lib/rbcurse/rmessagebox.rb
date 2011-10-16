@@ -257,18 +257,14 @@ module RubyCurses
       else
         row=(@layout[:height]/3) if row.nil?
         @message_col = (width-message.length)/2
+        @message_col = 4 if @message.is_a? Array
         @message_col = 4 if @message_col < 4 # this was often disappearing 2010-10-17 13:00 
         #$log.debug "XX ALERT col #{@message_col} w: #{width} len: #{message.length} "
       end
       @message_row = row
       # added 2009-11-05 14:53 to fix erasure of border
       display_length -= @message_col
-      # FIXME : wont print if newline at end of message !!!
-      #@window.printstring( row, @message_col , message, color=$reversecolor)
       # 2008-12-30 19:45 experimenting with label so we can get justify and wrapping.
-      #@window.printstring( row, @message_col , message, color=$reversecolor)
-        #$log.debug " print_message: row #{row}, col #{@message_col} "
-      #message_label = RubyCurses::Label.new @form, {'text' => message, "name"=>"message_label","row" => row, "col" => @message_col, "display_length" => display_length,  "height" => @message_height, "attr"=>"reverse"}
       # 2011-09-20 trying to take care of when user changes color and bgcolor while calling.
       clr = @color || :black
       bgclr = @bgcolor || :white
