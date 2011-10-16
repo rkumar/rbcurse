@@ -518,6 +518,24 @@ module VER
       Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
       $log.debug "win destroy end"
     end
+    def printstring_or_chunks(r,c,content, color, att = Ncurses::A_NORMAL)
+      if content.is_a? String
+        printstring(r,c,content, color, att)
+      elsif content.is_a? Array
+                # several chunks in one row - NOTE Very experimental may change
+        if content[0].is_a? Array
+          wmove r, c
+          # either we have to loop through and put in default color and attr
+          # or pass it to show_col
+          a = get_attrib att
+          show_colored_chunks content, color, a
+        else
+          # a single row chunk - NOTE Very experimental may change
+          text = content[1].dup
+          printstring r, c, text, content[0] || color, content[2] || att
+        end
+      end
+    end
     ## 
     # added by rk 2008-11-29 19:01 
     # I usually use this, not the others ones here
