@@ -636,7 +636,7 @@ module RubyCurses
       end
     end
     # added 2010-09-15 00:11 to make life easier
-    def_delegators :@list, :insert, :remove_all, :delete_at, :include?, :each, :values
+    def_delegators :@list, :insert, :remove_all, :delete_at, :include?, :each, :values, :size
     # get element at
     # @param [Fixnum] index for element
     # @return [Object] element
