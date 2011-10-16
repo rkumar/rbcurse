@@ -365,6 +365,9 @@ module RubyCurses
         @key_args ||= {}
         @key_args[keycode] = args
       end
+      def bind_keys keycodes, *args, &blk
+        keycodes.each { |k| bind_key k, *args, &blk }
+      end
       # e.g. process_key ch, self
       # returns UNHANDLED if no block for it
       # after form handles basic keys, it gives unhandled key to current field, if current field returns
@@ -1506,6 +1509,16 @@ module RubyCurses
     end
     return 0
   end
+  #
+  # These mappings will only trigger if the current field
+  #  does not use them.
+  #
+  def map_keys
+    return if @keys_mapped
+    bind_keys([?\M-?,?\?]) { alert(get_current_field.help_text, 'title' => 'Help Text', :bgcolor => 'green', :color => :white) if get_current_field.help_text }
+    #bind_key(?\?) { alert(get_current_field.help_text.split(",")) if get_current_field.help_text }
+    @keys_mapped = true
+  end
   
   ## forms handle keys
   # mainly traps tab and backtab to navigate between widgets.
@@ -1515,6 +1528,7 @@ module RubyCurses
   # NOTE : please rescue exceptions when you use this in your main loop and alert() user
   #
   def handle_key(ch)
+    map_keys unless @keys_mapped
     handled = :UNHANDLED # 2011-10-4 
         if ch ==  ?\C-u.getbyte(0)
           ret = universal_argument
@@ -2269,7 +2283,11 @@ module RubyCurses
       # value often nil so putting blank, but usually some application error
       value = getvalue_for_paint || ""
       lablist = []
-      if @height && @height > 1
+      # trying out array values 2011-10-16 more for messageboxes.
+      if value.is_a? Array
+        lablist = text
+        @height = text.size
+      elsif @height && @height > 1
         lablist = wrap_text(value, @display_length).split("\n")
       else
         # ensure we do not exceed
