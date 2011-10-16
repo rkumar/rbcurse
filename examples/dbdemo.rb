@@ -234,7 +234,8 @@ App.new do
   mb.bgcolor = :blue
   @form.set_menu_bar mb
   tv = nil
-  stack :margin => 0 do
+  col1w = 20
+  stack :margin => 0, :width => col1w do
     text = "No tables"
     if !$current_db
       text = "Select DB first. Press Alt-D"
@@ -302,16 +303,22 @@ App.new do
       $log.debug "XXX: ORDER: #{$order_columns}. Press F4 when done"
     }
     @statusline = status_line
+    wg = get_color($datacolor, 'white','green')
+    wb = get_color($datacolor, 'white','blue')
     @statusline.command { 
       # trying this out. If you want a persistent message that remains till the next on
       #  then send it in as $status_message
       text = $status_message.value || ""
       if !$current_db
-        "%-20s [%-s] %s" % [ Time.now, "Select a Database", text]
+        #"%-20s [%-s] %s" % [ Time.now, "Select a Database", text]
+        [ [nil, "%-22s" % Time.now, nil], [$errorcolor, " [Select a Database ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
       elsif !$current_table
-        "%-20s [DB: %-s | %-s ] %s" % [ Time.now, $current_db || "None", $current_table || "Select a table", text] 
+        #"%-20s [DB: %-s | %-s ] %s" % [ Time.now, $current_db || "None", $current_table || "Select a table", text] 
+        [ [nil, "%-22s [DB: %-s | " % [Time.now, $current_db || "None" ],nil], [$errorcolor, " Select a Table ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
       else
-        "%-20s [DB: %-s | %-s ] %s" % [ Time.now, $current_db || "None", $current_table || "----", text] 
+        #"%-20s [DB: %-s | %-s ] %s" % [ Time.now, $current_db || "None", $current_table || "----", text] 
+        [ [nil, "%-22s [DB: " % Time.now, nil], [wb, " #{$current_db} ", FFI::NCurses::A_BOLD],
+        [wg, $current_table || "----", FFI::NCurses::A_BOLD], [nil, text, nil] ]
       end
     }
     @adock = nil
@@ -398,7 +405,7 @@ App.new do
       end
     end
   end # stack
-  stack :margin => 50, :width => :EXPAND  do
+  stack :margin => col1w+1, :width => :EXPAND  do
     tarea = textarea :name => 'tarea', :height => 5, :title => 'Sql Statement'
     undom = SimpleUndo.new tarea
     tarea.bind_key(Ncurses::KEY_F4) do
