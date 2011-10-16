@@ -223,12 +223,16 @@ module VER
     #  is 0
     #  Previously this printed a chunk as a full line, I've modified it to print on 
     #  one line. This can be used for running text. 
-    def show_colored_chunks(chunks)
+    def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
       return unless visible?
-      chunks.each do |color, chunk|
+      chunks.each do |color, chunk, attrib|
+        color ||= defcolor
+        attrib ||= defattr
         #$log.debug "XXX: CHUNK #{chunk} "
-        color_set(color,nil)
+        color_set(color,nil) if color
+        wattron(attrib) if attrib
         print(chunk)
+        wattroff(attrib) if attrib
       end
     end
 
