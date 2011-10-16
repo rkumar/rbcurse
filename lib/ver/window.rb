@@ -187,30 +187,48 @@ module VER
       end
       FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
     end
+
+    # NOTE: many of these methods using width will not work since root windows width 
+    #  is 0
     def print(string, width = width)
       return unless visible?
-      waddnstr(string.to_s, width) # changed 2011 dts  
+      w = width == 0? Ncurses.COLS : width
+      waddnstr(string.to_s, w) # changed 2011 dts  
     end
 
+    # NOTE: many of these methods using width will not work since root windows width 
+    #  is 0
     def print_yx(string, y = 0, x = 0)
-      mvwaddnstr(y, x, string, width) # changed 2011 dts  
+      w = width == 0? Ncurses.COLS : width
+      mvwaddnstr(y, x, string, w) # changed 2011 dts  
     end
 
+    # NOTE: many of these methods using width will not work since root windows width 
+    #  is 0
     def print_empty_line
       return unless visible?
-      printw(' ' * width)
+      w = width == 0? Ncurses.COLS : width
+      printw(' ' * w)
     end
 
+    # NOTE: many of these methods using width will not work since root windows width 
+    #  is 0
     def print_line(string)
-      print(string.ljust(width))
+      w = width == 0? Ncurses.COLS : width
+      print(string.ljust(w))
     end
 
-    # @unused, pls remove
+    
+    # NOTE: many of these methods using width will not work since root windows width 
+    #  is 0
+    #  Previously this printed a chunk as a full line, I've modified it to print on 
+    #  one line. This can be used for running text. 
     def show_colored_chunks(chunks)
       return unless visible?
       chunks.each do |color, chunk|
-        color_set(color)
-        print_line(chunk)
+        #$log.debug "XXX: CHUNK #{chunk} "
+        color_set(color,nil)
+        print(chunk)
       end
     end
 
