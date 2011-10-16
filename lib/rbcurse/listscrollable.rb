@@ -478,6 +478,7 @@ module ListScrollable
         content.chomp!
         content.replace(content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?"))
         content.gsub!(/[\t\r\n]/, '  ') # don't display tab, newline
+        content.gsub!(/\n/, '  ') # don't display tab, newline
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
         content
