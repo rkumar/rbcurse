@@ -429,7 +429,7 @@ module RubyCurses
     dsl_property :left_margin
     # please set these in he constructor block. Settin them later will have no effect
     # since i would have bound them to actions
-    dsl_accessor :KEY_ROW_SELECTOR          # this is going to go XXX TODO
+    dsl_accessor :KEY_ROW_SELECTOR          # editable lists may want to use 0 or some other key
     dsl_accessor :KEY_GOTO_TOP          # this is going to go
     dsl_accessor :KEY_GOTO_BOTTOM          # this is going to go
     dsl_accessor :KEY_CLEAR_SELECTION          # this is going to go
@@ -515,7 +515,8 @@ module RubyCurses
       bind_key([?g,?g]){ goto_top() }
       bind_key(?/){ ask_search() }
       bind_key(?n){ find_more() }
-      bind_key(32){ toggle_row_selection() }
+      #bind_key(32){ toggle_row_selection() } # some guys may want another selector
+      bind_key(@KEY_ROW_SELECTOR){ toggle_row_selection() }
       bind_key(10){ fire_action_event }
       bind_key(13){ fire_action_event }
       @keys_mapped = true
