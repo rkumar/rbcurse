@@ -238,6 +238,8 @@ module RubyCurses
       @list[@current_index]
     end
     # textview
+    # NOTE: i think this should return if list is nil or empty. No need to put
+    # stuff into buffer and continue. will trouble other classes that extend.
     def handle_key ch #:nodoc:
       $log.debug " textview got ch #{ch} "
       @old_pcol = @pcol
@@ -604,6 +606,7 @@ module RubyCurses
     # FIXME we can create this once and reuse
     #++
     def fire_action_event
+      return if @list.nil? || @list.size == 0
       require 'rbcurse/ractionevent'
       aev = TextActionEvent.new self, :PRESS, current_value(), @current_index, @curpos
       fire_handler :PRESS, aev
