@@ -23,7 +23,7 @@ module RubyCurses
         '.zip' => [get_color($datacolor, 'red', 'black'), 0],
         '.jar' => [get_color($datacolor, 'red', 'black'), 0],
         '.html' => [get_color($datacolor, 'green', 'black'), get_attrib('reverse')],
-        "" => [get_color($datacolor, 'white', 'black'), get_attrib('reverse')],
+        "" => [get_color($datacolor, 'yellow', 'black'), get_attrib('bold')],
         '.jpg' => [get_color($datacolor, 'magenta', 'black'), 0],
         '.png' => [get_color($datacolor, 'magenta', 'black'), 0],
         '.sh' => [get_color($datacolor, 'red', 'black'), 0],
@@ -49,8 +49,13 @@ module RubyCurses
         c = [get_color($datacolor, 'blue', 'black'), FFI::NCurses::A_BOLD] 
       end
       @color_pair, @attr = *c
-      if focussed
+      if selected
+        #@attr = FFI::NCurses::A_UNDERLINE | FFI::NCurses::A_BOLD # UL not avaible on screen
         @attr = FFI::NCurses::A_REVERSE | FFI::NCurses::A_BOLD
+        @color_pair = $datacolor
+      end
+      if focussed
+        @attr = FFI::NCurses::A_REVERSE # | FFI::NCurses::A_BOLD
       end
     end
     # 
