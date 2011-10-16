@@ -45,7 +45,7 @@ module RubyCurses
       @row = 0
       @col = 0
       @should_show_focus = false # don;t show focus and unfocus by default
-      @list = [] # this is not only the currently visible record
+      @list = [] # this is only the currently visible record
       @rows = nil  # this is the entire resultset
       @old_record = @current_record = 0 # index of currently displayed record from resultset
       @editing_allowed = true
@@ -56,6 +56,7 @@ module RubyCurses
       @widget_scrolled = true
       @record_changed = false
 
+      @help_text = "C to edit a column, Navigation: M-lhjk,jk gg G, Space. Next Record M-period or period, Previous M-comma or comma. Last Record '>' First Record '<' <Enter> View sortable tabular view"
       bind(:PRESS){ |eve| 
         s = eve.source
         r = s.current_record
@@ -106,15 +107,33 @@ module RubyCurses
       super
       @widget_scrolled = true
     end
-    def next_record
+    def next_record num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @old_record = @current_record
       @record_changed = true
-      @current_record += 1 if @current_record < @rows.count-1; @repaint_required = true
+      num.times {
+        @current_record += 1 if @current_record < @rows.count-1; 
+      }
+      
+      @repaint_required = true
+      $multiplier = 0
     end
-    def previous_record
+    def previous_record num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @old_record = @current_record
       @record_changed = true
-      @current_record -= 1 if @current_record > 0 ; @repaint_required = true
+      num.times {
+        @current_record -= 1 if @current_record > 0 ; 
+      }
+      @repaint_required = true
+    end
+    def last_record
+      @old_record = @current_record
+      @record_changed = true
+      @current_record = @rows.count-1; @repaint_required = true
+    end
+    def first_record
+      @old_record = @current_record
+      @record_changed = true
+      @current_record = 0; @repaint_required = true
     end
     def map_keys
       super
@@ -122,8 +141,10 @@ module RubyCurses
       bind_key([?\C-x, ?v], :scroll_forward)
       bind_key([?\C-x, ?n], :next_record) 
       bind_key([?\C-x, ?p], :previous_record) 
-      bind_key(?\M-, , :previous_record ) 
-      bind_key(?\M-., :next_record) 
+      bind_keys([?\M-,,?,], :previous_record ) 
+      bind_keys([?\M-.,?.], :next_record) 
+      bind_keys([?\M-<,?<], :first_record ) 
+      bind_keys([?\M->,?>], :last_record) 
       bind_key('C', :edit_record) 
       #bind_key([?\C-x, ?>], :scroll_right)
       #bind_key([?\C-x, ?<], :scroll_left)
@@ -158,6 +179,7 @@ module RubyCurses
       @columns = columns
       @current_record = 0
       init_vars
+      self
     end
     def data=(list)
       @rows = list
@@ -190,18 +212,31 @@ module RubyCurses
 
       print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
     end
+    def print_foot #:nodoc:
+      @footer_attrib ||= Ncurses::A_DIM
+      gb = get_color($datacolor, 'green','black')
+      footer = "%15s" % " [#{@current_record+1}/ #{@rows.length} ]"
+      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+      pos = @col + 2
+      right = true
+      if right
+        pos = @col + @width - footer.length - 1
+      end
+      @graphic.printstring( @row + @height -1 , pos, footer, gb, @footer_attrib) 
+      @repaint_footer_required = false # 2010-01-23 22:55 
+    end
     def getvalue
       @list
     end
     # not sure what to return, returning data value
     def current_value
+      return nil if @list.nil? || @rows.nil?
       #@list[@current_record][@current_index]
       @rows[@current_record][@current_index]
     end
     def fire_action_event
       if @current_index == @selected_index
         @old_selected_index = @current_index
-        #highlight_unselected_row
         unhighlight_row @current_index
         color_field @current_index 
         @selected_index = nil
@@ -212,10 +247,45 @@ module RubyCurses
       @selected_index = @current_index
       highlight_selected_row
       @old_selected_index = @selected_index
-
-      #print_selected_row
       @repaint_required = true
       super
+      tabular
+    end
+    def handle_key ch #:nodoc:
+      return :UNHANDLED if @rows.nil?
+      super
+    end
+    def tabular
+      require 'rbcurse/extras/tabularwidget'
+      w = Ncurses.COLS
+      h = Ncurses.LINES-1
+      v_window = VER::Window.new(h,w,0,0)
+      v_form = RubyCurses::Form.new v_window
+      tabula = TabularWidget.new v_form, :width => w, :height => h-1, :print_footer => true
+      begin
+        tabula.set_content @rows, @columns
+        yield tabula if block_given? 
+        v_form.repaint
+        v_window.wrefresh
+        Ncurses::Panel.update_panels
+        # allow closing using q and Ctrl-q in addition to any key specified
+        #  user should not need to specify key, since that becomes inconsistent across usages
+        while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
+          break if ch == config[:close_key] || ch == ?q.ord
+          # if you've asked for RETURN then i also check for 10 and 13
+          break if (ch == 10 || ch == 13) && config[:close_key] == KEY_RETURN
+          v_form.handle_key ch
+          #v_form.repaint
+          v_window.wrefresh
+        end
+      rescue => err
+          $log.error " Tabularwidget Resultsetview ERROR #{err} "
+          $log.error(err.backtrace.join("\n"))
+        alert err.to_s
+
+      ensure
+        v_window.destroy if !v_window.nil?
+      end
     end
     # newly added to check curpos when moving up or down
     # set cursor on correct column tview
