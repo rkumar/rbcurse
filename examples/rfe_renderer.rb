@@ -46,11 +46,11 @@ module RubyCurses
       c = @color_hash[ext]
       c = [$datacolor, FFI::NCurses::A_NORMAL] unless c
       if File.directory? @path
-        c = [get_color($datacolor, 'blue', 'black'), FFI::NCurses::A_NORMAL] 
+        c = [get_color($datacolor, 'blue', 'black'), FFI::NCurses::A_BOLD] 
       end
       @color_pair, @attr = *c
       if focussed
-        @attr = FFI::NCurses::A_REVERSE
+        @attr = FFI::NCurses::A_REVERSE | FFI::NCurses::A_BOLD
       end
     end
     # 
