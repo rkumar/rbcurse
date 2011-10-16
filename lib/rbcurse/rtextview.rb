@@ -465,10 +465,29 @@ module RubyCurses
             # next call modified string. you may wanna dup the string.
             # rlistbox does
             # scrolling fails if you do not dup, since content gets truncated
-            content = content.dup
-            sanitize(content) if @sanitization_required
-            truncate content
-            @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], acolor, @attr
+            if content.is_a? String
+              content = content.dup
+              sanitize(content) if @sanitization_required
+              truncate content
+              @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], 
+                acolor, @attr
+            elsif content.is_a? Array
+                # several chunks in one row - NOTE Very experimental may change
+              if content[0].is_a? Array
+                @graphic.wmove r+hh, c
+                # either we have to loop through and put in default color and attr
+                # or pass it to show_col
+                a = get_attrib @attrib
+                @graphic.show_colored_chunks content, acolor, a
+              else
+                # a single row chunk - NOTE Very experimental may change
+                text = content[1].dup
+                sanitize(text) if @sanitization_required
+                truncate text
+                @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,text], 
+                  content[0] || acolor, content[2] || @attr
+              end
+            end
 
             # highlighting search results.
             if @search_found_ix == tr+hh
