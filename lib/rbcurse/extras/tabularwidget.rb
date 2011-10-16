@@ -71,11 +71,11 @@ module RubyCurses
     attr_accessor :numbering
     # default or custom sorter
     attr_reader :table_row_sorter
-     
+
     # @group select related
     dsl_accessor :selection_mode
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
-    
+
     dsl_property :show_selector # boolean
     dsl_property :row_selected_symbol 
     dsl_property :row_unselected_symbol 
@@ -172,30 +172,39 @@ module RubyCurses
       @column_pointer = Circular.new @columns.size()-1
     end
     alias :headings= :columns=
-    ## 
-    # send in a list of data
-    # 
-    # @param [Array / Tabular] data to be displayed
-    def set_content list
-      if list.is_a? RubyCurses::Tabular
-        @list = list
-      elsif list.is_a? Array
-        @list = list
-      else
-        raise "set_content expects Array not #{list.class}"
+      ## 
+      # send in a list of data
+      # sorting will only happen if data passed using set_content
+      # NOTE: why doesn't set_content take in columns
+      # @param [Array / Tabular] data to be displayed
+      def set_content list, columns=nil
+        if list.is_a? RubyCurses::Tabular
+          @list = list
+        elsif list.is_a? Array
+          @list = list
+        else
+          raise "set_content expects Array not #{list.class}"
+        end
+        if @table_row_sorter
+          @table_row_sorter.model=@list
+        else
+          @table_row_sorter = TableRowSorter.new @list
+        end
+        # adding columns setting here 2011-10-16 
+        self.columns = columns if columns
+        @current_index = @_header_adjustment # but this is set when columns passed
+        @toprow = 0
+        @second_time = false # so that reestimation of column_widths
+        @repaint_required = true
+        @recalc_required = true
+        self
       end
-      if @table_row_sorter
-        @table_row_sorter.model=@list
-      else
-        @table_row_sorter = TableRowSorter.new @list
-      end
-      @current_index = @_header_adjustment
-      @toprow = 0
-      @second_time = false # so that reestimation of column_widths
-      @repaint_required = true
-      @recalc_required = true
+    def data=(data)
+      set_content(data, nil)
     end
+
     # add a row of data 
+    #  NOTE: this is not creating a table sorter
     # @param [Array] an array containing entries for each column
     def add array
       @list ||= []
@@ -206,6 +215,10 @@ module RubyCurses
     alias :<< :add
     alias :add_row :add
     alias :append :add
+    def create_default_sorter
+      raise "Data not sent in." unless @list
+      @table_row_sorter = TableRowSorter.new @list
+    end
     def remove_all
       @list = []
       init_vars
@@ -301,7 +314,7 @@ module RubyCurses
       raise "#{self.class} needs height" unless @height
 
       $log.debug " #{@name} print_borders,  #{@graphic.name} "
-      
+
       bordercolor = @border_color || $datacolor
       borderatt = @border_attrib || Ncurses::A_NORMAL
       @graphic.print_border @row, @col, @height-1, @width, bordercolor, borderatt
@@ -313,11 +326,25 @@ module RubyCurses
       @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     def print_foot #:nodoc:
-      @footer_attrib ||= Ncurses::A_REVERSE
-      footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      #$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-      @graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
+      @footer_attrib ||= Ncurses::A_DIM
+      gb = get_color($datacolor, 'green','black')
+      if @current_index == @toprow
+        footer = "%15s" % " [ header row ]"
+      else
+        footer = "%15s" % " [#{@current_index}/ #{@list.length} ]"
+      end
+      pos = @col + 2
+      right = true
+      if right
+        pos = @col + @width - footer.length - 1
+      end
+      @graphic.printstring( @row + @height -1 , pos, footer, gb, @footer_attrib) 
       @repaint_footer_required = false # 2010-01-23 22:55 
+      #@footer_attrib ||= Ncurses::A_REVERSE
+      #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
+      ##$log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+      #@graphic.printstring( @row + @height -1 , @col+2, footer, $datacolor, @footer_attrib) 
+      #@repaint_footer_required = false # 2010-01-23 22:55 
     end
     ### FOR scrollable ###
     def get_content
@@ -368,10 +395,10 @@ module RubyCurses
         ret = up
         get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW
         check_curpos
-        
+
       when KEY_DOWN, ?j.getbyte(0)
         ret = down
-        get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
+        #get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW
         check_curpos
       when KEY_LEFT, ?h.getbyte(0)
         cursor_backward
@@ -413,7 +440,7 @@ module RubyCurses
         # storing digits entered so we can multiply motion actions
         $multiplier *= 10 ; $multiplier += (ch-48)
         return 0
-      #when ?\C-u.getbyte(0)
+        #when ?\C-u.getbyte(0)
         ## multiplier. Series is 4 16 64
         #@multiplier = (@multiplier == 0 ? 4 : @multiplier *= 4)
         #return 0
@@ -430,7 +457,7 @@ module RubyCurses
           ret = process_key ch, self
         rescue => err
           $error_message.value = err.to_s
-#          @form.window.print_error_message # changed 2011 dts  
+          #          @form.window.print_error_message # changed 2011 dts  
           alert err.to_s
           $log.error " Tabularwidget ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
@@ -515,12 +542,12 @@ module RubyCurses
     def cursor_forward #:nodoc:
       maxlen = @maxlen || @width-@internal_width
       repeatm { 
-      if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
-        @curpos += 1
-        addcol 1
-      else
-        @pcol += 1 if @pcol <= @buffer.length
-      end
+        if @curpos < @width and @curpos < maxlen-1 # else it will do out of box
+          @curpos += 1
+          addcol 1
+        else
+          @pcol += 1 if @pcol <= @buffer.length
+        end
       }
       set_form_col 
       #@repaint_required = true
@@ -539,20 +566,20 @@ module RubyCurses
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
       if @form
-      @form.addrowcol row, col
+        @form.addrowcol row, col
       else
         @parent_component.form.addrowcol num
       end
     end
     def cursor_backward  #:nodoc:
       repeatm { 
-      if @curpos > 0
-        @curpos -= 1
-        set_form_col 
-        #addcol -1
-      elsif @pcol > 0 
-        @pcol -= 1   
-      end
+        if @curpos > 0
+          @curpos -= 1
+          set_form_col 
+          #addcol -1
+        elsif @pcol > 0 
+          @pcol -= 1   
+        end
       }
       #@repaint_required = true
       @repaint_footer_required = true # 2010-01-23 22:41 
@@ -594,27 +621,27 @@ module RubyCurses
       0.upto(h - @_header_adjustment) do |hh|
         crow = tr+hh
         if crow < rc
-            #focussed = @current_index == crow ? true : false 
-            content = tm[crow]
+          #focussed = @current_index == crow ? true : false 
+          content = tm[crow]
 
-            columnrow = false
-            if content == :columns
-              columnrow = true
-            end
+          columnrow = false
+          if content == :columns
+            columnrow = true
+          end
 
-            value = convert_value_to_text content, crow
+          value = convert_value_to_text content, crow
 
-            @buffer = value if crow == @current_index
-            # next call modified string. you may wanna dup the string.
-            # rlistbox does
-            sanitize value if @sanitization_required
-            truncate value
-            ## set the selector symbol if requested
-            paint_selector crow, r+hh, c, acolor, @attr
+          @buffer = value if crow == @current_index
+          # next call modified string. you may wanna dup the string.
+          # rlistbox does
+          sanitize value if @sanitization_required
+          truncate value
+          ## set the selector symbol if requested
+          paint_selector crow, r+hh, c, acolor, @attr
 
-            #@graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
-            #print_data_row( r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr)
-            print_data_row( r+hh, c+@left_margin, @width-@internal_width-@left_margin, value, acolor, @attr)
+          #@graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr
+          #print_data_row( r+hh, c, "%-*s" % [@width-@internal_width,value], acolor, @attr)
+          print_data_row( r+hh, c+@left_margin, @width-@internal_width-@left_margin, value, acolor, @attr)
 
         else
           # clear rows
@@ -853,9 +880,11 @@ module RubyCurses
     end
 
     # returns true if cursor is on header row
+    # NOTE: I have no idea why row was used here. it is not working
     def header_row?
       return false if @columns.nil?
-      1 == @row + (@current_index-@toprow)
+      #1 == @row + (@current_index-@toprow)
+      @current_index == @toprow
     end
     # on pressing ENTER we send user some info, the calling program
     # would bind :PRESS
@@ -937,7 +966,7 @@ module RubyCurses
     end
 
     # Some supporting classes
-    
+
     # This is our default table row sorter.
     # It does a multiple sort and allows for reverse sort also.
     # It's a pretty simple sorter and uses sort, not sort_by.
@@ -976,6 +1005,7 @@ module RubyCurses
       def sort
         return unless @model
         return if @sort_keys.empty?
+        $log.debug "TABULAR SORT KEYS #{sort_keys} "
         @model.sort!{|x,y| 
           res = 0
           @sort_keys.each { |ee| 
@@ -1003,7 +1033,10 @@ module RubyCurses
           @sort_keys.delete index # in case its already there
           @sort_keys.delete(index*-1) # in case its already there
           @sort_keys.unshift index
-          # TODO delete beyond a max, default 3
+          # don't let it go on increasing
+          if @sort_keys.size > 3
+            @sort_keys.pop
+          end
         end
       end
       def set_sort_keys list
@@ -1071,43 +1104,47 @@ module RubyCurses
 
 end # modul
 if __FILE__ == $PROGRAM_NAME
-  
-require 'rbcurse/app'
-App.new do
-  t = TabularWidget.new @form, :row => 2, :col => 2, :height => 20, :width => 30
-  t.columns = ["Name ", "Age ", " Email        "]
-  t.add %w{ rahul 33 r@ruby.org }
-  t << %w{ _why 133 j@gnu.org }
-  t << ["jane", "1331", "jane@gnu.org" ]
-  t.column_align 1, :right
-  s = TabularWidget.new @form, :row => 2, :col =>32  do |b|
-    b.columns = %w{ country continent text }
-    b << ["india","asia","a warm country" ] 
-    b << ["japan","asia","a cool country" ] 
-    b << ["russia","europe","a hot country" ] 
-    #b.column_width 2, 30
+
+  require 'rbcurse/app'
+  App.new do
+    t = TabularWidget.new @form, :row => 2, :col => 2, :height => 20, :width => 30
+    t.columns = ["Name ", "Age ", " Email        "]
+    t.add %w{ rahul 33 r@ruby.org }
+    t << %w{ _why 133 j@gnu.org }
+    t << ["jane", "1331", "jane@gnu.org" ]
+    t.column_align 1, :right
+    t.create_default_sorter
+
+    s = TabularWidget.new @form, :row => 2, :col =>32  do |b|
+      b.columns = %w{ country continent text }
+      b << ["india","asia","a warm country" ] 
+      b << ["japan","asia","a cool country" ] 
+      b << ["russia","europe","a hot country" ] 
+      #b.column_width 2, 30
+    end
+    s.create_default_sorter
+    s = TabularWidget.new @form , :row => 12, :col => 32  do |b|
+      b.columns = %w{ place continent text }
+      b << ["india","asia","a warm country" ] 
+      b << ["japan","asia","a cool country" ] 
+      b << ["russia","europe","a hot country" ] 
+      b << ["sydney","australia","a dry country" ] 
+      b << ["canberra","australia","a dry country" ] 
+      b << ["ross island","antarctica","a dry country" ] 
+      b << ["mount terror","antarctica","a windy country" ] 
+      b << ["mt erebus","antarctica","a cold place" ] 
+      b << ["siberia","russia","an icy city" ] 
+      b << ["new york","USA","a fun place" ] 
+      b.column_width 0, 12
+      b.column_width 1, 12
+      b.column_hidden 1, true
+      b.numbering = true ## FIXME BROKEN
+    end
+    s.create_default_sorter
+    require 'rbcurse/extras/scrollbar'
+    sb = Scrollbar.new @form, :parent => s
+    #t.column_align 1, :right
+    #puts t.to_s
+    #puts
   end
-  s = TabularWidget.new @form , :row => 12, :col => 32  do |b|
-    b.columns = %w{ place continent text }
-    b << ["india","asia","a warm country" ] 
-    b << ["japan","asia","a cool country" ] 
-    b << ["russia","europe","a hot country" ] 
-    b << ["sydney","australia","a dry country" ] 
-    b << ["canberra","australia","a dry country" ] 
-    b << ["ross island","antarctica","a dry country" ] 
-    b << ["mount terror","antarctica","a windy country" ] 
-    b << ["mt erebus","antarctica","a cold place" ] 
-    b << ["siberia","russia","an icy city" ] 
-    b << ["new york","USA","a fun place" ] 
-    b.column_width 0, 12
-    b.column_width 1, 12
-    b.column_hidden 1, true
-    b.numbering = true ## FIXME BROKEN
-  end
-  require 'rbcurse/extras/scrollbar'
-  sb = Scrollbar.new @form, :parent => s
-  #t.column_align 1, :right
-  #puts t.to_s
-  #puts
-end
 end
