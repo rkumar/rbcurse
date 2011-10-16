@@ -49,6 +49,7 @@ class FileExplorer
     @filter_pattern = '*'
     @prev_dirs=[]
     @inside_block = false
+    $entry_count = 0 # just for show... may not be accurate  after deletes etc
 
   end
   def title str
@@ -94,6 +95,7 @@ class FileExplorer
   end
   def rescan
     flist = @dir.entries
+    $entry_count = flist.size # just for show... may not be accurate  after deletes etc
     flist.shift
     #populate @entries
     populate flist
@@ -110,6 +112,7 @@ class FileExplorer
     #list.list_data_model.insert 0, *fl
     list.list_data_model.insert 0, *flist
     list.set_form_row
+    #$entry_count = list.size # just for show... may not be accurate  after deletes etc
   end
   def sort key, reverse=false
     # remove parent before sorting, keep at top
@@ -227,6 +230,7 @@ class FileExplorer
     #  flist << format_string(f, stat)
     #}
     @entries = fl
+    $entry_count = @entries.size
     title = pwd()
     @wdir = title
     rfe = self
@@ -741,6 +745,8 @@ class RFe
       arr << " F3      - view file/dir/zip contents (toggle) "
       arr << " F4      - edit file content"
       arr << " <char>  - first file starting with <char>"
+      arr << " M-v     - Vim like bindings for navigation (toggle)"
+
       arr << "           "
       arr << " < > ^ V - move help window "
       arr << "           "
@@ -811,11 +817,28 @@ class RFe
     @window.wrefresh
     Ncurses::Panel.update_panels
     begin
+      chunks=["File","Key"]
+      color0 = get_color($promptcolor, 'black','cyan')
+      color1 = get_color($datacolor, 'white','cyan')
+
       ## qq stops program, but only if M-v (vim mode)
     while(!stopping? && (ch = @window.getchar()) != ?\C-q.getbyte(0) )
       s = keycode_tos ch
-      status_row.text = "Pressed #{ch} , #{s}"
+      #status_row.text = "|  Pressed #{ch} , #{s}"
       @form.handle_key(ch)
+      #count = @current_list.list.size
+      count1 = @lista.list.size
+      count2 = @listb.list.size
+      x, y = FFI::NCurses::getyx @window.get_window
+      chunks[0]=[color0, "%-30s" % status_row.text]
+      chunks[1]=[color1, "%-18s" % " |   #{ch}, #{s} |"]
+      chunks[2]=[color0, "   Total: #{count1}, #{count2}"]
+      @window.wmove(Ncurses.LINES-3,0)
+      @window.color_set(color0, nil)
+      @window.print_empty_line
+      @window.wmove(Ncurses.LINES-3,0)
+      @window.show_colored_chunks chunks
+      @window.wmove(x,y)
 
       #@form.repaint
       @window.wrefresh
@@ -852,7 +875,8 @@ def get_key_labels categ=nil
     ['F5', 'Filter'], ['F6', 'Sort'],
     ['F7', 'Grep'], ['F8', 'System'],
     ['M-0', 'Top'], ['M-9', 'End'],
-    ['C-p', 'PgUp'], ['C-n', 'PgDn']
+    ['C-p', 'PgUp'], ['C-n', 'PgDn'],
+    ['M-v', 'Vim Mode'], nil
   ]
   elsif categ == :file
   key_labels = [
