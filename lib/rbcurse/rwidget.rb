@@ -316,6 +316,12 @@ module RubyCurses
         end
         return att
       end
+      def last_line; FFI::NCurses.LINES-1; end
+      def one_line_window at=last_line(), config={}, &blk
+        at ||= last_line()
+        at = FFI::NCurses.LINES-at if at < 0
+        VER::Window.new(1,0,at,0)
+      end
       ## repeats the given action based on how value of universal numerica argument
       ##+ set using the C-u key. Or in vim-mode using numeric keys
       def repeatm
