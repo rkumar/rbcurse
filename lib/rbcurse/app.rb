@@ -77,7 +77,7 @@ module RubyCurses
     attr_reader :window
     attr_writer :quit_key
     # the row on which to prompt user for any inputs
-    attr_accessor :prompt_row
+    #attr_accessor :prompt_row # 2011-10-17 14:06:22
 
     extend Forwardable
     def_delegators :$tt, :ask, :say, :agree, :choose, :numbered_menu, :display_text, :display_text_interactive, :display_list
@@ -107,8 +107,8 @@ module RubyCurses
         init_ncurses
       end
       $lastline = Ncurses.LINES - 1
-      @message_row = Ncurses.LINES-1
-      @prompt_row = @message_row # hope to use for ask etc
+      #@message_row = Ncurses.LINES-1
+      #@prompt_row = @message_row # hope to use for ask etc # 2011-10-17 14:06:27
       unless $log
         path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
         file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
@@ -117,15 +117,10 @@ module RubyCurses
         colors = Ncurses.COLORS
         $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
       end
-=begin
-# trying without 2011-10-8 
-        require 'rbcurse/extras/stdscrwindow'
-        awin = StdscrWindow.new
-        $tt.window = awin; $tt.message_row = @message_row
-=end
     end
     def logger; return $log; end
     def close
+      raw_message_destroy
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       @window.destroy if !@window.nil?
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
@@ -145,10 +140,15 @@ module RubyCurses
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
+      @break_key = ?\C-q.getbyte(0)
       while((ch = @window.getchar()) != @quit_key )
-        str = keycode_tos ch
-        @keyblock.call(str.gsub(/-/, "_").to_sym) if @keyblock
-        $log.debug  "#{ch} got (#{str})"
+        break if ch == @break_key
+
+        if @keyblock
+          str = keycode_tos ch
+          @keyblock.call(str.gsub(/-/, "_").to_sym) # not used ever
+        end
+
         yield ch if block # <<<----
         @form.handle_key ch
         #@form.repaint # was this duplicate ?? handle calls repaint not needed
@@ -185,46 +185,41 @@ module RubyCurses
     # a label so it can be printed.
     def message text
       $status_message.value = text # trying out 2011-10-9 
-      @message.value = text
+      #@message.value = text # 2011-10-17 14:07:01
     end
+    # @deprecated please use {#status_line} instead of a message label
     def message_row row
       raise "Please use create_message_label first as message_label is no longer default behaviour" unless @message_label
       @message_label.row = row 
     end
     # during a process, when you wish to update status, since ordinarily the thread is busy
     # and form does not get control back, so the window won't refresh.
-    # NOTE: use this only if +message+ is not working
-    # XXX Not sure if this is working after move to ffi-ncurses, check the demos
+    # This will only update on keystroke since it uses statusline
+    # @deprecated please use {#status_line} instead of a message label
     def message_immediate text
+      $log.warn "DEPRECATED, use message(), or say_with_pause, or say"
       $status_message.value = text # trying out 2011-10-9 user needs to use in statusline command
-      message text
-      if @message_label
-        @message_label.repaint
-        @window.refresh
-      end
+      # 2011-10-17 knocking off label, should be printed on status_line
     end
-    # NOTE XXX using stdscr results in the screen going black if a dialog
-    # or other window is popped up, this was great but has not worked out.
-    # print directly onto stdscr so that form or window does not require repainting
-    # and cursor not messed. however, once form paints then this will be overwritten
-    # so at end of printing raw_messages, use message() for final status.
     # Usage: application is inside a long processing loop and wishes to print ongoing status
-    # (similar to message_immediate) but faster and less involved
-    # @deprecated since it uses stdscr. Use say_with_pause or use rdialogs status_window, see test2.rb
-    def raw_message text
-      $log.warn "WARNING: don't use this method as it uses stdscr. Use rdialogs statuswindow."
-      row = @message_label ? @message_label.row : Ncurses.LINES-1
-      # experimentally trying stdscr instead of label
-      scr = FFI::NCurses.stdscr
-      text = "%-80s" % text
-      Ncurses.mvprintw row ,0, text
-      #@_stext ||= ""
-      #@_stext <<  text
-      ## appending is quite a pain, maybe we should make it separate.
-      #stext = "%-80s" % @_stext
-      #Ncurses.mvprintw row ,0, stext[-80..-1]
-      #scr.refresh() # NW w FFI XXX
-      #FFI::NCurses.refresh
+    # NOTE: if you use this, you must use raw_message_destroy at some stage, after processing
+    # or on_leave of object.
+    # @deprecated Use say_with_pause or use rdialogs status_window, see test2.rb
+    def raw_message text, config={}, &blk
+      $raw_window ||= one_line_window 26, config, &blk
+      width = $raw_window.width == 0 ? FFI::NCurses.COLS : $raw_window.width
+      text = "%-*s" % [width, text]
+      
+      $raw_window.attron(Ncurses.COLOR_PAIR($normalcolor) )
+      $raw_window.printstring 0,0,text, $normalcolor #, 'normal' if @title
+      $raw_window.wrefresh
+     
+    end
+    def raw_message_destroy
+      if $raw_window
+        $raw_window.destroy
+        $raw_window = nil
+      end
     end
     # shows a simple progress bar on last row, using stdscr
     # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
@@ -1092,10 +1087,11 @@ module RubyCurses
     end
     # Now i am not creating this unless user wants it. Pls avoid it.
     # Use either say_with_pause, or put $status_message in command of statusline
-    # @deprecated
+    # @deprecated please use {#status_line} instead of a message label
     def create_message_label row=Ncurses.LINES-1
       @message_label = RubyCurses::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => row, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
     end
+
     def run &block
       begin
 
@@ -1160,11 +1156,11 @@ module RubyCurses
           @form.bind_key(KEY_F1){ display_app_help }
           @form.bind_key([?q,?q]){ throw :close } if $log.debug?
 
-          @message = Variable.new
-          @message.value = ""
+          #@message = Variable.new
+          #@message.value = ""
           $status_message ||= Variable.new # remember there are multiple levels of apps
           $status_message.value = ""
-          $error_message.update_command { @message.set_value($error_message.value) }
+          #$error_message.update_command { @message.set_value($error_message.value) }
           if block
             begin
               #yield(self, @window, @form)
