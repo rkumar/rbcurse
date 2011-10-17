@@ -176,12 +176,12 @@ App.new do
     end
     @lb2.bind :ENTER_ROW do |e|
       @header.text_right "Row #{e.current_index} of #{@messages.size} "
-      #message_immediate "Row #{e.current_index} of #{@messages.size} "
-      raw_message "Row #{e.current_index} of #{@messages.size} "
+      message "Row #{e.current_index} of #{@messages.size} "
+      raw_message "Row #{e.current_index} of #{@messages.size} " # 2011-10-17 14:08:27
       x = e.current_index
       y = @messages.size
       #raw_progress((x*1.0)/y)
-      raw_progress([x,y])
+      #raw_progress([x,y])
     end
 
     @tv = @vim.set_right_bottom_component "Email body comes here. "
