@@ -30,7 +30,7 @@ module RubyCurses
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
       if @layout.nil? 
-          set_layout(1,80, 27, 0) 
+          set_layout(1,80, -1, 0) 
       end
       @height = @layout[:height]
       @width = @layout[:width]
@@ -135,6 +135,10 @@ module RubyCurses
     end
 
     def set_layout(height=0, width=0, top=0, left=0)
+      # negative means top should be n rows from last line. -1 is last line
+      if top < 0
+        top = Ncurses.LINES-top
+      end
       @layout = { :height => height, :width => width, :top => top, :left => left } 
       @height = height
       @width = width
