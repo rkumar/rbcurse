@@ -3,9 +3,10 @@
   * Description: 
   * A tabbed pane, mostly based (iirc) on the Terminal Preferences in OSX PPC 10.5.x
   * Starting a new version using pads 2009-10-25 12:05 
-TODO - need to rewrite this pronto. 1.3.1 or 1.3.2 should have a rewritten TabbedPane
-NOTE:  PLEASE AVOID THIS. USE MULTI_CONTAINERS if you need inside a form.
-       TABBEDWINDOW IS OKAY IF YOU ARE POPPING A TABBEDPANE UP.
+
+   2011-10-18 : removed ScrollForm since it would not print if window was not at 0,0 top left.
+
+
   * Author: rkumar
   
   --------
@@ -26,6 +27,7 @@ NOTE:
 =end
 require 'logger'
 require 'rbcurse'
+#require 'rbcurse/rscrollform' # tried, shows in all cases teh buttons but never gets control
 
 KEY_TAB = 9
 KEY_BTAB = 353
@@ -49,7 +51,7 @@ module RubyCurses
     # highlight abd selected colors and attribs should perhaps be in a
     # structure, so user can override easily
     def repaint  # tabbedbutton
-       $log.debug("TabbedBUTTon repaint : #{self.class()}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+       $log.debug("TabbedBUTTon repaint : #{self.class()} fn:#{@form.name}  r:#{@row} c:#{@col} #{getvalue_for_paint} gt #{@form.window.top}  gl #{@form.window.left}" )
         r,c = rowcol
         attribs = @attrs
         @highlight_foreground ||= $reversecolor
@@ -92,20 +94,24 @@ module RubyCurses
         #@graphic.printstring r+@graphic.top, c+@graphic.left, "%-*s" % [len, value], color, attribs
         #@graphic.printstring r-@graphic.top, c-@graphic.left, "%-*s" % [len, value], color, attribs
 
-        # add bar character on sides of selected  2011-10-5 
-        # mvwaddch was not doing anything ??
+        ro =  @graphic.top
+        co =  @graphic.left
+        ro =  0
+        co =  0
+        # NOTE after removing scrollform I've replaced check of graphic with 0, Note if we revert
         if _state == :HIGHLIGHTED
-          @graphic.printstring r, c-1, ">",  color, @attrs unless c-1 < @graphic.left
+          @graphic.printstring r+ro, c-1+co, ">",  color, @attrs unless c-1 < 0 #@graphic.left
           #@graphic.printstring r, c+len+1, "<",  color, @attrs
         else
-          @graphic.printstring r, c-1, " ",  color, @attrs unless c-1 < @graphic.left
+          @graphic.printstring r+ro, c-1+co, " ",  color, @attrs unless c-1 < 0 #@graphic.left
           #@graphic.printstring r, c+len+1, " ",  color, @attrs
         end
-        @graphic.printstring r, c, "%-*s" % [len, value], color, attribs
+        @graphic.printstring r+ro, c+co, "%-*s" % [len, value], color, attribs
         @graphic.modified = true
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
          # underline for the top tab buttons.
         if @underline != nil
+          # 2011-10-17 cmmented
           r -= @graphic.top # because of pad, remove if we go back to windows
           c -= @graphic.left # because of pad, remove if we go back to windows
           @graphic.mvchgat(y=r, x=c+@underline+0, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
@@ -166,10 +172,15 @@ module RubyCurses
     # set to true if you want tabs to show as you traverse the tab buttons
     dsl_accessor :display_tab_on_traversal
 
+    # creates a scrollable form so many buttons can be placed
+    #  NOTE: this only works in a root window, I can't figure out why.
+    dsl_accessor :scrolling_allowed
+
     attr_reader :selected_index
     attr_reader :current_tab
     attr_reader :window
     def initialize form, aconfig={}, &block
+      @scrolling_allowed = false
       super
       @parent = form
       @parentwin = form.window
@@ -409,19 +420,22 @@ module RubyCurses
       #  button_gap = 1 if @tabs.size > 6 # quick dirty fix, we need something that checks fit
       # we may also need to truncate text to fit
 
-      @buttonpad.wclear
+      @buttonpad.wclear if @buttonpad # 2011-10-18 
       ## create a button for each tab
       $tabradio = Variable.new # so we know which is highlighted
+      # 2011-10-17 seems objects on this form do not get windows offset
+      wco = @window.left
+      wro = @window.top
       @tabs.each do |tab|
         text = tab.text
-        $log.debug " TABS EACH #{text} "
+        $log.debug " TABS EACH #{text}, #{wro} #{wco} "
         @buttons << RubyCurses::TabbedButton.new(@form) do
           variable $tabradio
           text text
           name text
           value text
-          row r + 1
-          col col
+          row r + 1 #+ wro
+          col col #+ wco
         end
         col += text.length + button_gap
         # if col exceeds pad_w then we need to expand pad
@@ -472,11 +486,31 @@ module RubyCurses
 
       r = @row
       c = @col
-      @form = ScrollForm.new(@parentwin)
-      @form.set_layout(1, @width, @row+1, @col+1)
-      @form.display_h = 1
-      @form.display_w = @width-3
-      @buttonpad = @form.create_pad
+      # NOTE: I had to remove ScrollForm since it would not work if 
+      #  window was not root window. This means I cannot have more buttons
+      #  than fit on screen.
+
+
+      # tried out proper ScrollForm, it shows the buttons but does not take
+      # cursor there or show cursor there at all.
+
+      scrolling = @scrolling_allowed
+      if scrolling
+        @form = ScrollForm.new(@parentwin)
+        # 2011-10-18 trying to see why buttons won't print if window is not 0,0
+        #@form.parent_form = @parent # 2011-10-18 trying out why buttons not coming at correct place
+        #@form.add_cols = @parent.window.left
+        #@form.add_rows = @parent.window.top
+        offset = 1
+        @form.set_layout(1, @width, @row+offset, @col+offset)
+        @form.display_h = 1
+        @form.display_w = @width-3
+        @buttonpad = @form.create_pad
+        @buttonpad.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
+
+      else
+        @form = Form.new(@parentwin)
+      end
 
 
       ## We will use the parent window, and not a pad. We will write absolute coordinates.
@@ -484,7 +518,6 @@ module RubyCurses
       color = $datacolor
       # border around button bar. should this not be in scrollform as a border ? XXX
       @window.print_border @row, @col, 2, @width, color #, Ncurses::A_REVERSE
-      @buttonpad.name = "Window::TPTOPPAD" # 2010-02-02 20:01 
       @form.name = "Form::TPTOPFORM"
       $log.debug("TP WINDOW TOP ? PAD MAIN FORM W:#{@window.name},  F:#{@form.name} ")
       @form.parent_form = @parent ## 2010-01-21 15:55 TRYING OUT BUFFERED
@@ -514,14 +547,6 @@ module RubyCurses
     end
     def button_form_repaint flag = true
       $log.debug " INSIDE button_form_repaint #{flag} "
-      #if flag
-        #@form.repaint if flag  #  This paints the outer form not inner
-        #@buttonpad.mvwaddch(2, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
-        #@buttonpad.mvwaddch(2, @width-1, Ncurses::ACS_RTEE)
-      #end
-      #ret = @buttonpad.prefresh(0,0, @row+0, @col+0, @row+@height, @col+@width)
-      #$log.debug " prefresh error buttonpad 2 " if ret < 0
-      #@buttonpad.modified = false
       if flag
         # repaint form and refresh pad
         @form.repaint
@@ -531,37 +556,39 @@ module RubyCurses
         @form.prefresh
       end
     end
+
     ##
     # This creates a form for the tab, in case we wish to put many components in it.
     # Else just pass single components in add_tab.
     # @params tab tab just created for which a form is required
     # @return form - a pad based form
     def create_tab_form tab
-        mtop = 0
-        mleft = 0
-        bottom_offset = 2 # 0 will overwrite bottom line, 1 will make another line for inner form
+
+      mtop          = 0
+      mleft         = 0
+      bottom_offset = 2 # 0 will overwrite bottom line, 1 will make another line for inner form
       layout = { :height => @height-(mtop+bottom_offset), :width => @width, :top => mtop, :left => mleft } 
-      # create a pad but it must behave like a window at all times 2009-10-25 12:25 
       window = VER::Pad.create_with_layout(layout)
 
       form = RubyCurses::Form.new window
-      $log.debug " pad created in TP create_tab_form: #{window.name} , form #{form.name}  "
-      $log.debug " hwtl: #{layout[:height]} #{layout[:width]} #{layout[:top]} #{layout[:left]} "
-      ## added 2010-01-21 15:46 to pass cursor up
+      
       form.parent_form = @parent
+      form.add_cols    = @col + 0
+      form.add_rows    = @row + 2
+     
+    
       form.navigation_policy = :NON_CYCLICAL
       window.bkgd(Ncurses.COLOR_PAIR($datacolor));
-      window.box( 0, 0);
+      window.box(0, 0);
       window.mvwaddch(0, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
       window.mvwaddch(0, @width-1, Ncurses::ACS_RTEE)
+      window.mvwaddch(layout[:height]-1, 0, Ncurses::ACS_LTEE) # beautify the corner 2010-02-06 19:35 
+      window.mvwaddch(layout[:height]-1, @width-1, Ncurses::ACS_RTEE)
 
-      # XXX TODO this wastes space we should ditch it.
       ## this prints the tab name on top left
       window.mvprintw(1,1, tab.text.tr('&', '')) if @print_subheader
-      window.name = "Tab::TAB-#{tab.text}" # 2010-02-02 19:59 
-      form.name = "Form::TAB-#{tab.text}" # 2010-02-02 19:59 
-      form.add_cols=@col + 0
-      form.add_rows=@row + 2 # 2011-10-3  position cursor correctly
+      window.name = "Tab::TAB-#{tab.text}" 
+      form.name = "Form::TAB-#{tab.text}" 
       return form
     end
     ##
@@ -679,7 +706,7 @@ module RubyCurses
     
           return ret if ret == :UNHANDLED
         end
-        if @buttonpad.modified
+        if @buttonpad && @buttonpad.modified
           button_form_repaint
         end
     end
@@ -708,10 +735,11 @@ module RubyCurses
       end
     end
     def make_buttons names
+      $log.debug "XXX: came to TP make lower buttons FORM #{@form.name}  "
       total = names.inject(0) {|total, item| total + item.length + 4}
       bcol = center_column total
 
-      brow = @layout[:height]-2
+      brow = @layout[:height]-2 # check for < 0
       button_ct=0
       names.each_with_index do |bname, ix|
         text = bname
@@ -734,7 +762,7 @@ module RubyCurses
       end
     end
     def center_column textlen
-      width = @layout[:width]
+      width = @layout[:width] # check for  0 XXX
       return (width-textlen)/2
     end
     def fire_event tab, index, event
@@ -923,23 +951,28 @@ module RubyCurses
       @scroll_ctr = 2
       @cols_panned = @rows_panned = 0
     end
+
     def set_layout(h, w, t, l)
       @pad_h = h
       @pad_w = w
-      @top = @orig_top = t
-      @left = @orig_left = l
+      @top   = t
+      @left  = l
+      @top += @target_window.top
+      @left += @target_window.left
+      @orig_top = @top
+      @orig_left = @left
     end
     def create_pad
       r = @top
       c = @left
       layout = { :height => @pad_h, :width => @pad_w, :top => r, :left => c } 
       @window = VER::Pad.create_with_layout(layout)
-      #@window = @parentwin
-      #@form = RubyCurses::Form.new @buttonpad
-      @window.name = "Pad::ScrollPad" # 2010-02-02 20:01 
-      @name = "Form::ScrollForm"
+
+      @window.name = "Pad::ScrollPad"
+      @name        = "Form::ScrollForm"
       return @window
     end
+
     ## ScrollForm handle key, scrolling
     def handle_key ch
       #alert("SCROLLFORM #{ch} , ai: #{@active_index} , #{get_current_field.name} ")
