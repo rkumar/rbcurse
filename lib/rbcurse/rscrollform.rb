@@ -92,6 +92,11 @@ module RubyCurses
       @left = @orig_left = l
       create_pad
     end
+    # old program tabbed pane uses this. fix
+    # @deprecated use set_pad_dimensions
+    def set_layout h,w,t,l
+      set_pad_dimensions t,l,h,w
+    end
     def display_h(*val)
       if val.empty?
         return @display_h
@@ -128,9 +133,10 @@ module RubyCurses
     # XXX We reuse window, which is already the main window
     # So if we try creating pad later, then old external window is used.
     # However, many methods in superclass operate on window so we needed to overwrite. What do i do ?
-    private
+    #private
     def create_pad
-      raise "Pad already created" if @pad
+      #raise "Pad already created" if @pad
+      return @pad if @pad
       r = @top
       c = @left
       layout = { :height => @pad_h, :width => @pad_w, :top => r, :left => c } 
