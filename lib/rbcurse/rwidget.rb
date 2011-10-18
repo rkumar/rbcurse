@@ -316,7 +316,12 @@ module RubyCurses
         end
         return att
       end
+
+      # returns last line of full screen, should it be current window ?
       def last_line; FFI::NCurses.LINES-1; end
+      
+      # Create a one line window typically at the bottom
+      # should we really put this here, too much clutter ?
       def one_line_window at=last_line(), config={}, &blk
         at ||= last_line()
         at = FFI::NCurses.LINES-at if at < 0
@@ -1023,6 +1028,7 @@ module RubyCurses
     attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
 
     ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
+    # NOTE: if you set a form inside another set parent_form in addition to these 2.
     attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
     attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
 
@@ -1144,7 +1150,7 @@ module RubyCurses
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-      $log.debug "setpos : (#{self}) #{r} #{c}"
+      $log.debug "setpos : (#{self.name}) #{r} #{c}"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
@@ -1426,7 +1432,7 @@ module RubyCurses
       @col = c unless c.nil?
       r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
       c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
-      $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self} r = #{r} , c = #{c}  "
+      $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self} r = #{r} , c = #{c}, parent: #{@parent_form}  "
       if !@parent_form.nil? and @parent_form != self
         $log.debug " (#{@name}) addrow calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
         #r += @parent_form.window.top unless  r.nil?
@@ -1602,6 +1608,7 @@ module RubyCurses
        $log.debug " form before repaint #{self} , #{@name}, ret #{ret}"
        repaint
        $last_key = ch
+       ret || 0  # 2011-10-17 
   end
   ##
   # test program to dump data onto log
@@ -1904,7 +1911,7 @@ module RubyCurses
 
   def repaint
     return unless @repaint_required  # 2010-11-20 13:13 its writing over a window i think TESTING
-    #$log.debug("repaint FIELD: #{id}, #{name},  #{focusable} st: #{@state} ")
+    $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},  #{focusable} st: #{@state} ")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
     @display_length = 1 if display_length == 0
@@ -2424,7 +2431,7 @@ module RubyCurses
       @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
-        #$log.debug("BUTTon repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+        $log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
         @highlight_foreground ||= $reversecolor
@@ -2450,10 +2457,15 @@ module RubyCurses
             y=r #-@graphic.top
             x=c+uline #-@graphic.left
             if @graphic.window_type == :PAD
-              x -= @graphic.left
+              x -= @graphic.left 
               y -= @graphic.top
             end
-            raise "button underline location error #{x} , #{y} " if x < 0 or c < 0
+            #
+            # NOTE: often values go below zero since root windows are defined 
+            # with 0 w and h, and then i might use that value for calcaluting
+            #
+            $log.error "button underline location error #{x} , #{y} " if x < 0 or c < 0
+            raise " #{r} #{c}  #{uline} button underline location error x:#{x} , y:#{y}. left #{@graphic.left} top:#{@graphic.top} " if x < 0 or c < 0
             @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
           end
         end
