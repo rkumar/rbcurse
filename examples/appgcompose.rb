@@ -30,7 +30,7 @@ class GmailField
     @match_from_start = config.fetch(:match_from_start, true)
     setup
   end
-  def setup
+  def setup # gmailfield
     @field.bind(:CHANGE) do |eve|
       c = eve.source
       text = c.getvalue
@@ -113,7 +113,7 @@ class GmailField
     end
   end
 
-  def udisplay_list list1
+  def udisplay_list list1 # gmailfield
     unless @commandwin
       require 'rbcurse/rcommandwindow'
       if @style == :old
@@ -141,7 +141,7 @@ class GmailField
       #rc = nil
     end
   end
-  def clear_list
+  def clear_list # gmailfield
     if @commandwin
       @commandwin.destroy
       @commandwin = nil
@@ -162,7 +162,8 @@ module AppgCompose
       #@subject = config[:subject]
       yield self if block_given?
     end
-    def udisplay_list list1
+    def __udisplay_list list1 # gmailcompose
+      warn "is this used ?"
       unless @commandwin
         require 'rbcurse/rcommandwindow'
         layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
@@ -179,7 +180,8 @@ module AppgCompose
         #rc = nil
       end
     end
-    def clear_list
+    def __clear_list # gmailcompose
+      warn "is this used"
       if @commandwin
         @commandwin.destroy
         @commandwin = nil
