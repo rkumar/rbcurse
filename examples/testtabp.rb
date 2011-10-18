@@ -16,15 +16,16 @@ class TestTabbedPane
   def run
     $config_hash ||= Variable.new Hash.new
     #configvar.update_command(){ |v| $config_hash[v.source()] = v.value }
-      @tp = RubyCurses::TabbedWindow.new nil  do
-        height 12
-        width  50
+      @tw = RubyCurses::TabbedWindow.new nil  do
+        height 18
+        width  60
         row 5
-        col 10
+        col 20
         button_type :ok
       end
-      @tab1 = @tp.add_tab "&Language" 
-      f1 = @tab1.form
+      @tp = @tw.tabbed_pane
+      @tab1 = @tw.add_tab "&Language" 
+      f1 = @tp.form @tab1
       #$radio = Variable.new
       radio1 = RadioButton.new f1 do
         #variable $radio
@@ -56,9 +57,10 @@ class TestTabbedPane
         row 6
         col 2
       end
-      @tab2 = @tp.add_tab "&Settings"
-      f2 = @tab2.form
-      r = 3
+      @tab2 = @tw.add_tab "&Settings"
+      #f2 = @tab2.form
+      f2 = @tp.form @tab2
+      r = 2
       butts = [ "Use &HTTP/1.0", "Use &frames", "&Use SSL" ]
       bcodes = %w[ HTTP, FRAMES, SSL ]
       butts.each_with_index do |t, i|
@@ -70,8 +72,9 @@ class TestTabbedPane
           col 4
         end
       end
-      @tab3 = @tp.add_tab "&Editors"
-      f3 = @tab3.form
+      @tab3 = @tw.add_tab "&Editors"
+      #f3 = @tab3.form
+      f3 = @tp.form @tab3
       butts = %w[ &Vim E&macs &Jed &Other ]
       bcodes = %w[ VIM EMACS JED OTHER]
       row = 3
@@ -85,8 +88,8 @@ class TestTabbedPane
         end
         row +=1
       end
-      @tp.show
-      @tp.handle_keys
+      @tw.show
+      @tw.handle_keys
   end
 end
 if $0 == __FILE__
