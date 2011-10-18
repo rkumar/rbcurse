@@ -26,7 +26,7 @@ if $0 == __FILE__
     $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
 
-    @window = VER::Window.root_window
+    #@window = VER::Window.root_window
     # Initialize few color pairs 
     # Create the window to be associated with the form 
     # Un post form and free the memory
@@ -43,7 +43,6 @@ if $0 == __FILE__
       @form.set_pad_dimensions(row, col, h, w)
       # dimensions of screen area onto which pad will paint
       @form.should_print_border(true)
-      #@buttonpad = @form.create_pad
 
       #@window.print_border_only 0, 0, 20+2, 100+2, $datacolor
       @window.printstring 0, 30, "Demo of ScrollForm ", $normalcolor, 'reverse'
