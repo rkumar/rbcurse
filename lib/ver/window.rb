@@ -1,5 +1,16 @@
 require 'ver/ncurses'
 require 'ver/panel'
+# this is since often windows are declared with 0 height or width and this causes
+# crashes in the most unlikely places. This prevceents me from having to write ternary
+# e.g.
+#     @layout[:width].ifzero(FFI::NCurses::LINES-2)
+class Fixnum
+  def ifzero v
+    return self if self != 0
+    return v
+  end
+end
+
 module VER
   class Window 
     attr_reader :width, :height, :top, :left
@@ -31,6 +42,7 @@ module VER
       @visible = true
       reset_layout(layout)
 
+      $log.debug "XXX:WINDOW got #{@height}, #{@width}, #{@top}, #{@left} "
       @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       #$error_message_row = $status_message_row = Ncurses.LINES-1
@@ -440,7 +452,11 @@ module VER
     def reset_layout(layout)
       case layout
       when Array
+        $log.error  "NIL in window constructor" if layout.include? nil
+        raise ArgumentError, "Nil in window constructor" if layout.include? nil
         @height, @width, @top, @left = *layout
+        raise ArgumentError, "Nil in window constructor" if @top.nil? || @left.nil?
+
         @layout = { :height => @height, :width => @width, :top => @top, :left => @top }
       when Hash
         @layout = layout
