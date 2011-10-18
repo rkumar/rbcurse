@@ -8,12 +8,8 @@
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'rubygems'
-##require 'ncurses'
-#require 'logger'
 require 'rbcurse'
 
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
@@ -25,7 +21,7 @@ module RubyCurses
   # or TextArea or even ListBox or Table someday. Should then be a Module rather than a class.
   class MultiContainer < Widget
     dsl_accessor :title
-    #include ListScrollable
+
 
     def initialize form = nil, config={}, &block
       @focusable = true
