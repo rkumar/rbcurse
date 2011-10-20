@@ -18,7 +18,6 @@
 # i am tired of maintaining this everywhere.
 require 'rbcurse'
 require 'rbcurse/rlistbox'
-require 'rbcurse/rtextview'
 require 'rbcurse/extras/divider'
 require 'rbcurse/extras/focusmanager'
 
@@ -184,6 +183,7 @@ module RubyCurses
           lb = Listbox.new nil, :list => c , :name => "list#{@components.size}"
           c = lb
         when String
+          require 'rbcurse/rtextview'
           lb = TextView.new nil, :name => "text#{@components.size}"
           lb.set_content c
           c = lb
@@ -273,10 +273,7 @@ module RubyCurses
     def repaint
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
-      raise " #{@name} neither form, nor target window given TV paint " unless my_win
-      raise " #{@name} NO GRAPHIC set as yet                 TV paint " unless @graphic
-      @win_left = my_win.left
-      @win_top = my_win.top
+      raise " #{@name} NO GRAPHIC set as yet                 VIMSPLIT paint " unless @graphic
 
       #return unless @repaint_required
       @recalculate_splits = true if @rc.nil?
