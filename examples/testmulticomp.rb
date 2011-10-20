@@ -46,13 +46,14 @@ if $0 == __FILE__
         texta << "Hello World"
         ctr += 1
       end
-      @help = "F1 to quit. M-a to open new component. M-: for menu  #{$0} "
+      @help = "F10 to quit. M-a to open new component. M-: for menu  #{$0} "
       RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
 
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != KEY_F1 )
+      while((ch = @window.getchar()) != KEY_F10 )
+        break if ch == ?\C-q.getbyte(0)
         str = keycode_tos ch
         $log.debug  "#{ch} got (#{str})"
         @form.handle_key ch
