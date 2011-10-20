@@ -622,7 +622,8 @@ module RubyCurses
     # similar definitions for textview and resultsettextview
     {
       'rbcurse/rtextview' => 'TextView',
-      'rbcurse/extras/resultsettextview' => 'ResultsetTextView'
+      'rbcurse/extras/resultsettextview' => 'ResultsetTextView',
+      'rbcurse/rcontainer' => 'Container'
     }.each_pair {|k,p|
       eval(
            "def #{p.downcase} *args, &block
@@ -1235,10 +1236,11 @@ module RubyCurses
         end
       elsif @instack
         # most likely you won't have row and col. should we check or just go ahead
+        # what if he has put it 2011-10-19 as in a container
         col = @stack.last.margin
-        config[:row] = @app_row
-        config[:col] = col
-        @app_row += config[:height] || 1
+        config[:row] ||= @app_row 
+        config[:col] ||= col
+        @app_row += config[:height] || 1 #unless config[:no_advance]
         # TODO need to allow stack to have its spacing, but we don't have an object as yet.
       end
     end
