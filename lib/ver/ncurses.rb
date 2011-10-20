@@ -104,7 +104,7 @@ module VER
     Ncurses.nl
     Ncurses.endwin
     $ncurses_started = false
-    puts "ncurses stopped"
+    puts "curses over"
   ensure
     return unless error = @last_error
     log = Config[:logfile].value
