@@ -25,7 +25,6 @@ NOTE:
   #
   # TODO :  disable/hide tab ???
 =end
-require 'logger'
 require 'rbcurse'
 #require 'rbcurse/rscrollform' # tried, shows in all cases teh buttons but never gets control
 
