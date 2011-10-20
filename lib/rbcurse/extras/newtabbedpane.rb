@@ -119,9 +119,13 @@ module RubyCurses
         when KEY_RIGHT
           return goto_next_component #unless on_last_component?
         when KEY_DOWN
-          return goto_next_component #unless on_last_component?
+          if on_a_button?
+            return goto_first_item
+          else
+            return goto_next_component #unless on_last_component?
+          end
         else 
-          @_entered = false
+          #@_entered = false
           return :UNHANDLED
         end
       end
@@ -145,6 +149,15 @@ module RubyCurses
     def on_leave
       @_entered = false
       super
+    end
+    def goto_first_item
+      bc = @buttons.count
+      c = @components[bc]
+      if c
+        leave_current_component
+        @current_component = c
+        set_form_row
+      end
     end
     def goto_next_component
       if @current_component != nil 
@@ -225,6 +238,9 @@ module RubyCurses
     def on_last_component?
       @current_component == @components.last
     end
+    def on_a_button?
+      @components.index(@current_component) < @buttons.count
+    end
     # set focus on given component
     # Sometimes you have the handle to component, and you want to move focus to it
     def goto_component comp
@@ -288,6 +304,7 @@ module RubyCurses
     def set_current_tab t
       return if @current_tab == t
       @current_tab = t
+      goto_component @components[t]
       @tab_changed = true
       @repaint_required = true
     end
@@ -365,20 +382,21 @@ if __FILE__ == $PROGRAM_NAME
     r.add(f2)
     r.add(f3,f4,f5)
     NewTabbedPane.new @form, :row => 10, :col => 15, :width => 50, :height => 15 do
-      tab "Profile" do
+      tab "&Profile" do
         item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
         item Field.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
       end
-      tab "Settings" do
-        item CheckBox.new nil, :row => 2, :col => 2, :text => "Use HTTPS"
-        item CheckBox.new nil, :row => 3, :col => 2, :text => "Quit with confirm"
+      tab "&Settings" do
+        item CheckBox.new nil, :row => 2, :col => 2, :text => "Use HTTPS", :mnemonic => 'u'
+        item CheckBox.new nil, :row => 3, :col => 2, :text => "Quit with confirm", :mnemonic => 'q'
       end
-      tab "Editor" do
-        $radio = Variable.new
-        item RadioButton.new nil, :row => 2, :col => 2, :text => "Vim", :value => "Vim", :variable => $radio
-        item RadioButton.new nil, :row => 3, :col => 2, :text => "Emacs", :value => "Emacs", :variable => $radio
+      tab "&Term" do
+        radio = Variable.new
+        item RadioButton.new nil, :row => 2, :col => 2, :text => "&xterm", :value => "xterm", :variable => radio
+        item RadioButton.new nil, :row => 3, :col => 2, :text => "sc&reen", :value => "screen", :variable => radio
+        radio.update_command() {|rb| ENV['TERM']=rb.value }
       end
-      tab "Container" do
+      tab "&Container" do
         item r
       end
 
