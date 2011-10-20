@@ -60,7 +60,7 @@ module RubyCurses
       ret = :UNHANDLED
       return :UNHANDLED unless @current_component
       ret = @current_component.handle_key(ch)
-      $log.debug " MULTI = comp #{@current_component} returned #{ret} "
+      $log.debug " MULTI = current comp #{@current_component} returned #{ret} "
       if ret == :UNHANDLED
         # check for bindings, these cannot override above keys since placed at end
         begin
@@ -68,6 +68,7 @@ module RubyCurses
           $log.debug " MULTI = process_key returned #{ret} "
           if ch > 177 && ch < 187
             n = ch - 177
+      
             component_at(n)
             # go to component n
           end
@@ -87,17 +88,17 @@ module RubyCurses
     def repaint
       print_border if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       return unless @current_component
-      $log.debug " MULTI REPAINT "
+      $log.debug " MULTI REPAINT - calling current_comps repaint #{@current_component} "
       ret = @current_component.repaint
     end
     def print_border  #:nodoc:
-      $log.debug " #{@name} print_borders,  #{@graphic.name} "
+      #$log.debug " #{@name} print_borders,  #{@graphic.name} "
       color = $datacolor
       @graphic.print_border_only @row, @col, @height-1, @width, color #, Ncurses::A_REVERSE
       print_title
     end
     def print_title  #:nodoc:
-      $log.debug " print_title #{@row}, #{@col}, #{@width}  "
+      #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
       @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
     end
     # this is just a test of the simple "most" menu
@@ -187,6 +188,7 @@ module RubyCurses
     def set_current_component
       @current_component = @current_component.component
       @current_title = @current_component.title
+      set_form_row ## 2011-10-20 
       @current_component.repaint_all true
     end
     def perror errmess
@@ -216,6 +218,10 @@ module RubyCurses
         @current_component.set_form_row 
         @current_component.set_form_col 
       end
+    end
+    def set_form_col
+      # deliberately empty since Form will call this and Widgets one is unsuitable
+      # for us
     end
   end # class multicontainer
   ##
