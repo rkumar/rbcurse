@@ -779,6 +779,8 @@ module RubyCurses
     end
     # set cursor on correct column, widget
     # Ideally, this should be overriden, as it is not likely to be correct.
+    # NOTE: this is okay for some widgets but NOT for containers
+    # that will call their own components SFR and SFC
     def set_form_col col1=@curpos
       @curpos = col1 || 0 # 2010-01-14 21:02 
       #@form.col = @col + @col_offset + @curpos
@@ -1157,7 +1159,7 @@ module RubyCurses
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-      $log.debug "setpos : (#{self.name}) #{r} #{c}"
+      $log.debug "setpos : (#{self.name}) #{r} #{c} XXX"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
@@ -1272,9 +1274,9 @@ module RubyCurses
         @window.wmove @row, @col # added RK FFI 2011-09-7 = setpos
 
         f.set_form_row # added 2011-10-5 so when embedded in another form it can get the cursor
-        f.set_form_col
+        f.set_form_col # this can wreak havoc in containers, unless overridden
 
-        f.curpos = 0
+        f.curpos = 0 # why was this, okay is it because of prev obj's cursor ?
         repaint
         @window.refresh
       else
