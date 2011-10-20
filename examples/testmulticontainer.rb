@@ -6,6 +6,7 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/rmulticontainer'
 require 'rbcurse/rcontainer'
+require 'rbcurse/rtextarea'
 if $0 == __FILE__
   include RubyCurses
   include RubyCurses::Utils
@@ -46,6 +47,8 @@ if $0 == __FILE__
       f2 = Field.new nil, :name => "email", :text => "me@somebody.com", :row => 2, :col => 10
       c1.add( f1, f2)
 
+      c3 = TextArea.new
+      mc.add c3, "Some text"
       c2 = Container.new 
       mc.add c2, "Another form"
       f3 = Field.new do
@@ -58,6 +61,7 @@ if $0 == __FILE__
       c2.add( f3, f4)
       @help = "F10 to quit. M-a to open new component. M-: for menu  #{$0} "
       RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
+      f5 = Field.new @form, :name => "version", :text => "1.9.2", :row => 22, :col => 10, :bgcolor => 'blue'
 
       @form.repaint
       @window.wrefresh
