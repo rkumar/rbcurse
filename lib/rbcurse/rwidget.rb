@@ -2279,13 +2279,12 @@ module RubyCurses
   # Use display_length to ensure no spillage.
   # This can use text or text_variable for setting and getting data (inh from Widget).
   class Label < Widget
-    #dsl_accessor :label_for   # related field or buddy
-    dsl_accessor :mnemonic    # keyboard focus is passed to buddy based on this key (ALT mask)
+    dsl_accessor :mnemonic       # keyboard focus is passed to buddy based on this key (ALT mask)
+
     # justify required a display length, esp if center.
-    #dsl_accessor :justify     # :right, :left, :center  # added 2008-12-22 19:02 
-    dsl_property :justify     # :right, :left, :center  # added 2008-12-22 19:02 
-    dsl_property :display_length     #  please give this to ensure the we only print this much
-    dsl_property :height    # if you want a multiline label.
+    dsl_property :justify        #:right, :left, :center
+    dsl_property :display_length #please give this to ensure the we only print this much
+    dsl_property :height         #if you want a multiline label.
 
     def initialize form, config={}, &block
   
@@ -2309,7 +2308,12 @@ module RubyCurses
     def label_for field
       @label_for = field
       #$log.debug " label for: #{@label_for}"
-      bind_hotkey unless @form.nil?   # GRRR!
+      if @form
+        bind_hotkey 
+      else
+        @when_form ||= []
+        @when_form << lambda { bind_hotkey }
+      end
     end
 
     ##
@@ -2424,7 +2428,8 @@ module RubyCurses
         s = s.to_s if !s.is_a? String  # 2009-01-15 17:32 
         if (( ix = s.index('&')) != nil)
           s.slice!(ix,1)
-          @underline = ix unless @form.nil? # this setting a fake underline in messageboxes
+          # 2011-10-20 NOTE XXX I have removed form check since bindkey is called conditionally
+          @underline = ix #unless @form.nil? # this setting a fake underline in messageboxes
           mnemonic s[ix,1]
         end
         @text = s
@@ -2434,10 +2439,17 @@ module RubyCurses
     ## 
     # FIXME this will not work in messageboxes since no form available
     # if already set mnemonic, then unbind_key, ??
+    # NOTE: Some buttons like checkbox directly call mnemonic, so if they have no form
+    # then this processing does not happen
 
     def mnemonic char
-      $log.error " #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
-      return if @form.nil?
+      $log.error "ERROR WARN #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
+      unless @form
+        @when_form ||= []
+        @when_form << lambda { mnemonic char }
+        return
+      end
+      #return if @form.nil?
       @mnemonic = char
       ch = char.downcase()[0].ord ##  1.9 
       # meta key 
@@ -2450,7 +2462,13 @@ module RubyCurses
     # bind hotkey to form keys. added 2008-12-15 20:19 
     # use ampersand in name or underline
     def bind_hotkey
-      return if @underline.nil? or @form.nil?
+      if @form.nil? 
+        if @underline
+          @when_form ||= []
+          @when_form << lambda { bind_hotkey }
+        end
+        return
+      end
       _value = @text || getvalue # hack for Togglebutton FIXME
       #_value = getvalue
       $log.debug " bind hot #{_value} #{@underline}"
@@ -2472,6 +2490,13 @@ module RubyCurses
       @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
+      if @form
+        if @when_form
+          $log.debug "XXX:WHEN  calling when_forms commands"
+          @when_form.each { |c| c.call()  }
+          @when_form = nil
+        end
+      end
         #$log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
