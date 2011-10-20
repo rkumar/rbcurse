@@ -91,7 +91,7 @@ module RubyCurses
         # XXX Do this in repaint since often container has not got its coords
         # from multicontainer.
         @components << c
-        @current_component = c
+        @current_component ||= c # only the first else cursor falls on last on enter
 
       end # items each
       self
@@ -212,7 +212,7 @@ module RubyCurses
 
       # should this go here 2011-10-19 
       unless @_entered
-        $log.warn "WARN: calling ON_ENTER since in this situation it was not called"
+        $log.warn "XXX WARN: calling ON_ENTER since in this situation it was not called"
         on_enter
       end
       if ch == KEY_TAB
@@ -273,10 +273,7 @@ module RubyCurses
     # private
     def on_enter
       # TODO if BTAB the last comp
-      if $current_key == KEY_BTAB
-        # FIXME last is not focusable, then ??
-        @current_component = @components.last
-      else
+      unless @current_component
         @current_component = @components.first
       end
       return unless @current_component
@@ -294,7 +291,7 @@ module RubyCurses
       if @current_component != nil 
         leave_current_component
         if on_last_component?
-          @_entered = false
+          #@_entered = false
           return :UNHANDLED
         end
         @current_index = @components.index(@current_component)
@@ -332,6 +329,8 @@ module RubyCurses
       return :UNHANDLED
     end
     # private
+    # XXX why are we calling 3 methods in a row, why not OE manages these 3
+    # There's double calling going on.
     def set_form_row
       return :UNHANDLED if @current_component.nil?
       $log.debug " CONTAINER on enter sfr #{@current_component} "
@@ -342,11 +341,12 @@ module RubyCurses
       @current_component.repaint
       # XXX compo should do set_form_row and col if it has that
     end
-    # private
+    # 
     def set_form_col
       return if @current_component.nil?
       $log.debug " #{@name} CONTAINER  set_form_col calling sfc for #{@current_component.name} "
-      @current_component.set_form_col 
+      # already called from above.
+      #@current_component.set_form_col 
     end
     # leave the component we are on.
     # This should be followed by all containers, so that the on_leave action
