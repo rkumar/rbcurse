@@ -178,7 +178,7 @@ module RubyCurses
       if @repaint_required
         $log.debug " VIM repaint graphic #{@graphic} "
         print_borders unless @suppress_borders # do this once only, unless everything changes
-        @components.each { |e| e.repaint_all(true) }
+        @components.each { |e| e.repaint_all(true); e.repaint }
       else
         @components.each { |e| e.repaint }
       end # if repaint_required
