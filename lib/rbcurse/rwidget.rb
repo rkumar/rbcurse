@@ -33,6 +33,7 @@ require 'rbcurse/io'
 # some of these will get overriden by ncurses when we include
 KEY_TAB    = 9
 KEY_F1  = FFI::NCurses::KEY_F1
+KEY_F10  = FFI::NCurses::KEY_F10
 KEY_ENTER  = 10 # FFI::NCurses::KEY_ENTER gives 343
 KEY_BTAB  = 353 # nc gives same
 KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
@@ -577,9 +578,11 @@ module RubyCurses
     end
 
     ##
-    # Basic widget class. 
-    # NOTE: I may soon remove the config hash. I don't use it and its just making things heavy.
-    # Unless someone convinces me otherwise.
+    # Basic widget class superclass. Anything embedded in a form should
+    # extend this, if it wants to be repainted or wants focus. Otherwise.
+    # form will be unaware of it.
+  
+ 
   class Widget
     include EventHandler
     include ConfigSetup
@@ -697,6 +700,7 @@ module RubyCurses
 
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
+      @state = :HIGHLIGHTED    # duplicating since often these are inside containers
       @focussed = true
       if @handler && @handler.has_key?(:ENTER)
         fire_handler :ENTER, self
@@ -704,6 +708,7 @@ module RubyCurses
     end
     ## got left out by mistake 2008-11-26 20:20 
     def on_leave
+      @state = :NORMAL    # duplicating since often these are inside containers
       @focussed = false
       if @handler && @handler.has_key?(:LEAVE)
         fire_handler :LEAVE, self
@@ -954,7 +959,9 @@ module RubyCurses
         #c += @ext_col_offset unless c.nil?
         if @form
           @form.setrowcol r, c
+        #elsif @parent_component
         else
+          raise "Parent component not defined for #{self}, #{self.class} " unless @parent_component
           @parent_component.setrowcol r, c
         end
         #setformrowcol r,c 
@@ -1122,7 +1129,7 @@ module RubyCurses
       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} " if $log.debug? 
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
-        $log.debug "XXX: FORM CALLING REPAINT OF WIDGET #{f} IN LOOP"
+        #$log.debug "XXX: FORM CALLING REPAINT OF WIDGET #{f} IN LOOP"
         f.repaint
         f._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
       end
@@ -1711,7 +1718,14 @@ module RubyCurses
   class Field < Widget
     dsl_accessor :maxlen             # maximum length allowed into field
     attr_reader :buffer              # actual buffer being used for storage
-    dsl_accessor :label              # label of field
+    #
+    # this was unused earlier. Unlike set_label which creates a separate label
+    # object, this stores a label and prints it before the string. This is less
+    # customizable, however, in some cases when a field is attached to some container
+    # the label gets left out. This labels is gauranteed to print to the left of the field
+    # 
+    dsl_accessor :label              # label of field  Unused earlier, now will print 
+    dsl_property :label_color_pair   # label of field  Unused earlier, now will print 
     dsl_accessor :default            # TODO use set_buffer for now
     dsl_accessor :values             # validate against provided list
     dsl_accessor :valid_regex        # validate against regular expression
@@ -1733,7 +1747,7 @@ module RubyCurses
     attr_reader :original_value                # value on entering field
     attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
 
-    def initialize form, config={}, &block
+    def initialize form=nil, config={}, &block
       @form = form
       @buffer = String.new
       #@type=config.fetch("type", :varchar)
@@ -1890,19 +1904,32 @@ module RubyCurses
     # create a label linked to this field
     # Typically one passes a Label, but now we can pass just a String, a label 
     # is created
+    # NOTE: 2011-10-20 when field attached to some container, label won't be attached
     # @param [Label, String] label object to be associated with this field
     def set_label label
       # added case for user just using a string
       case label
       when String
         # what if no form at this point
+        @label_unattached = true unless @form
         label = Label.new @form, {:text => label}
       end
       @label = label
-      label.row  @row if label.row == -1
-      label.col  @col-(label.name.length+1) if label.col == -1
-      label.label_for(self)
+      # in the case of app it won't be set yet FIXME
+      # So app sets label to 0 and t his won't trigger
+      # can this be delayed to when paint happens XXX
+      if @row
+        position_label
+      else
+        @label_unplaced = true
+      end
       label
+    end
+    def position_label
+      $log.debug "XXX: LABEL row #{@label.row}, #{@label.col} "
+      @label.row  @row if @label.row == -1
+      @label.col  @col-(@label.name.length+1) if @label.col == -1
+      $log.debug "   XXX: LABEL row #{@label.row}, #{@label.col} "
     end
 
   ## Note that some older widgets like Field repaint every time the form.repaint
@@ -1911,6 +1938,12 @@ module RubyCurses
 
   def repaint
     return unless @repaint_required  # 2010-11-20 13:13 its writing over a window i think TESTING
+    if @label_unattached
+      @label.set_form(@form)
+    end
+    if @label_unplaced
+      position_label
+    end
     $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},  #{focusable} st: #{@state} ")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
@@ -1933,7 +1966,15 @@ module RubyCurses
     end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
     #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
-    @graphic.printstring  row, col, sprintf("%-*s", display_length, printval), acolor, @attr
+    r = row
+    c = col
+    if label.is_a? String
+      lcolor = @label_color_pair || $datacolor
+      @graphic.printstring row, col, label, lcolor, @attr
+      c += label.length + 2
+      @col_offset = c-@col            # required so cursor lands in right place
+    end
+    @graphic.printstring r, c, sprintf("%-*s", display_length, printval), acolor, @attr
     @repaint_required = false
   end
   def set_focusable(tf)
@@ -2313,7 +2354,7 @@ module RubyCurses
       end
       len = @display_length || value.length
       acolor = get_color $datacolor
-      #$log.debug "label :#{@text}, #{value}, #{r}, #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
+      $log.debug "label :#{@text}, #{value}, r #{r}, c #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
       firstrow = r
       _height = @height || 1
       str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
@@ -2431,15 +2472,17 @@ module RubyCurses
       @surround_chars[0] + ret + @surround_chars[1]
     end
     def repaint  # button
-        $log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+        #$log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
         bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
         color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
-        if bgcolor.is_a? String and color.is_a? String
-          color = ColorMap.get_color(color, bgcolor)
+        $log.debug "XXX: #{text}   STATE is #{@state} "
+        if bgcolor.is_a?( Fixnum) && color.is_a?( Fixnum)
+        else
+          color = get_color($datacolor, color, bgcolor)
         end
         value = getvalue_for_paint
         #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
