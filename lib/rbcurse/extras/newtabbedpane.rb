@@ -18,8 +18,8 @@ require 'rbcurse'
 ##
 module RubyCurses
   class NewTabbedPane < Widget
-    dsl_property :xxx
-    dsl_accessor :xxx
+    dsl_property :title, :title_attrib
+    #dsl_accessor :xxx
 
     def initialize form=nil, config={}, &block
       @_events ||= []
@@ -321,7 +321,12 @@ module RubyCurses
       print_title
     end
     def print_title
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, 
+      return unless @title
+      _title = @title
+      if @title.length > @width - 2
+        _title = @title[0..@width-2]
+      end
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, 
                            @color_pair, @title_attrib) unless @title.nil?
     end
     ##
@@ -382,6 +387,7 @@ if __FILE__ == $PROGRAM_NAME
     r.add(f2)
     r.add(f3,f4,f5)
     NewTabbedPane.new @form, :row => 10, :col => 15, :width => 50, :height => 15 do
+      title "User Setup"
       tab "&Profile" do
         item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
         item Field.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
