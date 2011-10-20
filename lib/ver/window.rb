@@ -48,6 +48,7 @@ module VER
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
       $error_message_col ||= 1 # ask (bottomline) uses 0 as default so you can have mismatch. XXX
+      $status_message ||= Variable.new # in case not an App
       init_vars
 
 
@@ -562,6 +563,7 @@ module VER
     # @ param att - ncurses attribute: normal, bold, reverse, blink,
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
+      raise "Nil passed to peintstring row:#{r}, col:#{c}, #{color} " if r.nil? || c.nil? || color.nil?
       prv_printstring(r,c,string, color, att )
     end
 
@@ -584,12 +586,6 @@ module VER
       end
 
       wattron(Ncurses.COLOR_PAIR(color) | att)
-      # we should not print beyond window coordinates
-      # trying out on 2009-01-03 19:29 
-      #width = Ncurses.COLS
-      # the next line won't ensure we don't write outside some bounds like table
-      #string = string[0..(width-c)] if c + string.length > width
-      #$log.debug "PRINT len:#{string.length}, #{Ncurses.COLS}, #{r}, #{c} w: #{@window} "
       mvwprintw(r, c, "%s", :string, string);
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
