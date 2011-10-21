@@ -564,7 +564,7 @@ module VER
     # underline
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
       raise "Nil passed to peintstring row:#{r}, col:#{c}, #{color} " if r.nil? || c.nil? || color.nil?
-      raise "Zero or less passed to printstring row:#{r}, col:#{c} " if $log.debug? && (r <=0 || c <=0)
+      #raise "Zero or less passed to printstring row:#{r}, col:#{c} " if $log.debug? && (r <=0 || c <=0)
       prv_printstring(r,c,string, color, att )
     end
 
