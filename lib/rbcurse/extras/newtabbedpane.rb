@@ -450,7 +450,10 @@ module RubyCurses
         button.form = @form
         button.override_graphic  @graphic
         index = button_ct
-        button.command { |form| @selected_index = index; @stop = true; alert "Pressed #{bname}, #{index} "; $log.debug "Pressed Button #{bname}";}
+        button.command { |form| @selected_index = index; @stop = true; 
+          throw(:close, @selected_index)
+        
+        }
         button_ct += 1
         bcol += text.length+6
       end
