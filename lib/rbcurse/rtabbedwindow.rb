@@ -91,13 +91,14 @@ module RubyCurses
     def handle_keys
       begin
         while (( ch=@window.getchar()) != 999)
-          break if ch == ?\C-q.getbyte(0)
+          break if ch == ?\C-q.getbyte(0) || @stop
           ret = @form.handle_key(ch)
           if ret == :UNHANDLED
             ret = @form.process_key ch, self # field
             @form.repaint
           end
           @window.wrefresh
+          break if @stop  # 2011-10-21 somehow not coming out
         end
         return if @stop
       ensure
