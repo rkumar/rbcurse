@@ -776,7 +776,7 @@ module RubyCurses
       #@form.row = @row + 1 
       r, c = rowcol
       $log.warn " empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
-      raise "trying to set 0, maybe called repaint before container has set value" if row <= 0
+      #raise "trying to set 0, maybe called repaint before container has set value" if row <= 0
       setrowcol row, nil
     end
     # set cursor on correct column, widget
