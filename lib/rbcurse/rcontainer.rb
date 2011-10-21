@@ -64,7 +64,9 @@ module RubyCurses
 
     end
 
-    # 
+    # NOTE: since we are handling the traversal, we delink the object from any
+    # form's widgets array  that might have been added. Whenever a form is available,
+    # we set it (without adding widget to it) so it can print using the form's window.
     # 
     # @param [Widget] to add
     def add *items
@@ -86,27 +88,25 @@ module RubyCurses
         end
         # most likely if you have created both container and widgets
         # inside app, it would have given row after container
-        $status_message.value = " wr:  #{c.row} row:#{@row} ht:#{@height} "
 
-        # XXX Do this in repaint since often container has not got its coords
-        # from multicontainer.
         @components << c
         @current_component ||= c # only the first else cursor falls on last on enter
 
       end # items each
       self
     end
-  def attach_form c
-    c.form = @form
-    c.override_graphic @graphic
-    c.parent_component = self
-  end
+
+    # When we get a form, we silently attach it to this object, without the form
+    #  knowing. We don't want form managing this object.
+    def attach_form c
+      c.form = @form
+      c.override_graphic @graphic
+      c.parent_component = self
+    end
     alias :add_widget :add
     def widgets; @components; end
     # what of by_name
 
-    ## Currently non-functional but it would be nice to stack or flow
-    ##+ components. Later we can bring back stack and flow from vimsplit
 
     # correct coordinates of comp esp if App has stacked them after this
     # container
@@ -122,21 +122,11 @@ module RubyCurses
       # 2011-10-20 current default behaviour is to stack
       if @positioning == :stack
         c.row = @last_row
-        c.col = @last_col || @col + inset
-        if c.respond_to?(:no_advance) && c.no_advance
-          if c.display_length
-            @last_col = (c.display_length) + 2 + @col
-          else
-            @last_col = (c.text.length) + 2 + @col
-          end
-          $log.debug "XXX:SET last_col to #{@last_col} "
-          # do not advance row, save col for next row
-        else
-          @last_row += 1
-          $log.debug "XXX:SET PICK last_col to #{@last_col} "
-          @last_col = nil
-        end
-      elsif @positioning == :relative
+        c.col = @col + inset
+
+        # do not advance row, save col for next row
+        @last_row += 1
+      elsif @positioning == :relative   # UNTESTED NOTE
         if (c.row || 0) <= 0
           $log.warn "c.row in CONTAINER is #{c.row} "
           c.row = @last_row
@@ -162,6 +152,10 @@ module RubyCurses
       end
       @first_time = false
     end
+    def check_component c
+      raise "row is less than container #{c.row} #{@row} " if c.row <= @row
+      raise "col is less than container #{c.col} #{@col} " if c.col <= @col
+    end
 
     public
     # repaint object
@@ -171,6 +165,7 @@ module RubyCurses
       @graphic = my_win unless @graphic
       raise " #{@name} NO GRAPHIC set as yet                 CONTAINER paint " unless @graphic
       @components.each { |e| correct_component e } if @first_time
+      @components.each { |e| check_component e } # seeme one if printing out
 
       #return unless @repaint_required
 
@@ -270,10 +265,16 @@ module RubyCurses
       $multiplier = 0
       return 0
     end
-    # private
+    # Actually we should only go to current component if it accepted
+    # a key stroke. if user tabbed thru it, then no point going back to
+    # it. Go to first or last depending on TAB or BACKTAB otherwise.
+    # NOTE: if user comes in using DOWN or UP, last traversed component will get the focus
+    #
     def on_enter
-      # TODO if BTAB the last comp
-      unless @current_component
+      # if BTAB, the last comp
+      if $current_key == KEY_BTAB
+        @current_component = @components.last
+      else
         @current_component = @components.first
       end
       return unless @current_component
@@ -333,18 +334,24 @@ module RubyCurses
     # There's double calling going on.
     def set_form_row
       return :UNHANDLED if @current_component.nil?
-      $log.debug " CONTAINER on enter sfr #{@current_component} "
+      cc = @current_component
+      $log.debug "CONT #{@name} set_form_row calling sfr for #{cc.name}, r #{cc.row} c: #{cc.col} "
+      $log.debug " CONTAINER on enter sfr #{@current_component.name}  #{@current_component} "
+
+      # bug caught here. we were printing a field before it had been set, so it printed out
+      @components.each { |e| correct_component e } if @first_time
       @current_component.on_enter
       @current_component.set_form_row # why was this missing in vimsplit. is it
+        $log.debug "CONT2 #{@name} set_form_row calling sfr for #{cc.name}, r #{cc.row} c: #{cc.col} "
       # that on_enter does a set_form_row
       @current_component.set_form_col # XXX 
-      @current_component.repaint
+      @current_component.repaint # OMG this could happen before we've set row and col
       # XXX compo should do set_form_row and col if it has that
     end
     # 
     def set_form_col
       return if @current_component.nil?
-      $log.debug " #{@name} CONTAINER  set_form_col calling sfc for #{@current_component.name} "
+      $log.debug " #{@name} CONTAINER EMPTY set_form_col calling sfc for #{@current_component.name} "
       # already called from above.
       #@current_component.set_form_col 
     end
