@@ -117,6 +117,7 @@ class Module
             if oldvalue != newvalue
               # trying to reduce calls to fire, when object is being created
                begin
+                 @property_changed = true
                  fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
                  @#{sym} = tmp
                  @config["#{sym}"]=@#{sym}
@@ -2416,6 +2417,7 @@ module RubyCurses
       @color ||= $datacolor 
       @surround_chars ||= ['[ ', ' ]'] 
       @col_offset = @surround_chars[0].length 
+      @text_offset = 0
     end
     ##
     # set button based on Action
@@ -2509,8 +2511,13 @@ module RubyCurses
         # NOTE: please override both (if using a string), or else it won't work 
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
-        bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
-        color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+        if @state == :HIGHLIGHTED
+          bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
+          color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+        elsif selected? # only for certain buttons lie toggle and radio
+          bgcolor = @selected_background || @bgcolor
+          color   = @selected_foreground || @color
+        end
         $log.debug "XXX: #{text}   STATE is #{@state} "
         if bgcolor.is_a?( Fixnum) && color.is_a?( Fixnum)
         else
@@ -2524,9 +2531,8 @@ module RubyCurses
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
         if @underline || @mnemonic
-          uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-          #$log.debug " mvchgat UNDERLI r= #{r} - #{@graphic.top} c #{c} c+x #{c+uline}- #{@graphic.left} #{@graphic} "
-          #$log.debug "  HACK in next line related to UNDERLINES -graphic.top"
+          uline = @underline && (@underline + @text_offset) ||  value.index(@mnemonic) || 
+            value.index(@mnemonic.swapcase)
           # if the char is not found don't print it
           if uline
             y=r #-@graphic.top
@@ -2539,7 +2545,7 @@ module RubyCurses
             # NOTE: often values go below zero since root windows are defined 
             # with 0 w and h, and then i might use that value for calcaluting
             #
-            $log.error "button underline location error #{x} , #{y} " if x < 0 or c < 0
+            $log.error "XXX button underline location error #{x} , #{y} " if x < 0 or c < 0
             raise " #{r} #{c}  #{uline} button underline location error x:#{x} , y:#{y}. left #{@graphic.left} top:#{@graphic.top} " if x < 0 or c < 0
             @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
           end
@@ -2559,6 +2565,8 @@ module RubyCurses
       #fire_handler :PRESS, @form  changed on 2010-09-12 19:22 
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
     end
+    # for campatibility with all buttons, will apply to radio buttons mostly
+    def selected?; false; end
 
     # Button
     def handle_key ch
@@ -2641,11 +2649,14 @@ module RubyCurses
     dsl_accessor :surround_chars 
     dsl_accessor :variable    # value linked to this variable which is a boolean
     dsl_accessor :display_length    #  2009-01-06 00:10 
+    # background to use when selected, if not set then default
+    dsl_accessor :selected_background 
+    dsl_accessor :selected_foreground 
 
     # item_event
     def initialize form, config={}, &block
       super
-      # no longer linked to text_variable, that was a misunderstanding
+      
       @value ||= (@variable.nil? ? false : @variable.get_value(@name)==true)
     end
     def getvalue
@@ -2761,6 +2772,10 @@ module RubyCurses
     def initialize form, config={}, &block
       @surround_chars = ['(', ')'] if @surround_chars.nil?
       super
+      $log.warn "XXX: FIXME Please set 'value' for radiobutton. If you don't know, try setting it to 'text'" unless @value
+      # I am setting value of value here if not set 2011-10-21 
+      @value ||= @text
+      raise "A single Variable must be set for a group of Radio Buttons for this to work." unless @variable
     end
 
     # all radio buttons will return the value of the selected value, not the offered value
