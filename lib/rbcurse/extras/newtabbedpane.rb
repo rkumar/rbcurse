@@ -4,15 +4,14 @@
     I am tired of tracking cursor issues
   * Description   
   * Author: rkumar (http://github.com/rkumar/rbcurse/)
-  * Date: 
+  * Date: 2011-10-20 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
+  * Last update:  Fri Oct 21 20:20:21 IST 2011
 
   == CHANGES
   == TODO 
-     Bottom buttons
-     Fix look of top buttons
-     Mnemonics
-     Key down to come down to form
+     on start first buttons bottom should not be lined.
+     Alt-1-9 to goto tabs
 Title 
 =end
 require 'rbcurse'
@@ -20,15 +19,20 @@ require 'rbcurse'
 module RubyCurses
   class NewTabbedPane < Widget
     dsl_property :title, :title_attrib
-    #dsl_accessor :xxx
+    # what kind of buttons, if this is a window, :ok :ok_camcel :ok_apply_cancel
+    dsl_accessor :button_type
+    attr_reader :button_row
+    
 
     def initialize form=nil, config={}, &block
       @_events ||= []
       @_events.push(:PRESS)
+      @button_gap = 2
       init_vars
       super
       @focusable = true
       @editable  = true
+      @col_offset = 2
     end
 
     # Add a tab
@@ -43,20 +47,28 @@ module RubyCurses
 
     def repaint
       @current_tab ||= 0
+      @button_row ||=  @row + 2
+      @separator_row = @button_row + 1 # hope we have it by now, where to print separator
+      @separator_row0 = @button_row - 1 unless @button_row == @row + 1
+      @separator_row2 = @row + @height - 3 # hope we have it by now, where to print separator
       #return unless @repaint_required
       if @buttons.empty?
         _create_buttons
         @components = @buttons.dup
         @components.push(*@tabs[@current_tab].items)
+        create_action_buttons
+        @components.push(*@action_buttons)
       elsif @tab_changed
         @components = @buttons.dup
         @components.push(*@tabs[@current_tab].items)
+        @components.push(*@action_buttons)
         @tab_changed = false
       end
       # if some major change has happened then repaint everything
       if @repaint_required
         $log.debug " NEWTAB repaint graphic #{@graphic} "
         print_borders unless @suppress_borders # do this once only, unless everything changes
+        print_separator1
         @components.each { |e| e.repaint_all(true); e.repaint }
       else
         @components.each { |e| e.repaint }
@@ -280,11 +292,10 @@ module RubyCurses
     end
 
     def _create_buttons
-      $log.debug "XXX: INSIDE create_buttons"
+      $log.debug "XXX: INSIDE create_buttons col_offset #{@col_offset} "
       v = Variable.new
-      r = @row + 1
-      col = @col + 1
-      button_gap = 2
+      r = @button_row # @row + 1
+      col = @col + @col_offset
       @tabs.each_with_index { |t, i| 
         txt = t.text
         @buttons << TabButton.new(nil) do 
@@ -305,7 +316,7 @@ module RubyCurses
         end
         b.form = @form
         b.override_graphic  @graphic
-        col += txt.length + button_gap
+        col += txt.length + @button_gap
       }
     end # _create_buttons
     def set_current_tab t
@@ -327,6 +338,57 @@ module RubyCurses
       window.print_border startrow, startcol, height, width, @color_pair, @attr
       print_title
     end
+    def print_separator1
+
+      width       = @width
+      height      = @height-1 
+      window      = @graphic 
+      startcol    = @col
+      startrow    = @row
+      @color_pair = get_color($datacolor)
+      r           = @separator_row
+      c           = @col + @col_offset
+
+      urcorner    = []
+      #window.printstring r, c, '-' * (@width-2), @color_pair, @attr
+      window.mvwhline( r, @col+1, Ncurses::ACS_HLINE, @width-2)
+      @buttons.each_with_index do |b, i|
+        l = b.text.length 
+        if b.selected?
+          if false #c == @col + @col_offset
+            cc = c
+            ll = l+1
+          else
+            cc = c-1 
+            ll = l+2
+          end
+          #rr = r -1 #unless rr == @col
+          window.printstring r, cc, " "*ll, @color_pair, @attr
+          #window.printstring r, cc-1, FFI::NCurses::ACS_HLINE.chr*ll, @color_pair, @attr
+          #window.printstring r-2, cc, FFI::NCurses::ACS_HLINE.chr*ll, @color_pair, @attr
+          window.mvwaddch r, cc-1, FFI::NCurses::ACS_LRCORNER unless cc-1 <= @col
+          window.mvwaddch r, c+l+1, FFI::NCurses::ACS_LLCORNER
+        else
+          window.mvwaddch r, c+l+1, FFI::NCurses::ACS_BTEE
+        end
+
+        #window.printstring r-2, c, FFI::NCurses::ACS_HLINE*l, @color_pair, @attr
+        #tt = b.text
+        #window.printstring r, c, tt, @color_pair, @attr
+        c += l + 1
+        #window.mvwaddch r, c, '+'.ord
+        window.mvwaddch r-1, c, FFI::NCurses::ACS_VLINE
+        window.mvwaddch r-2, c, FFI::NCurses::ACS_URCORNER #ACS_TTEE
+        #window.mvwaddch r-2, c+1, '/'.ord
+        urcorner << c
+        c+=@button_gap
+      end
+      window.mvwhline( @separator_row0, @col + 1, Ncurses::ACS_HLINE, c-@col-1-@button_gap)
+      window.mvwhline( @separator_row2, @col + 1, Ncurses::ACS_HLINE, @width-2)
+      urcorner.each do |c| 
+        window.mvwaddch r-2, c, FFI::NCurses::ACS_URCORNER #ACS_TTEE
+      end
+    end
     def print_title
       return unless @title
       _title = @title
@@ -336,7 +398,69 @@ module RubyCurses
       @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, 
                            @color_pair, @title_attrib) unless @title.nil?
     end
-    ##
+
+    #
+    # create the buttons at the bottom OK/ APPLY/ CANCEL
+
+    def create_action_buttons
+      case @button_type.to_s.downcase
+      when "ok"
+        make_buttons ["&OK"]
+      when "ok_cancel" #, "input", "list", "field_list"
+        make_buttons %w[&OK &Cancel]
+      when "ok_apply_cancel" #, "input", "list", "field_list"
+        make_buttons %w[&OK &Apply &Cancel]
+      when "yes_no"
+        make_buttons %w[&Yes &No]
+      when "yes_no_cancel"
+        make_buttons ["&Yes", "&No", "&Cancel"]
+      when "custom"
+        raise "Blank list of buttons passed to custom" if @buttons.nil? or @buttons.size == 0
+        make_buttons @buttons
+      else
+        $log.warn "No buttontype passed for creating tabbedpane. Not creating any"
+        #make_buttons ["&OK"]
+      end
+    end
+    def make_buttons names
+      @action_buttons = []
+      $log.debug "XXX: came to TW make buttons FORM= #{@form.name} "
+      total = names.inject(0) {|total, item| total + item.length + 4}
+      bcol = center_column total
+
+      # this craps out when height is zero
+      brow = @row + @height-2
+      brow = FFI::NCurses.LINES-2 if brow < 0
+      button_ct=0
+      names.each_with_index do |bname, ix|
+        text = bname
+        #underline = @underlines[ix] if !@underlines.nil?
+
+        button = Button.new nil do
+          text text
+          name bname
+          row brow
+          col bcol
+          #underline underline
+          highlight_background $reversecolor 
+          color $datacolor
+          bgcolor $datacolor
+        end
+        @action_buttons << button 
+        button.form = @form
+        button.override_graphic  @graphic
+        index = button_ct
+        button.command { |form| @selected_index = index; @stop = true; alert "Pressed #{bname}, #{index} "; $log.debug "Pressed Button #{bname}";}
+        button_ct += 1
+        bcol += text.length+6
+      end
+    end
+    def center_column textlen
+      width = @col + @width
+      return (width-textlen)/2
+    end
+
+    ## ADD ABOVE
   end # class
 
   class Tab
@@ -370,7 +494,8 @@ module RubyCurses
       if widget.kind_of?(Container) || widget.respond_to?(:height)
         widget.height ||= @parent_component.height-3
       end
-      widget.row += @row_offset + @parent_component.row
+      # i don't know button_offset as yet
+      widget.row += @row_offset + @parent_component.row  + 1
       widget.col += @col_offset + @parent_component.col
       @items << widget
     end
@@ -403,8 +528,9 @@ if __FILE__ == $PROGRAM_NAME
     r.add(f1)
     r.add(f2)
     r.add(f3,f4,f5)
-    NewTabbedPane.new @form, :row => 10, :col => 15, :width => 50, :height => 15 do
+    NewTabbedPane.new @form, :row => 3, :col => 5, :width => 60, :height => 20 do
       title "User Setup"
+      button_type :ok_apply_cancel
       tab "&Profile" do
         item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
         item Field.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
@@ -419,7 +545,7 @@ if __FILE__ == $PROGRAM_NAME
         item RadioButton.new nil, :row => 3, :col => 2, :text => "sc&reen", :value => "screen", :variable => radio
         radio.update_command() {|rb| ENV['TERM']=rb.value }
       end
-      tab "&Container" do
+      tab "Conta&iner" do
         item r
       end
 
