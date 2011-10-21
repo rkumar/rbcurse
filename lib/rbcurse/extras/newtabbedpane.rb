@@ -134,9 +134,8 @@ module RubyCurses
       return 0
     end
     def on_enter
-      # TODO if BTAB the last comp
+      # if BTAB, the last comp
       if $current_key == KEY_BTAB
-        # FIXME last is not focusable, then ??
         @current_component = @components.last
       else
         @current_component = @components.first
@@ -150,6 +149,7 @@ module RubyCurses
       @_entered = false
       super
     end
+    # takes focus to first item (after buttons)
     def goto_first_item
       bc = @buttons.count
       c = @components[bc]
