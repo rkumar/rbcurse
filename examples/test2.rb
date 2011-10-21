@@ -616,6 +616,7 @@ if $0 == __FILE__
       # the main loop
 
       while((ch = @window.getchar()) != FFI::NCurses::KEY_F10 )
+        break if ch == ?\C-q.getbyte(0)
         begin
           @form.handle_key(ch)
 
