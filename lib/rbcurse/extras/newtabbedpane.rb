@@ -1,5 +1,6 @@
 =begin
-  * Name: An attempt at a simple formless tabbedpane
+  * Name: newtabbedpane.rb
+  An attempt at a simple formless tabbedpane
     I am tired of tracking cursor issues
   * Description   
   * Author: rkumar (http://github.com/rkumar/rbcurse/)
@@ -280,17 +281,23 @@ module RubyCurses
 
     def _create_buttons
       $log.debug "XXX: INSIDE create_buttons"
+      v = Variable.new
       r = @row + 1
       col = @col + 1
       button_gap = 2
       @tabs.each_with_index { |t, i| 
         txt = t.text
-        @buttons << Button.new(nil) do 
+        @buttons << TabButton.new(nil) do 
+          variable v
           text  txt
           name  txt
+          #value txt
           row  r
           col col
           surround_chars ['','']
+          selected_background 'green'
+          selected_foreground 'white'
+
         end
         b = @buttons.last
         b.command do
@@ -368,6 +375,16 @@ module RubyCurses
       @items << widget
     end
   end # class tab
+  class TabButton < RadioButton
+    attr_accessor :display_tab_on_traversal
+    def getvalue_for_paint
+      @text
+    end
+    def selected?
+      @variable.value == @value 
+    end
+
+  end
 
 end # module
 if __FILE__ == $PROGRAM_NAME
