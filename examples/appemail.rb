@@ -96,7 +96,7 @@ App.new do
     def get_commands
       %w{ testchoose testnumberedmenu testdisplay_list testdisplay_text testdir saveas1 }
     end
-    # we override so as to only print basename. Also, print unread count 
+    # we override/open instance so as to only print basename. Also, print unread count 
     def @dirs.convert_value_to_text(text, crow)
       str = File.basename(text)
       if $unread_hash.has_key?(str)
