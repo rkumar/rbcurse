@@ -9,8 +9,6 @@ NOTE: listbox now traps RETURN/ENTER/13 so if you are trapping it, please use bi
 TODO 
   Perhaps keep printed data created by convert_value_to_text cached, and used for searching
   cursor movement and other functions. 
-  [ ] XXX Can we separate editing out. Make a ReadonlyList, and extend it as EditableList. This way the usual
-  use case remains cleaner.
 =end
 require 'rbcurse'
 require 'rbcurse/listcellrenderer'
@@ -516,6 +514,9 @@ module RubyCurses
       bind_key(?/){ ask_search() }
       bind_key(?n){ find_more() }
       #bind_key(32){ toggle_row_selection() } # some guys may want another selector
+      if @cell_editing_allowed && @KEY_ROW_SELECTOR == 32
+        @KEY_ROW_SELECTOR = 0 # Ctrl-Space
+      end
       bind_key(@KEY_ROW_SELECTOR){ toggle_row_selection() }
       bind_key(10){ fire_action_event }
       bind_key(13){ fire_action_event }
