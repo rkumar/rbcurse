@@ -53,12 +53,59 @@ module RubyCurses
     def current_component
       @bmanager.current
     end
+    ##
+    # Add a component with a title
+    # @param [Widget] component
+    # @param [String] title
+    def add component, title
+      component.row    = @row+@row_offset+0 # FFI changed 1 to 0 2011-09-12
+      component.col    = @col+@col_offset+0 # FFI changed 1 to 0 2011-09-12
+      component.width  = @width-2
+      component.height = @height-2
+      component.form   = @form
+      component.override_graphic(@graphic)
+      @current_buffer = @bmanager.add component, title
+      @current_component = @current_buffer.component
+      #set_current_component
+      #set_form_row ## FFI added 2011-09-12 to get cursor at start when adding
+      $log.debug "MULTICONT ADD got cb : #{@current_component} "
+    end
+    def set_current_component
+      @current_component = @current_buffer.component
+      @current_title = @current_component.title          # NOTE: unused, don't knw what for
+      set_form_row 
+      @current_component.repaint_all true
+    end
+    # required otherwise some components may not get correct cursor position on entry
+    # e.g. table
+    def on_enter
+      set_form_row
+    end
+    def set_form_row  #:nodoc:
+      if !@current_component.nil?
+        cc = @current_component
+    
+        @current_component.on_enter # 2011-10-19 why was this not there earlier
+
+        # 2011-10-21 I've tried removing next 2 lines but there are certain case
+        # that do need them. See testmulticontainer.rb
+        
+        @current_component.set_form_row 
+        @current_component.set_form_col 
+  
+      end
+    end
+    def set_form_col
+      # deliberately empty since Form will call this and Widgets one is unsuitable
+      # for us
+    end
     ## 
     # multi-container
     def handle_key ch  #:nodoc:
       $log.debug " MULTI handlekey #{ch}, #{@current_component}"
       ret = :UNHANDLED
       return :UNHANDLED unless @current_component
+
       ret = @current_component.handle_key(ch)
       $log.debug " MULTI = current comp #{@current_component} returned #{ret} "
       if ret == :UNHANDLED
@@ -70,12 +117,11 @@ module RubyCurses
             n = ch - 177
       
             component_at(n)
+            ret = 0 # other unhandled goes back
             # go to component n
           end
         rescue => err
-#          $error_message = err # changed 2010 dts  
           $error_message.value = err.to_s
-          #@form.window.print_error_message PLEASE CREATE LABEL
           $log.error " Multicomponent process_key #{err} "
           $log.debug(err.backtrace.join("\n"))
           alert err.to_s
@@ -99,7 +145,8 @@ module RubyCurses
     end
     def print_title  #:nodoc:
       #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, $datacolor, @title_attrib) unless @title.nil?
+      _title = @title || "" + @current_title
+      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless _title.nil?
     end
     # this is just a test of the simple "most" menu
     # can use this for next, prev, first, last, new, delete, overwrite etc
@@ -119,37 +166,29 @@ module RubyCurses
       menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
     end
 
-    #%w[next previous first last].each do |pos|
-      #eval(
-           #"def _buffer_#{pos}
-              #@current_component = @bmanager.#{pos}
-              #set_current_buffer
-           #end"
-          #)
-    #end
 
     def goto_next_component
       perror "No other buffer" and return if @bmanager.size < 2
 
-      @current_component = @bmanager.next
+      @current_buffer = @bmanager.next
       set_current_component
     end
 
     def goto_prev_component
       perror "No other buffer" and return if @bmanager.size < 2
 
-      @current_component = @bmanager.previous
-      $log.debug " buffer_prev got #{@current_component} "
+      @current_buffer = @bmanager.previous
+      $log.debug " buffer_prev got #{@current_buffer} "
       set_current_component
     end
     def goto_first_component
-      @current_component = @bmanager.first
-      $log.debug " buffer_first got #{@current_component} "
+      @current_buffer = @bmanager.first
+      $log.debug " buffer_first got #{@current_buffer} "
       set_current_component
     end
     def goto_last_component
-      @current_component = @bmanager.last
-      $log.debug " buffer_last got #{@current_component} "
+      @current_buffer = @bmanager.last
+      $log.debug " buffer_last got #{@current_buffer} "
       set_current_component
     end
     def delete_component
@@ -169,28 +208,6 @@ module RubyCurses
       #$log.debug " buffer_last got #{@current_component} "
       set_current_component
     end
-    ##
-    # Add a component with a title
-    # @param [Widget] component
-    # @param [String] title
-    def add component, title
-      component.row = @row+@row_offset+0 # FFI changed 1 to 0 2011-09-12 
-      component.col = @col+@col_offset+0 # FFI changed 1 to 0 2011-09-12 
-      component.width = @width-2
-      component.height = @height-2
-      component.form = @form
-      component.override_graphic(@graphic)
-      @current_component = @bmanager.add component, title
-      set_current_component
-      set_form_row ## FFI added 2011-09-12 to get cursor at start when adding
-      $log.debug "MULTICONT ADD got cb : #{@current_component} "
-    end
-    def set_current_component
-      @current_component = @current_component.component
-      @current_title = @current_component.title
-      set_form_row ## 2011-10-20 
-      @current_component.repaint_all true
-    end
     def perror errmess
       alert errmess
       #@form.window.print_error_message errmess
@@ -205,23 +222,6 @@ module RubyCurses
         menu.add(menu.create_mitem( num.to_s, name, "Switched to buffer #{ix}", aproc ))
       }
       menu.display @form.window, $error_message_row, $error_message_col, $datacolor
-    end
-    # required otherwise some components may not get correct cursor position on entry
-    # e.g. table
-    def on_enter
-      set_form_row
-    end
-    def set_form_row  #:nodoc:
-      if !@current_component.nil?
-        #$log.debug " #{@name} set_form_row calling sfr for #{@current_component.name} "
-        @current_component.on_enter # 2011-10-19 why was this not there earlier
-        @current_component.set_form_row 
-        @current_component.set_form_col 
-      end
-    end
-    def set_form_col
-      # deliberately empty since Form will call this and Widgets one is unsuitable
-      # for us
     end
   end # class multicontainer
   ##
