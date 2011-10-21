@@ -224,7 +224,7 @@ module RubyCurses
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print for col move
       # TRYING OUT dangerous 2011-10-13 
       @repaint_required = false
-      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed
+      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed || @property_changed
 
       paint if @repaint_required
 
@@ -239,6 +239,7 @@ module RubyCurses
     end
     # textview
     # NOTE: i think this should return if list is nil or empty. No need to put
+    #
     # stuff into buffer and continue. will trouble other classes that extend.
     def handle_key ch #:nodoc:
       $log.debug " textview got ch #{ch} "
@@ -514,6 +515,7 @@ module RubyCurses
       # 2011-10-15 
       @widget_scrolled = false
       @record_changed = false
+      @property_changed = false
       @old_pcol = @pcol
 
     end
