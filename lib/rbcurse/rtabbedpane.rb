@@ -28,8 +28,8 @@ NOTE:
 require 'rbcurse'
 #require 'rbcurse/rscrollform' # tried, shows in all cases teh buttons but never gets control
 
-KEY_TAB = 9
-KEY_BTAB = 353
+KEY_TAB ||= 9
+KEY_BTAB ||= 353
 #include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
