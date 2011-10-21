@@ -775,6 +775,7 @@ module RubyCurses
       #@form.row = @row + 1 
       r, c = rowcol
       $log.warn " empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
+      raise "trying to set 0, maybe called repaint before container has set value" if row <= 0
       setrowcol row, nil
     end
     # set cursor on correct column, widget
@@ -1728,6 +1729,7 @@ module RubyCurses
     # 
     dsl_accessor :label              # label of field  Unused earlier, now will print 
     dsl_property :label_color_pair   # label of field  Unused earlier, now will print 
+    dsl_property :label_attr   # label of field  Unused earlier, now will print 
     dsl_accessor :default            # TODO use set_buffer for now
     dsl_accessor :values             # validate against provided list
     dsl_accessor :valid_regex        # validate against regular expression
@@ -1941,9 +1943,11 @@ module RubyCurses
   def repaint
     return unless @repaint_required  # 2010-11-20 13:13 its writing over a window i think TESTING
     if @label_unattached
+      alert "came here unattachd"
       @label.set_form(@form)
     end
     if @label_unplaced
+      alert "came here unplaced"
       position_label
     end
     $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},  #{focusable} st: #{@state} ")
@@ -1972,7 +1976,8 @@ module RubyCurses
     c = col
     if label.is_a? String
       lcolor = @label_color_pair || $datacolor
-      @graphic.printstring row, col, label, lcolor, @attr
+      lattr = @label_attr || $datacolor
+      @graphic.printstring row, col, label, lcolor, lattr
       c += label.length + 2
       @col_offset = c-@col            # required so cursor lands in right place
     end
