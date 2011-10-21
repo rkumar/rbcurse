@@ -1,7 +1,6 @@
 ## 
 #  This tests both multicontainer and container
 #
-require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rmulticontainer'
@@ -38,30 +37,38 @@ if $0 == __FILE__
 
       c1 = Container.new 
       mc.add c1, "A form"
-      f1 = Field.new do
+      f1 = Field.new nil do
         name "name"
         text "rahul"
         row 1
         col 10
+        label " Name: "
       end
-      f2 = Field.new nil, :name => "email", :text => "me@somebody.com", :row => 2, :col => 10
+      f2 = Field.new nil, :name => "email", :text => "me@somebody.com", :label => "Email: "
       c1.add( f1, f2)
 
       c3 = TextArea.new
-      mc.add c3, "Some text"
+      mc.add c3, "Edit Me"
       c2 = Container.new 
       mc.add c2, "Another form"
+      attrib = 'underline'
       f3 = Field.new do
         name "language"
         text "ruby"
         row 1
         col 10
+        label "Language: "
+        attr attrib
       end
-      f4 = Field.new nil, :name => "version", :text => "1.9.2", :row => 2, :col => 10
+      f4 = Field.new nil, :name => "version", :text => "1.9.2", :row => 2, :col => 10, 
+        :label => " Version: ", :attr => attrib
       c2.add( f3, f4)
+
       @help = "F10 to quit. M-a to open new component. M-: for menu  #{$0} "
-      RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
-      f5 = Field.new @form, :name => "version", :text => "1.9.2", :row => 22, :col => 10, :bgcolor => 'blue'
+      RubyCurses::Label.new @form, {:text => @help, :row => last_line(), :col => 2, 
+        :color => 'yellow', :bgcolor => 'red'}
+      f5 = Field.new @form, :name => "version2", :text => "1.9.2", :row => 20, :col => c, :bgcolor => 'blue',
+        :label => "Version: ", :label_color_pair => get_color($datacolor, 'green', 'black')
 
       @form.repaint
       @window.wrefresh
