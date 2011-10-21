@@ -424,7 +424,7 @@ module RubyCurses
       #
       # TRYING OUT dangerous 2011-10-15 
       @repaint_required = false
-      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed
+      @repaint_required = true if @widget_scrolled || @pcol != @old_pcol || @record_changed || @property_changed
 
       unless @repaint_required
         unhighlight_row @old_selected_index
@@ -495,6 +495,7 @@ module RubyCurses
       # 2011-10-13 
       @widget_scrolled = false
       @record_changed = false
+      @property_changed = false
       @old_pcol = @pcol
     end
     def highlight_selected_row r=nil, c=nil, acolor=nil
