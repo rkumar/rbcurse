@@ -1,18 +1,19 @@
 =begin
   * Name: newtabbedpane.rb
-  An attempt at a simple formless tabbedpane
-    I am tired of tracking cursor issues
-  * Description   
+  * Description : This is radically simplified tabbedpane. The earlier version
+    was too complex with multiple forms and pads, and a scrollform. This uses
+    the external form and has some very simple programming to handle the whole thing.
   * Author: rkumar (http://github.com/rkumar/rbcurse/)
   * Date: 2011-10-20 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  Fri Oct 21 20:20:21 IST 2011
+  * Last update:  Sat Oct 22 18:40:49 IST 2011
 
   == CHANGES
   == TODO 
      on start first buttons bottom should not be lined.
      Alt-1-9 to goto tabs
-Title 
+     add remove tabs at any time - started, untested
+     events for tab add/remove/etc
 =end
 require 'rbcurse'
 ##
@@ -22,6 +23,8 @@ module RubyCurses
     # what kind of buttons, if this is a window, :ok :ok_camcel :ok_apply_cancel
     dsl_accessor :button_type
     attr_reader :button_row
+    # index of tab that is currently open
+    attr_reader :current_tab
     
 
     def initialize form=nil, config={}, &block
@@ -33,17 +36,43 @@ module RubyCurses
       @focusable = true
       @editable  = true
       @col_offset = 2
+      raise ArgumentError, "NewTabbedPane : row or col not set: r: #{@row} c: #{@col} "  unless @row && @col
     end
 
     # Add a tab
     def tab title, config={}, &block
-      @tab_titles << title
-      @tab_components[title]=[]
-      @tabs << Tab.new(title, self, config, &block)
-
+      #@tab_components[title]=[]
+      #@tabs << Tab.new(title, self, config, &block)
+      insert_tab @tabs.count, title, config, &block
+      self
     end
     alias :add_tab :tab
 
+    # a shortcut for binding a command to a press of an action button
+    # The block will be passed
+    # This is only relevant if you have asked for buttons to be created, which is 
+    # only relevant in a TabbedWindow
+    # ActionEvent has source event and action_command
+    def command *args, &block
+      bind :PRESS, *args, &block
+    end
+
+    # -------------- tab maintenance commands ------------------ #
+
+    def insert_tab index, title, config={}, &block
+      @tabs.insert(index, Tab.new(title, self, config, &block) )
+    end
+    def remove_tab tab
+      @tabs.delete tab
+      self
+    end
+    def remove_all
+      @tabs = []
+      self
+    end
+    def remove_tab_at index = @current_tab
+      @tabs.delete_at index
+    end
 
     def repaint
       @current_tab ||= 0
@@ -77,7 +106,7 @@ module RubyCurses
       @repaint_required = false
     end
     def handle_key ch
-      $log.debug " CONTAINER handle_key #{ch} "
+      $log.debug " NEWTABBED handle_key #{ch} "
       return if @components.empty?
       _multiplier = ($multiplier == 0 ? 1 : $multiplier )
 
@@ -86,26 +115,26 @@ module RubyCurses
         $log.warn "WARN: calling ON_ENTER since in this situation it was not called"
         on_enter
       end
-      if ch == KEY_TAB
-        $log.debug "CONTAINER GOTO NEXT"
-        return goto_next_component
-      elsif ch == KEY_BTAB
-        return goto_prev_component
-      end
+      #if ch == KEY_TAB
+        #$log.debug "NEWTABBED GOTO NEXT"
+        #return goto_next_component
+      #elsif ch == KEY_BTAB
+        #return goto_prev_component
+      #end
       comp = @current_component
-      $log.debug " CONTAINER handle_key #{ch}: #{comp}" 
+      $log.debug " NEWTABBED handle_key #{ch}: #{comp}" 
       if comp
         ret = comp.handle_key(ch) 
-        $log.debug " CONTAINER handle_key#{ch}: #{comp} returned #{ret} " 
+        $log.debug " NEWTABBED handle_key#{ch}: #{comp} returned #{ret} " 
         if ret != :UNHANDLED
           comp.repaint # NOTE: if we don;t do this, then it won't get repainted. I will have to repaint ALL
           # in repaint of this.
           return ret 
         end
-        $log.debug "XXX CONTAINER key unhandled by comp #{comp.name} "
+        $log.debug "XXX NEWTABBED key unhandled by comp #{comp.name} "
       else
         Ncurses.beep
-        $log.warn "XXX CONTAINER key unhandled NULL comp"
+        $log.warn "XXX NEWTABBED key unhandled NULL comp"
       end
       case ch
       when ?\C-c.getbyte(0)
@@ -120,7 +149,7 @@ module RubyCurses
       # allow user to map left and right if he wants
       if ret == :UNHANDLED
         case ch
-        when KEY_UP
+        when KEY_UP, KEY_BTAB
           # form will pick this up and do needful
           return goto_prev_component #unless on_first_component?
         when KEY_LEFT
@@ -129,7 +158,7 @@ module RubyCurses
           # In case of returnign an unhandled TAB, on_leave will happen and cursor will move to 
           # previous component outside of this.
           return goto_prev_component unless on_first_component?
-        when KEY_RIGHT
+        when KEY_RIGHT, KEY_TAB
           return goto_next_component #unless on_last_component?
         when KEY_DOWN
           if on_a_button?
@@ -146,6 +175,8 @@ module RubyCurses
       $multiplier = 0
       return 0
     end
+    # on enter processing
+    # Very often the first may be a label !
     def on_enter
       # if BTAB, the last comp
       if $current_key == KEY_BTAB
@@ -154,7 +185,7 @@ module RubyCurses
         @current_component = @components.first
       end
       return unless @current_component
-      $log.debug " CONTAINER came to ON_ENTER #{@current_component} "
+      $log.debug " NEWTABBED came to ON_ENTER #{@current_component} "
       set_form_row
       @_entered = true
     end
@@ -165,10 +196,26 @@ module RubyCurses
     # takes focus to first item (after buttons)
     def goto_first_item
       bc = @buttons.count
-      c = @components[bc]
-      if c
+      @components[bc..-1].each { |c| 
+        if c.focusable
+          leave_current_component
+          @current_component = c
+          set_form_row
+          break
+        end
+      }
+    end
+    def goto_last_item
+      bc = @buttons.count
+      f = nil
+      @components[bc..-1].each { |c| 
+        if c.focusable
+          f = c
+        end
+      }
+      if f
         leave_current_component
-        @current_component = c
+        @current_component = f
         set_form_row
       end
     end
@@ -216,7 +263,7 @@ module RubyCurses
     # private
     def set_form_row
       return :UNHANDLED if @current_component.nil?
-      $log.debug " CONTAINER on enter sfr #{@current_component} "
+      $log.debug " NEWTABBED on enter sfr #{@current_component} "
       @current_component.on_enter
       @current_component.set_form_row # why was this missing in vimsplit. is it
       # that on_enter does a set_form_row
@@ -227,7 +274,7 @@ module RubyCurses
     # private
     def set_form_col
       return if @current_component.nil?
-      $log.debug " #{@name} CONTAINER  set_form_col calling sfc for #{@current_component.name} "
+      $log.debug " #{@name} NEWTABBED  set_form_col calling sfc for #{@current_component.name} "
       @current_component.set_form_col 
     end
     # leave the component we are on.
@@ -262,8 +309,16 @@ module RubyCurses
       @current_component = comp
       set_form_row
     end
+    def set_current_tab t
+      return if @current_tab == t
+      @current_tab = t
+      goto_component @components[t]
+      @tab_changed = true
+      @repaint_required = true
+      self
+    end
 
-    def _handle_key ch
+    def DEPRECATED_handle_key ch
       map_keys unless @keys_mapped
       ret = process_key ch, self
       @multiplier = 0
@@ -276,8 +331,7 @@ module RubyCurses
     def init_vars
       @buttons        = []
       @tabs           = []
-      @tab_titles     = []
-      @tab_components = {}
+      #@tab_components = {}
       @bottombuttons  = []
       #
       # I'll keep current tabs comps in this to simplify
@@ -319,22 +373,15 @@ module RubyCurses
         col += txt.length + @button_gap
       }
     end # _create_buttons
-    def set_current_tab t
-      return if @current_tab == t
-      @current_tab = t
-      goto_component @components[t]
-      @tab_changed = true
-      @repaint_required = true
-    end
     private
     def print_borders
-      width = @width
-      height = @height-1 # 2010-01-04 15:30 BUFFERED HEIGHT
-      window = @graphic  # 2010-01-04 12:37 BUFFERED
-      startcol = @col 
-      startrow = @row 
+      width       = @width
+      height      = @height-1 
+      window      = @graphic 
+      startcol    = @col
+      startrow    = @row
       @color_pair = get_color($datacolor)
-      #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
+      $log.debug "NTP #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
       window.print_border startrow, startcol, height, width, @color_pair, @attr
       print_title
     end
@@ -403,6 +450,7 @@ module RubyCurses
     # create the buttons at the bottom OK/ APPLY/ CANCEL
 
     def create_action_buttons
+      return unless @button_type
       case @button_type.to_s.downcase
       when "ok"
         make_buttons ["&OK"]
@@ -424,14 +472,16 @@ module RubyCurses
     end
     def make_buttons names
       @action_buttons = []
-      $log.debug "XXX: came to TW make buttons FORM= #{@form.name} "
+      $log.debug "XXX: came to NTP make buttons FORM= #{@form.name} names #{names}  "
       total = names.inject(0) {|total, item| total + item.length + 4}
       bcol = center_column total
 
       # this craps out when height is zero
       brow = @row + @height-2
       brow = FFI::NCurses.LINES-2 if brow < 0
+      $log.debug "XXX: putting buttons :on #{brow} : #{@row} , #{@height} "
       button_ct=0
+      tpp = self
       names.each_with_index do |bname, ix|
         text = bname
         #underline = @underlines[ix] if !@underlines.nil?
@@ -450,9 +500,11 @@ module RubyCurses
         button.form = @form
         button.override_graphic  @graphic
         index = button_ct
+        tpp = self
         button.command { |form| @selected_index = index; @stop = true; 
-          throw(:close, @selected_index)
-        
+          # ActionEvent has source event and action_command
+          fire_handler :PRESS, ActionEvent.new(tpp, index, button.text)
+          #throw(:close, @selected_index)
         }
         button_ct += 1
         bcol += text.length+6
@@ -491,10 +543,12 @@ module RubyCurses
       # these will fail if TP put inside some other container. NOTE
       widget.row ||= 0
       widget.col ||= 0
-      if widget.kind_of?(Container) || widget.respond_to?(:width)
+      # If we knew it was only widget we could expand it
+      if widget.kind_of?(Container) #|| widget.respond_to?(:width)
         widget.width ||= @parent_component.width-3
       end
-      if widget.kind_of?(Container) || widget.respond_to?(:height)
+      # Darn ! this was setting Label to fully height
+      if widget.kind_of?(Container) #|| widget.respond_to?(:height)
         widget.height ||= @parent_component.height-3
       end
       # i don't know button_offset as yet
