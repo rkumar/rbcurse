@@ -5,11 +5,15 @@
           NOTE: Still experimental
   * Description   
   * Author: rkumar (http://github.com/rkumar/rbcurse/)
-  * Date: 
+  * Date:  21.10.11 - 00:29
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
+  * Last update:  23.10.11 - 00:29
   == CHANGES
+      Focusables so we don't focus on label
   == TODO 
+       How to put blank lines in stack
+
      - The contaomers and multis need to do their own on_enter and on_leave
        management, they cannot rely on some other container doing it.
        We can only rely on handle_key being called. HK should determine
@@ -50,6 +54,7 @@ module RubyCurses
       @focusable = true
       @editable = false
       @components = [] # all components
+      @focusables = [] # focusable components, makes checks easier
 
       init_vars
     end
@@ -90,7 +95,10 @@ module RubyCurses
         # inside app, it would have given row after container
 
         @components << c
-        @current_component ||= c # only the first else cursor falls on last on enter
+        if c.focusable
+          @focusables << c 
+          @current_component ||= c # only the first else cursor falls on last on enter
+        end
 
       end # items each
       self
@@ -165,7 +173,7 @@ module RubyCurses
       @graphic = my_win unless @graphic
       raise " #{@name} NO GRAPHIC set as yet                 CONTAINER paint " unless @graphic
       @components.each { |e| correct_component e } if @first_time
-      @components.each { |e| check_component e } # seeme one if printing out
+      #@components.each { |e| check_component e } # seeme one if printing out
 
       #return unless @repaint_required
 
@@ -211,7 +219,7 @@ module RubyCurses
         on_enter
       end
       if ch == KEY_TAB
-        $log.debug "CONTAINER GOTO NEXT"
+        $log.debug "CONTAINER GOTO NEXT TAB"
         return goto_next_component
       elsif ch == KEY_BTAB
         return goto_prev_component
@@ -271,11 +279,11 @@ module RubyCurses
     # NOTE: if user comes in using DOWN or UP, last traversed component will get the focus
     #
     def on_enter
-      # if BTAB, the last comp
-      if $current_key == KEY_BTAB
-        @current_component = @components.last
+      # if BTAB, the last comp XXX they must be focusable FIXME
+      if $current_key == KEY_BTAB || $current_key == KEY_UP
+        @current_component = @focusables.last
       else
-        @current_component = @components.first
+        @current_component = @focusables.first
       end
       return unless @current_component
       $log.debug " CONTAINER came to ON_ENTER #{@current_component} "
@@ -364,17 +372,17 @@ module RubyCurses
       # Some components are erroneously repainting all, after setting this to true so it is 
       # working there. 
       @current_component.repaint_required true
-      $log.debug " after on_leave VIMS XXX #{@current_component.focussed}   #{@current_component.name}"
+      $log.debug " after on_leave RCONT XXX #{@current_component.focussed}   #{@current_component.name}"
       @current_component.repaint
     end
 
-    # is focus on first component
+    # is focus on first component FIXME check  for focusable
     def on_first_component?
-      @current_component == @components.first
+      @current_component == @focusables.first
     end
-    # is focus on last component
+    # is focus on last component FIXME check  for focusable
     def on_last_component?
-      @current_component == @components.last
+      @current_component == @focusables.last
     end
     # set focus on given component
     # Sometimes you have the handle to component, and you want to move focus to it
