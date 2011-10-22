@@ -8,6 +8,12 @@
   * License:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
+   TODO:
+   Simplify completely. we don't need to use popup list, use something simpler do
+   we can control keys.
+   Keys: ignore down arrow in field. Use space to popup and space to select from popup.
+         Or keep that as default.
+   That v character does not position correctly if label used.
 =end
 require 'rbcurse'
 require 'rbcurse/rlistbox'
@@ -32,8 +38,10 @@ module RubyCurses
     # the symbol you want to use for combos
     attr_accessor :COMBO_SYMBOL
     attr_accessor :show_symbol # show that funny symbol after a combo to signify its a combo
+    dsl_accessor :arrow_key_policy   # :IGNORE :NEXT_ROW :POPUP
 
     def initialize form, config={}, &block
+      @arrow_key_policy = :ignore
       super
       @current_index ||= 0
       # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
@@ -43,7 +51,8 @@ module RubyCurses
     end
     def init_vars
       super
-      @show_symbol ||= true
+      @show_symbol = true if @show_symbol.nil? # if set to false don't touch
+      @show_symbol = false if @label
       @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL
       bind_key(KEY_UP) { previous_row }
       bind_key(KEY_DOWN) { next_row }
@@ -76,6 +85,16 @@ module RubyCurses
       if !@editable
         if ch == KEY_LEFT or ch == KEY_RIGHT
           return :UNHANDLED
+        end
+      end
+      case @arrow_key_policy 
+      when :ignore
+        if ch == KEY_DOWN or ch == KEY_UP
+          return :UNHANDLED
+        end
+      when :popup
+        if ch == KEY_DOWN or ch == KEY_UP
+          popup
         end
       end
       case ch
@@ -231,11 +250,6 @@ module RubyCurses
         # i have changed c +1 to c, since we have no right to print beyond display_length
         @form.window.mvwaddch @row, c, @COMBO_SYMBOL # Ncurses::ACS_GEQUAL
       end
-     # @form.window.mvwvline( @row, c+2, ACS_VLINE, 1)
-     # @form.window.mvwaddch @row, c+2, Ncurses::ACS_S1
-     # @form.window.mvwaddch @row, c+3, Ncurses::ACS_S9
-     # @form.window.mvwaddch @row, c+4, Ncurses::ACS_LRCORNER
-     # @form.window.mvwhline( @row, c+5, ACS_HLINE, 2)
     end
 
   end # class ComboBox
