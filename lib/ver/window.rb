@@ -42,7 +42,7 @@ module VER
       @visible = true
       reset_layout(layout)
 
-      $log.debug "XXX:WINDOW got #{@height}, #{@width}, #{@top}, #{@left} "
+      $log.debug "XXX:WINDOW got h #{@height}, w #{@width}, t #{@top}, l #{@left} "
       @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       #$error_message_row = $status_message_row = Ncurses.LINES-1
