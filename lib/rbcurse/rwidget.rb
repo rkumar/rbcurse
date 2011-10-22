@@ -2393,6 +2393,13 @@ module RubyCurses
       #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
       @repaint_required = false
     end
+    # Added 2011-10-22 to prevent some naive components from putting focus here.
+    def on_enter
+      raise "Cannot enter Label"
+    end
+    def on_leave
+      raise "Cannot leave Label"
+    end
   # ADD HERE LABEL
   end
   ##
