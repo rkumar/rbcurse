@@ -563,6 +563,15 @@ if $0 == __FILE__
         $log.debug " returning with #{$config_hash}: #{$config_hash.inspect}"
       end
       menu.add(item)
+      item = RubyCurses::MenuItem.new "Options2 ..."
+      item.command() do |it|  
+        require './newtabbedwindow'
+        tp = SetupTabbedPane.new
+        tp.run
+        $message.value=$config_hash.inspect
+        $log.debug " returning with #{$config_hash}: #{$config_hash.inspect}"
+      end
+      menu.add(item)
       item = RubyCurses::MenuItem.new "Shell Command..."
       item.command { shell_output }
       menu.add(item)
@@ -631,8 +640,8 @@ if $0 == __FILE__
           end
           $error_message.value = ""
         rescue => err
-          $log.debug( err) if err
-          $log.debug(err.backtrace.join("\n")) if err
+          $log.error( err) if err
+          $log.error(err.backtrace.join("\n")) if err
           alert "Got an exception in test2: #{err} "
           $error_message.value = ""
         end
