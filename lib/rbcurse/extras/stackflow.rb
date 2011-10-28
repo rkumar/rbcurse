@@ -1,5 +1,5 @@
 =begin
-  * Name: rcontainer2.rb
+  * Name: stackflow.rb
           A version of Container that uses stacks and flows and later grids
           to place components
           This is not a form. Thus it can be safely placed as a widget
@@ -10,7 +10,7 @@ NOTE: Still experimental
   * Date:  23.10.11 - 19:55
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-  * Last update:  Fri Oct 28 17:00:32 IST 2011
+  * Last update:  28.10.11 - 22:07 
   == CHANGES
   == TODO 
     Resizing components
@@ -22,6 +22,7 @@ NOTE: Still experimental
     - take care of margins
     - are two weights needed horiz and vertical ?
     - C-a C-e misbehaving in examples
+    Flow to have option of right to left orientation
 
 =end
 
@@ -129,12 +130,19 @@ module RubyCurses
     public
     # repaint object
     # called by Form, and sometimes parent component (if not form).
-    def repaint # container2
+    def repaint # stackflow
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
       raise " #{@name} NO GRAPHIC set as yet                 RCONTAINER paint " unless @graphic
-      r = @row + @row_offset
-      c = @col + @col_offset
+      # actually at this level we don't have margins set -- not yet.
+      @margin_left   ||= 0
+      @margin_right  ||= 0
+      @margin_top    ||= 0
+      @margin_bottom ||= 0
+      r  = @row + @row_offset + @margin_top
+      c  = @col + @col_offset + @margin_left
+      ht = @height-2-(@margin_top + @margin_bottom)
+      wd = @width -2-(@margin_left + @margin_right)
       # should this not happen only if repaint_required ?
       @components.each { |e| 
         e.parent_component = self
@@ -143,12 +151,12 @@ module RubyCurses
         # check that we are not trying to print outside bounds
         # by default we are stacking top level comps regardless of stack or flow
         #  otherwise too complicated
-        if e.is_a? Stack 
+        if e.is_a? BaseStack 
           # using ||= allows us to use overrides given by user
           # but disallows us from calculating if size changes
-            e.height           = (@height-2) * (e.weight * 0.01)
-            e.height           = e.height.round
-            e.width            = (@width-2) 
+            e.height           = (ht) * (e.weight * 0.01)
+            e.height           = e.height.round 
+            e.width            = wd 
             if e.row + e.height >= @row + @height
               #alert "is exceeding #{e.row} #{e.height} > #{@row} + #{@height} "
               e.height = @height - e.row - 1
@@ -174,8 +182,6 @@ module RubyCurses
       if last.row + last.height < @row + @height
         last.height += 1 # @row + @height - last.row + last.height
       end
-
-      #return unless @repaint_required
 
       # if some major change has happened then repaint everything
       # if multiple components then last row and col needs to be stored or else overlap will happen FIXME
@@ -429,7 +435,7 @@ module RubyCurses
 
     # General routin to traverse components and their components
     def traverse c, &block
-      if c.is_a? Stack
+      if c.is_a? BaseStack
         yield c
         #puts " #{@ctr} --> #{c.type}, wt: #{c.config[:weight]} "
         c.components.each { |e| 
@@ -448,17 +454,21 @@ module RubyCurses
       @components.each { |e| traverse e, &block }
     end
     def _stack type, config={}, &block
-      s = Stack.new(type,config)
+      case type
+      when :stack
+        s = Stack.new(config)
+      when :flow
+        s = Flow.new(config)
+      end
       _add s
       @active << s
       yield_or_eval &block if block_given? 
-      #instance_eval(&block) if block_given? 
       @active.pop
     end
     def _add s
       if @active.empty?
         $log.debug "XXX:  ADDING TO components #{s} "
-        unless s.is_a? Stack
+        unless s.is_a? BaseStack
           raise "No stack or flow to add to. Results may not be what you want"
         end
         @components << s
@@ -495,14 +505,21 @@ module RubyCurses
     end
     # ADD HERE ABOVe
   end # class
-  class Stack 
+
+  #
+  #
+  #
+  class BaseStack
     attr_accessor :components
-    attr_reader :type
+    #attr_reader :type
     attr_reader :config
     attr_accessor :form
-    def initialize type, config={}, components=[]
-      @type   = type
+    def initialize config={}, components=[]
+      #@type   = type
       @config = config
+      config.each do |k, v|
+        instance_variable_set "@#{k}", v
+      end
       @components = components
       @calc_over = false
     end
@@ -538,36 +555,22 @@ module RubyCurses
     def recalc
       @calc_over = true
       comp = self
-      if comp.parent.is_a? Stack 
-        alert "does NOT reachere here"
-        if comp.parent.type == :stack
-          comp.height = comp.parent.height * comp.weight * 0.01
-          comp.height = comp.height.round
-          comp.width  = comp.parent.width #* comp.parent.weight * 0.01 # ??? XXX 2011-10-25 
-          comp.width   = comp.width.round
-          comp.col    = comp.parent.col
-          $log.debug "XXX: parent is stack #{comp.row},#{comp.col}. #{comp.width},#{comp.height} "
-        #elsif comp.type == :flow
-        elsif comp.parent.type == :flow
-          comp.width   = comp.parent.width * comp.weight * 0.01
-          comp.width   = comp.width.round
-          comp.height  = comp.parent.height #* comp.parent.weight * 0.01 # ??? XXX Is there any ht weight ? 2011-10-25 
-          comp.height = comp.height.round
-          comp.row     = comp.parent.row
-          $log.debug "XXX: parent is flow #{comp.row}, #{comp.col}. #{comp.width},#{comp.height} "
-        end
-      end
-      if comp.is_a? Stack
+      if comp.is_a? BaseStack
         check_coords comp
-        if @type == :stack
-          r = row #+ row_offset
+        @margin_left   ||= 0
+        @margin_right  ||= 0
+        @margin_top    ||= 0
+        @margin_bottom ||= 0
+        if comp.is_a? Stack
+          r   = row + @margin_top
           rem = 0
+          ht = height - (@margin_top + @margin_bottom)
           @components.each { |e| 
             # should only happen if expandable FIXME
-            e.height = 0.01 * e.weight * height 
+            e.height = 0.01 * e.weight * (ht - (e.margin_top + e.margin_bottom)) 
             hround = e.height.floor
             rem += e.height - hround
-            e.height = hround
+            e.height = hround #- (@margin_top + @margin_bottom)
             # rounding creates a problem, since 0.5 gets rounded up and we can exceed bound
             # So i floor, and maintain the lost space, and add it back when it exceeds 1
             # This way the last components gets stretched to meet the end, which is required
@@ -576,21 +579,24 @@ module RubyCurses
               e.height += 1
               rem = 0
             end
-            #$log.debug "XXX: recalc #{e.class} #{e.height} = #{e.weight} * #{height} "
-            e.row = r
+            # Item level margins have not been accounted for when calculating weightages, and
+            # should not be used on the weightage axis
+            r += e.margin_top
+            e.row = r 
             r += e.height + 0
-            e.width = width
-            e.col = col # ??? XXX
+            e.width = width - (@margin_left + @margin_right + e.margin_left + e.margin_right)
+            e.col = col + @margin_left + e.margin_left # ??? XXX
             $log.debug "XXX: recalc stack #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * h:#{height} "
             #e.col_offset = col_offset # ??? XXX
             check_coords e
-            e.recalc if e.is_a? Stack
+            e.recalc if e.is_a? BaseStack
           }
-        elsif @type == :flow
-          c = col #+ col_offset
+        elsif comp.is_a? Flow
+          c = col + @margin_left #+ col_offset
           rem = 0
+          wd = width - (@margin_left + @margin_right)
           @components.each { |e| 
-            e.width = e.weight * width  * 0.01
+            e.width = e.weight * wd  * 0.01
             wround = e.width.floor
             rem += e.width - wround
             e.width = wround
@@ -599,18 +605,18 @@ module RubyCurses
               e.width += 1
               rem = 0
             end
-            e.height = height #* weight * 0.01
+            e.height = height - (@margin_top + @margin_bottom) #* weight * 0.01
             #e.height = e.height.round
             e.col = c
             c += e.width + 0
-            e.row = row
+            e.row = row + @margin_top
             check_coords e
             $log.debug "XXX: recalc flow #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * w:#{width} "
-            e.recalc if e.is_a? Stack
+            e.recalc if e.is_a? BaseStack
           }
         end
       else
-        alert "in else recalc "
+        alert "in else recalc DOES NOT COME HERE "
         comp.col    = comp.parent.col
         comp.row    = comp.parent.row
         comp.height = comp.parent.height
@@ -637,8 +643,8 @@ module RubyCurses
       if p.components[ni].nil?
         ni = nil
       end
-      case p.type
-      when :flow
+      case p
+      when Flow
         # increase width of current and reduce from neighbor
         if ni
           n = p.components[ni]
@@ -649,7 +655,7 @@ module RubyCurses
           n.col   += 1
         end
 
-      when :stack
+      when Stack
         if ni
           n = p.components[ni]
           $log.debug "XXX: INC fl current #{ci}, total#{p.components.count}, next #{n} "
@@ -669,8 +675,8 @@ module RubyCurses
       if p.components[ni].nil?
         ni = nil
       end
-      case p.type
-      when :flow
+      case p
+      when Flow
         # increase width of current and reduce from neighbor
         if ni
           n = p.components[ni]
@@ -681,7 +687,7 @@ module RubyCurses
           n.col   -= 1
         end
 
-      when :stack
+      when Stack
         if ni
           n = p.components[ni]
           $log.debug "XXX: INC fl current #{ci}, total#{p.components.count}, next #{n} "
@@ -696,14 +702,27 @@ module RubyCurses
     end
     def to_s
       @components
-      #" #{@type} ::  #{@config} :: #{@components} "
-      #" #{@type} ::  :: #{@components} "
     end
   end
-  class Item 
+  # A stack positions objects one below the other
+  class Stack < BaseStack; end
+  # A flow positions objects in a left to right
+  class Flow  < BaseStack; end
+  #
+  # A wrapper over widget mostly because it adds weight and margins
+  #
+  class Item
     attr_reader :config, :widget
+    attr_reader :margin_top, :margin_left, :margin_bottom, :margin_right
     def initialize config={}, widget
       @config = config
+      config.each do |k, v|
+        instance_variable_set "@#{k}", v
+      end
+      @margin_left   ||= 0
+      @margin_right  ||= 0
+      @margin_top    ||= 0
+      @margin_bottom ||= 0
       @widget = widget
     end
     def weight;  @config[:weight]||100; end
@@ -712,11 +731,11 @@ module RubyCurses
     %w[ form parent parent_component width height row col row_offset col_offset focusable].each { |e|
       eval(
            "def #{e} 
-      @widget.#{e} #if @widget.respond_to?:#{e} 
-    end
-    def #{e}=(val) 
-      @widget.#{e}=val #if @widget.respond_to?:#{e} 
-    end"
+              @widget.#{e} 
+            end
+            def #{e}=(val) 
+              @widget.#{e}=val 
+            end"
           )
     }
     def method_missing(sym, *args, &block)
