@@ -289,31 +289,37 @@ module RubyCurses
 
 
         @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
-        @gbwid ||= 0
+
+        ##  The following calculations are only calcing the 2 split areas
+        ##   and divider locations based on V or H and weight.
+
+        @gbwid ||= 0    # grabbar width
         roffset = 1
         loffset = 2
         if @suppress_borders
           loffset = roffset = 0
         end
+        # vertical split 
         if v?
           @rc ||= (@width * @weight).to_i
-          rc = @rc
+          rc = @rc            # divider location
           $log.debug "SPLP #{@name} prtingign split vline divider 1, rc: #{rc}, h:#{@height} - 2 "
-          unless @vb
+          unless @vb             # if grabbar not created
             @gbwid = 1
             _create_divider
-          else
+          else                   # created, so set it
             @vb.row @row+roffset
             @vb.col rc+@col
             #@vb.repaint
           end
           #@graphic.mvvline(@row+1, rc+@col, 0, @height-2)
           # TODO don;t keep recreating, if present, reset values
+          ## calculate cordinated of both split areas/boxes
           @c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
           @c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
-        else
+        else #  horizontal split
           @rc ||= (@height * @weight).to_i
-          rc = @rc
+          rc = @rc         # dividers row col location
           $log.debug "SPLP #{@name} prtingign split hline divider rc: #{rc} , 1 , w:#{@width} - 2"
           unless @vb
             @gbwid = 1
@@ -331,7 +337,7 @@ module RubyCurses
             @c1rc = Coord.new(@row+a,@col+a, rc-a, @width-@internal_width)
             @c2rc = Coord.new(@row+rc+a,@col+a, @height-rc-2, @width - @internal_width)
           else
-            # flush
+            # flush against border
           #@c1rc = Coord.new(@row,@col, @height -0, rc-@gbwid)
           #@c2rc = Coord.new(@row,rc+@col+@gbwid,@height-0, @width - rc-@gbwid)
             a = 0
