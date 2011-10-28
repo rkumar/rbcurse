@@ -10,10 +10,11 @@ NOTE: Still experimental
   * Date:  23.10.11 - 19:55
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-  * Last update:  23.10.11
+  * Last update:  Fri Oct 28 17:00:32 IST 2011
   == CHANGES
   == TODO 
     Resizing components
+    weightx weighty
     If window or container resized then redo the calc again.
     RESET height only if expandable
     CLEANUP its a mess due to stacks and flows not being widgets.
@@ -25,6 +26,7 @@ NOTE: Still experimental
 =end
 
 require 'rbcurse'
+require 'rbcurse/common/bordertitle'
 
 include RubyCurses
 module RubyCurses
@@ -37,23 +39,17 @@ module RubyCurses
 
   class StackFlow < Widget
 
-    dsl_accessor :suppress_borders            #to_print_borders
-    dsl_accessor :border_attrib, :border_color
-    dsl_accessor :title                       #set this on top
-    dsl_accessor :title_attrib                #bold, reverse, normal
+    include BorderTitle
     # should container stack objects ignoring users row col
     # this is esp needed since App sets row and col which is too early
     # This is now the default value, till i can redo things
     #dsl_accessor :stack
-    dsl_accessor :positioning                 # absolute, relative, stack
     attr_reader  :current_component
 
     def initialize form=nil, config={}, &block
       @suppress_borders = false
       @row_offset = @col_offset = 1
       @_events ||= []
-      @stack = true
-      @positioning = :stack
       @focusable = true
       @editable = false
       @components = [] # all components
@@ -65,13 +61,12 @@ module RubyCurses
     end
     def init_vars
       @repaint_required = true
-      @row_offset = @col_offset = 0 if @suppress_borders # FIXME supposed to use this !!
+      @row_offset = @col_offset = 0 if @suppress_borders 
       @ctr = 0
 
       @internal_width = 2
       @internal_width = 1 if @suppress_borders
-      @name ||= "AContainer"
-      @first_time = true
+      @name ||= "a_stackflow"
       bind_key(?\M-1, :increase_current)
       bind_key(?\M-2, :decrease_current)
       #raise "NO components !" if @components.empty?
@@ -130,54 +125,6 @@ module RubyCurses
     # what of by_name
 
 
-    # correct coordinates of comp esp if App has stacked them after this
-    # container
-    # It is best to use the simple stack feature. The rest could change at any time
-    #  and is quite arbitrary. Some folks may set absolute locations if container
-    #  is directly on a form, others may set relative locations if it is inside a 
-    #  tabbed pane or other container. Thus, stacks are best
-    def correct_component c
-      raise "Form is still not set in RContainer" unless @form
-      attach_form(c) unless c.form
-      @last_row ||= @row + 1
-      inset = 2
-      # 2011-10-20 current default behaviour is to stack
-      if @positioning == :stack
-        c.row = @last_row
-        c.col = @col + inset
-
-        # do not advance row, save col for next row
-        @last_row += 1
-      elsif @positioning == :relative   # UNTESTED NOTE
-        if (c.row || 0) <= 0
-          $log.warn "c.row in RCONTAINER is #{c.row} "
-          c.row = @last_row
-          @last_row += 1
-        elsif c.row > @row + @height -1
-          $log.warn "c.row in RCONTAINER exceeds container.  #{c.row} "
-          c.row -= @height - @row_offset
-        else
-          # this is where it should come
-          c.row += @row + @row_offset
-          @last_row = c.row + 1
-        end
-        if (c.col || 0) <= 0
-          c.col = @col + inset + @col_offset
-        elsif c.col > @col + @width -1
-          c.col -= @width
-        elsif c.col == @col
-          c.col += @col_offset + inset
-        else #f c.col < @col
-          c.col += @col+@col_offset
-        end
-        $log.debug "XXX: CORRECT #{c.name}  r:#{c.row} c:#{c.col} "
-      end
-      @first_time = false
-    end
-    def check_component c
-      raise "row is less than Rcontainer #{c.row} #{@row} " if c.row <= @row
-      raise "col is less than Rcontainer #{c.col} #{@col} " if c.col <= @col
-    end
 
     public
     # repaint object
@@ -186,10 +133,6 @@ module RubyCurses
       my_win = @form ? @form.window : @target_window
       @graphic = my_win unless @graphic
       raise " #{@name} NO GRAPHIC set as yet                 RCONTAINER paint " unless @graphic
-      #@components.each { |e| correct_component e } if @first_time
-      #recalc unless @calc_over
-      # check if some have put weightages FIXME
-      # add on height or w depending on if its stack or flow 
       r = @row + @row_offset
       c = @col + @col_offset
       # should this not happen only if repaint_required ?
@@ -268,20 +211,35 @@ module RubyCurses
         #e.visible = false
       end
     end
-    def print_borders
-      width = @width
-      height = @height-1 # 2010-01-04 15:30 BUFFERED HEIGHT
-      window = @graphic  # 2010-01-04 12:37 BUFFERED
-      startcol = @col 
-      startrow = @row 
-      @color_pair = get_color($datacolor)
-      #$log.debug "rlistb #{name}: window.print_border #{startrow}, #{startcol} , h:#{height}, w:#{width} , @color_pair, @attr "
-      window.print_border startrow, startcol, height, width, @color_pair, @attr
-      print_title
-    end
-    def print_title
-      $log.debug "RCONTAINER PRINTING TITLE at #{row} #{col} "
-      @graphic.printstring( @row, @col+(@width-@title.length)/2, @title, @color_pair, @title_attrib) unless @title.nil?
+    # Traverses the comopnent tree and calculates weightages for all components
+    # based on what has been specified by user
+    def calc_weightages2 components, parent
+        #puts " #{@ctr} --> #{c.type}, wt: #{c.config[:weight]} "
+        @ctr += 1
+        wt  = 0
+        cnt = 0
+        sz = components.count
+        $log.debug "XXX: calc COMP COUNT #{sz} "
+        # calculate how much weightage has been given by user
+        # so we can allocate average to other components
+        components.each { |e| 
+          if e.config[:weight]  
+            wt += e.config[:weight]
+            cnt += 1
+          end
+          $log.debug "XXX: INC setting parent #{parent} to #{e} "
+          e.config[:parent] = parent
+          e.config[:level] = @ctr
+        }
+        used = sz - cnt
+        $log.debug "XXX: ADDING calc COMP COUNT #{sz} - #{cnt} "
+        if used > 0
+          avg = (100-wt)/used
+          # Allocate average to other components
+          components.each { |e| e.config[:weight] = avg unless e.config[:weight]  }
+        end
+        components.each { |e| calc_weightages2(e.components, e) if e.respond_to? :components  }
+        @ctr -= 1
     end
 
     public
@@ -423,9 +381,6 @@ module RubyCurses
       $log.debug "CONT #{@name} set_form_row calling sfr for #{cc.name}, r #{cc.row} c: #{cc.col} "
       $log.debug " RCONTAINER on enter sfr #{@current_component.name}  #{@current_component} "
 
-      # bug caught here. we were printing a field before it had been set, so it printed out
-      ##@components.each { |e| correct_component e } if @first_time
-      ##recalc unless @calc_over
       @current_component.on_enter
       @current_component.set_form_row # why was this missing in vimsplit. is it
       $log.debug "CONT2 #{@name} set_form_row calling sfr for #{cc.name}, r #{cc.row} c: #{cc.col} "
@@ -436,10 +391,7 @@ module RubyCurses
     end
     # 
     def set_form_col
-      return if @current_component.nil?
-      $log.debug " #{@name} RCONTAINER EMPTY set_form_col calling sfc for #{@current_component.name} "
-      # already called from above.
-      #@current_component.set_form_col 
+      # override widget
     end
     # leave the component we are on.
     # This should be followed by all containers, so that the on_leave action
@@ -475,68 +427,6 @@ module RubyCurses
       set_form_row
     end
 
-    # Traverses the comopnent tree and calculates weightages for all components
-    # based on what has been specified by user
-    def DEPRECATEDcalc_weightages c
-      if c.is_a? Stack
-        #puts " #{@ctr} --> #{c.type}, wt: #{c.config[:weight]} "
-        @ctr += 1
-        wt  = 0
-        cnt = 0
-        sz = c.components.count
-        $log.debug "XXX: calc COMP COUNT #{sz} "
-        # calculate how much weightage has been given by user
-        # so we can allocate average to other components
-        c.components.each { |e| 
-          if e.config[:weight]  
-            wt += e.config[:weight]
-            cnt += 1
-          end
-          $log.debug "XXX: INC setting parent #{c} to #{e} "
-          e.config[:parent] = c
-          e.config[:level] = @ctr
-        }
-        used = sz - cnt
-        $log.debug "XXX: ADDING calc COMP COUNT #{sz} - #{cnt} "
-        if used > 0
-          avg = (100-wt)/used
-          # Allocate average to other components
-          c.components.each { |e| e.config[:weight] = avg unless e.config[:weight]  }
-        end
-        c.components.each { |e| calc_weightages e  }
-        @ctr -= 1
-      else
-        #puts "#{@ctr} ... #{c} wt: #{c.config[:weight]}  "
-      end
-    end
-    def calc_weightages2 components, parent
-        #puts " #{@ctr} --> #{c.type}, wt: #{c.config[:weight]} "
-        @ctr += 1
-        wt  = 0
-        cnt = 0
-        sz = components.count
-        $log.debug "XXX: calc COMP COUNT #{sz} "
-        # calculate how much weightage has been given by user
-        # so we can allocate average to other components
-        components.each { |e| 
-          if e.config[:weight]  
-            wt += e.config[:weight]
-            cnt += 1
-          end
-          $log.debug "XXX: INC setting parent #{parent} to #{e} "
-          e.config[:parent] = parent
-          e.config[:level] = @ctr
-        }
-        used = sz - cnt
-        $log.debug "XXX: ADDING calc COMP COUNT #{sz} - #{cnt} "
-        if used > 0
-          avg = (100-wt)/used
-          # Allocate average to other components
-          components.each { |e| e.config[:weight] = avg unless e.config[:weight]  }
-        end
-        components.each { |e| calc_weightages2(e.components, e) if e.respond_to? :components  }
-        @ctr -= 1
-    end
     # General routin to traverse components and their components
     def traverse c, &block
       if c.is_a? Stack
