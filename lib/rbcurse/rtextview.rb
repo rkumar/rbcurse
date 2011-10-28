@@ -42,7 +42,7 @@ module RubyCurses
     dsl_accessor :maxlen    # max len to be displayed
     attr_reader :toprow    # the toprow in the view (offsets are 0)
 #    attr_reader :prow     # the row on which cursor/focus is
-    attr_reader :winrow   # the row in the viewport/window
+    #attr_reader :winrow   # the row in the viewport/window
     # painting the footer does slow down cursor painting slightly if one is moving cursor fast
     dsl_accessor :print_footer
     dsl_accessor :suppress_borders # added 2010-02-10 20:05 values true or false
@@ -194,13 +194,12 @@ module RubyCurses
       return unless @title
       raise "textview needs width" unless @width
       @color_pair ||= get_color($datacolor) # should we not use this ??? XXX 
-      #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
+
       # check title.length and truncate if exceeds width
       _title = @title
       if @title.length > @width - 2
         _title = @title[0..@width-2]
       end
-#      @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, $datacolor, @title_attrib) unless @title.nil? # changed 2011 dts  
       @graphic.printstring( @row, @col+(@width-_title.length)/2, _title, @color_pair, @title_attrib) unless @title.nil?
     end
     def print_foot #:nodoc:
