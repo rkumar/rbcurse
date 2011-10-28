@@ -1134,6 +1134,7 @@ module RubyCurses
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         #$log.debug "XXX: FORM CALLING REPAINT OF WIDGET #{f} IN LOOP"
+        raise "Row or col nil #{f.row} #{f.col} for #{f}, #{f.name} " if f.row.nil? || f.col.nil?
         f.repaint
         f._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
       end
