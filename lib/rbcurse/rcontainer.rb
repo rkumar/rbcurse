@@ -12,7 +12,7 @@
   == CHANGES
       Focusables so we don't focus on label
   == TODO 
-       How to put blank lines in stack
+       How to put blank lines in stack - use a blank label
 
      - The contaomers and multis need to do their own on_enter and on_leave
        management, they cannot rely on some other container doing it.
@@ -303,15 +303,13 @@ module RubyCurses
           #@_entered = false
           return :UNHANDLED
         end
-        @current_index = @components.index(@current_component)
+        @current_index = @focusables.index(@current_component)
         index = @current_index + 1
-        index.upto(@components.length-1) do |i|
-          f = @components[i]
-          if f.focusable
-            @current_index = i
-            @current_component = f
-            return set_form_row
-          end
+        f = @focusables[index]
+        if f
+          @current_index = index
+          @current_component = f
+          return set_form_row
         end
       end
       @_entered = false
@@ -324,15 +322,13 @@ module RubyCurses
           @_entered = false
           return :UNHANDLED
         end
-        @current_index = @components.index(@current_component)
+        @current_index = @focusables.index(@current_component)
         index = @current_index -= 1
-        index.downto(0) do |i|
-          f = @components[i]
-          if f.focusable
-            @current_index = i
-            @current_component = f
-            return set_form_row
-          end
+        f = @focusables[i]
+        if f
+          @current_index = index
+          @current_component = f
+          return set_form_row
         end
       end
       return :UNHANDLED
