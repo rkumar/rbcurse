@@ -620,10 +620,13 @@ module RubyCurses
       return w
     end
     # similar definitions for textview and resultsettextview
+    # NOTE This is not allowing me to send blocks,
+    # so do not use for containers
     {
       'rbcurse/rtextview' => 'TextView',
       'rbcurse/extras/resultsettextview' => 'ResultsetTextView',
-      'rbcurse/rcontainer' => 'Container'
+      'rbcurse/rcontainer' => 'Container',
+      'rbcurse/extras/rcontainer2' => 'Container2',
     }.each_pair {|k,p|
       eval(
            "def #{p.downcase} *args, &block
