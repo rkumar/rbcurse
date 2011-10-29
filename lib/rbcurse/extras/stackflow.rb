@@ -10,19 +10,21 @@ NOTE: Still experimental
   * Date:  23.10.11 - 19:55
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-  * Last update:  28.10.11 - 22:07 
+  * Last update:  29.10.11 - 18:13
+
   == CHANGES
     x take care of margins
-  == TODO 
     Resizing components
-    weightx weighty
     If window or container resized then redo the calc again.
-    RESET height only if expandable
-    CLEANUP its a mess due to stacks and flows not being widgets.
+    Flow to have option of right to left orientation
+  == TODO 
+    - changing an objects config not easy since it is stored in item, user may not have
+      handle to item
+    - weightx weighty
+    - RESET height only if expandable
     - exceeding 100 will result in exceeding container.
     - are two weights needed horiz and vertical ?
     - C-a C-e misbehaving in examples
-    Flow to have option of right to left orientation
 
 =end
 
@@ -84,6 +86,7 @@ module RubyCurses
     # we set it (without adding widget to it) so it can print using the form's window.
     # 
     # @param [Widget] to add
+    private
     def __add *items
       items.each do |c|  
         raise ArgumentError, "Nil component passed to add" unless c
@@ -121,12 +124,12 @@ module RubyCurses
       c.override_graphic @graphic
       c.parent_component = self
     end
+    public
     def widgets; @components; end
     # what of by_name
 
 
 
-    public
     # repaint object
     # called by Form, and sometimes parent component (if not form).
     def repaint # stackflow
@@ -436,22 +439,21 @@ module RubyCurses
     def traverse c, &block
       if c.is_a? BaseStack
         yield c
-        #puts " #{@ctr} --> #{c.type}, wt: #{c.config[:weight]} "
         c.components.each { |e| 
           yield e
         }
-        #c.components.each { |e| e.config[:weight] = avg unless e.config[:weight]  }
         c.components.each { |e| traverse(e, &block)  }
         @ctr -= 1
       else
-        #puts "#{@ctr} ... #{c} wt: #{c.config[:weight]}  "
-        #yield c
       end
     end
 
+    # traverse the components and their children
+    #
     def each &block
       @components.each { |e| traverse e, &block }
     end
+    private
     def _stack type, config={}, &block
       case type
       when :stack
@@ -464,6 +466,7 @@ module RubyCurses
       yield_or_eval &block if block_given? 
       @active.pop
     end
+    private
     def _add s
       if @active.empty?
         $log.debug "XXX:  ADDING TO components #{s} "
@@ -477,6 +480,7 @@ module RubyCurses
       __add s
     end
 
+    public
     def stack config={}, &block
       $log.debug "XXX:  ADDING STACK "
       _stack :stack, config, &block
@@ -501,6 +505,24 @@ module RubyCurses
       p = c.config[:parent]
       $log.debug "XXX: INC increase current #{c} , #{p} "
       p.decrease c
+    end
+    # given an widget, return the item, so we can change weight or some other config
+    def item_for widget
+      each do |e|
+        if e.is_a? Item
+          if e.widget == widget
+            return e
+          end
+        end
+      end
+      return nil
+    end
+    # returns the parent (flow or stack) for a given widget
+    #  allowing user to change configuration such as weight
+    def parent_of widget
+      f = item_for widget
+      return f.config[:parent] if f
+      return nil
     end
     # ADD HERE ABOVe
   end # class
@@ -572,11 +594,11 @@ module RubyCurses
             mult = -1
             comps = @components.reverse
             r = row + height - @margin_bottom
-            $log.debug "XXX:  ORIENT1 recalc #{@orientation} "
+    
           else
             mult = 1
             comps = @components
-            $log.debug "XXX:  ORIENT2 recalc #{@orientation} "
+   
           end
           comps.each { |e| 
             # should only happen if expandable FIXME
