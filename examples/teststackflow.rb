@@ -50,12 +50,12 @@ if __FILE__ == $PROGRAM_NAME
     r = StackFlow.new @form, :row => 1, :col => 2, :width => 80, :height => 25, :title => "Stack n Flow with margins" do
       #stack :margin_top => 2, :margin_left => 1 do
         flow :margin_top => 0, :margin_left => 2, :margin_right => 0, :orientation => :right do #:weight => 49 do 
-          add lb1 , :weight => 30
-          add lb2 , :weight => 30
+          add tv, :weight => 40
+          add lb2 , :weight => 50
         end
         stack :margin_top => 0, :orientation => :bottom do #stack :height => 12, :width => 78 do
-          add tv, :weight => 50
-          add lb, :weight => 50, :margin_left => 1
+          add lb, :weight => 40, :margin_left => 1
+          add lb1 , :weight => 40
           #add f1
         #stack :weight => 30 do
         #add f1
@@ -75,11 +75,32 @@ if __FILE__ == $PROGRAM_NAME
     @r = r
     @r.bind_key(?\M-w) {increase_width}
     @r.bind_key(?\M-h) {increase_height}
+    @r.bind_key(0) {
+      @ctr ||= 0
+      case @ctr
+      when 0
+        @r.components[0].orientation = :left
+      when 1
+        @r.components[0].orientation = :right
+      when 2
+        @r.components[1].orientation = :top
+      when 3
+        @r.components[1].orientation = :bottom
+      else
+        @ctr = -1
+      end
+      $status_message.value =" Flow: #{@r.components[0].orientation} | Stack #{@r.components[1].orientation}. Use C-Space to change "
+      @r.repaint_all(true)
+      @ctr += 1
+
+    }
+    $status_message.value =" Flow: #{@r.components[0].orientation} | Stack #{@r.components[1].orientation}. Use Ctrl-Space to change "
 
     #r.add(f1)
     #r.add(f2)
     #r.add(f3,f4,f5)
     #sl = status_line
 
+    st = status_line
   end # app
 end # if 
