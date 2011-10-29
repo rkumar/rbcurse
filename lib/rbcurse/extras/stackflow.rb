@@ -12,6 +12,7 @@ NOTE: Still experimental
 
   * Last update:  28.10.11 - 22:07 
   == CHANGES
+    x take care of margins
   == TODO 
     Resizing components
     weightx weighty
@@ -19,7 +20,6 @@ NOTE: Still experimental
     RESET height only if expandable
     CLEANUP its a mess due to stacks and flows not being widgets.
     - exceeding 100 will result in exceeding container.
-    - take care of margins
     - are two weights needed horiz and vertical ?
     - C-a C-e misbehaving in examples
     Flow to have option of right to left orientation
@@ -595,7 +595,16 @@ module RubyCurses
           c = col + @margin_left #+ col_offset
           rem = 0
           wd = width - (@margin_left + @margin_right)
-          @components.each { |e| 
+          # right_to_left orientation
+          if @orientation == :right_to_left
+            mult = -1
+            comps = @components.reverse
+            c = col + width - @margin_right
+          else
+            mult = 1
+            comps = @components
+          end
+          comps.each { |e| 
             e.width = e.weight * wd  * 0.01
             wround = e.width.floor
             rem += e.width - wround
@@ -607,8 +616,13 @@ module RubyCurses
             end
             e.height = height - (@margin_top + @margin_bottom) #* weight * 0.01
             #e.height = e.height.round
-            e.col = c
-            c += e.width + 0
+            if @orientation == :right_to_left
+              c += e.width * mult # mult 1 or -1
+              e.col = c
+            else
+              e.col = c
+              c += e.width * mult # mult 1 or -1
+            end
             e.row = row + @margin_top
             check_coords e
             $log.debug "XXX: recalc flow #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * w:#{width} "
