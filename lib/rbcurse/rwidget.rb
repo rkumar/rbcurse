@@ -869,6 +869,7 @@ module RubyCurses
          newvalue = @width
          @config["width"]=@width
          if oldvalue != newvalue
+           @property_changed = true
            fire_property_change(:width, oldvalue, newvalue)
            repaint_all(true)  # added 2010-01-08 18:51 so widgets can redraw everything.
          end
@@ -900,9 +901,10 @@ module RubyCurses
          newvalue = @height
          @config[:height]=@height
          if oldvalue != newvalue
+           @property_changed = true
            fire_property_change(:height, oldvalue, newvalue)
            $log.debug " widget #{@name} setting repaint_all to true"
-           @repaint_all=true
+           repaint_all true
          end
        end
      end
