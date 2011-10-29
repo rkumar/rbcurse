@@ -437,7 +437,7 @@ module RubyCurses
     ##+ what is calculated in divider_location.
     def paint  #:nodoc:
     
-      $log.debug "XXX TEXTVIEW PAINT HAPPENING #{@current_index} "
+      $log.debug "XXX TEXTVIEW repaint HAPPENING #{@current_index} "
       my_win = nil
       if @form
         my_win = @form.window
