@@ -565,7 +565,15 @@ module RubyCurses
           r   = row + @margin_top
           rem = 0
           ht = height - (@margin_top + @margin_bottom)
-          @components.each { |e| 
+          if @orientation == :bottom 
+            mult = -1
+            comps = @components.reverse
+            r = row + height - @margin_bottom
+          else
+            mult = 1
+            comps = @components
+          end
+          comps.each { |e| 
             # should only happen if expandable FIXME
             e.height = 0.01 * e.weight * (ht - (e.margin_top + e.margin_bottom)) 
             hround = e.height.floor
@@ -582,8 +590,13 @@ module RubyCurses
             # Item level margins have not been accounted for when calculating weightages, and
             # should not be used on the weightage axis
             r += e.margin_top
-            e.row = r 
-            r += e.height + 0
+            if @orientation == :bottom
+              r += e.height * mult
+              e.row = r 
+            else
+              e.row = r 
+              r += e.height + 0
+            end
             e.width = width - (@margin_left + @margin_right + e.margin_left + e.margin_right)
             e.col = col + @margin_left + e.margin_left # ??? XXX
             $log.debug "XXX: recalc stack #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * h:#{height} "
