@@ -46,6 +46,7 @@ module RubyCurses
     # This is now the default value, till i can redo things
     #dsl_accessor :stack
     attr_reader  :current_component
+    attr_reader  :components
 
     def initialize form=nil, config={}, &block
       @suppress_borders = false
@@ -75,8 +76,6 @@ module RubyCurses
       calc_weightages2(@components, self)
 
     end
-    #stack :margin_top => 2, :margin_left => 1 do
-    #class Stack < Struct.new(:margin_top, :margin_left, :width, :height, :components); end
 
 
 
@@ -521,28 +520,32 @@ module RubyCurses
         instance_variable_set "@#{k}", v
       end
       @components = components
-      @calc_over = false
+      @calc_needed = true
     end
-    %w[ parent_component width height weight row col row_offset col_offset].each { |e|
+    # XXX if user sets later, we won't be checking the config
+    # We check the actual variables which config sets in init
+    %w[ parent_component width height weight row col orientation].each { |e|
       eval(
            "def #{e} 
               @config[:#{e}]
             end
             def #{e}=(val) 
               @config[:#{e}]=val
+              instance_variable_set \"@#{e}\", val
+              @calc_needed = true
             end"
           )
     }
     alias :parent :parent_component
     #alias :parent= :parent_component
     def repaint # stack
-      $log.debug "XXX: stack repaint"
-      @components.each { |e| e.form = @form unless e.form } #unless @calc_over
-      recalc unless @calc_over
+      $log.debug "XXX: stack repaint recalc #{@calc_needed} "
+      @components.each { |e| e.form = @form unless e.form } #unless @calc_needed
+      recalc if @calc_needed
       @components.each { |e| e.repaint }
     end
     def repaint_all x
-      @calc_over = false
+      @calc_needed = true
     end
     def override_graphic gr
       @graphic = gr
@@ -553,7 +556,7 @@ module RubyCurses
     # This is to be called only when the container has got its coordinates (i.e
     # Containers repaint). This should be in this objects repaint.
     def recalc
-      @calc_over = true
+      @calc_needed = false
       comp = self
       if comp.is_a? BaseStack
         check_coords comp
@@ -569,9 +572,11 @@ module RubyCurses
             mult = -1
             comps = @components.reverse
             r = row + height - @margin_bottom
+            $log.debug "XXX:  ORIENT1 recalc #{@orientation} "
           else
             mult = 1
             comps = @components
+            $log.debug "XXX:  ORIENT2 recalc #{@orientation} "
           end
           comps.each { |e| 
             # should only happen if expandable FIXME
@@ -602,6 +607,7 @@ module RubyCurses
             $log.debug "XXX: recalc stack #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * h:#{height} "
             #e.col_offset = col_offset # ??? XXX
             check_coords e
+            e.repaint_all(true)
             e.recalc if e.is_a? BaseStack
           }
         elsif comp.is_a? Flow
@@ -613,9 +619,11 @@ module RubyCurses
             mult = -1
             comps = @components.reverse
             c = col + width - @margin_right
+            $log.debug "XXX:  ORIENT1f recalc #{@orientation} "
           else
             mult = 1
             comps = @components
+            $log.debug "XXX:  ORIENT2f recalc #{@orientation} "
           end
           comps.each { |e| 
             e.width = e.weight * wd  * 0.01
@@ -639,6 +647,7 @@ module RubyCurses
             e.row = row + @margin_top
             check_coords e
             $log.debug "XXX: recalc flow #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * w:#{width} "
+            e.repaint_all(true)   # why not happening when we change row, hieght etc
             e.recalc if e.is_a? BaseStack
           }
         end
