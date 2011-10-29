@@ -596,7 +596,7 @@ module RubyCurses
           rem = 0
           wd = width - (@margin_left + @margin_right)
           # right_to_left orientation
-          if @orientation == :right_to_left
+          if @orientation == :right
             mult = -1
             comps = @components.reverse
             c = col + width - @margin_right
@@ -616,7 +616,7 @@ module RubyCurses
             end
             e.height = height - (@margin_top + @margin_bottom) #* weight * 0.01
             #e.height = e.height.round
-            if @orientation == :right_to_left
+            if @orientation == :right
               c += e.width * mult # mult 1 or -1
               e.col = c
             else
