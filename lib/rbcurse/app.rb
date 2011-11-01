@@ -1030,10 +1030,8 @@ module RubyCurses
       s = Stack.new(mt, mr, w)
       @app_row += mt
       mr += @stack.last.margin if @stack.last
-      #@stack << mr
       @stack << s
-      #instance_eval &block if block_given?
-              yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
+      yield_or_eval &block if block_given?
       @stack.pop
       @instack = false if @stack.empty?
       @app_row = 0 if @stack.empty?
@@ -1052,8 +1050,7 @@ module RubyCurses
       col += config[:margin] || 0
       @flowstack << col
       @flowcol = col
-      #instance_eval &block if block_given?
-      yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
+      yield_or_eval &block if block_given? 
       @flowstack.pop
       @inflow = false if @flowstack.empty?
     end
