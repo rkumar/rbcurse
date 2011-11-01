@@ -76,6 +76,11 @@ if __FILE__ == $PROGRAM_NAME
     @r.bind_key(?\M-w) {increase_width}
     @r.bind_key(?\M-h) {increase_height}
     @r.bind_key(0) {
+      f = @r.item_for tv
+      f1 = @r.item_for lb2
+      p = @r.parent_of tv
+      p1 = @r.parent_of lb2
+      $log.debug "XXX: ITEM_FOR tv is #{f}, #{f1}  #{p} , #{p1} "
       @ctr ||= 0
       case @ctr
       when 0
