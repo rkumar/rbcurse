@@ -219,7 +219,7 @@ module RubyCurses
       @height ||= [@max_visible_items || 10, @list.length].min 
       $log.debug " POPUP XXX #{@max_visible_items} ll:#{@list.length} h:#{@height}"
       # get widgets absolute coords
-      if !@relative_to.nil?
+      if @relative_to
         layout = @relative_to.form.window.layout
         @row = @row + layout[:top]
         @col = @col + layout[:left]
@@ -243,7 +243,7 @@ module RubyCurses
       @form = RubyCurses::Form.new @window
       @window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
       @window.wrefresh
-      @panel = @window.panel  # useless line ?
+      #@panel = @window.panel  # useless line ?
       Ncurses::Panel.update_panels
       print_input # creates the listbox
       @form.repaint
@@ -981,7 +981,7 @@ module RubyCurses
       tm = list()
       rc = row_count
       @longest_line = @width
-      $log.debug " rlistbox #{row_count} "
+      $log.debug " rlistbox repaint #{row_count} #{name} "
       if rc > 0     # just added in case no data passed
         tr = @toprow
         acolor = get_color $datacolor # should be set once, if color or bgcolor changs TODO FIXME
