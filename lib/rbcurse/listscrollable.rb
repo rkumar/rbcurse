@@ -64,8 +64,11 @@ module ListScrollable
     m = $multiplier == 0? 1 : $multiplier
     # more rows than box
     if h * m < rc
-      @toprow += h+1 #if @current_index+h < rc
-      @current_index = @toprow
+      # next 2 lines were preventing widget_scrolled from being set to true,
+      # so i've modified it slightly as per scroll_down 2011-11-1 
+      #@toprow += h+1 #if @current_index+h < rc
+      #@current_index = @toprow
+      @current_index += h+1
     else
       # fewer rows than box
       @current_index = rc -1
