@@ -342,7 +342,71 @@ end
     window.win.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
     return window
   end
-#
+  # 
+  # Display a popup and return the seliected index from list
+  #  Config includes row and col and title of window
+  #  You may also pass bgcolor and color
+  #  @since 1.4.1  2011-11-1 
+  def popuplist list, config={}, &block
+    require 'rbcurse/rbasiclistbox'
+
+    max_visible_items = config[:max_visible_items]
+    row = config[:row] || 5
+    col = config[:col] || 5
+    width = config[:width] || longest_in_list(list)+2 # borders take 2
+    height = config[:height]
+    height ||= [max_visible_items || 10+2, list.length+2].min 
+    #layout(1+height, width+4, row, col) 
+    layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+    window = VER::Window.new(layout)
+    form = RubyCurses::Form.new window
+
+    listconfig = config[:listconfig] || {}
+    listconfig[:list] = list
+    listconfig[:width] = width
+    listconfig[:height] = height
+    listconfig[:selection_mode] = :single
+    listconfig.merge!(config)
+    listconfig.delete(:row); 
+    listconfig.delete(:col); 
+    lb = RubyCurses::BasicListbox.new form, listconfig
+    window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
+    window.wrefresh
+    Ncurses::Panel.update_panels
+    form.repaint
+    window.wrefresh
+    begin
+      while((ch = @window.getchar()) != 999 )
+        case ch
+        when -1
+          next
+        when ?\C-q.getbyte(0)
+          break
+        else
+          lb.handle_key ch
+          form.repaint
+          if ch == 13 || ch == 10
+            return lb.current_index
+            # if multiple selection, then return list of selected_indices and don't catch 32
+          elsif ch == 32      # if single selection
+            return lb.current_index
+          end
+          #yield ch if block_given?
+        end
+      end
+    ensure
+      window.destroy  
+    end
+    return nil
+  end
+    # returns length of longest
+    def longest_in_list list  #:nodoc:
+      longest = list.inject(0) do |memo,word|
+        memo >= word.length ? memo : word.length
+      end    
+      longest
+    end    
+  #
 =begin  
 http://www.kammerl.de/ascii/AsciiSignature.php
  ___  
@@ -358,7 +422,7 @@ http://www.kammerl.de/ascii/AsciiSignature.php
 | |
 |_|
 (_)
-   
+
 
  _____       _              _____                         
 |  __ \     | |            / ____|                        
