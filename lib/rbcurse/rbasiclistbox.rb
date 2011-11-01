@@ -437,6 +437,7 @@ module RubyCurses
       @graphic = my_win unless @graphic
       raise " #{@name} neither form, nor target window given LB paint " unless my_win
       raise " #{@name} NO GRAPHIC set as yet                 LB paint " unless @graphic
+      raise "width or height not given w:#{@width} , h:#{@height} " if @width.nil? || @height.nil?
       @win_left = my_win.left
       @win_top = my_win.top
       @left_margin ||= @row_selected_symbol.length
