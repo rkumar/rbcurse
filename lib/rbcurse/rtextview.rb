@@ -268,7 +268,8 @@ module RubyCurses
       when KEY_UP, ?k.getbyte(0)
         #select_prev_row
         ret = up
-        get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW
+        # next removed as very irritating, can be configured if required 2011-11-2 
+        #get_window.ungetch(KEY_BTAB) if ret == :NO_PREVIOUS_ROW
         check_curpos
         
       when KEY_DOWN, ?j.getbyte(0)
@@ -572,10 +573,27 @@ module RubyCurses
       # This should not be at the widget level, too many types of menus. It should be at the app
       # level only if the user wants his app to use this kind of menu.
 
-      @menu = RubyCurses::MenuTree.new "Main", { s: :goto_start, r: :scroll_right, l: :scroll_left, m: :submenu }
-      @menu.submenu :m, "submenu", {s: :noignorecase, t: :goto_last_position, f: :next3 }
-      menu = PromptMenu.new self 
-      menu.menu_tree @menu
+      if false
+        #@menu = RubyCurses::MenuTree.new "Main", { s: :goto_start, r: :scroll_right, l: :scroll_left, m: :submenu }
+        #@menu.submenu :m, "submenu", {s: :noignorecase, t: :goto_last_position, f: :next3 }
+        #menu = PromptMenu.new self 
+        #menu.menu_tree @menu
+        #menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
+      end
+      # trying to find a more rubyesque way of doing
+      menu = PromptMenu.new self do
+        item :s, :goto_start
+        item :b, :goto_bottom
+        item :r, :scroll_backward
+        item :l, :scroll_forward
+        submenu :m, "submenu" do
+          item :p, :goto_last_position
+          item :r, :scroll_backward
+          item :l, :scroll_forward
+        end
+      end
+      menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
+
 
 =begin
       menu = PromptMenu.new self 
@@ -591,7 +609,6 @@ module RubyCurses
       # how do i know what's available. the application or window should know where to place
       #menu.display @form.window, 23, 1, $datacolor #, menu
 =end
-      menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
     end
     ##
     # dynamically load a module and execute init method.
