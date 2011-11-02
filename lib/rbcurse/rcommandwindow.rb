@@ -525,7 +525,7 @@ module RubyCurses
         @window.wmove row, c
         @window.wrefresh   # FFI added to keep cursor display in synch with selection
       end
-      def OLDbounds_check
+      def OLDbounds_check #:nodoc:
         @start = 0 if @start < 0
         row_offset = 1
         last = (@list.length)-(@height-row_offset-1)
@@ -533,7 +533,7 @@ module RubyCurses
           @start = last
         end
       end # bounds_check
-      def handle_keys
+      def handle_keys #:nodoc:
         begin
           while((ch = @window.getchar()) != 999 )
             case ch
