@@ -206,7 +206,7 @@ module RubyCurses
     # or on_leave of object.
     # @deprecated Use say_with_pause or use rdialogs status_window, see test2.rb
     def raw_message text, config={}, &blk
-      $raw_window ||= one_line_window 26, config, &blk
+      $raw_window ||= one_line_window last_line(), config, &blk
       width = $raw_window.width == 0 ? FFI::NCurses.COLS : $raw_window.width
       text = "%-*s" % [width, text]
       
@@ -326,11 +326,12 @@ module RubyCurses
     end
     # bind a key to a method at global (form) level
     # Note that individual component may be overriding this.
+    # FIXME: why are we using rawmessage and then getchar when ask would suffice
     def bind_global
       opts = get_all_commands
       cmd = ask("Select a command (TAB for choices) : ", opts)
       if cmd.nil? || cmd == ""
-        raw_message "Aborted."
+        say_with_pause "Aborted."
         return
       end
       key = []
@@ -338,16 +339,18 @@ module RubyCurses
       raw_message "Enter one or 2 keys. Finish with ENTER. Enter first key:"
       #raw_message "Enter first key:"
       ch = @window.getchar()
+      raw_message_destroy
       if [KEY_ENTER, 10, 13, ?\C-g.getbyte(0)].include? ch
-        raw_message "Aborted."
+        say_with_pause "Aborted."
         return
       end
       key << ch
       str << keycode_tos(ch)
       raw_message "Enter second key or hit return:"
       ch = @window.getchar()
+      raw_message_destroy
       if ch == 3 || ch == ?\C-g.getbyte(0)
-        raw_message "Aborted."
+        say_with_pause "Aborted."
         return
       end
       if ch == 10 || ch == KEY_ENTER || ch == 13
@@ -356,12 +359,13 @@ module RubyCurses
         str << keycode_tos(ch)
       end
       if !key.empty?
-        raw_message "Binding #{cmd} to #{str} "
+        say_with_pause "Binding #{cmd} to #{str} "
         key = key[0] if key.size == 1
         #@form.bind_key(key, cmd.to_sym) # not finding it, getting called by that comp
         @form.bind_key(key){ send(cmd.to_sym) }
       end
       #message "Bound #{str} to #{cmd} "
+      raw_message_destroy
     end
     def bind_component
       say_with_pause "Todo. <press>"
@@ -1138,7 +1142,7 @@ module RubyCurses
               end
               if respond_to?(cmd, true)
                 @_previous_command = cmd
-                raw_message "calling #{cmd} "
+                #raw_message "calling #{cmd} "
                 begin
                   send cmd, *cmdline
                 rescue => exc
