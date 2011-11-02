@@ -620,14 +620,30 @@ module Io
   # This allows us to define different menus for different objects on the screen, and not have to map 
   # all kinds of control keys for operations, and have the user remember them. Only one key invokes the menu
   # and the rest are ordinary characters.
+  # 
+  #  == Example
+  #    menu = PromptMenu.new self do
+  #      item :s, :goto_start
+  #      item :b, :goto_bottom
+  #      item :r, :scroll_backward
+  #      item :l, :scroll_forward
+  #      submenu :m, "submenu" do
+  #        item :p, :goto_last_position
+  #        item :r, :scroll_backward
+  #        item :l, :scroll_forward
+  #      end
+  #    end
+  #    menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
+
   class PromptMenu
     include Io
     attr_reader :text
     attr_reader :options
-    def initialize caller,  text="Choose:"
+    def initialize caller,  text="Choose:", &block
       @caller = caller
       @text = text
       @options = []
+      instance_eval &block if block_given?
     end
     def add *menuitem
       item = nil
@@ -636,11 +652,19 @@ module Io
         item = menuitem.first
         @options << item
       else
-        item = CMenuItem.new(*menuitem.flatten)
+        case menuitem.size
+        when 4
+          item = CMenuItem.new(*menuitem.flatten)
+        when 2
+          # if user only sends key and symbol
+          menuitem[3] = menuitem[1]
+          item = CMenuItem.new(*menuitem.flatten)
+        end
         @options << item
       end
       return item
     end
+    alias :item :add
     def create_mitem *args
       item = CMenuItem.new(*args.flatten)
     end
@@ -658,6 +682,13 @@ module Io
           item = pm.add(ch, code.to_s, "", code) 
         end
       }
+    end
+    # 
+    # To allow a more rubyesque way of defining menus and submenus
+    def submenu key, label, &block
+      item = CMenuItem.new(key, label)
+      @options << item
+      item.action = PromptMenu.new @caller, label, &block
     end
     # Display the top level menu and accept user input
     # Calls actions or symbols upon selection, or traverses submenus
