@@ -24,7 +24,8 @@ module RubyCurses
       bind(:PROPERTY_CHANGE) {  |e| @color_pair = nil ; }
     end
     #
-    # command that returns a string that populates the status line.
+    # command that returns a string that populates the status line (left aligned)
+    # @see :right
     # See dbdemo.rb
     # e.g. 
     #   @l.command { "%-20s [DB: %-s | %-s ]" % [ Time.now, $current_db || "None", $current_table || "----"] }  
@@ -32,6 +33,14 @@ module RubyCurses
     def command *args, &blk
       @command = blk
       @args = args
+    end
+    alias :left :command
+
+    # 
+    # Procudure for text to be right aligned in statusline
+    def right *args, &blk
+      @right_text = blk
+      @right_args = args
     end
 
     # NOTE: I have not put a check of repaint_required, so this will print on each key-stroke OR
@@ -46,13 +55,22 @@ module RubyCurses
 
       # now call the block to get current values
       if @command
-        ftext = @command.call(self, @args) if @command
+        ftext = @command.call(self, @args) 
       else
         status = $status_message ? $status_message.value : ""
-        ftext = " %-20s | %s" % [Time.now, status] # should we print a default value just in case user doesn't
+        #ftext = " %-20s | %s" % [Time.now, status] # should we print a default value just in case user doesn't
+        ftext = status # should we print a default value just in case user doesn't
       end
-      #@form.window.printstring @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
+      # move this to formatted FIXME
       @form.window.printstring_or_chunks @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
+      if @right_text
+        ftext = @right_text.call(self, @right_args) 
+        c = len - ftext.length
+        @form.window.printstring_formatted @row, c, ftext, $datacolor, Ncurses::A_REVERSE
+      else
+        ftext = "#[fg=green,bg=blue]%-20s " % [Time.now] # print a default
+        @form.window.printstring_formatted_right @row, nil, ftext, $datacolor, Ncurses::A_REVERSE
+      end
 
       @repaint_required = false
     end
