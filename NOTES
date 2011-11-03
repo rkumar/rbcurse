@@ -2044,3 +2044,25 @@ Sean is coming out with a version 0.4.0 which I am using. rbcurse 1.3.0
 onwards uses ffi-ncurses. 
 
 * * * * * * * *
+
+Subject: color formatting
+-------------------------
+Date: 2011-11-03 15:03
+
+Alot has happened since moving to ffi. New widgets and containers, a new
+tabbedpane that hopefully doesn't suck and is more rubyesque. However,
+its amazing how simple the color formatting issue was. Took me only a
+few minutes to get working with a good regular expression.
+
+The motivation is to be able to have a document with color formatting. I
+am using the color formatting code of tmux, i.e., #[fg=green, bg=blue,
+bold] etc. However, I added an "#[end]" tag which pops the previous
+color, so now its more like html's span, than the terminal escape
+sequences which just override the previous.
+
+I'll ofcourse use this in the statusline, in help screens, and also in
+some way in textview, and somehow even in messages, alerts, messageboxes
+etc. It's still rough, does no checking for mistakes and I don't have a
+routine to wrap text ignoring the color stuff. That will be needed soon.
+
+* * * * * * * *
