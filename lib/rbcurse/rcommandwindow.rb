@@ -51,7 +51,8 @@ module RubyCurses
         @window.printstring 0,0,@title, $normalcolor #, 'normal' if @title
         @window.attroff(Ncurses.COLOR_PAIR($normalcolor) | Ncurses::A_REVERSE)
       else
-        @window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
+        #@window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
+        title @title
       end
       @window.wrefresh
       @panel = @window.panel
@@ -61,6 +62,12 @@ module RubyCurses
       if @box
         @row_offset = 1
       end
+    end
+    # modify the window title, or get it if no params passed.
+    def title t=nil
+      return @title unless t
+      @title = t
+      @window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
     end
     ##
     ## message box
@@ -154,9 +161,18 @@ module RubyCurses
         end
       end
     end
+    #
+    # Displays list in a window at bottom of screen, if large then 2 or 3 columns.
     # do not go more than 3 columns and do not print more than window TODO FIXME
+    # @param [Array] list of string to be displayed
+    # @param [Hash]  configuration options: indexing and indexcolor
+    # indexing - can be letter or number. Anything else will be ignored, however
+    #  it will result in first letter being highlighted in indexcolor
+    # indexcolor - color of mnemonic, default green
     def display_menu list, options={}
       indexing = options[:indexing]
+      indexcolor = options[:indexcolor] || get_color($normalcolor, :green, :black)
+      indexatt = Ncurses::A_BOLD
       max_cols = 3 #  maximum no of columns, we will reduce based on data size
       l_succ = "`"
       act_height = @height
@@ -173,11 +189,16 @@ module RubyCurses
             text = e.first + " ..."
           end
           if indexing == :number
+            mnem = i+1
             text = "%d. %s" % [i+1, text] 
           elsif indexing == :letter
-            text = "%s. %s" % [l_succ.succ!, text] 
+            mnem = l_succ.succ!
+            text = "%s. %s" % [mnem, text] 
           end
           @window.printstring i+@row_offset, 1, text, $normalcolor  
+          if indexing
+            window.mvchgat(y=i+@row_offset, x=1, max=1, indexatt, indexcolor, nil)
+          end
         }
       else
         $log.debug "DDD inside two window" if $log.debug? 
@@ -205,11 +226,16 @@ module RubyCurses
             text = e.first + "..."
           end
           if indexing == :number
-            text = "%d. %s" % [i+1, text] 
+            mnem = i+1
+            text = "%d. %s" % [mnem, text] 
           elsif indexing == :letter
-            text = "%s. %s" % [l_succ.succ!, text] 
+            mnem = l_succ.succ!
+            text = "%s. %s" % [mnem, text] 
           end
           @window.printstring row+@row_offset, col, text, $normalcolor  
+          if indexing
+            @window.mvchgat(y=row+@row_offset, x=col, max=1, indexatt, indexcolor, nil)
+          end
           colct += 1
           if colct == cols
             col = 1
