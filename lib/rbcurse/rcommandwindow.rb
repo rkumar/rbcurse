@@ -163,7 +163,6 @@ module RubyCurses
     end
     #
     # Displays list in a window at bottom of screen, if large then 2 or 3 columns.
-    # do not go more than 3 columns and do not print more than window TODO FIXME
     # @param [Array] list of string to be displayed
     # @param [Hash]  configuration options: indexing and indexcolor
     # indexing - can be letter or number. Anything else will be ignored, however
@@ -173,6 +172,10 @@ module RubyCurses
       indexing = options[:indexing]
       indexcolor = options[:indexcolor] || get_color($normalcolor, :green, :black)
       indexatt = Ncurses::A_BOLD
+      #
+      # the index to start from (used when scrolling a long menu such as file list)
+      startindex = options[:startindex] || 0
+
       max_cols = 3 #  maximum no of columns, we will reduce based on data size
       l_succ = "`"
       act_height = @height
@@ -218,7 +221,6 @@ module RubyCurses
         col = 1
         $log.debug "DDDcols #{cols}, adv #{adv} size: #{lh} h: #{act_height} w #{@width} " if $log.debug? 
         list.each_with_index { |e, i| 
-          # check that row + @row_offset < @top + @height or whatever TODO
           text = e
           # signify that there's a deeper level
           case e
@@ -232,10 +234,13 @@ module RubyCurses
             mnem = l_succ.succ!
             text = "%s. %s" % [mnem, text] 
           end
-          @window.printstring row+@row_offset, col, text, $normalcolor  
-          if indexing
-            @window.mvchgat(y=row+@row_offset, x=col, max=1, indexatt, indexcolor, nil)
-          end
+          # print only within range and window height
+          if i >= startindex && row < @window.actual_height
+            $log.debug "XXX: MENU #{i} > #{startindex} row #{row} col #{col} "
+            @window.printstring row+@row_offset, col, text, $normalcolor  
+            if indexing
+              @window.mvchgat(y=row+@row_offset, x=col, max=1, indexatt, indexcolor, nil)
+            end
           colct += 1
           if colct == cols
             col = 1
@@ -244,6 +249,7 @@ module RubyCurses
           else
             col += adv
           end
+          end # startindex
         }
       end
       Ncurses::Panel.update_panels();
