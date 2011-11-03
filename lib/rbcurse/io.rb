@@ -690,14 +690,100 @@ module Io
       @options << item
       item.action = PromptMenu.new @caller, label, &block
     end
+    #
+    # Display prompt_menu in columns using commandwindow
+    # This is an improved way of showing the "most" like menu. The earlier
+    # format would only print in one row.
+    #
+    def display_columns config={}
+      prompt = config[:prompt] || "Choose: "
+      require 'rbcurse/rcommandwindow'
+      layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title] || "Menu"
+      w = rc.window
+      r = 4
+      c = 1
+      color = $datacolor
+      begin
+        menu = @options
+        $log.debug " DISP MENU "
+        ret = 0
+        len = 80
+        while true
+          h = {}
+          valid = []
+          labels = []
+          menu.each{ |item|
+            hk = item.hotkey.to_s
+            labels << "%c. %s " % [ hk, item.label ]
+            h[hk] = item
+            valid << hk
+          }
+          #$log.debug " valid are #{valid} "
+          color = $datacolor
+          #print_this(win, str, color, r, c)
+          rc.display_menu labels, :indexing => :custom
+          ch=w.getchar()
+          rc.clear
+          #$log.debug " got ch #{ch} "
+          next if ch < 0 or ch > 255
+          if ch == 3 || ch == ?\C-g.getbyte(0)
+            clear_this w, r, c, color, len
+            print_this(w, "Aborted.", color, r,c)
+            break
+          end
+          ch = ch.chr
+          index = valid.index ch
+          if index.nil?
+            clear_this w, r, c, color, len
+            print_this(w, "Not valid. Valid are #{valid}. C-c/C-g to abort.", color, r,c)
+            sleep 1
+            next
+          end
+          #$log.debug " index is #{index} "
+          item = h[ch]
+          desc = item.desc
+          #desc ||= "Could not find desc for #{ch} "
+          desc ||= ""
+          clear_this w, r, c, color, len
+          print_this(w, desc, color, r,c)
+          action = item.action
+          case action
+            #when Array
+          when PromptMenu
+            # submenu
+            menu = action.options
+            title = rc.title
+            rc.title title +" => " + action.text # set title of window to submenu
+          when Proc
+            ret = action.call
+            break
+          when Symbol
+            ret = @caller.send(action)
+            break
+          else 
+            $log.debug " Unidentified flying class #{action.class} "
+            break
+          end
+        end # while
+      ensure
+        rc.destroy
+        rc = nil
+      end
+    end
+    alias :display_new :display_columns
+
     # Display the top level menu and accept user input
     # Calls actions or symbols upon selection, or traverses submenus
     # @return retvalue of last call or send, or 0
     # @param win window
     # @param r, c row and col to display on
     # @param color text color (use $datacolor if in doubt)
-    # @param menu array of CMenuItem structs
+    # @see display_new - it presents in a much better manner
+    # and is not restricted to one row. Avoid this.
     def display win, r, c, color
+      # FIXME use a oneline window, user should not have to give all this crap.
+      # What about panning if we can;t fit, should we use horiz list to show ?
       menu = @options
       $log.debug " DISP MENU "
       ret = 0
