@@ -586,13 +586,14 @@ module RubyCurses
         item :b, :goto_bottom
         item :r, :scroll_backward
         item :l, :scroll_forward
-        submenu :m, "submenu" do
+        submenu :m, "submenu..." do
           item :p, :goto_last_position
-          item :r, :scroll_backward
-          item :l, :scroll_forward
+          item :r, :scroll_right
+          item :l, :scroll_left
         end
       end
-      menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
+      #menu.display @form.window, $error_message_row, $error_message_col, $datacolor #, menu
+      menu.display_new :title => "Menu"
 
 
 =begin
