@@ -42,7 +42,15 @@ class Testy
         }
 
       end # stack
-      #app.safe_loop
+      app.status_line :row => last_line()
+
+      # earlier style without end, everything had to be explicit but quite simple. Hard to edit since you
+      # could mess up by inserting inside
+      s="#[fg=green]testing chunks #[fg=yellow, bg=red, bold]yellow #[reverse] reverseme#[normal]normal#[bg = black]just yellow#[fg=blue],blue now #[underline] underlined text"
+      # revised, i know allow [end] so you can pop back to whatever was there before.
+      s="#[fg=green]testing chunks #[fg=yellow, bg=red, bold]yellow #[/end] back to green#[reverse]reverse#[end]#[bg=blue]blue bg #[end],back to green #[/end]plain#[underline] underlined text"
+      #chunks = convert_to_chunk(s) 
+      app.window.printstring_formatted 15,1, s, $datacolor, 'normal'
     end
   end
 end
