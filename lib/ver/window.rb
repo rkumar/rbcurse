@@ -241,7 +241,7 @@ module VER
       chunks.each do |color, chunk, attrib|
         color ||= defcolor
         attrib ||= defattr
-        #$log.debug "XXX: CHUNK #{chunk} "
+        $log.debug "XXX: CHUNK #{chunk}, attrib #{attrib} "
         color_set(color,nil) if color
         wattron(attrib) if attrib
         print(chunk)
@@ -517,24 +517,26 @@ module VER
     def visible?
       @visible
     end
+
     ##
     #added by rk 2008-11-29 18:48 
     #to see if we can clean up from within
     def destroy
       # typically the ensure block should have this
-      # @panel = @window.panel if @window
-      #Ncurses::Panel.del_panel(@panel) if !@panel.nil?   
-      #@window.delwin if !@window.nil?
+    
       $log.debug "win destroy start"
 
-      #@panel = @window.panel if @window
-      # changed Ncurses::Panel to Ncurses::Panel on 2011-09-8 when moved to FFI
       Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
-      #@window.delwin(@window) if !@window.nil? # added FFI 2011-09-7 
       delwin() if !@window.nil? # added FFI 2011-09-7 
       Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
+
       $log.debug "win destroy end"
     end
+
+    #
+    # Allows user to send data as normal string or chunks for printing
+    # An array is assumed to be a chunk containing color and attrib info
+    #
     def printstring_or_chunks(r,c,content, color, att = Ncurses::A_NORMAL)
       if content.is_a? String
         printstring(r,c,content, color, att)
@@ -553,7 +555,144 @@ module VER
         end
       end
     end
+    # 
+    # prints a string formatted in our new experimental coloring format
+    # taken from tmux. Currently, since i have chunks workings, i convert
+    # to chunks and use the existing print function. This could change.
+    # An example of a formatted string is:
+    # s="#[fg=green]testing chunks #[fg=yellow, bg=red, bold]yellow #[reverse] reverseme \
+    #  #[normal]normal#[bg = black]just yellow#[fg=blue],blue now #[underline] underlined text"
+    # Ideally I should push and pop colors which the shell does not do with ansi terminal sequences. 
+    # That way i can have a line in red,
+    #  with some word in yellow, and then the line continues in red.
+    #
+    def printstring_formatted(r,c,content, color, att = Ncurses::A_NORMAL)
+      chunks = convert_to_chunk(content) 
+      printstring_or_chunks r,c, chunks, color, att
+    end # print
+
+    # NOTE: Experimental and minimal
+    # parses the formatted string and yields either an array of color, bgcolor and attrib
+    # or the text.
+    # Currently, assumes colors and attributes are correct. No error checking or fancy stuff.
+    #  s="#[fg=green]hello there#[fg=yellow, bg=black, dim]"
+    # @since 1.4.1  2011-11-3 experimental, can change
+    private
+    def parse_format s  # yields attribs or text
+      ## set default colors
+      color   = :white
+      bgcolor = :black
+      attrib  = FFI::NCurses::A_NORMAL
+      text    = ""
+
+      ## split #[...]
+      a       = s.split /(#\[[^\]]*\])/
+      a.each { |e| 
+        ## process color or attrib portion
+        if e[0,2] == "#[" && e[-1] == "]"
+          # now resetting 1:20 PM November 3, 2011 , earlier we were  carrying over
+          color, bgcolor, attrib = nil, nil, nil
+        catch(:done) do
+          e = e[2..-2]
+          ## first split on commas to separate fg, bg and attr
+          atts = e.split /\s*,\s*/
+          atts.each { |att|  
+            ## next split on =
+            part = att.split /\s*=\s*/
+            case part[0]
+            when "fg"
+              color = part[1]
+            when "bg"
+              bgcolor = part[1]
+            when "/end", "end"
+              yield :endcolor if block_given?
+              #next
+              throw :done
+            else
+              # attrib
+              attrib = part[0]
+            end
+          }
+          yield [color,bgcolor,attrib] if block_given?
+        end # catch
+        else
+          text = e
+          yield text if block_given?
+        end
+      }
+    end
+    #
+    # Takes a formatted string and converts the parsed parts to chunks.
+    #
+    # @param [String] takes the entire line or string and breaks into an array of chunks
+    # @yield chunk if block
+    # @return [Array] array of chunks
+    # @since 1.4.1   2011-11-3 experimental, can change
+    private
+    def convert_to_chunk s
+
+      ## defaults
+      color_pair = $datacolor
+      attrib = FFI::NCurses::A_NORMAL
+      res = []
+      color = :white
+      bgcolor = :black
+      # stack the values, so when user issues "/end" we can pop earlier ones
+      @color_array = [:white]
+      @bgcolor_array = [:black]
+      @attrib_array = [attrib]
+      @color_pair_array = [color_pair]
+
+      parse_format(s) do |p|
+        case p
+        when Array
+          ## got color / attrib info, this starts a new span
+          
+          #color, bgcolor, attrib = *p
+          lc, lb, la = *p
+          if la
+            attrib = get_attrib la
+          end
+          if lc || lb
+            color = lc ? lc : @color_array.last
+            bgcolor = lb ? lb : @bgcolor_array.last
+            @color_array << color
+            @bgcolor_array << bgcolor
+            color_pair = get_color($datacolor, color, bgcolor)
+          end
+          @color_pair_array << color_pair
+          @attrib_array << attrib
+          #$log.debug "XXX: CHUNK start #{color_pair} , #{attrib} :: c:#{lc} b:#{lb} "
+          #$log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} "
+
+        when :endcolor
+
+          # end the current (last) span
+          @color_pair_array.pop
+          color_pair = @color_pair_array.last
+          @attrib_array.pop
+          attrib = @attrib_array.last
+          #$log.debug "XXX: CHUNK end #{color_pair} , #{attrib} "
+          #$log.debug "XXX: CHUNK end arr #{@color_pair_array} :: #{@attrib_array} "
+
+        when String
+
+          ## create the chunk
+          $log.debug "XXX:  CHUNK     using on #{p}  : #{color_pair} , #{attrib} "
+          
+          chunk =  [color_pair, p, attrib] 
+          if block_given?
+            yield chunk
+          else
+            res << chunk
+          end
+        end
+      end # parse
+      return res unless block_given?
+    end
+
     ## 
+    # prints a string at row, col, with given color and attribute
     # added by rk 2008-11-29 19:01 
     # I usually use this, not the others ones here
     # @param  r - row
@@ -562,6 +701,7 @@ module VER
     # @param color - color pair
     # @ param att - ncurses attribute: normal, bold, reverse, blink,
     # underline
+    public
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
       raise "Nil passed to peintstring row:#{r}, col:#{c}, #{color} " if r.nil? || c.nil? || color.nil?
       #raise "Zero or less passed to printstring row:#{r}, col:#{c} " if $log.debug? && (r <=0 || c <=0)
@@ -580,10 +720,12 @@ module VER
         att = Ncurses::A_UNDERLINE
       when 'bold'
         att = Ncurses::A_BOLD
-      when 'blink'
-        att = Ncurses::A_BLINK    # unlikely to work
       when 'reverse'
         att = Ncurses::A_REVERSE    
+      when 'dim'
+        att = Ncurses::A_DIM    
+      when 'blink'
+        att = Ncurses::A_BLINK    # unlikely to work
       end
 
       wattron(Ncurses.COLOR_PAIR(color) | att)
