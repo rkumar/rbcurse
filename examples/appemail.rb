@@ -12,13 +12,15 @@ def testchoose
   filter = "*"
   filter = ENV['PWD']+"/*"
   str = choose filter, :title => "Files", :prompt => "Choose a file: "
+  message "We got #{str} " 
 end
 def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
   list1[0] = %w{ ruby ruby1.9 ruby1.8.x jruby rubinius ROR }
+  list1[5] = %w{ java groovy grails }
   str = numbered_menu list1, { :title => "Languages: ", :prompt => "Select :" }
   $log.debug "17 We got #{str.class} "
-  say "We got #{str} " # will get overwritten by message() as soon as repaint happens
+  message "We got #{str} "
 end
 def testdisplay_list
   # scrollable list
@@ -38,14 +40,6 @@ def testdir
   message "We got #{str} "
 end
 def test
-  #require 'rbcurse/rcommandwindow'
-  #rc = CommandWindow.new
-  scr = Ncurses.stdscr
-  #scr.color_set $promptcolor, nil
-  Ncurses.attron(Ncurses.COLOR_PAIR($promptcolor))
-  Ncurses.mvprintw 27,0,"helllllo theeeerE                  "
-  Ncurses.attroff(Ncurses.COLOR_PAIR($promptcolor))
-  #scr.refresh() # refresh FFI NW
 end
 def saveas1
   @tv.saveas 
