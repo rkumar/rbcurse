@@ -1126,7 +1126,7 @@ module RubyCurses
             @_command_history ||= Array.new
             # previous command should be in opts, otherwise it is not in this context
             cmd = ask("Command: ", opts){ |q| q.default = @_previous_command; q.history = @_command_history }
-            if cmd == ""
+            if cmd.nil? || cmd == ""
             else
               @_command_history << cmd unless @_command_history.include? cmd
               cmdline = cmd.split
