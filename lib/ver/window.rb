@@ -231,6 +231,20 @@ module VER
       print(string.ljust(w))
     end
 
+    # returns the actual width in case you've used a root window
+    # which returns a 0 for wid and ht
+    #
+    def actual_width
+      width == 0? Ncurses.COLS : width
+    end
+    
+    #
+    # returns the actual ht in case you've used a root window
+    # which returns a 0 for wid and ht
+    #
+    def actual_height
+      height == 0? Ncurses.LINES : height
+    end
     
     # NOTE: many of these methods using width will not work since root windows width 
     #  is 0
@@ -567,9 +581,19 @@ module VER
     #  with some word in yellow, and then the line continues in red.
     #
     def printstring_formatted(r,c,content, color, att = Ncurses::A_NORMAL)
-      chunks = convert_to_chunk(content) 
+      att = get_attrib att unless att.is_a? Fixnum
+      chunks = convert_to_chunk(content, color, att)
       printstring_or_chunks r,c, chunks, color, att
     end # print
+    # 
+    # print a formatted line right aligned
+    # c (col) is ignored and calculated based on width and unformatted string length
+    #
+    def printstring_formatted_right(r,c,content, color, att = Ncurses::A_NORMAL)
+      clean = content.gsub /#\[[^\]]*\]/,''  # clean out all markup
+      c = actual_width() - clean.length
+      printstring_formatted(r,c,content, color, att )
+    end
 
     # NOTE: Experimental and minimal
     # parses the formatted string and yields either an array of color, bgcolor and attrib
@@ -629,11 +653,11 @@ module VER
     # @return [Array] array of chunks
     # @since 1.4.1   2011-11-3 experimental, can change
     private
-    def convert_to_chunk s
+    def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
 
       ## defaults
-      color_pair = $datacolor
-      attrib = FFI::NCurses::A_NORMAL
+      color_pair = colorp
+      attrib = att
       res = []
       color = :white
       bgcolor = :black
