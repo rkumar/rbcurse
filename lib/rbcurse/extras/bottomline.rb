@@ -311,6 +311,13 @@ module RubyCurses
       #
       attr_accessor :change_proc
       #
+      # Called when any control-key is pressed, one that we are not handling
+      #
+      #    q.key_handler_proc = Proc.new {|ch| xxxx) }
+      #
+      attr_accessor :key_handler_proc
+
+      #
       # text to be shown if user presses M-h
       #
       attr_accessor :helptext
@@ -974,6 +981,7 @@ module RubyCurses
 
       @completion_proc = @question.completion_proc
       @change_proc = @question.change_proc
+      @key_handler_proc = @question.key_handler_proc
       @default = @question.default
       $log.debug "XXX: ASK RBGETS got default: #{@default} "
       @helptext = @question.helptext
@@ -1273,12 +1281,6 @@ module RubyCurses
           when ?\C-k.getbyte(0) # delete forward
             @delete_buffer = str.slice!(curpos..-1) #rescue next
             clear_line len+maxlen+1, @prompt_length
-          #when ?\C-u.getbyte(0) # clear entire line
-            #@delete_buffer = str
-            #str = ""
-            #curpos = 0
-            #clear_line len+maxlen+1, @prompt_length
-            #len = @prompt_length
           when ?\C-u.getbyte(0) # delete to the left of cursor till start of line
             @delete_buffer = str.slice!(0..curpos-1) #rescue next
             curpos = 0
@@ -1349,7 +1351,15 @@ module RubyCurses
               end
             end
           when ?\C-a.getbyte(0) .. ?\C-z.getbyte(0)
-            Ncurses.beep
+            # here' swhere i wish i could pass stuff back without closing
+            # I'd like the user to be able to scroll list or do something based on
+            # control or other keys
+            if @key_handler_proc  # added  2011-11-3 7:38 PM 
+              @key_handler_proc.call(ch) 
+              next
+            else
+              Ncurses.beep
+            end
           when KEY_UP
             if @history && !@history.empty?
               olen = str.length
@@ -1559,6 +1569,7 @@ module RubyCurses
     #
     def choose list1, config={}
       dirlist = true
+      start = 0
       case list1
       when NilClass
         #list1 = Dir.glob("*")
@@ -1582,7 +1593,9 @@ module RubyCurses
         rc.display_menu list1
         # earlier wmove bombed, now move is (window.rb 121)
         str = ask(prompt) { |q| q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  
-          l = list1.select{|e| e.index(str)==0}  ; 
+
+          l = list1.select{|e| e.index(str)==0}  ;  # select those starting with str
+
           if (l.size == 0 || str[-1]=='/') && dirlist
             # used to help complete directories so we can drill up and down
             #l = Dir.glob(str+"*")
@@ -1590,7 +1603,26 @@ module RubyCurses
           end
           rc.display_menu l; 
           l
-        } }
+        }
+        q.key_handler_proc = Proc.new { |ch| 
+          # this is not very good since it does not respect above list which is filtered
+          # # need to clear the screen before printing - FIXME
+          case ch
+          when ?\C-n.getbyte(0)
+            start += 2 if start < list1.length - 2
+
+            w.wmove(1,1) ; w.wclrtobot;  
+            rc.display_menu list1, :startindex => start
+          when ?\C-p.getbyte(0)
+            start -= 2 if start > 2
+            w.wmove(1,1) ; w.wclrtobot;  
+            rc.display_menu list1, :startindex => start
+          else
+            alert "unhalderlind by jey "
+          end
+        
+        }
+        }
         # need some validation here that its in the list TODO
       ensure
         rc.destroy
