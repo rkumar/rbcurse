@@ -829,7 +829,8 @@ module VER
       # when using a pad this calls pads printstring which again reduces top and left !!! 2010-01-26 23:53 
       (row+1).upto(row+height-1) do |r|
         #printstring( r, col+1," "*(width-2) , $datacolor, nil)
-        prv_printstring( r, col+1," "*(width-2) , $datacolor, nil)
+        #prv_printstring( r, col+1,"."*(width-2) , $datacolor, nil)
+        prv_printstring( r, col+1," "*(width-2) , color, att)
       end
       prv_print_border_only row, col, height, width, color, att
     end
