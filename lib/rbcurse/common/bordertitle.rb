@@ -7,11 +7,12 @@ module BorderTitle
     dsl_accessor :title_attrib                #bold, reverse, normal
     dsl_accessor :border_attrib, :border_color # 
 
-    def init
+    def bordertitle_init
       @row_offset = @col_offset = 0 if @suppress_borders 
       @internal_width = 1 if @suppress_borders
     end
     def print_borders
+      raise ArgumentError, "Graphic not set" unless @graphic
       width = @width
       height = @height-1
       window = @graphic
