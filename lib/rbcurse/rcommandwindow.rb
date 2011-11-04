@@ -170,7 +170,7 @@ module RubyCurses
     # indexcolor - color of mnemonic, default green
     def display_menu list, options={}
       indexing = options[:indexing]
-      indexcolor = options[:indexcolor] || get_color($normalcolor, :green, :black)
+      indexcolor = options[:indexcolor] || get_color($normalcolor, :yellow, :black)
       indexatt = Ncurses::A_BOLD
       #
       # the index to start from (used when scrolling a long menu such as file list)
