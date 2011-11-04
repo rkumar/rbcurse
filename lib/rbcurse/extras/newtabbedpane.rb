@@ -318,7 +318,7 @@ module RubyCurses
       self
     end
 
-    def DEPRECATED_handle_key ch
+    def DEPRECATED_handle_key ch # :nodoc
       map_keys unless @keys_mapped
       ret = process_key ch, self
       @multiplier = 0
