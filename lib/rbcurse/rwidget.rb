@@ -665,7 +665,6 @@ module RubyCurses
       # own default
       @bgcolor ||=  "black" # 0
       @color ||= "white" # $datacolor
-  #    @id = form.add_widget(self) if !form.nil? and form.respond_to? :add_widget
       set_form(form) unless form.nil? 
     end
     def init_vars
@@ -1979,7 +1978,7 @@ module RubyCurses
     r = row
     c = col
     if label.is_a? String
-      lcolor = @label_color_pair || $datacolor
+      lcolor = @label_color_pair || $datacolor # this should be the same color as window bg XXX
       lattr = @label_attr || $datacolor
       @graphic.printstring row, col, label, lcolor, lattr
       c += label.length + 2
@@ -2516,28 +2515,30 @@ module RubyCurses
           @when_form = nil
         end
       end
-        #$log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} #{getvalue_for_paint}" )
+        $log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} , #{@color} , #{@bgcolor} , #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
         @highlight_foreground ||= $reversecolor
         @highlight_background ||= 0
+        _bgcolor = @bgcolor
+        _color = @color
         if @state == :HIGHLIGHTED
-          bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
-          color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+          _bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
+          _color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
         elsif selected? # only for certain buttons lie toggle and radio
-          bgcolor = @selected_background || @bgcolor
-          color   = @selected_foreground || @color
+          _bgcolor = @selected_background || @bgcolor
+          _color   = @selected_foreground || @color
         end
-        $log.debug "XXX: #{text}   STATE is #{@state} "
-        if bgcolor.is_a?( Fixnum) && color.is_a?( Fixnum)
+        $log.debug "XXX: button #{text}   STATE is #{@state} color #{_color} , bg: #{_bgcolor} "
+        if _bgcolor.is_a?( Fixnum) && _color.is_a?( Fixnum)
         else
-          color = get_color($datacolor, color, bgcolor)
+          _color = get_color($datacolor, _color, _bgcolor)
         end
         value = getvalue_for_paint
-        #$log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{color} bg #{bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic}")
+        $log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{_color} bg #{_bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic} datacolor #{$datacolor} ")
         len = @display_length || value.length
         @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
-        @graphic.printstring r, c, "%-*s" % [len, value], color, @attr
+        @graphic.printstring r, c, "%-*s" % [len, value], _color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
         if @underline || @mnemonic
@@ -2557,7 +2558,7 @@ module RubyCurses
             #
             $log.error "XXX button underline location error #{x} , #{y} " if x < 0 or c < 0
             raise " #{r} #{c}  #{uline} button underline location error x:#{x} , y:#{y}. left #{@graphic.left} top:#{@graphic.top} " if x < 0 or c < 0
-            @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, color, nil)
+            @graphic.mvchgat(y, x, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, _color, nil)
           end
         end
     end
