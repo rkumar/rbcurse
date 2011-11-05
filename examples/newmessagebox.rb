@@ -15,17 +15,36 @@ def alertme mess, config={}
     tp.run
 end
 def textdialog mess, config={}
-  _title = config[:title] || "Alert"
-    tp = NewMessagebox.new config do
-      title _title
-      button_type :ok
-      text mess
-    end
-    tp.run
-
+  config[:title] ||= "Alert"
+  tp = NewMessagebox.new config do
+    button_type :ok
+    text mess
+  end
+  tp.run
 end
-def newget_string string, config={}
+# 
+def newget_string label, config={}
+  config[:title] ||= "Entry"
+  label_config = config[:label_config] || {}
+  label_config[:row] ||= 2
+  label_config[:col] ||= 2
+  label_config[:text] = label
 
+  field_config = config[:field_config] || {}
+  field_config[:row] ||= 3
+  field_config[:col] ||= 2
+  field_config[:attr] = :reverse
+  field_config[:maxlen] ||= config[:maxlen]
+  field_config[:default] ||= config[:default]
+  #field_config[:display_length] ||= 50  # i want it to extend since i don't know the actual width
+  field_config[:width] ||= 50  # i want it to extend since i don't know the actual width
+
+  tp = NewMessagebox.new config do
+    button_type :ok_cancel
+    item Label.new nil, label_config
+    item Field.new nil, field_config
+  end
+  tp.run
 end
 include RubyCurses
 class SetupMessagebox
@@ -78,6 +97,7 @@ class SetupMessagebox
       command do |eve|
         case eve.event
         when 0,2                   # ok cancel
+          newget_string "Enter name: ", :default => "john", :maxlen => 50
           alertme "user pressed button index:#{eve.event}, #{eve.action_command} "
           throw :close, eve.event
         when 1                     # apply
