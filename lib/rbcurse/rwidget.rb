@@ -617,6 +617,7 @@ module RubyCurses
     dsl_property :preferred_height  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_width  # added 2009-10-28 13:40 for splitpanes and better resizing
     dsl_property :min_height  # added 2009-10-28 13:40 for splitpanes and better resizing
+    # widget also has height and width as a method
 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
@@ -642,7 +643,7 @@ module RubyCurses
       @col_offset ||= 0
       #@ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18  # removed on 2011-09-29 
       @state = :NORMAL
-      @attr = nil
+      #@attr = nil    # 2011-11-5 i could be removing what's been entered since super is called
 
       @handler = nil # we can avoid firing if nil
       @event_args = {}
@@ -753,7 +754,7 @@ module RubyCurses
       Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
       @window.delwin if !@window.nil?
     end
-    # in those rare cases where we create widget without a form, and later give it to 
+    # in those cases where we create widget without a form, and later give it to 
     # some other program which sets the form. Dirty, we should perhaps create widgets
     # without forms, and add explicitly. 
     def set_form form
@@ -1733,7 +1734,7 @@ module RubyCurses
     dsl_accessor :label              # label of field  Unused earlier, now will print 
     dsl_property :label_color_pair   # label of field  Unused earlier, now will print 
     dsl_property :label_attr   # label of field  Unused earlier, now will print 
-    dsl_accessor :default            # TODO use set_buffer for now
+    #dsl_accessor :default            # now alias of text 2011-11-5 
     dsl_accessor :values             # validate against provided list
     dsl_accessor :valid_regex        # validate against regular expression
     dsl_accessor :valid_range        # validate against numeric range # 2011-09-29 V1.3.1 
@@ -1753,6 +1754,10 @@ module RubyCurses
     attr_accessor :datatype                    # crrently set during set_buffer
     attr_reader :original_value                # value on entering field
     attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
+
+    # For consistency, now width equates to display_length
+    alias :width :display_length
+    alias :width= :display_length=
 
     def initialize form=nil, config={}, &block
       @form = form
@@ -1969,12 +1974,12 @@ module RubyCurses
   
     acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
     if @state == :HIGHLIGHTED
-      bgcolor = @highlight_background || @bgcolor
-      color = @highlight_foreground || @color
-      acolor = get_color(acolor, color, bgcolor)
+      _bgcolor = @highlight_background || @bgcolor
+      _color = @highlight_foreground || @color
+      acolor = get_color(acolor, _color, _bgcolor)
     end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
-    #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} "
+    #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} c:#{@color} bg:#{@bgcolor} a:#{@attr} :#{@name} "
     r = row
     c = col
     if label.is_a? String
@@ -2163,7 +2168,9 @@ module RubyCurses
     def modified?
       getvalue() != @original_value
     end
-    # field, a convenience method, since set_buffer sucks, it was "inspired" by ncurses itself
+    #
+    # Use this to set a default text to the field. This does not imply that if the field is left
+    # blank, this value will be used. It only provides this value for editing when field is shown.
     # @since 1.2.0
     def text(*val)
       if val.empty?
@@ -2174,6 +2181,7 @@ module RubyCurses
         set_buffer(s)
       end
     end
+    alias :default :text
     def text=(val)
       return unless val # added 2010-11-17 20:11, dup will fail on nil
       set_buffer(val.dup)
@@ -2294,7 +2302,10 @@ module RubyCurses
     # justify required a display length, esp if center.
     dsl_property :justify        #:right, :left, :center
     dsl_property :display_length #please give this to ensure the we only print this much
-    dsl_property :height         #if you want a multiline label.
+    #dsl_property :height         #if you want a multiline label. already added to widget
+    # for consistency with others 2011-11-5 
+    alias :width :display_length
+    alias :width= :display_length=
 
     def initialize form, config={}, &block
   
@@ -2663,6 +2674,10 @@ module RubyCurses
     # background to use when selected, if not set then default
     dsl_accessor :selected_background 
     dsl_accessor :selected_foreground 
+
+    # For consistency, now width equates to display_length
+    alias :width :display_length
+    alias :width= :display_length=
 
     # item_event
     def initialize form, config={}, &block
