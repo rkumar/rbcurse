@@ -485,7 +485,7 @@ if $0 == __FILE__
         mnemonic 'O'
       end
       ok_button.command() { |eve| 
-        #alert("Hope you enjoyed this demo ", {'title' => "Hello", :bgcolor => :blue, :color => :white})
+        alert("Hope you enjoyed this demo ", {'title' => "Hello", :bgcolor => :blue, :color => :white})
         sw = case @lookfeel
              when :dialog
                progress_dialog :color_pair => $reversecolor, :row_offset => 4, :col_offset => 5
