@@ -8,6 +8,8 @@
 #  Last update: 03.11.11 - 23:47
 #  == CHANGES
 #  == TODO 
+#     <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
+#     ensure that text and message are used in isolation and not with other things
 #     determine window size, but we are doing instance eval later.
 #     maybe have shortcuts for some widgets field, buttons, text and label and
 #       share with app and otherszz
@@ -72,7 +74,7 @@ class NewMessagebox
     # if user has set or widget has done a default setting. NOTE
     widget.color @color    # we are overriding colors, how to avoid since widget sets it
     widget.bgcolor @bgcolor
-    widget.attr = @attr
+    widget.attr = @attr if @attr # we are overriding what user has put. DARN !
     @maxrow ||= 0
     @maxrow = widget.row if widget.row > @maxrow
     @suggested_h = @height || @maxrow+6
@@ -170,10 +172,10 @@ class NewMessagebox
     available_ht = brow - r + 1
     message_height = [message_height, available_ht].min
     require 'rbcurse/rtextview'
-    message_label = RubyCurses::TextView.new @form, {:name=>"message_label",
+    message_label = RubyCurses::TextView.new @form, {:name=>"message_label", :text => message,
       :row => r, :col => message_col, :width => display_length, :suppress_borders => true,
       :height => message_height, :bgcolor => bgclr , :color => clr}
-    message_label.set_content message
+    #message_label.set_content message
     yield message_label if block_given?
 
   end
