@@ -131,6 +131,9 @@ module RubyCurses
       end
       init_vars
     end
+    # for consistency with other objects that respect text
+    alias :text :set_content
+
     def remove_all
       @list = []
       init_vars
