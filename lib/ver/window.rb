@@ -255,7 +255,7 @@ module VER
       chunks.each do |color, chunk, attrib|
         color ||= defcolor
         attrib ||= defattr
-        $log.debug "XXX: CHUNK #{chunk}, attrib #{attrib} "
+        #$log.debug "XXX: CHUNK #{chunk}, attrib #{attrib} "
         color_set(color,nil) if color
         wattron(attrib) if attrib
         print(chunk)
@@ -652,7 +652,7 @@ module VER
     # @yield chunk if block
     # @return [Array] array of chunks
     # @since 1.4.1   2011-11-3 experimental, can change
-    private
+    public
     def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
 
       ## defaults
