@@ -11,6 +11,7 @@ module BorderTitle
       @row_offset = @col_offset = 0 if @suppress_borders 
       @internal_width = 1 if @suppress_borders
     end
+    # why the dash does it reduce height by one.
     def print_borders
       raise ArgumentError, "Graphic not set" unless @graphic
       width = @width
