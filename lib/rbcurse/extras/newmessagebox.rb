@@ -8,12 +8,15 @@
 #  Last update: 03.11.11 - 23:47
 #  == CHANGES
 #  == TODO 
-#     <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
+#     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
 #     ensure that text and message are used in isolation and not with other things
-#     determine window size, but we are doing instance eval later.
-#     maybe have shortcuts for some widgets field, buttons, text and label and
+#
+#     _ determine window size, but we are doing instance eval later.
+#
+#     _ maybe have shortcuts for some widgets field, buttons, text and label and
 #       share with app and otherszz
-#     stack, flow and grid
+#
+#     _ stack, flow and grid
 #
 # --------------------------------------------------------------------------------- #
 
