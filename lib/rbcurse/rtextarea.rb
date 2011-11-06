@@ -183,9 +183,6 @@ module RubyCurses
       borderatt = @border_attrib || Ncurses::A_NORMAL
       #color = $datacolor
       #window.print_border @row, @col, @height, @width, color
-      ## NOTE: If it bombs in next line, either no form passed
-      ##+ or you using this embedded and need to set should_create_buffer true when
-      ##+ creating. See examples/testscrollta.rb.
       window.print_border @row, @col, @height-1, @width, bordercolor, borderatt
       print_title
 =begin
@@ -248,6 +245,7 @@ module RubyCurses
       @list.replace lines
       @repaint_required = true
     end
+    alias :text :set_content
     def get_window
       @graphic
     end
@@ -838,17 +836,15 @@ module RubyCurses
     end
     def paint
       # not sure where to put this, once for all or repeat 2010-02-12 RFED16
-      my_win = @form? @form.window : @target_window
-      $log.warn "neither form not target window given!!! TA paint 751" unless my_win
-      @win_left = my_win.left # unused remove TODO
-      @win_top = my_win.top
+      #my_win = @form? @form.window : @target_window
+      #$log.warn "neither form not target window given!!! TA paint 751" unless my_win
+      raise "Height or width nil h:#{@height} , w: #{@width} " if @height.nil? || @width.nil?
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       _maxlen = @maxlen || @width-@internal_width # TODO fix in other branches remove ||= 
       $log.debug " #{@name} textarea repaint width is #{@width}, height is #{@height} , maxlen #{_maxlen}/ #{@maxlen}, #{@graphic.name} "
       tm = get_content
       tr = @toprow
-      raise "textarea height not specified" unless @height
       acolor = get_color $datacolor
       h = scrollatrow()
       r,c = rowcol
