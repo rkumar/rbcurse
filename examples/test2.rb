@@ -471,7 +471,7 @@ if $0 == __FILE__
       item.command(colorlabel){|it, label| att = it.getvalue ? 'reverse' : 'normal'; label.attr(att); label.repaint}
       @status_line = status_line :row => Ncurses.LINES-2
       @status_line.command {
-        "%-20s | F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [Time.now, $message.value]
+        "F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [$message.value]
       }
       row += 1 #2
       ok_button = Button.new @form do
