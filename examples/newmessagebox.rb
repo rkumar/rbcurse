@@ -59,7 +59,7 @@ class SetupMessagebox
         item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
         item Field.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
         r = 4
-        item Label.new nil, :text => "Text", :row => r+1, :col => 2, :attr => 'bold'
+        item Label.new nil, :text => "Text", :row => r+1, :col => 2, :attr => :bold
         item CheckBox.new nil, :row => r+2, :col => 2, :text => "Antialias text"
         item CheckBox.new nil, :row => r+3, :col => 2, :text => "Use bold fonts"
         item CheckBox.new nil, :row => r+4, :col => 2, :text => "Allow blinking text"
