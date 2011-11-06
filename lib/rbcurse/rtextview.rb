@@ -80,8 +80,6 @@ module RubyCurses
       ## 2010-02-10 20:20 RFED16 taking care if no border requested
       @row_offset = @col_offset = 0 if @suppress_borders == true
       # added 2010-02-11 15:11 RFED16 so we don't need a form.
-      @win_left = 0
-      @win_top = 0
       $error_message_row ||= 23
       $error_message_col ||= 1
       # currently i scroll right only if  current line is longer than display width, i should use 
@@ -239,6 +237,17 @@ module RubyCurses
     def current_value
       @list[@current_index]
     end
+    def row_length
+      case @buffer
+      when String
+        @buffer.length
+      when Array
+        #@buffer.inject {|result, elem| result + elem[1].length}
+        result = 0
+        @buffer.each { |e| result += e[1].length }
+        return result
+      end
+    end
     # textview
     # NOTE: i think this should return if list is nil or empty. No need to put
     #
@@ -252,10 +261,10 @@ module RubyCurses
         @buffer = @list[@current_index]
       end
       return if @buffer.nil?
-      #$log.debug " before: curpos #{@curpos} blen: #{@buffer.length}"
-      if @curpos > @buffer.length
-        addcol((@buffer.length-@curpos)+1)
-        @curpos = @buffer.length
+      #$log.debug " before: curpos #{@curpos} blen: #{row_length}"
+      if @curpos > row_length #@buffer.length
+        addcol((row_length-@curpos)+1)
+        @curpos = row_length
         set_form_col 
       end
       # We can improve later
@@ -295,7 +304,7 @@ module RubyCurses
         # take care of data that exceeds maxlen by scrolling and placing cursor at end
         # This use to actually pan the screen to actual end of line, but now somewhere
         # it only goes to end of visible screen, set_form probably does a sanity check
-        blen = @buffer.rstrip.length
+        blen = row_length # @buffer.rstrip.length FIXME
         set_form_col blen
         # search related 
       when @KEY_ASK_FIND
@@ -342,9 +351,9 @@ module RubyCurses
     def check_curpos #:nodoc:
       @buffer = @list[@current_index]
       # if the cursor is ahead of data in this row then move it back
-      if @pcol+@curpos > @buffer.length
-        addcol((@pcol+@buffer.length-@curpos)+1)
-        @curpos = @buffer.length 
+      if @pcol+@curpos > row_length
+        addcol((@pcol+row_length-@curpos)+1)
+        @curpos = row_length 
         maxlen = (@maxlen || @width-@internal_width)
 
         # even this row is gt maxlen, i.e., scrolled right
@@ -387,7 +396,7 @@ module RubyCurses
         @curpos += 1
         addcol 1
       else
-        @pcol += 1 if @pcol <= @buffer.length
+        @pcol += 1 if @pcol <= row_length
       end
       }
       set_form_col 
@@ -449,8 +458,6 @@ module RubyCurses
         my_win = @target_window
       end
       @graphic = my_win unless @graphic
-      @win_left = my_win.left
-      @win_top = my_win.top
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
@@ -480,10 +487,14 @@ module RubyCurses
             elsif content.is_a? Array
                 # several chunks in one row - NOTE Very experimental may change
               if content[0].is_a? Array
+                # clearing the line since colored_chunks does not yet XXX FIXME if possible
+                @graphic.printstring  r+hh, c, " "* (@width-@internal_width), 
+                  acolor, @attr
                 @graphic.wmove r+hh, c
                 # either we have to loop through and put in default color and attr
                 # or pass it to show_col
                 a = get_attrib @attrib
+                # FIXME this does not clear till the eol
                 @graphic.show_colored_chunks content, acolor, a
               else
                 # a single row chunk - NOTE Very experimental may change
