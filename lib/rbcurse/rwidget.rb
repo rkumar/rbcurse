@@ -122,7 +122,7 @@ class Module
                  @#{sym} = tmp
                  @config["#{sym}"]=@#{sym}
                rescue PropertyVetoException
-                 $log.warn "PropertyVetoException for #{sym}:" + oldvalue + "->  "+newvalue
+                  $log.warn "PropertyVetoException for #{sym}:" + oldvalue.to_s + "->  "+ newvalue.to_s
                end
             end # if old
             self
@@ -589,6 +589,7 @@ module RubyCurses
     include ConfigSetup
     include RubyCurses::Utils
     include Io # added 2010-03-06 13:05 
+    # common interface for text related to a field, label, textview, button etc
     dsl_property :text
 
     # next 3 to be checked if used or not. Copied from TK.
@@ -664,8 +665,8 @@ module RubyCurses
       end
       # 2010-09-20 13:12 moved down, so it does not create problems with other who want to set their
       # own default
-      @bgcolor ||=  "black" # 0
-      @color ||= "white" # $datacolor
+      #@bgcolor ||=  "black" # 0
+      #@color ||= "white" # $datacolor
       set_form(form) unless form.nil? 
     end
     def init_vars
@@ -738,6 +739,8 @@ module RubyCurses
     #  widget does not have display_length.
     def repaint
         r,c = rowcol
+        @bgcolor ||= $def_bg_color # moved down 2011-11-5 
+        @color   ||= $def_fg_color
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
         value = getvalue_for_paint
         len = @display_length || value.length
@@ -1415,7 +1418,7 @@ module RubyCurses
     ##
     # move cursor by num columns. Form
     def addcol num
-      return if @col.nil? or @col == -1
+      return if @col.nil? || @col == -1
       @col += num
       @window.wmove @row, @col
       ## 2010-01-30 23:45 exchange calling parent with calling this forms setrow
@@ -1767,8 +1770,8 @@ module RubyCurses
       @maxlen = @display_length
       @row = 0
       @col = 0
-      @bgcolor = $def_bg_color
-      @color = $def_fg_color
+      #@bgcolor = $def_bg_color
+      #@color = $def_fg_color
       @editable = true
       @focusable = true
       @event_args = {}             # arguments passed at time of binding, to use when firing event
@@ -1918,6 +1921,7 @@ module RubyCurses
     # is created
     # NOTE: 2011-10-20 when field attached to some container, label won't be attached
     # @param [Label, String] label object to be associated with this field
+    # FIXME this may not work since i have disabled -1, now i do not set row and col 2011-11-5 
     def set_label label
       # added case for user just using a string
       case label
@@ -1937,6 +1941,7 @@ module RubyCurses
       end
       label
     end
+    # FIXME this may not work since i have disabled -1, now i do not set row and col
     def position_label
       $log.debug "XXX: LABEL row #{@label.row}, #{@label.col} "
       @label.row  @row if @label.row == -1
@@ -1958,6 +1963,8 @@ module RubyCurses
       alert "came here unplaced"
       position_label
     end
+    @bgcolor ||= $def_bg_color
+    @color   ||= $def_fg_color
     $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},  #{focusable} st: #{@state} ")
     #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
     # becomes negative below, no because editing still happens
@@ -2309,10 +2316,11 @@ module RubyCurses
 
     def initialize form, config={}, &block
   
-      @row = config.fetch("row",-1) 
-      @col = config.fetch("col",-1) 
-      @bgcolor = config.fetch("bgcolor", $def_bg_color)
-      @color = config.fetch("color", $def_fg_color)
+      # this crap was used in position_label, find another way. where is it used ?
+      #@row = config.fetch("row",-1)  # why on earth this monstrosity ? 2011-11-5 
+      #@col = config.fetch("col",-1) 
+      #@bgcolor = config.fetch("bgcolor", $def_bg_color)
+      #@color = config.fetch("color", $def_fg_color)
       @text = config.fetch("text", "NOTFOUND")
       @editable = false
       @focusable = false
@@ -2359,6 +2367,9 @@ module RubyCurses
     def repaint
       return unless @repaint_required
       r,c = rowcol
+
+      @bgcolor ||= $def_bg_color
+      @color   ||= $def_fg_color
       # value often nil so putting blank, but usually some application error
       value = getvalue_for_paint || ""
       lablist = []
@@ -2433,8 +2444,8 @@ module RubyCurses
       @_events ||= []
       @_events.push :PRESS
       super
-      @bgcolor ||= $datacolor 
-      @color ||= $datacolor 
+
+
       @surround_chars ||= ['[ ', ' ]'] 
       @col_offset = @surround_chars[0].length 
       @text_offset = 0
@@ -2526,6 +2537,9 @@ module RubyCurses
           @when_form = nil
         end
       end
+
+      @bgcolor ||= $def_bg_color
+      @color   ||= $def_fg_color
         $log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} , #{@color} , #{@bgcolor} , #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
