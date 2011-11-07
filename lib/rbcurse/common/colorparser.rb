@@ -13,7 +13,7 @@
 #    - perhaps we can compile the regexp once and reuse
 # 
 
-class ColorParser
+class DefaultColorParser
 
   # NOTE: Experimental and minimal
   # parses the formatted string and yields either an array of color, bgcolor and attrib
