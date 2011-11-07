@@ -252,13 +252,17 @@ module VER
     #  one line. This can be used for running text. 
     def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
       return unless visible?
-      chunks.each do |color, chunk, attrib|
+      chunks.each do |chunk| #|color, chunk, attrib|
+        color = chunk.color
+        attrib = chunk.attrib
+        text = chunk.text
+
         color ||= defcolor
         attrib ||= defattr
         #$log.debug "XXX: CHUNK #{chunk}, attrib #{attrib} "
         color_set(color,nil) if color
         wattron(attrib) if attrib
-        print(chunk)
+        print(text)
         wattroff(attrib) if attrib
       end
     end
@@ -554,12 +558,16 @@ module VER
     def printstring_or_chunks(r,c,content, color, att = Ncurses::A_NORMAL)
       if content.is_a? String
         printstring(r,c,content, color, att)
+      elsif content.is_a? ChunkLine
+        $log.debug "XXX: using chunkline"
+        wmove r, c
+        a = get_attrib att
+        show_colored_chunks content, color, a
       elsif content.is_a? Array
                 # several chunks in one row - NOTE Very experimental may change
         if content[0].is_a? Array
+          $log.warn "XXX: WARNING outdated should send in a chunkline"
           wmove r, c
-          # either we have to loop through and put in default color and attr
-          # or pass it to show_col
           a = get_attrib att
           show_colored_chunks content, color, a
         else
@@ -582,8 +590,8 @@ module VER
     #
     def printstring_formatted(r,c,content, color, att = Ncurses::A_NORMAL)
       att = get_attrib att unless att.is_a? Fixnum
-      chunks = convert_to_chunk(content, color, att)
-      printstring_or_chunks r,c, chunks, color, att
+      chunkline = convert_to_chunk(content, color, att)
+      printstring_or_chunks r,c, chunkline, color, att
     end # print
     # 
     # print a formatted line right aligned
@@ -602,7 +610,7 @@ module VER
     #  s="#[fg=green]hello there#[fg=yellow, bg=black, dim]"
     # @since 1.4.1  2011-11-3 experimental, can change
     private
-    def parse_format s  # yields attribs or text
+    def OLDparse_format s  # yields attribs or text
       ## set default colors
       color   = :white
       bgcolor = :black
@@ -645,15 +653,94 @@ module VER
         end
       }
     end
+    def get_default_color_parser
+      require 'rbcurse/common/colorparser'
+      @color_parser || ColorParser.new
+    end
+    # supply with a color parser, if you supplied formatted text
+    public
+    def color_parser f
+      $log.debug "XXX:  color_parser setting in window to #{f} "
+      if f == :tmux
+        @color_parser = get_default_color_parser()
+      else
+        @color_parser = f
+      end
+    end
     #
     # Takes a formatted string and converts the parsed parts to chunks.
     #
     # @param [String] takes the entire line or string and breaks into an array of chunks
     # @yield chunk if block
-    # @return [Array] array of chunks
+    # @return [ChunkLine] # [Array] array of chunks
     # @since 1.4.1   2011-11-3 experimental, can change
     public
     def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
+      require 'rbcurse/common/chunk'
+
+      @color_parser ||= get_default_color_parser()
+      ## defaults
+      color_pair = colorp
+      attrib = att
+      #res = []
+      res = ChunkLine.new
+      color = :white
+      bgcolor = :black
+      # stack the values, so when user issues "/end" we can pop earlier ones
+      @color_array = [:white]
+      @bgcolor_array = [:black]
+      @attrib_array = [attrib]
+      @color_pair_array = [color_pair]
+
+      @color_parser.parse_format(s) do |p|
+        case p
+        when Array
+          ## got color / attrib info, this starts a new span
+          
+          #color, bgcolor, attrib = *p
+          lc, lb, la = *p
+          if la
+            attrib = get_attrib la
+          end
+          if lc || lb
+            color = lc ? lc : @color_array.last
+            bgcolor = lb ? lb : @bgcolor_array.last
+            @color_array << color
+            @bgcolor_array << bgcolor
+            color_pair = get_color($datacolor, color, bgcolor)
+          end
+          @color_pair_array << color_pair
+          @attrib_array << attrib
+          #$log.debug "XXX: CHUNK start #{color_pair} , #{attrib} :: c:#{lc} b:#{lb} "
+          #$log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} "
+
+        when :endcolor
+
+          # end the current (last) span
+          @color_pair_array.pop
+          color_pair = @color_pair_array.last
+          @attrib_array.pop
+          attrib = @attrib_array.last
+          #$log.debug "XXX: CHUNK end #{color_pair} , #{attrib} "
+          #$log.debug "XXX: CHUNK end arr #{@color_pair_array} :: #{@attrib_array} "
+
+        when String
+
+          ## create the chunk
+          $log.debug "XXX:  CHUNK     using on #{p}  : #{color_pair} , #{attrib} "
+          
+          #chunk =  [color_pair, p, attrib] 
+          chunk = Chunk.new color_pair, p, attrib
+          if block_given?
+            yield chunk
+          else
+            res << chunk
+          end
+        end
+      end # parse
+      return res unless block_given?
+    end
+    def OLDconvert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
 
       ## defaults
       color_pair = colorp
