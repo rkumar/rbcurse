@@ -83,9 +83,12 @@ class SetupMessagebox
         "Rule of #[fg=cyan]Representation#[end]: Fold knowledge into #[bold]data#[end] so program logic can be stupid and robust"]
         text << "For more check: #[underline]http://en.wikipedia.org/wiki/Unix_philosophy#Eric_Raymond#[end]"
         formatted = []
-        text.each { |line| formatted << @window.convert_to_chunk(line) }
+        #text.each { |line| formatted << @window.convert_to_chunk(line) }
 
-      textview :text => formatted
+      #textview :text => formatted
+        #textview do |t| t.formatted_text(text, :tmux) end
+        t = textview
+        t.formatted_text(text, :tmux)
 
       flow do
         box do
