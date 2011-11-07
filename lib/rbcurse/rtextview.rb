@@ -131,6 +131,12 @@ module RubyCurses
     end
     # for consistency with other objects that respect text
     alias :text :set_content
+    def formatted_text text, fmt
+      require 'rbcurse/common/chunk'
+      @formatted_text = text
+      @color_parser = fmt
+      remove_all
+    end
 
     def remove_all
       @list = []
@@ -241,6 +247,8 @@ module RubyCurses
       case @buffer
       when String
         @buffer.length
+      when Chunks::ChunkLine
+        return @buffer.length
       when Array
         #@buffer.inject {|result, elem| result + elem[1].length}
         result = 0
@@ -441,8 +449,18 @@ module RubyCurses
     end
     # @deprecated
     def do_relative_row num  #:nodoc:
+      raise "unused will be removed"
       yield @list[@current_index+num] 
     end
+
+    # supply with a color parser, if you supplied formatted text
+    def color_parser f
+      $log.debug "XXX: parser setting color_parser to #{f} "
+      #@window.color_parser f
+      @color_parser = f
+    end
+
+
 
     ## NOTE: earlier print_border was called only once in constructor, but when
     ##+ a window is resized, and destroyed, then this was never called again, so the 
@@ -458,6 +476,17 @@ module RubyCurses
         my_win = @target_window
       end
       @graphic = my_win unless @graphic
+      #@graphic.color_parser(@color_parser)
+      if @formatted_text
+        $log.debug "XXX:  INSIDE FORMATTED TEXT "
+
+        Chunks::color_parser @color_parser
+        l = []
+        @formatted_text.each { |e| l << Chunks::convert_to_chunk(e) }
+        text(l)
+        @formatted_text = nil
+
+      end
 
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
@@ -484,6 +513,17 @@ module RubyCurses
               truncate content
               @graphic.printstring  r+hh, c, "%-*s" % [@width-@internal_width,content], 
                 acolor, @attr
+            elsif content.is_a? Chunks::ChunkLine
+              @graphic.printstring  r+hh, c, " "* (@width-@internal_width), 
+                acolor, @attr
+              @graphic.wmove r+hh, c
+              # either we have to loop through and put in default color and attr
+              # or pass it to show_col
+              a = get_attrib @attrib
+              # FIXME this does not clear till the eol
+              @graphic.show_colored_chunks content, acolor, a
+            elsif content.is_a? Chunks::Chunk
+              raise "TODO chunk in textview"
             elsif content.is_a? Array
                 # several chunks in one row - NOTE Very experimental may change
               if content[0].is_a? Array
