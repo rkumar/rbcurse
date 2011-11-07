@@ -243,6 +243,7 @@ module RubyCurses
     def current_value
       @list[@current_index]
     end
+    # maybe we don't need this now.
     def row_length
       case @buffer
       when String
@@ -480,9 +481,10 @@ module RubyCurses
       if @formatted_text
         $log.debug "XXX:  INSIDE FORMATTED TEXT "
 
-        Chunks::color_parser @color_parser
+        #Chunks::color_parser @color_parser
+        cp = Chunks::ColorParser.new @color_parser
         l = []
-        @formatted_text.each { |e| l << Chunks::convert_to_chunk(e) }
+        @formatted_text.each { |e| l << cp.convert_to_chunk(e) }
         text(l)
         @formatted_text = nil
 
