@@ -1,6 +1,5 @@
 =begin
-  * Name: rwidget: base class and then popup and other derived widgets
-  * $Id$
+  * Name: rwidget: base class and then basic widgets like field, button and label
   * Description   
     Some simple light widgets for creating ncurses applications. No reliance on ncurses
     forms and fields.
@@ -10,6 +9,7 @@
   * Author: rkumar (arunachalesha)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
+  * Last update: 2011-11-08 - 16:55
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -30,6 +30,11 @@ require 'rbcurse/orderedhash'
 require 'rbcurse/rinputdataevent' # for FIELD 2010-09-11 12:31 
 require 'rbcurse/io'
 require 'rbcurse/common/keydefs'
+
+BOLD = FFI::NCurses::A_BOLD
+REVERSE = FFI::NCurses::A_REVERSE
+UNDERLINE = FFI::NCurses::A_UNDERLINE
+NORMAL = FFI::NCurses::A_NORMAL
 
 class Object
 # thanks to terminal-table for this method
@@ -258,6 +263,7 @@ module RubyCurses
       end
       #
       # convert a string to integer attribute
+      # FIXME: what if user wishes to OR two attribs, this will give error
       # @param [String] e.g. reverse bold normal underline
       #     if a Fixnum is passed, it is returned as is assuming to be 
       #     an attrib
@@ -272,6 +278,9 @@ module RubyCurses
             FFI::NCurses::A_UNDERLINE,
             FFI::NCurses::A_STANDOUT,    
             FFI::NCurses::A_DIM,    
+            FFI::NCurses::A_BOLD | FFI::NCurses::A_REVERSE,    
+            FFI::NCurses::A_BOLD | FFI::NCurses::A_UNDERLINE,    
+            FFI::NCurses::A_REVERSE | FFI::NCurses::A_UNDERLINE,    
             FFI::NCurses::A_BLINK
           ].include? str
           return str
@@ -281,20 +290,21 @@ module RubyCurses
         end
 
 
-        case str.to_s.downcase
-        when 'bold'
+        str = str.downcase.to_sym if str.is_a? String
+        case str #.to_s.downcase
+        when :bold
           att = FFI::NCurses::A_BOLD
-        when 'reverse'
+        when :reverse
           att = FFI::NCurses::A_REVERSE    
-        when 'normal'
+        when :normal
           att = FFI::NCurses::A_NORMAL
-        when 'underline'
+        when :underline
           att = FFI::NCurses::A_UNDERLINE
-        when 'standout'
+        when :standout
           att = FFI::NCurses::A_STANDOUT    
-        when 'dim'
+        when :dim
           att = FFI::NCurses::A_DIM    
-        when 'blink'
+        when :blink
           att = FFI::NCurses::A_BLINK    # unlikely to work
         else
           att = FFI::NCurses::A_NORMAL
