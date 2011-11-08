@@ -29,24 +29,7 @@ require 'rbcurse/colormap'
 require 'rbcurse/orderedhash'
 require 'rbcurse/rinputdataevent' # for FIELD 2010-09-11 12:31 
 require 'rbcurse/io'
-
-# some of these will get overriden by ncurses when we include
-KEY_TAB    = 9
-KEY_F1  = FFI::NCurses::KEY_F1
-KEY_F10  = FFI::NCurses::KEY_F10
-KEY_ENTER  = 10 # FFI::NCurses::KEY_ENTER gives 343
-KEY_BTAB  = 353 # nc gives same
-KEY_RETURN = 13  # Nc gives 343 for KEY_ENTER
-KEY_DELETE = 330
-KEY_BACKSPACE = KEY_BSPACE = 127 # Nc gives 263 for BACKSPACE
-KEY_CC     = 3   # C-c
-KEY_LEFT  = FFI::NCurses::KEY_LEFT
-KEY_RIGHT  = FFI::NCurses::KEY_RIGHT
-KEY_UP  = FFI::NCurses::KEY_UP
-KEY_DOWN  = FFI::NCurses::KEY_DOWN
-C_LEFT = 18168
-C_RIGHT = 18167
-S_F9 = 17949126
+require 'rbcurse/common/keydefs'
 
 class Object
 # thanks to terminal-table for this method
@@ -555,7 +538,7 @@ module RubyCurses
       end
     end # module config
     
-    # Adding widget shortcuts here for non-App cases 2011-10-12 
+    # Adding widget shortcuts here for non-App cases 2011-10-12 . MOVE these to widget shortcuts
     #
     # prints a status line at bottom where mode's statuses et can be reflected
     def status_line config={}, &block
