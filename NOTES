@@ -2066,3 +2066,49 @@ etc. It's still rough, does no checking for mistakes and I don't have a
 routine to wrap text ignoring the color stuff. That will be needed soon.
 
 * * * * * * * *
+
+Subject: bifurcating into core and others
+-----------------------------------------
+Date: 2011-11-08 18:30
+
+Perhaps it would be better to divide rbcurse into rbcurse-core and then
+other packages or gems.
+This way *core* can remain more or less frozen and bug fixes can be
+released quickly without waiting for other features to stabilize.
+
+Changes in other packages can be made without disturbing core. Core can
+be kept backward compatible. And it can remain light with just form,
+window, field, buttons, list and perhaps textview. 
+
+Other widgets can be put in other gems. The entire extras, UI patterns,
+experimental work. There could be a *rbcurse-experimental* which moves to
+either core or standard as and when it stabilizes.
+
+1. rbcurse-core - form, field, label, buttons, dialogs, basiclist, messagebox
+   viewer, menus? , combo - basically whatever is required to run test2 and
+   test1.rb. We must have a minimal number of programs to test for this.
+   Actually, test2 incorporates a lot!
+
+2. rbcurse-util
+   menus?, textarea?, tabbedpane, tree
+   tables, tabular, keylabel, progress, scrollbar, statusline,
+
+3. rbcurse-extras 
+   vimsplit, multi-containers, masterdetail, directorylist etc
+   statuswindow, rcommandwindow
+   link, menulink, container
+
+4. rbcurse-experimental
+   resultset, 
+   Pad, subwin,derwin from window class, scrollform, app, stack/flow
+   gmailfield
+
+5. rbcurse-demos
+   rfe, sqlc/m, dbdemo which can be installed and run from anywhere
+   appemail
+   This must be dependent on a specific version of core and util.
+
+6. rbcurse-db
+    database related work - resultsetview etc
+
+* * * * * * * *
