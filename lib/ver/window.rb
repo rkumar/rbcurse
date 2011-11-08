@@ -336,6 +336,7 @@ module VER
               return 27
             when 2 # basically a ALT-O, or alt-[ (79 or 91) this will be really slow since it waits for -1
               ch = 128 + @stack.last
+              $log.warn "XXX: WARN  #{ch} CLEARING stack #{@stack} "
               @stack.clear
               return ch
             else
@@ -385,9 +386,11 @@ module VER
               ch = FFI::NCurses::KEY_F4
               #when 27 # another alt-char following Alt-Sh-O
             else
+              ## iterm2 uses these for HOME END num keyboard keys
               @stack.clear
-              @stack << ch
-              return 128 + 79
+              #@stack << ch # earlier we pushed this but it could be of use
+              #return 128 + 79
+              return 128 + 79 + ch
 
             end
             @stack.clear
