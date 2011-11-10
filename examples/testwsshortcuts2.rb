@@ -31,7 +31,7 @@ class SetupMessagebox
       flow :margin_top => 1, :margin_left => 4, :item_width => 50   do
         stack :margin_top => 0, :margin_left => 3, :width => 50 , :color => :cyan, :bgcolor => :black do
           box do
-            field :text => "john", :attr => :reverse, :label => "%15s" % ["Name: "]
+            field :text => "steve", :attr => :reverse, :label => "%15s" % ["Name: "]
             field :label => "%15s" % ["Address: "], :width => 15, :attr => :reverse
             blank
             check :text => "Using version control", :value => true, :onvalue => "yes", :offvalue => "no" do |eve|
@@ -87,17 +87,18 @@ class SetupMessagebox
 
       #textview :text => formatted
         #textview do |t| t.formatted_text(text, :tmux) end
-        t = textview
-        #t.formatted_text(text, :tmux)
-        text = File.open("color.1","r").readlines
-        t.formatted_text(text, :ansi)
+        t = textview :title => 'tmux format'
+        t.formatted_text(text, :tmux)
+        t1 = textview :title => 'ansi formatted document'
+        text = File.open("color.2","r").readlines
+        t1.formatted_text(text, :ansi)
 
       flow do
-        box do
+        #box do
           button :text => "  Ok  " do  alert "Pressed okay"  end
           button :text => "Cancel" do  confirm "Quit?" ; throw :close;  end
           button :text => "Apply "
-        end
+        #end
       end
 
     end
