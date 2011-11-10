@@ -167,6 +167,28 @@ module RubyCurses
       # e.g. a single call of foo() may set a var, a repeated call of foo() may append to var
       $inside_multiplier_action = true
 
+      # This has been put here since the API is not yet stable, and i
+      # don't want to have to change in many places. 2011-11-10 
+      #
+      # Converts formatted text into chunkline objects.
+      #
+      # To print chunklines you may for each row:
+      #       window.wmove row+height, col
+      #       a = get_attrib @attrib
+      #       window.show_colored_chunks content, color, a
+      #
+      # @param [color_parser] object or symbol :tmux, :ansi
+      #       the color_parser implements parse_format, the symbols
+      #       relate to default parsers provided.
+      # @param [String] string containing formatted text
+      def parse_formatted_text(color_parser, formatted_text)
+        require 'rbcurse/common/chunk'
+        cp = Chunks::ColorParser.new color_parser
+        l = []
+        formatted_text.each { |e| l << cp.convert_to_chunk(e) }
+        return l
+      end
+
       ## 
       # wraps text given max length, puts newlines in it.
       # it does not take into account existing newlines
