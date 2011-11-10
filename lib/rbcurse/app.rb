@@ -1078,6 +1078,8 @@ module RubyCurses
       longest
     end    
     # returns longest item
+    # rows = list.max_by(&:length)
+    #
     def longest_in_list2 list  #:nodoc:
       longest = list.inject(list[0]) do |memo,word|
         memo.length >= word.length ? memo : word
