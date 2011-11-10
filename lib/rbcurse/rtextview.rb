@@ -237,7 +237,10 @@ module RubyCurses
     def current_value
       @list[@current_index]
     end
-    # maybe we don't need this now.
+
+    # determine length of row since we have chunks now.
+    # Since chunk implements length, so not required except for the old
+    # cases of demos that use an array.
     def row_length
       case @buffer
       when String
@@ -245,10 +248,16 @@ module RubyCurses
       when Chunks::ChunkLine
         return @buffer.length
       when Array
-        #@buffer.inject {|result, elem| result + elem[1].length}
-        result = 0
-        @buffer.each { |e| result += e[1].length }
-        return result
+        # this is for those old cases like rfe.rb which sent in an array
+        # (before we moved to chunks) 
+        # line is an array of arrays
+        if @buffer[0].is_a? Array
+          result = 0
+          @buffer.each {|e| result += e[1].length  }
+          return result
+        end
+        # line is one single chunk
+        return @buffer[1].length
       end
     end
     # textview
