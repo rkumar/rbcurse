@@ -1937,8 +1937,8 @@ module RubyCurses
     # FIXME this may not work since i have disabled -1, now i do not set row and col
     def position_label
       $log.debug "XXX: LABEL row #{@label.row}, #{@label.col} "
-      @label.row  @row if @label.row == -1
-      @label.col  @col-(@label.name.length+1) if @label.col == -1
+      @label.row  @row unless @label.row #if @label.row == -1
+      @label.col  @col-(@label.name.length+1) unless @label.col #if @label.col == -1
       $log.debug "   XXX: LABEL row #{@label.row}, #{@label.col} "
     end
 
@@ -2359,6 +2359,7 @@ module RubyCurses
     # XXX need to move wrapping etc up and done once. 
     def repaint
       return unless @repaint_required
+      raise "Label row or col nil #{@row} , #{@col}, #{@text} " if @row.nil? || @col.nil?
       r,c = rowcol
 
       @bgcolor ||= $def_bg_color
