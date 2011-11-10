@@ -71,7 +71,7 @@ if $0 == __FILE__
       $log.debug "START #{colors} colors test2.rb --------- #{@window} "
       @form = Form.new @window
       title = (" "*30) + "Demo of some Ruby Curses Widgets - rbcurse " + Rbcurse::VERSION
-      Label.new @form, {'text' => title, "row" => 0, "col" => 0, :color => 'green', :bgcolor => 'black'}
+      Label.new @form, {'text' => title, :row => 0, :col => 0, :color => 'green', :bgcolor => 'black'}
       r = 1; fc = 12;
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
