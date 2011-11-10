@@ -788,12 +788,12 @@ class RFe
     }
     @form.bind_key(FFI::NCurses::KEY_F1){
       #Io.view(["this is some help text","hello there"])
-      color0 = get_color($promptcolor, 'black','cyan')
+      color0 = get_color($promptcolor, 'black','green')
       color1 = get_color($reversecolor, 'green','black')
-      color2 = get_color($reversecolor, 'blue','black')
+      color2 = get_color($reversecolor, 'magenta','black')
       arr = []
       #arr << "  FILE BROWSER HELP  "
-      arr << [color0,"        FILE BROWSER HELP      ", FFI::NCurses::A_BOLD]
+      arr << [color0,"        FILE BROWSER HELP      ", FFI::NCurses::A_NORMAL]
       arr << "           "
       arr << [[color1," <tab>   ",nil],[color2, "- switch between windows", nil]]
       arr << [[color1," <enter> ",nil],[color2, "- open dir", nil]]
@@ -801,7 +801,7 @@ class RFe
       arr << [[color1," F4      ",nil],[color2, "- edit file content", nil]]
       arr << [[color1," <char>  ", nil],[color2, "first file starting with <char>",nil]]
       #arr << "         VIM MODE                              "
-      arr << [color0,"         VIM MODE  ", FFI::NCurses::A_BOLD]
+      arr << [color0,"         VIM MODE  ", FFI::NCurses::A_NORMAL]
       arr << [[color1," M",nil],[color2, "-v     - Vim like bindings for navigation (toggle)", nil]]
       arr << "   jk gg G up down motion, C-n C-p, Alt-0, Alt-9           "
       arr << [[color1,"   p or Space ",nil],[color2, "- use pager on current file", nil]]
