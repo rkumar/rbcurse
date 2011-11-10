@@ -1,13 +1,13 @@
 # ----------------------------------------------------------------------------- #
 #         File: textpad.rb
 #  Description: A class that displays text using a pad.
-#               The motivation for this is to put formatted text and not care about truncating and 
-#               stuff. Also, there will be only one write, not each time scrolling happens.
-#               I found textview code for repaint being more complex than required.
+#         The motivation for this is to put formatted text and not care about truncating and 
+#         stuff. Also, there will be only one write, not each time scrolling happens.
+#         I found textview code for repaint being more complex than required.
 #       Author: rkumar http://github.com/rkumar/rbcurse/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2011-11-09 - 23:56
+#  Last update: 2011-11-10 - 12:39
 #
 #  == CHANGES
 #  == TODO 
@@ -15,7 +15,11 @@
 #     x add mappings and process key in handle_keys and other widget things
 #     - user can put text or list
 #     - handle putting data again and overwriting existing
-#     - get scrolling like in vim (C-f e y b d)
+#     - formatted text
+#     - search and other features
+#     - can pad movement and other ops be abstracted into module for reuse
+#     / get scrolling like in vim (C-f e y b d)
+#     - alert issue of leaving a blank is poss due to using prefresh i/o copywin
 #
 # ----------------------------------------------------------------------------- #
 #
@@ -87,6 +91,8 @@ module RubyCurses
     def populate_pad
       @_populate_needed = false
       @renderer ||= DefaultRubyRenderer.new
+      @content_rows = @content.count
+      @content_cols = content_cols()
 
       # print border reduces on from width for some historical reason
       @ph = @content_rows
@@ -101,9 +107,14 @@ module RubyCurses
 
     end
 
+    # supply a custom renderer that implements +render()+
+    # @see render
     def renderer r
       @renderer = r
     end
+    #
+    # default method for rendering a line
+    #
     def render pad, lineno, text
       if @renderer
         @renderer.render @pad, lineno, text
@@ -111,28 +122,42 @@ module RubyCurses
         FFI::NCurses.mvwaddstr(@pad,ix, 0, @content[ix])
       end
     end
+
+    # supply a filename as source for textpad
+    # Reads up file into @content
+
     def filename(filename)
       @file = filename
       @content = File.open(filename,"r").readlines
-      @content_rows = @content.count
-      @content_cols = content_cols()
       @_populate_needed = true
-      #populate_pad
     end
+
+    # Supply an array of string to be displayed
+    # This will replace existing text
+
+    def text lines
+      @content = lines
+      @_populate_needed = true
+    end
+
     # write pad onto window
     private
     def padrefresh
       FFI::NCurses.prefresh(@pad,@prow,@pcol, @startrow,@startcol, @rows + @startrow,@cols+@startcol);
     end
-    # convenience method
+
+    # convenience method to return byte
     private
     def key x
       x.getbyte(0)
     end
+
+    # length of longest string in array
     def content_cols
       longest = @content.max_by(&:length)
       longest.length
     end
+
     public
     def repaint
       return unless @repaint_required
@@ -151,6 +176,10 @@ module RubyCurses
       @repaint_required = false
       @repaint_all = false
     end
+
+    #
+    # key mappings
+    #
     def map_keys
       @mapped_keys = true
       bind_key([?g,?g]){ goto_start } # mapping double keys like vim
@@ -173,29 +202,51 @@ module RubyCurses
       #bind_key(?r) { getstr("Enter a word: ") }
       bind_key(?m, :disp_menu)
     end
+
+    # goto first line of file
     def goto_start
       @oldindex = @current_index
       @current_index = 0
       @prow = 0
     end
+
+    # goto last line of file
     def goto_end
       @oldindex = @current_index
       @current_index = @content_rows-1
       @prow = @current_index - @scrollatrows
     end
+
+    # move down a line mimicking vim's j key
+    # @param [int] multiplier entered prior to invoking key
     def down num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @oldindex = @current_index if num > 10
       @current_index += num
-      if @current_index > @scrollatrows
-        @prow += 1
+      unless is_visible? @current_index
+        if @current_index > @scrollatrows
+          @prow += 1
+        end
       end
       $multiplier = 0
     end
+
+    # move up a line mimicking vim's k key
+    # @param [int] multiplier entered prior to invoking key
     def up num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @oldindex = @current_index if num > 10
       @current_index -= num
+      unless is_visible? @current_index
+        if @prow > @current_index
+          $status_message.value = "1 #{@prow} > #{@current_index} "
+          @prow -= 1
+        else
+        end
+      end
       $multiplier = 0
     end
+
+    # scrolls window down mimicking vim C-e
+    # @param [int] multiplier entered prior to invoking key
     def scroll_window_down num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @prow += num
         if @prow > @current_index
@@ -204,16 +255,27 @@ module RubyCurses
       #check_prow
       $multiplier = 0
     end
+
+    # scrolls window up mimicking vim C-y
+    # @param [int] multiplier entered prior to invoking key
     def scroll_window_up num=(($multiplier.nil? or $multiplier == 0) ? 1 : $multiplier)
       @prow -= num
-      #check_prow
+      unless is_visible? @current_index
+        # one more check may be needed here TODO
+        @current_index -= num
+      end
       $multiplier = 0
     end
+
+    # scrolls lines a window full at a time, on pressing ENTER or C-d or pagedown
     def scroll_forward
       @oldindex = @current_index
       @current_index += @scrollatrows
       @prow = @current_index - @scrollatrows
     end
+
+    # scrolls lines backward a window full at a time, on pressing pageup 
+    # C-u may not work since it is trapped by form earlier. Need to fix
     def scroll_backward
       @oldindex = @current_index
       @current_index -= @scrollatrows
@@ -283,6 +345,11 @@ module RubyCurses
       end
       return 0
     end # while loop
+
+    # destroy the pad, this needs to be called from somewhere, like when the app
+    # closes or the current window closes , or else we could have a seg fault
+    # or some ugliness on the screen below this one (if nested).
+
     def destroy
       FFI::NCurses.delwin(@pad) if @pad # when do i do this ? FIXME
       @pad = nil
@@ -293,8 +360,11 @@ module RubyCurses
     end
 
     private
-    # this always exoects a change in current_index and changes prow
-    # accordingly. Sometimes if scrolling, i only change prow.
+    
+    # check that current_index and prow are within correct ranges
+    # sets row (and someday col too)
+    # sets repaint_required
+
     def bounds_check
       r,c = rowcol
       @current_index = 0 if @current_index < 0
@@ -303,11 +373,8 @@ module RubyCurses
       unless is_visible? @current_index
         if @prow > @current_index
           $status_message.value = "1 #{@prow} > #{@current_index} "
-          #@current_index += 1
           @prow -= 1
         else
-          $status_message.value = "3 else #{@prow}  #{@current_index} "
-          #@prow -= 1
         end
       end
       #end
@@ -323,6 +390,9 @@ module RubyCurses
       end
     end
   end
+
+  # check that prow and pcol are within bounds
+
   def check_prow
     @prow = 0 if @prow < 0
     @pcol = 0 if @pcol < 0
