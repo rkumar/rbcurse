@@ -579,7 +579,7 @@ module VER
     def printstring_or_chunks(r,c,content, color, att = Ncurses::A_NORMAL)
       if content.is_a? String
         printstring(r,c,content, color, att)
-      elsif content.is_a? ChunkLine
+      elsif content.is_a? Chunks::ChunkLine
         $log.debug "XXX: using chunkline"
         wmove r, c
         a = get_attrib att
@@ -676,7 +676,7 @@ module VER
     end
     def get_default_color_parser
       require 'rbcurse/common/colorparser'
-      @color_parser || ColorParser.new
+      @color_parser || DefaultColorParser.new
     end
     # supply with a color parser, if you supplied formatted text
     public
@@ -704,7 +704,7 @@ module VER
       color_pair = colorp
       attrib = att
       #res = []
-      res = ChunkLine.new
+      res = Chunks::ChunkLine.new
       color = :white
       bgcolor = :black
       # stack the values, so when user issues "/end" we can pop earlier ones
@@ -751,7 +751,7 @@ module VER
           $log.debug "XXX:  CHUNK     using on #{p}  : #{color_pair} , #{attrib} "
 
           #chunk =  [color_pair, p, attrib] 
-          chunk = Chunk.new color_pair, p, attrib
+          chunk = Chunks::Chunk.new color_pair, p, attrib
           if block_given?
             yield chunk
           else
@@ -1009,4 +1009,5 @@ module VER
         def_delegators :@bottomline, :ask, :say, :agree, :choose
       end
     end
+end
 end
