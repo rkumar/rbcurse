@@ -84,6 +84,8 @@ module RubyCurses
           v_form.repaint
         end
       rescue => err
+          $log.error " VIEWER ERROR #{err} "
+          $log.debug(err.backtrace.join("\n"))
         alert err.to_s
       ensure
         v_window.destroy if !v_window.nil?
