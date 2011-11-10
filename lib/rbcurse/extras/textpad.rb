@@ -90,7 +90,7 @@ module RubyCurses
     private
     def populate_pad
       @_populate_needed = false
-      @renderer ||= DefaultRubyRenderer.new
+      @renderer ||= DefaultRubyRenderer.new if ".rb" == @filetype
       @content_rows = @content.count
       @content_cols = content_cols()
 
@@ -107,6 +107,7 @@ module RubyCurses
 
     end
 
+    public
     # supply a custom renderer that implements +render()+
     # @see render
     def renderer r
@@ -116,10 +117,19 @@ module RubyCurses
     # default method for rendering a line
     #
     def render pad, lineno, text
+      if text.is_a? Chunks::ChunkLine
+        FFI::NCurses.wmove @pad, lineno, 0
+        # either we have to loop through and put in default color and attr
+        # or pass it to show_col
+        a = get_attrib @attrib
+        # FIXME this does not clear till the eol
+        show_colored_chunks text, nil, a
+        return
+      end
       if @renderer
         @renderer.render @pad, lineno, text
       else
-        FFI::NCurses.mvwaddstr(@pad,ix, 0, @content[ix])
+        FFI::NCurses.mvwaddstr(@pad,lineno, 0, @content[lineno])
       end
     end
 
@@ -128,6 +138,7 @@ module RubyCurses
 
     def filename(filename)
       @file = filename
+      @filetype = File.extname filename
       @content = File.open(filename,"r").readlines
       @_populate_needed = true
     end
@@ -138,6 +149,50 @@ module RubyCurses
     def text lines
       @content = lines
       @_populate_needed = true
+    end
+
+    ## ---- the next 2 methods deal with printing chunks
+    # we should put it int a common module and include it
+    # in Window and Pad stuff and perhaps include it conditionally.
+
+    def print(string, width = width)
+      #return unless visible?
+      w = width == 0? Ncurses.COLS : width
+      FFI::NCurses.waddnstr(@pad,string.to_s, w) # changed 2011 dts  
+    end
+
+    def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
+      #return unless visible?
+      chunks.each do |chunk| #|color, chunk, attrib|
+        case chunk
+        when Chunks::Chunk
+          color = chunk.color
+          attrib = chunk.attrib
+          text = chunk.text
+        when Array
+          # for earlier demos that used an array
+          color = chunk[0]
+          attrib = chunk[2]
+          text = chunk[1]
+        end
+
+        color ||= defcolor
+        attrib ||= defattr || NORMAL
+
+        #cc, bg = ColorMap.get_colors_for_pair color
+        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} "
+        FFI::NCurses.wcolor_set(@pad, color,nil) if color
+        FFI::NCurses.wattron(@pad, attrib) if attrib
+        print(text)
+        FFI::NCurses.wattroff(@pad, attrib) if attrib
+      end
+    end
+
+    def formatted_text text, fmt
+      require 'rbcurse/common/chunk'
+      @formatted_text = text
+      @color_parser = fmt
+      #remove_all
     end
 
     # write pad onto window
@@ -161,6 +216,16 @@ module RubyCurses
     public
     def repaint
       return unless @repaint_required
+      if @formatted_text
+        $log.debug "XXX:  INSIDE FORMATTED TEXT "
+
+        l = RubyCurses::Utils.parse_formatted_text(@color_parser,
+                                               @formatted_text)
+
+        text(l)
+        @formatted_text = nil
+      end
+
       populate_pad if @_populate_needed
       #HERE we need to populate once so user can pass a renderer
       @window ||= @graphic
@@ -438,7 +503,14 @@ end
 if __FILE__ == $PROGRAM_NAME
   require 'rbcurse/app'
   App.new do
+    if false
+    p = RubyCurses::TextPad.new @form, :height => 20, :width => 60, :row => 4, :col => 4 , :title => " textpad "
+    fn = "../../../examples/color.2"
+    text = File.open(fn,"r").readlines
+    p.formatted_text(text, :ansi)
+    else
     p = RubyCurses::TextPad.new @form, :filename => "textpad.rb", :height => 20, :width => 60, :row => 4, :col => 4 , :title => " textpad "
+    end
     #throw :close
     status_line
   end
