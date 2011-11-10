@@ -480,14 +480,18 @@ module RubyCurses
         my_win = @target_window
       end
       @graphic = my_win unless @graphic
-      #@graphic.color_parser(@color_parser)
       if @formatted_text
         $log.debug "XXX:  INSIDE FORMATTED TEXT "
 
-        #Chunks::color_parser @color_parser
-        cp = Chunks::ColorParser.new @color_parser
-        l = []
-        @formatted_text.each { |e| l << cp.convert_to_chunk(e) }
+        # I don't want to do this in 20 places and then have to change
+        # it and retest. Let me push it to util.
+        l = RubyCurses::Utils.parse_formatted_text(@color_parser,
+                                               @formatted_text)
+
+        #cp = Chunks::ColorParser.new @color_parser
+        #l = []
+        #@formatted_text.each { |e| l << cp.convert_to_chunk(e) }
+
         text(l)
         @formatted_text = nil
 
