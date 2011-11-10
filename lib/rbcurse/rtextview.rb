@@ -4,10 +4,6 @@
   * Author: rkumar (arunachalesha)
   * file created 2009-01-08 15:23  
   * major change: 2010-02-10 19:43 simplifying the buffer stuff.
-  * FIXME : since currently paint is directly doing copywin, there are no checks
-    to prevent crashing or -1 when panning. We need to integrate it back to a call to Pad.
-  * unnecessary repainting when moving cursor, evn if no change in coords and data
-  * on reentering cursor does not go to where it last was (test2.rb) - sure it used to.
 TODO 
    * border, and footer could be objects (classes) at some future stage.
   --------
@@ -16,12 +12,10 @@ TODO
 
 =end
 require 'rubygems'
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'
 
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   extend self
