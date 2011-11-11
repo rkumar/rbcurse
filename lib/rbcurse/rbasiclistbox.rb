@@ -79,7 +79,7 @@ module RubyCurses
       @sanitization_required = true # cleanup control and non print chars
       @truncation_required = true
       @suppress_borders = false #to_print_borders = 1
-      @row_selected_symbol = ''
+      #@row_selected_symbol = '' # thi sprevents default value from being set
       @row = 0
       @col = 0
       # data of listbox this is not an array, its a pointer to the  listdatamodel
@@ -97,10 +97,6 @@ module RubyCurses
       @win = @graphic    # 2010-01-04 12:36 BUFFERED  replace form.window with graphic
       @win_left = 0
       @win_top = 0
-
-      # next 2 lines carry a redundancy
-      #select_default_values   
-      # when the combo box has a certain row in focus, the popup should have the same row in focus
 
       init_vars
       @internal_width = 2
@@ -194,6 +190,7 @@ module RubyCurses
       @widget_scrolled = true  # 2011-10-15 
       @list
     end
+    def list_data_model; @list; end
     # conv method to insert data, trying to keep names same across along with Tabular, TextView,
     # TextArea and listbox. Don;t use this till i am certain.
     def data=(val)
@@ -243,7 +240,6 @@ module RubyCurses
     ### START FOR scrollable ###
     def get_content
       @list 
-      #@list_variable && @list_variable.value || @list 
     end
     def get_window #:nodoc:
       @graphic 
@@ -411,7 +407,7 @@ module RubyCurses
       end
     end
     def create_default_cell_renderer
-      return ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-2-@left_margin}
+      return ListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-@internal_width-@left_margin}
       #return BasicListCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-2-@left_margin}
     end
     ##
@@ -442,7 +438,7 @@ module RubyCurses
       @win_top = my_win.top
       @left_margin ||= @row_selected_symbol.length
       # we are making sure display len does not exceed width XXX hope this does not wreak havoc elsewhere
-      _dl = [@display_length || 100, @width-2].min # 2011-09-17 RK overwriting when we move grabbar in vimsplit
+      _dl = [@display_length || 100, @width-@internal_width-@left_margin].min # 2011-09-17 RK overwriting when we move grabbar in vimsplit
 
       $log.debug "basiclistbox repaint  #{@name} graphic #{@graphic}"
       #$log.debug "XXX repaint to_print #{@to_print_borders} "
@@ -488,7 +484,7 @@ module RubyCurses
             renderer.repaint @graphic, r+hh, c+@left_margin, crow, content, focus_type, selected
           else
             # clear rows
-            @graphic.printstring r+hh, c, " " * (@width-2), acolor,@attr
+            @graphic.printstring r+hh, c, " " * (@width-@internal_width), acolor,@attr
           end
         end
       end # rc == 0
@@ -509,7 +505,7 @@ module RubyCurses
       acolor ||= get_color $datacolor, @selected_color, @selected_bgcolor
       att = FFI::NCurses::A_REVERSE
       att = get_attrib(@selected_attrib) if @selected_attrib
-      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width-@left_margin, att , acolor , nil)
     end
     def unhighlight_row index,  r=nil, c=nil, acolor=nil
       return unless index # no selection
@@ -521,7 +517,7 @@ module RubyCurses
       acolor ||= get_color $datacolor
       att = FFI::NCurses::A_NORMAL
       att = get_attrib(@normal_attrib) if @normal_attrib
-      @graphic.mvchgat(y=r, x=c, @width-@internal_width, att , acolor , nil)
+      @graphic.mvchgat(y=r, x=c, @width-@internal_width-@left_margin, att , acolor , nil)
     end
     # the idea here is to allow users who subclass Listbox to easily override parts of the cumbersome repaint
     # method. This assumes your List has some data, but you print a lot more. Now you don't need to
@@ -551,7 +547,8 @@ module RubyCurses
     # returns only the visible portion of string taking into account display length
     # and horizontal scrolling. MODIFIES STRING
     def truncate content # :nodoc:
-      maxlen = @maxlen || @width-2
+      maxlen = @maxlen || @width-@internal_width
+      maxlen = @width-@internal_width if maxlen > @width-@internal_width
       if maxlen == 0 # (otherwise it becoems -1 below)
         content.replace ""
         return
