@@ -43,23 +43,23 @@ module RubyCurses
       @editable = false
       @focusable = true
       @config = config
-      @rows = FFI::NCurses.LINES-1
-      @cols = FFI::NCurses.COLS-1
+      #@rows = FFI::NCurses.LINES-1
+      #@cols = FFI::NCurses.COLS-1
       @prow = @pcol = 0
       @startrow = 0
       @startcol = 0
       @list = []
       super
 
-      h = config.fetch(:height, 0)
-      w = config.fetch(:width, 0)
-      t = config.fetch(:row, 0)
-      l = config.fetch(:col, 0)
-      @rows = h unless h == 0
-      @cols = w unless w == 0
-      @startrow = t unless t == 0
-      @startcol = l unless l == 0
-      @suppress_border = config[:suppress_border]
+      # FIXME 0 as height craps out. need to make it LINES
+
+      @height = @height.ifzero(FFI::NCurses.LINES)
+      @width = @width.ifzero(FFI::NCurses.COLS)
+      @rows = @height
+      @cols = @width
+      @startrow = @row
+      @startcol = @col
+      #@suppress_border = config[:suppress_border]
       @row_offset = @col_offset = 1
       unless @suppress_border
         @startrow += 1
@@ -67,9 +67,9 @@ module RubyCurses
         @rows -=3  # 3 is since print_border_only reduces one from width, to check whether this is correct
         @cols -=3
       end
-      @row_offset = @col_offset = 0 if @suppress_borders == true
-      @top = t
-      @left = l
+      @row_offset = @col_offset = 0 if @suppress_borders
+      @top = @row
+      @left = @col
       init_vars
     end
     def init_vars
@@ -84,19 +84,18 @@ module RubyCurses
     private
     def create_pad
       destroy if @pad
-      @pad = FFI::NCurses.newpad(@ph, @pw)
+      @pad = FFI::NCurses.newpad(@content_rows, @content_cols)
     end
 
     private
+    # create and populate pad
     def populate_pad
       @_populate_needed = false
+      # how can we make this more sensible ? FIXME
       @renderer ||= DefaultRubyRenderer.new if ".rb" == @filetype
       @content_rows = @content.count
       @content_cols = content_cols()
 
-      # print border reduces on from width for some historical reason
-      @ph = @content_rows
-      @pw = @content_cols # get max col
       create_pad
 
       Ncurses::Panel.update_panels
@@ -119,10 +118,8 @@ module RubyCurses
     def render pad, lineno, text
       if text.is_a? Chunks::ChunkLine
         FFI::NCurses.wmove @pad, lineno, 0
-        # either we have to loop through and put in default color and attr
-        # or pass it to show_col
         a = get_attrib @attrib
-        # FIXME this does not clear till the eol
+      
         show_colored_chunks text, nil, a
         return
       end
@@ -503,15 +500,14 @@ end
 if __FILE__ == $PROGRAM_NAME
   require 'rbcurse/app'
   App.new do
-    if false
-    p = RubyCurses::TextPad.new @form, :height => 20, :width => 60, :row => 4, :col => 4 , :title => " textpad "
+    w = 50
+    w2 = FFI::NCurses.COLS-w-1
+    p = RubyCurses::TextPad.new @form, :height => FFI::NCurses.LINES, :width => w, :row => 0, :col => 0 , :title => " ansi "
     fn = "../../../examples/color.2"
     text = File.open(fn,"r").readlines
     p.formatted_text(text, :ansi)
-    else
-    p = RubyCurses::TextPad.new @form, :filename => "textpad.rb", :height => 20, :width => 60, :row => 4, :col => 4 , :title => " textpad "
-    end
+    RubyCurses::TextPad.new @form, :filename => "textpad.rb", :height => FFI::NCurses.LINES, :width => w2, :row => 0, :col => w+1 , :title => " ruby "
     #throw :close
-    status_line
+    #status_line
   end
 end
