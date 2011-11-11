@@ -1,38 +1,31 @@
-=begin
-  * Name: combo box
-  * Description: 
-  * Author: rkumar
-  
-  --------
-  * Date:  2008-12-16 22:03 
-  * License:
-    Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-
-   TODO:
-   Simplify completely. we don't need to use popup list, use something simpler do
-   we can control keys.
-   Keys: ignore down arrow in field. Use space to popup and space to select from popup.
-         Or keep that as default.
-   That v character does not position correctly if label used.
-=end
+# ----------------------------------------------------------------------------- #
+#         File: rcombo.rb
+#  Description: Non-editable combo box.
+#               Make it dead-simple to use. 
+#               This is a simpler version of the original ComboBox which allowed
+#               editing and used rlistbox. This simpler class is meant for the rbcurse
+#               core package and will only depend on a core class if at all.
+#       Author: rkumar http://github.com/rkumar/rbcurse/
+#         Date: 2011-11-11 - 21:42
+#      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
+#  Last update: use ,,L
+# ----------------------------------------------------------------------------- #
+#
 require 'rbcurse'
-require 'rbcurse/rlistbox'
 
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   META_KEY = 128
   extend self
 
-  # TODO : 
-  # i no longer use values, i now use "list" or better "list_data_model"
-  # try to make it so values gets converted to list.
-  # NOTE: 2010-10-01 13:25 spacebar and enter will popup in addition to Alt-Down
+  # the quick approach would be to use field, and just add a popup.
+  # Or since we are not editing, we could use a Label and a popup
+  # Or just display a label and a popup without using anything else.
+  #
+
   class ComboBox < Field
     include RubyCurses::EventHandler
     dsl_accessor :list_config
-    dsl_accessor :insert_policy # NO_INSERT, INSERT_AT_TOP, INSERT_AT_BOTTOM, INSERT_AT_CURRENT
-    # INSERT_AFTER_CURRENT, INSERT_BEFORE_CURRENT,INSERT_ALPHABETICALLY
 
     attr_accessor :current_index
     # the symbol you want to use for combos
@@ -42,8 +35,9 @@ module RubyCurses
 
     def initialize form, config={}, &block
       @arrow_key_policy = :ignore
+      @editable         = false
+      @current_index    = 0
       super
-      @current_index ||= 0
       # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
       set_buffer @list[@current_index].dup if @buffer.nil? or @buffer.empty?
       init_vars
@@ -68,13 +62,8 @@ module RubyCurses
     # convert given list to datamodel
     def list alist=nil
       return @list if alist.nil?
-      @list = RubyCurses::ListDataModel.new(alist)
-    end
-    ##
-    # set given datamodel
-    def list_data_model ldm
-      raise "Expecting list_data_model" unless ldm.is_a? RubyCurses::ListDataModel
-      @list = ldm
+      #@list = RubyCurses::ListDataModel.new(alist)
+      @list = alist
     end
     ##
     # combo edit box key handling
@@ -109,14 +98,14 @@ module RubyCurses
         super
       end
     end
-    def previous_row
+    def DEPprevious_row
       @current_index -= 1 if @current_index > 0
       set_buffer @list[@current_index].dup
       set_modified(true)  ## ??? not required
       fire_handler :ENTER_ROW, self
       @list.on_enter_row self
     end
-    def next_row
+    def DEPnext_row
       @current_index += 1 if @current_index < @list.length()-1
       set_buffer @list[@current_index].dup
       set_modified(true)  ## ??? not required
@@ -136,6 +125,17 @@ module RubyCurses
     # added dup in PRESS since editing edit field mods this
     # on pressing ENTER, value set back and current_index updated
     def popup
+      @list_config[:row] ||= @row
+      @list_config[:col] ||= @col
+      # this does not allow us to bind to events in the list
+      index = popuplist @list, @list_config
+      if index
+        set_buffer @list[index].dup
+        set_modified(true) if @current_index != index
+        @current_index = index
+      end
+    end
+    def OLDpopup
       listconfig = (@list_config && @list_config.dup) || {}
       dm = @list
       # current item in edit box will be focussed when list pops up
@@ -218,27 +218,6 @@ module RubyCurses
     # no effect on the list, and wont trigger events.
     # Do not override.
     def on_leave
-      if !@list.include? @buffer and !@buffer.strip.empty?
-        _insert_policy = @insert_policy || :INSERT_AT_BOTTOM
-        case _insert_policy
-        when :INSERT_AT_BOTTOM, :INSERT_AT_END
-          @list.append  @buffer
-        when :INSERT_AT_TOP
-          @list.insert(0, @buffer)
-        when :INSERT_AFTER_CURRENT
-          @current_index += 1
-          @list.insert(@current_index, @buffer)
-
-        when :INSERT_BEFORE_CURRENT
-          #_index = @current_index-1 if @current_index>0
-          _index = @current_index
-          @list.insert(_index, @buffer)
-        when :INSERT_AT_CURRENT
-          @list[@current_index]=@buffer
-        when :NO_INSERT
-          ; # take a break
-        end
-      end
       fire_handler :LEAVE, self
     end
 
