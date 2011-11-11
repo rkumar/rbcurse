@@ -290,6 +290,7 @@ module RubyCurses
       #     if a Fixnum is passed, it is returned as is assuming to be 
       #     an attrib
       def get_attrib str
+        return Ncurses::A_NORMAL unless att
         # next line allows us to do a one time conversion and keep the value
         #  in the same variable
         if str.is_a? Fixnum
@@ -323,7 +324,11 @@ module RubyCurses
         when :underline
           att = FFI::NCurses::A_UNDERLINE
         when :standout
-          att = FFI::NCurses::A_STANDOUT    
+          att = FFI::NCurses::A_STANDOUT
+        when :bold_reverse
+          att = FFI::NCurses::A_BOLD | FFI::NCurses::A_REVERSE
+        when :bold_underline
+          att = FFI::NCurses::A_BOLD | FFI::NCurses::A_UNDERLINE
         when :dim
           att = FFI::NCurses::A_DIM    
         when :blink
