@@ -685,22 +685,26 @@ module VER
     def prv_printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
       #$log.debug " #{@name} inside window printstring r #{r} c #{c} #{string} "
-      att = Ncurses::A_NORMAL if att.nil? 
-      att = att.downcase.to_sym if att.is_a? String
-      case att
-      when :normal
+      if att.nil? 
         att = Ncurses::A_NORMAL
-      when :underline
-        att = Ncurses::A_UNDERLINE
-      when :bold
-        att = Ncurses::A_BOLD
-      when :reverse
-        att = Ncurses::A_REVERSE    
-      when :dim
-        att = Ncurses::A_DIM    
-      when :blink
-        att = Ncurses::A_BLINK    # unlikely to work
+      else
+        att = get_attrib att
       end
+        #att = att.downcase.to_sym if att.is_a? String
+      #case att
+      #when :normal
+        #att = Ncurses::A_NORMAL
+      #when :underline
+        #att = Ncurses::A_UNDERLINE
+      #when :bold
+        #att = Ncurses::A_BOLD
+      #when :reverse
+        #att = Ncurses::A_REVERSE    
+      #when :dim
+        #att = Ncurses::A_DIM    
+      #when :blink
+        #att = Ncurses::A_BLINK    # unlikely to work
+      #end
 
       wattron(Ncurses.COLOR_PAIR(color) | att)
       mvwprintw(r, c, "%s", :string, string);
@@ -794,19 +798,10 @@ module VER
     #+ to print border over what's been done. 
     # XXX this reduces 1 from width but not height !!! FIXME 
     def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
-      att ||= Ncurses::A_NORMAL
-      att = att.downcase.to_sym if att.is_a? String
-      case att
-      when :normal
+      if att.nil? 
         att = Ncurses::A_NORMAL
-      when :underline
-        att = Ncurses::A_UNDERLINE
-      when :bold
-        att = Ncurses::A_BOLD
-      when :blink
-        att = Ncurses::A_BLINK    # unlikely to work
-      when :reverse
-        att = Ncurses::A_REVERSE    
+      else
+        att = get_attrib att
       end
       wattron(Ncurses.COLOR_PAIR(color) | att)
       mvwaddch  row, col, Ncurses::ACS_ULCORNER
