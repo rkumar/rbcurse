@@ -693,6 +693,7 @@ module RubyCurses
     ### START FOR scrollable ###
     def get_content
       #@list 2008-12-01 23:13 
+      # NOTE: we never stored the listvariable, so its redundant, we used its value to set list
       @list_variable && @list_variable.value || @list 
     end
     def get_window
