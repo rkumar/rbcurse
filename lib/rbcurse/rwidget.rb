@@ -290,7 +290,7 @@ module RubyCurses
       #     if a Fixnum is passed, it is returned as is assuming to be 
       #     an attrib
       def get_attrib str
-        return Ncurses::A_NORMAL unless att
+        return FFI::NCurses::A_NORMAL unless str
         # next line allows us to do a one time conversion and keep the value
         #  in the same variable
         if str.is_a? Fixnum
@@ -313,6 +313,7 @@ module RubyCurses
         end
 
 
+        att = nil
         str = str.downcase.to_sym if str.is_a? String
         case str #.to_s.downcase
         when :bold
