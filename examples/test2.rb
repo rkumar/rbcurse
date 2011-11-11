@@ -14,11 +14,13 @@ require 'rbcurse/rtextarea'
 require 'rbcurse/rtextview'
 require 'rbcurse/rmenu'
 require 'rbcurse/rcombo'
+require 'rbcurse/rcomboedit'
 require 'rbcurse/listcellrenderer'
 require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
 require 'rbcurse/rlistbox'
+require 'rbcurse/rbasiclistbox'
 require 'rbcurse/rmessagebox'
 require 'rbcurse/rtree'
 require './appmethods.rb'
@@ -98,26 +100,22 @@ if $0 == __FILE__
         r += 1
         mylist = ["Release gem","Bump version","Fix bugs","Make enhancements", "Brag on rubyforum"]
         0.upto(100) { |v| mylist << "#{v} scrollable data" }
-        $listdata = Variable.new mylist
-        listb = Listbox.new @form do
+        listb = BasicListbox.new @form do
           name   "mylist" 
           row  r 
           col  1 
           width 40
           height 11
-#         list mylist
-          list_variable $listdata
+          list mylist
           #selection_mode :SINGLE
           show_selector true
-          row_selected_symbol "[X] "
-          row_unselected_symbol "[ ] "
-          title "C-Space to select"
-          title_attrib 'reverse'
-          cell_editing_allowed true
+          #row_selected_symbol "*"
+          #row_unselected_symbol " "
+          selected_bgcolor :white
+          selected_color :blue
+          title "Todo List"
         end
         Scrollbar.new @form, :parent => listb # 2011-10-1  added
-        #listb.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
-        #$listdata.value.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net"
         listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi clojure"
         col2 = 42
         texta = TextArea.new @form do
@@ -212,7 +210,7 @@ if $0 == __FILE__
         editable false
         list %w[left right center]
         set_label Label.new @form, {'text' => "Align", 'color'=>'cyan','col'=>1, "mnemonic"=>"I"}
-        list_config 'color' => 'yellow', 'bgcolor'=>'red', 'height' => 4
+        list_config :color => :yellow, :bgcolor=>:blue
       end
 
       list = ListDataModel.new( %w[white yellow cyan magenta red blue black])
@@ -220,7 +218,7 @@ if $0 == __FILE__
       list.bind(:ENTER_ROW) { |obj| $message.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$message.value} , #{obj}"; @form.widgets.each { |e| next unless e.is_a? Widget; e.color = obj.selected_item }; @mb.color = obj.selected_item }
 
       row += 1
-      combo1 = ComboBox.new @form do
+      combo1 = ComboBoxEdit.new @form do
         name "combo1"
         row row
         col fc
