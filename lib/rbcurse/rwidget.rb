@@ -618,11 +618,12 @@ module RubyCurses
     dsl_property :highlight_foreground, :highlight_background  # color init_pair
     dsl_property :disabled_foreground, :disabled_background  # color init_pair
 
-    # FIXME is enabled used?
+    # FIXME is enabled used? is menu using it
     dsl_accessor :focusable, :enabled # boolean
     dsl_property :row, :col            # location of object
     dsl_property :color, :bgcolor      # normal foreground and background
-    dsl_property :color_pair           # instead of colors give just color_pair
+    # moved to a method which calculates color 2011-11-12 
+    #dsl_property :color_pair           # instead of colors give just color_pair
     dsl_property :attr                 # attribute bold, normal, reverse
     dsl_accessor :name                 # name to refr to or recall object by_name
     attr_accessor :id #, :zorder
@@ -927,7 +928,6 @@ module RubyCurses
          if oldvalue != newvalue
            @property_changed = true
            fire_property_change(:height, oldvalue, newvalue)
-           $log.debug " widget #{@name} setting repaint_all to true"
            repaint_all true
          end
        end
@@ -1015,6 +1015,33 @@ module RubyCurses
      def event_list
        return @@events if defined? @@events
        nil
+     end
+     # 2011-11-12 trying to make color setting a bit sane
+     # You may set as a color_pair using get_color which gives a fixnum
+     # or you may give 2 color symbols so i can update color, bgcolor and colorpair in one shot
+     # if one of them is nil, i just use the existing value
+     def color_pair(*val)
+       if val.empty?
+         return @color_pair
+       end
+
+       oldvalue = @color_pair
+       case val.size
+       when 1
+         raise ArgumentError, "Expecting fixnum for color_pair." unless val[0].is_a? Fixnum
+         @color_pair = val[0]
+         @color, @bgcolor = ColorMap.get_colors_for_pair @color_pair
+       when 2
+         @color = val.first if val.first
+         @bgcolor = val.last if val.last
+         @color_pair = get_color $datacolor, @color, @bgcolor
+       end
+       if oldvalue != @color_pair
+         fire_property_change(:color_pair, oldvalue, @color_pair)
+         @property_changed = true
+         repaint_all true
+       end
+       self
      end
      ##
     ## ADD HERE WIDGET
@@ -1821,10 +1848,10 @@ module RubyCurses
     ##
     # define a datatype, currently only influences chars allowed
     # integer and float. what about allowing a minus sign? 
-    #  2010-09-10 20:59 changed string to symbol
     def type dtype
-      return if !@chars_allowed.nil?
-      case dtype.to_s.downcase.to_sym # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
+      return if @chars_allowed # disallow changing
+      dtype = dtype.to_s.downcase.to_sym if dtype.is_a? String
+      case dtype # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
       when :integer
         @chars_allowed = /\d/
       when :numeric, :float
@@ -1834,7 +1861,7 @@ module RubyCurses
       when :alnum
         @chars_allowed = /[a-zA-Z0-9]/ 
       else
-        raise "type: invalid datatype specified. Use :integer, :numeric, :float, :alpha, :alnum "
+        raise ArgumentError, "Field type: invalid datatype specified. Use :integer, :numeric, :float, :alpha, :alnum "
       end
     end
 
@@ -1967,6 +1994,7 @@ module RubyCurses
       $log.debug "XXX: LABEL row #{@label.row}, #{@label.col} "
       @label.row  @row unless @label.row #if @label.row == -1
       @label.col  @col-(@label.name.length+1) unless @label.col #if @label.col == -1
+      @label.label_for(self) # this line got deleted when we redid stuff !
       $log.debug "   XXX: LABEL row #{@label.row}, #{@label.col} "
     end
 
@@ -2321,9 +2349,12 @@ module RubyCurses
     end
   end
   ##
-  # the preferred way of printing text on screen, esp if you want to modify it at run time.
+  # The preferred way of printing text on screen, esp if you want to modify it at run time.
   # Use display_length to ensure no spillage.
   # This can use text or text_variable for setting and getting data (inh from Widget).
+  # 2011-11-12 making it simpler, and single line only. The original multiline label
+  #    has moved to extras/multilinelabel.rb
+  #
   class Label < Widget
     dsl_accessor :mnemonic       # keyboard focus is passed to buddy based on this key (ALT mask)
 
@@ -2342,7 +2373,7 @@ module RubyCurses
       #@col = config.fetch("col",-1) 
       #@bgcolor = config.fetch("bgcolor", $def_bg_color)
       #@color = config.fetch("color", $def_fg_color)
-      @text = config.fetch("text", "NOTFOUND")
+      @text = config.fetch(:text, "NOTFOUND")
       @editable = false
       @focusable = false
       super
@@ -2370,11 +2401,11 @@ module RubyCurses
     # for a button, fire it when label invoked without changing focus
     # for other widgets, attempt to change focus to that field
     def bind_hotkey
-      if !@mnemonic.nil?
+      if @mnemonic
         ch = @mnemonic.downcase()[0].ord   ##  1.9 DONE 
         # meta key 
         mch = ?\M-a.getbyte(0) + (ch - ?a.getbyte(0))  ## 1.9
-        if @label_for.is_a? RubyCurses::Button and @label_for.respond_to? :fire
+        if (@label_for.is_a? RubyCurses::Button ) && (@label_for.respond_to? :fire)
           @form.bind_key(mch, @label_for) { |_form, _butt| _butt.fire }
         else
           $log.debug " bind_hotkey label for: #{@label_for}"
@@ -2384,7 +2415,7 @@ module RubyCurses
     end
 
     ##
-    # XXX need to move wrapping etc up and done once. 
+    # label's repaint - I am removing wrapping and Array stuff and making it simple 2011-11-12 
     def repaint
       return unless @repaint_required
       raise "Label row or col nil #{@row} , #{@col}, #{@text} " if @row.nil? || @col.nil?
@@ -2394,49 +2425,37 @@ module RubyCurses
       @color   ||= $def_fg_color
       # value often nil so putting blank, but usually some application error
       value = getvalue_for_paint || ""
-      lablist = []
-      # trying out array values 2011-10-16 more for messageboxes.
+
       if value.is_a? Array
-        lablist = text
-        @height = text.size
-      elsif @height && @height > 1
-        lablist = wrap_text(value, @display_length).split("\n")
-      else
-        # ensure we do not exceed
-        if !@display_length.nil?
-          if value.length > @display_length
-            value = value[0..@display_length-1]
-          end
+        value = value.join " "
+      end
+      # ensure we do not exceed
+      if @display_length
+        if value.length > @display_length
+          value = value[0..@display_length-1]
         end
-        lablist << value
       end
       len = @display_length || value.length
-      acolor = get_color $datacolor
-      $log.debug "label :#{@text}, #{value}, r #{r}, c #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
-      firstrow = r
-      _height = @height || 1
+      #acolor = get_color $datacolor
+      # the user could have set color_pair, use that, else determine color
+      # This implies that if he sets cp, then changing col and bg won't have an effect !
+      # A general routine that only changes color will not work here.
+      acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
+      #$log.debug "label :#{@text}, #{value}, r #{r}, c #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
       str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
-      # loop added for labels that are wrapped.
-      # TODO clear separately since value can change in status like labels
     
-      @graphic = @form.window if @graphic.nil? ## HACK messagebox givig this in repaint, 423 not working ??
-      0.upto(_height-1) { |i| 
-        @graphic.printstring r+i, c, " " * len , acolor,@attr
-      }
-      lablist.each_with_index do |_value, ix|
-        break if ix >= _height
-        if @justify.to_sym == :center
-          padding = (@display_length - _value.length)/2
-          _value = " "*padding + _value + " "*padding # so its cleared if we change it midway
-        end
-        @graphic.printstring r, c, str % [len, _value], acolor,@attr
-        r += 1
+      @graphic ||= @form.window
+      # clear the area
+      @graphic.printstring r, c, " " * len , acolor, @attr
+      if @justify.to_sym == :center
+        padding = (@display_length - value.length)/2
+        value = " "*padding + value + " "*padding # so its cleared if we change it midway
       end
-      if !@mnemonic.nil?
+      @graphic.printstring r, c, str % [len, value], acolor, @attr
+      if @mnemonic
         ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
-        @graphic.mvchgat(y=firstrow, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
+        @graphic.mvchgat(y=r, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
       end
-      #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, color, nil)
       @repaint_required = false
     end
     # Added 2011-10-22 to prevent some naive components from putting focus here.
