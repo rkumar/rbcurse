@@ -117,6 +117,7 @@ module RubyCurses
         @row_unselected_symbol ||= ' '
         @left_margin ||= @row_selected_symbol.length
       end
+      @row_selected_symbol ||= ''
       #@left_margin ||= 0
       @one_key_selection = false if @one_key_selection.nil?
       @row_offset = @col_offset = 0 if @suppress_borders
