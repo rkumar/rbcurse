@@ -2040,7 +2040,7 @@ module RubyCurses
     c = col
     if label.is_a? String
       lcolor = @label_color_pair || $datacolor # this should be the same color as window bg XXX
-      lattr = @label_attr || $datacolor
+      lattr = @label_attr || NORMAL
       @graphic.printstring row, col, label, lcolor, lattr
       c += label.length + 2
       @col_offset = c-@col            # required so cursor lands in right place
@@ -2913,3 +2913,4 @@ module RubyCurses
   end
 
 end # module
+include RubyCurses::Utils
