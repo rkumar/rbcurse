@@ -495,7 +495,7 @@ module RubyCurses
       if content.is_a? String
         content.chomp!
         # trying out since gsub giving #<ArgumentError: invalid byte sequence in UTF-8> 2011-09-11 
-        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?") if content.respond_to?(:encode)
         content.gsub!(/[\t\n\r]/, '  ') # don't display tab
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
