@@ -4,7 +4,7 @@ module ColorMap
   ## private
   # returns a color constant for a human color string
   def ColorMap.get_color_const colorstring
-    ret = FFI::NCurses.const_get "COLOR_#{colorstring.upcase}"
+    ret = FFI::NCurses.const_get "COLOR_#{colorstring.to_s.upcase}"
     #raise  "color const nil ColorMap 8 " if !ret
   end
   ## private

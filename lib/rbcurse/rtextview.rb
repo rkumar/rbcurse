@@ -495,7 +495,7 @@ module RubyCurses
       if content.is_a? String
         content.chomp!
         # trying out since gsub giving #<ArgumentError: invalid byte sequence in UTF-8> 2011-09-11 
-        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?")
+        content = content.encode("ASCII-8BIT", :invalid => :replace, :undef => :replace, :replace => "?") if content.respond_to?(:encode)
         content.gsub!(/[\t\n\r]/, '  ') # don't display tab
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
       else
@@ -540,8 +540,8 @@ module RubyCurses
       # This should not be at the widget level, too many types of menus. It should be at the app
       # level only if the user wants his app to use this kind of menu.
 
-      @menu = RubyCurses::MenuTree.new "Main", { s: :goto_start, r: :scroll_right, l: :scroll_left, m: :submenu }
-      @menu.submenu :m, "submenu", {s: :noignorecase, t: :goto_last_position, f: :next3 }
+      @menu = RubyCurses::MenuTree.new "Main", { :s => :goto_start, :r => :scroll_right, :l => :scroll_left, :m => :submenu }
+      @menu.submenu :m, "submenu", {:s => :noignorecase, :t => :goto_last_position, :f => :next3 }
       menu = PromptMenu.new self 
       menu.menu_tree @menu
 
