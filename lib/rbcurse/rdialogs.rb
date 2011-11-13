@@ -353,6 +353,13 @@ def popuplist list, config={}, &block
   max_visible_items = config[:max_visible_items]
   row = config[:row] || 5
   col = config[:col] || 5
+  relative_to = config[:relative_to]
+  if relative_to
+    layout = relative_to.form.window.layout
+    row += layout[:top]
+    col += layout[:left]
+  end
+  config.delete :relative_to
   width = config[:width] || longest_in_list(list)+2 # borders take 2
   height = config[:height]
   height ||= [max_visible_items || 10+2, list.length+2].min 
