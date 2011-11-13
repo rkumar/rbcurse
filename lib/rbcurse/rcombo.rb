@@ -36,6 +36,7 @@ module RubyCurses
     def initialize form, config={}, &block
       @arrow_key_policy = :ignore
       @editable         = false
+      @COMBO_SYMBOL = "v".ord  # trying this out
       @current_index    = 0
       super
       # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
@@ -46,7 +47,7 @@ module RubyCurses
     def init_vars
       super
       @show_symbol = true if @show_symbol.nil? # if set to false don't touch
-      @show_symbol = false if @label
+      #@show_symbol = false if @label # 2011-11-13 
       @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL
       bind_key(KEY_UP) { previous_row }
       bind_key(KEY_DOWN) { next_row }
@@ -125,8 +126,10 @@ module RubyCurses
     # added dup in PRESS since editing edit field mods this
     # on pressing ENTER, value set back and current_index updated
     def popup
+      @list_config ||= {}
       @list_config[:row] ||= @row
       @list_config[:col] ||= @col
+      @list_config[:relative_to] ||= self
       # this does not allow us to bind to events in the list
       index = popuplist @list, @list_config
       if index
@@ -224,10 +227,10 @@ module RubyCurses
     def repaint
       super
       c = @col + @display_length
-     # @form.window.mvwvline( @row, c, ACS_VLINE, 1)
       if @show_symbol # 2009-01-11 18:47 
         # i have changed c +1 to c, since we have no right to print beyond display_length
         @form.window.mvwaddch @row, c, @COMBO_SYMBOL # Ncurses::ACS_GEQUAL
+        @form.window.mvchgat(y=@row, x=c, max=1, Ncurses::A_REVERSE|Ncurses::A_UNDERLINE, $datacolor, nil)
       end
     end
 
