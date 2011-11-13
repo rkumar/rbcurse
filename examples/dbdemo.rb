@@ -220,7 +220,7 @@ App.new do
       end
     end
     menu "Others" do
-      require './appmethods.rb'
+      require 'rbcurse/common/appmethods.rb'
       item "Shell Output" do
         command { shell_output }
       end
