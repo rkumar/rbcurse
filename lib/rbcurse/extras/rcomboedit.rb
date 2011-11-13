@@ -49,10 +49,11 @@ module RubyCurses
       @_events.push(*[:CHANGE, :ENTER_ROW, :LEAVE_ROW])
     end
     def init_vars
+      @COMBO_SYMBOL = "v".ord  # trying this out
+      @show_symbol = true #if @show_symbol.nil? # if set to false don't touch
       super
-      @show_symbol = true if @show_symbol.nil? # if set to false don't touch
-      @show_symbol = false if @label
-      @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL
+      #@show_symbol = false if @label  # commented out 2011-11-13 maybe it doesn't place properly if label
+      @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL # now this won't work since i've set it above
       bind_key(KEY_UP) { previous_row }
       bind_key(KEY_DOWN) { next_row }
     end
@@ -248,6 +249,7 @@ module RubyCurses
       if @show_symbol # 2009-01-11 18:47 
         # i have changed c +1 to c, since we have no right to print beyond display_length
         @form.window.mvwaddch @row, c, @COMBO_SYMBOL # Ncurses::ACS_GEQUAL
+        @form.window.mvchgat(y=@row, x=c, max=1, Ncurses::A_REVERSE|Ncurses::A_UNDERLINE, $datacolor, nil)
       end
     end
 
