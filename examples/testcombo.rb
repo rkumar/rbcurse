@@ -1,13 +1,11 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 #require 'lib/rbcurse/mapper'
 #require 'lib/rbcurse/keylabelprinter'
 #require 'lib/rbcurse/commonio'
 #require 'lib/rbcurse/rwidget'
 #require 'lib/rbcurse/rform'
-require 'rbcurse/rcombo'
+require 'rbcurse/extras/rcomboedit'
 if $0 == __FILE__
   include RubyCurses
 
@@ -23,13 +21,11 @@ if $0 == __FILE__
     # Un post form and free the memory
 
     catch(:close) do
-      colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
       r = 1; c = 30;
       mylist = []
       0.upto(100) { |i| mylist << i.to_s }
-      combo = ComboBox.new @form do
+      combo = ComboBoxEdit.new @form do
         name "combo"
         row r
         col c
@@ -56,7 +52,7 @@ if $0 == __FILE__
           list = ListDataModel.new( %w[spotty tiger secret pass torvalds qwerty quail toiletry])
           list.bind(:LIST_DATA_EVENT, name) { |lde,n| $results.value = lde.to_s[0,70]; $log.debug " STA: #{$results} #{lde}"  }
           list.bind(:ENTER_ROW, name) { |obj,n| $results.value = "ENTER_ROW :#{obj.current_index} : #{obj.selected_item}    "; $log.debug " ENTER_ROW: #{$results.value} , #{obj}"  }
-        ComboBox.new @form do
+        ComboBoxEdit.new @form do
           name name
           row r
           col 30
@@ -72,13 +68,13 @@ if $0 == __FILE__
         r+=2
       end
 
-      @help = "Use UP and DOWN to navigate values, alt-DOWN for popup, TAB / BACKTAB between fields. F1-quit"
+      @help = "Use UP and DOWN to navigate values, alt-DOWN for popup, TAB / BACKTAB between fields. F10-quit"
       RubyCurses::Label.new @form, {'text' => @help, "row" => 21, "col" => 2, "color" => "yellow"}
 
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != KEY_F1 )
+      while((ch = @window.getchar()) != KEY_F10 )
         @form.handle_key(ch)
         @window.wrefresh
       end
