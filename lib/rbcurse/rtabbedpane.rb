@@ -26,6 +26,7 @@ NOTE:
   # TODO :  disable/hide tab ???
 =end
 require 'rbcurse'
+require 'ver/rpad'
 #require 'rbcurse/rscrollform' # tried, shows in all cases teh buttons but never gets control
 
 KEY_TAB ||= 9
@@ -57,13 +58,14 @@ module RubyCurses
         @highlight_background ||= $reversecolor # 0 
         _state = @state
         _state = :SELECTED if @variable.value == @value 
+        color = $datacolor
         case _state
         when :HIGHLIGHTED
           $log.debug("TabbedBUTTon repaint : HIGHLIGHTED #{bgcolor}, #{color}, v: #{@value}" )
           bgcolor = @highlight_background
           color = @highlight_foreground
           bgcolor = @bgcolor
-          color =  "red" #@color
+          color =  :red #@color
           attribs = Ncurses::A_BOLD
           setrowcol r,c  # show cursor on highlighted as we tab through
           ## but when tabbing thru selected one, then selected one doesn't show cursor
@@ -99,9 +101,11 @@ module RubyCurses
         co =  0
         # NOTE after removing scrollform I've replaced check of graphic with 0, Note if we revert
         if _state == :HIGHLIGHTED
+          color = $datacolor
           @graphic.printstring r+ro, c-1+co, ">",  color, @attrs unless c-1 < 0 #@graphic.left
           #@graphic.printstring r, c+len+1, "<",  color, @attrs
         else
+          color = $datacolor
           @graphic.printstring r+ro, c-1+co, " ",  color, @attrs unless c-1 < 0 #@graphic.left
           #@graphic.printstring r, c+len+1, " ",  color, @attrs
         end
