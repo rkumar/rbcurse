@@ -61,14 +61,26 @@ module RubyCurses
         #ftext = " %-20s | %s" % [Time.now, status] # should we print a default value just in case user doesn't
         ftext = status # should we print a default value just in case user doesn't
       end
+      if ftext =~ /#\[/
+        @form.window.printstring_formatted @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
+      else
+        @form.window.printstring @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
+      end
       # move this to formatted FIXME
-      @form.window.printstring_or_chunks @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
+      #@form.window.printstring_or_chunks @row, @col, ftext, $datacolor, Ncurses::A_REVERSE
+
       if @right_text
         ftext = @right_text.call(self, @right_args) 
-        c = len - ftext.length
-        @form.window.printstring_formatted @row, c, ftext, $datacolor, Ncurses::A_REVERSE
+        if ftext =~ /#\[/
+          @form.window.printstring_formatted_right @row, nil, ftext, $datacolor, Ncurses::A_REVERSE
+        else
+          c = len - ftext.length
+          @form.window.printstring @row, c, ftext, $datacolor, Ncurses::A_REVERSE
+        end
       else
-        ftext = "#[fg=green,bg=blue]%-20s " % [Time.now] # print a default
+        t = Time.now
+        tt = t.strftime "%F %H:%M:%S"
+        ftext = "#[fg=green,bg=blue] %-20s" % [tt] # print a default
         @form.window.printstring_formatted_right @row, nil, ftext, $datacolor, Ncurses::A_REVERSE
       end
 
