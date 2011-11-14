@@ -102,7 +102,7 @@ module RubyCurses
       #when KEY_DOWN  # show previous value
       #  next_row
         # adding spacebar to popup combo, as in microemacs 2010-10-01 13:21 
-      when 32, KEY_DOWN+ RubyCurses::META_KEY # alt down
+      when 32, KEY_DOWN+ META_KEY # alt down
         popup  # pop up the popup
       else
         super
