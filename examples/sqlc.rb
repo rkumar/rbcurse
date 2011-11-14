@@ -1,4 +1,5 @@
 ## rkumar, 2009
+#
 #DEPRECATED. See sqlm.rb or sqlt.rb in which i use a TabularWidget instead of Table.
 #AVOID USING TabbedPane till its rewritten 1.3.2 or so.
 
@@ -167,7 +168,7 @@ class Sqlc
   end
   def run
     title = "rbcurse"
-    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client using TabbedPane and Table (see sqlm.rb instead) "}
+    @header = ApplicationHeader.new @form, title, {:text2=>"Demo", :text_center=>"SQL Client using deprecated TabbedPane and Table (see sqlm.rb instead) "}
     status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>70}
     @status_row = status_row
     # setting ENTER across all objects on a form
