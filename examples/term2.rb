@@ -16,7 +16,10 @@ App.new do
     #list_box :list => t.to_s.split("\n")
     list_box :list => t.render
   end # stack
-  r = `df -gh`
+  r = `/bin/df -gh`     # stock BSD df
+  #r = `df -gh`   # I've installed brew, the df (maybe coreutils gives an error due to g option"
+  
+  raise "df -gh not returning anything. correct command here. Try removing g option" if r == ""
   # on my system there are extra spaces so i need to remove them, or else
   # there'll be a mismatch between headers and columns
   r.gsub!("Mounted on", "Mounted_on")
