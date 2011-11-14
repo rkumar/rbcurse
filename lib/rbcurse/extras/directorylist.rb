@@ -86,7 +86,7 @@ module RubyCurses
       @list.insert 0, @_header
       @title = @current_path
       @current_index = @_first_data_index
-      set_form_row
+      set_form_row if @form
     end
     # called by parent's repaint
     def convert_value_to_text file, crow
