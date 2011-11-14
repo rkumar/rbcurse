@@ -15,7 +15,6 @@ require 'rbcurse'
 
 include RubyCurses
 module RubyCurses
-  META_KEY = 128
   extend self
 
   # the quick approach would be to use field, and just add a popup.
