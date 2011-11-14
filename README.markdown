@@ -2,6 +2,15 @@
 
 *  News!! Migrated from ncurses-ruby to ffi-ncurses since 1.3.0
 
+* After releasing 1.4.1, I will be separating this gem into core, extras and experimental.
+  Until now the basic widgets have often been volatile, with sudden changes coming in minor
+  versions or patch versions. With 1.5.0, I hope to keep the core stable and back-compat.
+
+  I've totally rewritten tabbedpane and messagebox. Much simpler now. Will substitute this with 
+  existing one in 1.5.0 and push the existing ones into /deprecated. There is now support for
+  printing colored text in ansi-escape format or a better format based on tmux's status-line 
+  config, which allows for nesting of colors. I need to iron out the interface.
+
 ## DESCRIPTION:
 
 A small but comprehensive widget library written in ruby for creating ncurses
@@ -119,19 +128,20 @@ The following are issues with terminals (or with ncurses-ruby in some cases) not
 
 * Some terminals may not show underlines (e.g screen).
 
-* Some terminals (xterm-color) do not process Function keys, avoid declaring F1 etc if
+* Some terminals do not process Function keys, avoid declaring F1 etc if
   unsure of client terminals. I have put in fixes for xterm-color F1 and
   backtab.
 
 * To use ALT/META keys on a Mac OS X, in Terminal preferences, under
   Keyboard, select
   "use Option as Meta key". All hotkeys are automatically, ALT combinations.
+  In Iterm2 also, go to Preferences and select "Esc" for keys.
 
 * Some screens do not display window background color under spaces.
-  This is okay under "screen" and "xterm-color" but not under "xterm". You will notice
+  This is okay under "screen" and "xterm-color" but not under "xterm" and "xterm-256color". You will notice
   this in the message box samples.
 
-I am developing and testing under "screen" under OS X Snow Leopard (now OSX Lion)
+I am developing and testing under "screen" (compiled with 256 colors) under OSX Lion, using zsh)
 
 
 ## REQUIREMENTS:
