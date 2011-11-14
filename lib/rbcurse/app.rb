@@ -628,7 +628,7 @@ module RubyCurses
     # so do not use for containers
     {
       'rbcurse/rtextview' => 'TextView',
-      'rbcurse/extras/resultsettextview' => 'ResultsetTextView',
+      'rbcurse/experimental/resultsettextview' => 'ResultsetTextView',
       'rbcurse/rcontainer' => 'Container',
       'rbcurse/extras/rcontainer2' => 'Container2',
     }.each_pair {|k,p|
