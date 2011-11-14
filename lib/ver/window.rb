@@ -59,7 +59,11 @@ module VER
       @visible = true
       reset_layout(layout)
 
-      $log.debug "XXX:WINDOW got h #{@height}, w #{@width}, t #{@top}, l #{@left} "
+      #$log.debug "XXX:WINDOW got h #{@height}, w #{@width}, t #{@top}, l #{@left} "
+
+      @height = FFI::NCurses.LINES if @height == 0   # 2011-11-14 added since tired of checking for zero
+      @width = FFI::NCurses.COLS   if @width == 0
+
       @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       #$error_message_row = $status_message_row = Ncurses.LINES-1
@@ -567,18 +571,34 @@ module VER
     end
 
     ##
-    #added by rk 2008-11-29 18:48 
-    #to see if we can clean up from within
+    # destroy window, panel and any pads that were requested
+    #
     def destroy
       # typically the ensure block should have this
 
       $log.debug "win destroy start"
 
-      Ncurses::Panel.del_panel(@panel.pointer) if !@panel.nil?    # ADDED FFI pointer 2011-09-7 
-      delwin() if !@window.nil? # added FFI 2011-09-7 
+      Ncurses::Panel.del_panel(@panel.pointer) if @panel
+      delwin() if @window 
       Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
 
+      # destroy any pads that were created by widgets using get_pad
+      @pads.each { |pad|  
+        FFI::NCurses.delwin(pad) if pad 
+        pad = nil
+      } if @pads
       $log.debug "win destroy end"
+    end
+
+    # 
+    # 2011-11-13 since 1.4.1
+    # Widgets can get window to create a pad for them. This way when the window
+    #  is destroyed, it will delete all the pads. A widget wold not be able to do this.
+    # The destroy method of the widget will be called.
+    def get_pad content_row, content_cols
+      pad = FFI::NCurses.newpad(content_rows, content_cols)
+      @pads ||= []
+      @pads << pad
     end
 
     #
