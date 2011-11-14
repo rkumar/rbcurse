@@ -4,7 +4,7 @@ require 'rbcurse/app'
     #title "Demo of Menu - rbcurse"
     #subtitle "Hit F1 to quit, F2 for menubar toggle"
     header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Alpine Menu Demo", :text_right =>""
-    message_row(27)
+    #message_row(27)
 
     stack :margin_top => 10, :margin => 15 do
       #w = "Messages".length + 1
