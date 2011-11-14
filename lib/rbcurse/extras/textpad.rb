@@ -84,7 +84,8 @@ module RubyCurses
     private
     def create_pad
       destroy if @pad
-      @pad = FFI::NCurses.newpad(@content_rows, @content_cols)
+      #@pad = FFI::NCurses.newpad(@content_rows, @content_cols)
+      @pad = @window.get_pad(@content_rows, @content_cols)
     end
 
     private
@@ -412,6 +413,8 @@ module RubyCurses
     # closes or the current window closes , or else we could have a seg fault
     # or some ugliness on the screen below this one (if nested).
 
+    # Now since we use get_pad from window, upon the window being destroyed,
+    # it will call this. Else it will destroy pad
     def destroy
       FFI::NCurses.delwin(@pad) if @pad # when do i do this ? FIXME
       @pad = nil
