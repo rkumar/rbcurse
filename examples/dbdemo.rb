@@ -1,6 +1,6 @@
 require 'rbcurse/app'
 require 'sqlite3'
-require 'rbcurse/extras/resultsettextview.rb'
+#require 'rbcurse/experimental/resultsettextview.rb'
 require 'rbcurse/undomanager'
 
 # @return array of table names from selected db file
@@ -74,7 +74,7 @@ def create_popup array, selection_mode=:single,  &blk
   end
 end
 
-def view_data fields="*", name
+def view_data fields='*', name
   stmt = "select #{fields} from #{name}"
   stmt << $where_string if $where_string
   stmt << $order_string if $order_string
@@ -119,7 +119,7 @@ App.new do
     <<-eos
                DBDEMO HELP 
 
-      This is some help text for appemail.
+      This is some help text for dbdemo.
       We are testing out this feature.
 
       Alt-d    -   Select a database
@@ -139,6 +139,15 @@ App.new do
 
       Alt-x    -   Command mode (<tab> to see commands and select)
       :        -   Command mode
+      Alt-z    -   Commands in TextArea
+      
+                DB BROWSER KEYS
+
+      ,            Prev row (mnemonic <)
+      .            Next row (mnemonic >)
+      <            First row
+      >            Last row
+
       F10      -   Quit application
 
 
@@ -303,22 +312,23 @@ App.new do
       $log.debug "XXX: ORDER: #{$order_columns}. Press F4 when done"
     }
     @statusline = status_line
-    wg = get_color($datacolor, 'white','green')
-    wb = get_color($datacolor, 'white','blue')
+    #wg = get_color($datacolor, 'white','green')
+    #wb = get_color($datacolor, 'white','blue')
     @statusline.command { 
       # trying this out. If you want a persistent message that remains till the next on
       #  then send it in as $status_message
       text = $status_message.value || ""
       if !$current_db
-        #"%-20s [%-s] %s" % [ Time.now, "Select a Database", text]
-        [ [nil, "%-22s" % Time.now, nil], [$errorcolor, " [Select a Database ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
+        #"[%-s] %s" % [ "Select a Database", text]
+        "[%-s] %s" % [ "#[bg=red,fg=yellow]Select a Database#[end]", text]
+        #[ [nil, "%-22s" % Time.now, nil], [$errorcolor, " [Select a Database ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
       elsif !$current_table
-        #"%-20s [DB: %-s | %-s ] %s" % [ Time.now, $current_db || "None", $current_table || "Select a table", text] 
-        [ [nil, "%-22s [DB: %-s | " % [Time.now, $current_db || "None" ],nil], [$errorcolor, " Select a Table ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
+        "[DB: #[fg=white,bg=blue]%-s#[end] | %-s ] %s" % [ $current_db || "None", $current_table || "#[bg=red,fg=yellow]Select a table#[end]", text] 
+        #[ [nil, "%-22s [DB: %-s | " % [Time.now, $current_db || "None" ],nil], [$errorcolor, " Select a Table ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
       else
-        #"%-20s [DB: %-s | %-s ] %s" % [ Time.now, $current_db || "None", $current_table || "----", text] 
-        [ [nil, "%-22s [DB: " % Time.now, nil], [wb, " #{$current_db} ", FFI::NCurses::A_BOLD],
-        [wg, $current_table || "----", FFI::NCurses::A_BOLD], [nil, text, nil] ]
+        "DB: #[fg=white,bg=green,bold]%-s#[end] | #[bold]%-s#[end] ] %s" % [ $current_db || "None", $current_table || "----", text] 
+        #[ [nil, "%-22s [DB: " % Time.now, nil], [wb, " #{$current_db} ", FFI::NCurses::A_BOLD],
+        #[wg, $current_table || "----", FFI::NCurses::A_BOLD], [nil, text, nil] ]
       end
     }
     @adock = nil
