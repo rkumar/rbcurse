@@ -20,7 +20,6 @@ require 'rbcurse/rlistbox'
 
 include RubyCurses
 module RubyCurses
-  META_KEY = 128
   extend self
 
   # TODO : 
@@ -41,6 +40,8 @@ module RubyCurses
 
     def initialize form, config={}, &block
       @arrow_key_policy = :ignore
+      @show_symbol = true
+      @COMBO_SYMBOL = "v".ord  # trying this out
       super
       @current_index ||= 0
       # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
@@ -49,8 +50,6 @@ module RubyCurses
       @_events.push(*[:CHANGE, :ENTER_ROW, :LEAVE_ROW])
     end
     def init_vars
-      @COMBO_SYMBOL = "v".ord  # trying this out
-      @show_symbol = true #if @show_symbol.nil? # if set to false don't touch
       super
       #@show_symbol = false if @label  # commented out 2011-11-13 maybe it doesn't place properly if label
       @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL # now this won't work since i've set it above
@@ -245,7 +244,6 @@ module RubyCurses
     def repaint
       super
       c = @col + @display_length
-     # @form.window.mvwvline( @row, c, ACS_VLINE, 1)
       if @show_symbol # 2009-01-11 18:47 
         # i have changed c +1 to c, since we have no right to print beyond display_length
         @form.window.mvwaddch @row, c, @COMBO_SYMBOL # Ncurses::ACS_GEQUAL
