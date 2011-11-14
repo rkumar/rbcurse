@@ -71,5 +71,5 @@ App.new do
     end # vimsplit
   end # stack
   sl = status_line :row => Ncurses.LINES-1
-  sl.command { "%-20s | %-20s | v View" % [Time.now, File.absolute_path(dl.current_path)] }
+  sl.command { "%-20s | v View" % [File.absolute_path(dl.current_path)] }
 end # app
