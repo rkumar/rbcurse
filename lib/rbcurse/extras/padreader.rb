@@ -4,13 +4,15 @@
   * Author: rkumar (http://github.com/rkumar/rbcurse/)
   * Date: 22.10.11 - 20:35
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  2011-11-09 - 13:01
+  * Last update:  2011-11-14 - 20:57
 
   == CHANGES
   == TODO 
      make the window configurable so we can move to a textview that is pad based, later even list ?
      Note that cursor does not move, in real life applicatino cursor must move to bottom row
      and only then scrolling should start.
+     NOTE: I have continued this in textpad which is a widget that uses pads to scroll.
+           This is very rough, i may work on this more later.
 =end
 require 'rbcurse'
 
@@ -106,6 +108,7 @@ class PadReader
   # returns button index
   private
   def handle_keys
+    ht = @window.height.ifzero FFI::NCurses.LINES-1
     buttonindex = catch(:close) do 
       @maxrow = @content_rows - @rows
       @maxcol = @content_cols - @cols 
@@ -114,16 +117,20 @@ class PadReader
         break if ch == ?\C-q.getbyte(0) 
         begin
           case ch
-          when key(?t), 279
+          when key(?g), 279 # home as per iterm2
             @prow = 0
-          when key(?b), 277
+          when key(?b), key(?G), 277 # end as per iterm2
             @prow = @maxrow-1
           when key(?j)
             @prow += 1
           when key(?k)
             @prow -= 1
-          when 32, 338
+          when 32, 338   # Page Down abd Page Up as per iTerm2
             @prow += 10
+          when key(?\C-d)
+            @prow += ht
+          when key(?\C-b)
+            @prow -= ht
           when 339
             @prow -= 10
           when key(?l)
@@ -172,9 +179,10 @@ end
 if __FILE__ == $PROGRAM_NAME
   require 'rbcurse/app'
   App.new do
-    status_line
+    #status_line :row => FFI::NCurses.LINES-1
     @form.repaint
-    p = PadReader.new :filename => "padreader.rb", :height => 20, :width => 60, :row => 4, :col => 4, :window => @window, :suppress_border => true
+    #p = PadReader.new :filename => "padreader.rb", :height => 20, :width => 60, :row => 4, :col => 4, :window => @window, :suppress_border => true
+    p = PadReader.new :filename => "padreader.rb", :height => FFI::NCurses.LINES-1, :width => 0, :row => 0, :col => 0, :window => @window, :suppress_border => true
     p.run
     throw :close
   end
