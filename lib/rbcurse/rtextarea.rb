@@ -118,14 +118,20 @@ module RubyCurses
         data = wrap_text data
       #  $log.debug "after wrap text done :#{data}"
         data = data.split("\n")
-         data[-1] << "\r" #XXXX
-      else
-        data << "\r" if data[-1,1] != "\r" #XXXX
-      end
+        data[-1] << "\r" #XXXX
       data.each do |row|
         @list.insert off0, row
         off0 += 1
       end
+      else
+        data << "\r" if data[-1,1] != "\r" #XXXX
+        @list.insert off0, data
+      end
+      # expecting array !! 
+      #data.each do |row|
+        #@list.insert off0, row
+        #off0 += 1
+      #end
       #$log.debug " AFTER INSERT: #{@list}"
     end
     ##
