@@ -1,5 +1,16 @@
+# ----------------------------------------------------------------------------- #
+#         File: applicationheader.rb
+#  Description: Prints a header on first row, with right, left and centered text
+#               NOTE: on some terminal such as xterm-256color spaces do not print
+#               so you will see black or empty spaces between text.
+#               This does not happen on screen and xterm-color.
+#       Author: rkumar http://github.com/rkumar/rbcurse/
+#         Date: 
+#      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
+#  Last update: use ,,L
+# ----------------------------------------------------------------------------- #
+#
 require 'rbcurse/rwidget'
-#include Ncurses # FFI 2011-09-8 
 include RubyCurses
 module RubyCurses
   class ApplicationHeader < Widget
@@ -41,21 +52,27 @@ module RubyCurses
       #print_header(htext, posy = 0, posx = 0)
       print_header(@text1 + " %15s " % @text2 + " %20s" % @text_center , posy=0, posx=0)
       print_top_right(@text_right)
+      len = @window.width
+      len = Ncurses.COLS-0 if len == 0
+      att = get_attrib @attr
+      # even this won't work in xterm-256color
+      #@form.window.mvwchgat(0, 0, len, att, $reversecolor , nil)
       @repaint_required = false
     end
     def print_header(htext, r = 0, c = 0)
-    $log.debug " def print_header(#{htext}, posy = 0, posx = 0)"
       win = @window
       len = @window.width
       len = Ncurses.COLS-0 if len == 0
+      #
+    #$log.debug " def print_header(#{htext}, #{len} "
       @form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
     end
     def print_top_right(htext)
     $log.debug " def print_top_right(#{htext})"
       hlen = htext.length
-      len = Ncurses.COLS-1
+      len = Ncurses.COLS-0
       len = @window.width
-      len = Ncurses.COLS-1 if len == 0
+      len = Ncurses.COLS-0 if len == 0
       @form.window.printstring 0, len-hlen, htext, @color_pair, @attr
     end
     ##
