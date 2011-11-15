@@ -15,8 +15,6 @@ Todo:
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
-##require 'ncurses' # FFI removed
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'

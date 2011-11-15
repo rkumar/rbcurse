@@ -13,7 +13,6 @@ this is NOT how to code in rubyland. Please see this link, for how to code such 
 http://blog.grayproductions.net/articles/all_about_struct
 
 =end
-require 'rubygems'
 
 # Event created when data modified in Field or TextEdit
 #  2008-12-24 17:54 

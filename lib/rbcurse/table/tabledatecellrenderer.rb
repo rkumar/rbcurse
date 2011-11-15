@@ -1,6 +1,3 @@
-require 'rubygems'
-#require 'ncurses'
-require 'logger'
 module RubyCurses
   class TableDateCellRenderer
     #include EventHandler
