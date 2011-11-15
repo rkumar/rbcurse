@@ -99,6 +99,14 @@ module RubyCurses
       res.gsub!("\t","   ")
       RubyCurses::Viewer.view(res.split("\n"), :close_key => KEY_RETURN, :title => "<Enter> to close, M-l M-h to scroll")
     end
+    def shell_out command
+      @window.hide
+      Ncurses.endwin
+      system command
+      Ncurses.refresh
+      #Ncurses.curs_set 0  # why ?
+      @window.show
+    end
   end # utils
 end # module RubyC
 include RubyCurses::Utils
