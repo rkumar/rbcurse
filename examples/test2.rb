@@ -98,8 +98,8 @@ if $0 == __FILE__
       $results.value = "A variable"
       var = RubyCurses::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
         r += 1
-        mylist = ["Release gem","Bump version","Fix bugs","Make enhancements", "Brag on rubyforum"]
-        0.upto(100) { |v| mylist << "#{v} scrollable data" }
+        mylist = File.open("data/tasks.txt",'r').readlines
+        #0.upto(100) { |v| mylist << "#{v} scrollable data" }
         listb = BasicListbox.new @form do
           name   "mylist" 
           row  r 
@@ -116,7 +116,7 @@ if $0 == __FILE__
           title "Todo List"
         end
         Scrollbar.new @form, :parent => listb # 2011-10-1  added
-        listb.list_data_model.insert 55, "hello ruby", "so long python", "farewell java", "RIP .Net", "hi lisp", "hi clojure"
+        #listb.list_data_model.insert -1, "rake build", "rake release", "bump version", "fix bugs"
         col2 = 42
         texta = TextArea.new @form do
           name   "mytext" 
@@ -129,11 +129,13 @@ if $0 == __FILE__
           print_footer true
           bind(:CHANGE){|e| $message.value = e.to_s+" CP:"+e.source.curpos.to_s }
         end
-        texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
-        texta << "Let me not defer it or neglect it, for I shall not pass this way again."
-        texta << " "
-        texta << " F10 to exit. or click cancel button"
-        texta << " Or alt-c"
+        lines = File.open("data/unix1.txt",'r').readlines
+        lines.each { |e| texta << e }
+        #texta << "I expect to pass through this world but once." << "Any good therefore that I can do, or any kindness or abilities that I can show to any fellow creature, let me do it now."
+        #texta << "Let me not defer it or neglect it, for I shall not pass this way again."
+        #texta << " "
+        #texta << " F10 to exit. or click cancel button"
+        #texta << " Or alt-c"
 
         col3 = 92
         treemodel = nil
@@ -431,9 +433,10 @@ if $0 == __FILE__
       filemenu.add(item = RubyCurses::MenuItem.new("Test",'T'))
       item.command(@form, texta) do |it, form, testa|  
         $message.value = "Testing textarea"
-        str = "Hello there good friends and fellow rubyists. Here is a textarea that I am testing out with"
-        str << " some long data, to see how it acts, how the wrapping takes place. Sit back and enjoy the "
-        str << " bugs as they crop up."
+        str = File.open("data/lotr.txt",'r').readlines.join 
+        #str = "Hello there good friends and fellow rubyists. Here is a textarea that I am testing out with"
+        #str << " some long data, to see how it acts, how the wrapping takes place. Sit back and enjoy the "
+        #str << " bugs as they crop up."
         testa.goto_start
         #testa.cursor_bol
         testa.handle_key ?\C-a.getbyte(0)  
