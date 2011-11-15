@@ -1,13 +1,7 @@
 require 'rbcurse/app'
 
 if $0 == __FILE__
-  #app = App.new
-  #window = app.window
-  #window.printstring 2, 30, "Demo of Listbox - rbcurse", $normalcolor, 'reverse'
-  #app.logger.info "beforegetch"
-  #window.getch
-  #app.close
-  # this was the yield example, but now we've moved to instance eval
+  # NOTE try using the readonly tabular or tabular widget instead, see term2.rb
   App.new do 
     @window.printstring 1, 30, "Demo of Table - rbcurse", $normalcolor, 'reverse'
     @window.printstring 2, 30, "Hit F1 to quit", $datacolor, 'normal'
