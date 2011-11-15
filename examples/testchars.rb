@@ -1,8 +1,4 @@
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
-#require 'lib/ver/keyboard'
 require 'rbcurse'
 if $0 == __FILE__
   include RubyCurses

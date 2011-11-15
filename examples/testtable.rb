@@ -1,8 +1,3 @@
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
-require 'logger'
-#require 'ver/keyboard'
 require 'rbcurse'
 require 'rbcurse/rcombo'
 require 'rbcurse/rtable'

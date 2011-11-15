@@ -1,8 +1,5 @@
 # this is a test program, tests out tabbed panes. type F1 to exit
 #
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 #require 'rbcurse/newtabbedpane'

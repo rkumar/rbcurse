@@ -1,7 +1,3 @@
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-# this program tests out various widgets.
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 #require 'lib/rbcurse/rform'
