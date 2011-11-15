@@ -1,0 +1,27 @@
+Field to have history which pops up
+App to have layout objects @1.6
+F2 menu to have context sensitive items
+SL and Dock events Hide. Move ...
+Stack and Flow to be objects @1.5
+ability to share directory options and functions across dir apps
+add event to form, key_resize
+app: add popup @1.5
+app: widgets can register with dock @1.5
+can use textpad in resultsetdb view to make things simpler
+colored module that allows row-wise coloring for all multirow wids
+find_file like microemacs @1.5
+motion options in textview and lists gg G cYcEcDcB zz zt zb etc
+registering command with Alt-X SL and Dock
+schemes (color) @1.5
+textview etc can have source. also module to recog file type,fmt
+use textpad for lists etc
+window.close can have a event so cleanup of any widget can be done
+Backward char search using F
+add progress bar to StatusWindow
+bottomline options global @1.5
+catch_alt_digits maybe at form level not global
+widgets needs to expose mapped keys in some easy way
+color_pair as :red_on_black
+confirm quit option, and call a proc before quitting
+elusive error if row not given in button
+rpopupmenu and rmenu share same class names
