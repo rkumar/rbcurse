@@ -27,6 +27,7 @@ require 'rbcurse/app'
             #alert " We gots #{text} "
             fld = form.by_name[mylabel]
             fld.text =text
+            view text
           end
         end
         menu "Close" do
