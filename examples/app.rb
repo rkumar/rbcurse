@@ -20,31 +20,8 @@ include RubyCurses::Utils
 module RubyCurses
   extend self
 
-  ##
+ # NOTE most of this has move to lib/rbcurse/app.rb
   #
-  # TODO - 
-  # what of internal objects that don't want a form !
-  # - stack and flow should be objects in Form, put in widget when creating
-  # x method: quit
-  # - box / rect
-  # - animate(n) |i|
-  # x list_box :choose is the defauly
-  # x progress - like a label but fills itself, fraction
-  # - para looks like a label that is more than one line, and calculates rows itself based on text
-  # x other buttons: radio, check
-  # x edit_box = textarea
-  # - combo
-  # x menu
-  # - popup
-  # - multicontainer
-  # - multitextview, multisplit
-  # - tabbedpane
-  # / table - more work regarding vim keys, also editable
-  # - margin - is left offset
-  #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
-  # - promptmenu
-  #  
-  
   class Widget
     def changed *args, &block
       bind :CHANGED, *args, &block
