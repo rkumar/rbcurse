@@ -7,8 +7,8 @@ App.new do
   oo = :HORIZONTAL_SPLIT
   oo = :VERTICAL_SPLIT
 
-  stack :margin_top => 5, :margin => 15, :width => 79 do
-    splp = multisplit "outer", :height => 16, :split_count => 2, :orientation => oo  do |s|
+  stack :margin_top => 2, :margin => 1, :width => FFI::NCurses.COLS-2 do
+    splp = multisplit "outer", :height => FFI::NCurses.LINES - 3 , :split_count => 2, :orientation => oo  do |s|
       #s.suppress_borders = false
         lb = list_box "Classes",:list => `ri -f bs`.split("\n")
         s.add lb
@@ -48,7 +48,7 @@ App.new do
     }
 
 
-    blank
+    #blank
     flow do
       #toggle :onvalue => "Vertical", :offvalue => "Horizontal", :value => true do |e|
         #message "pressed #{e.state}"
