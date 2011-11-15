@@ -90,7 +90,7 @@ class SetupMessagebox
         t = textview :title => 'tmux format'
         t.formatted_text(text, :tmux)
         t1 = textview :title => 'ansi formatted document'
-        text = File.open("color.2","r").readlines
+        text = File.open("data/color.2","r").readlines
         t1.formatted_text(text, :ansi)
 
       flow do
