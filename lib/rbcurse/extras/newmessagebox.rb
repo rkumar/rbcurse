@@ -95,7 +95,7 @@ class NewMessagebox
     _create_window unless @window
       acolor = get_color $reverscolor # this implicitly uses color and bgcolor fooling me often
       $log.debug " MESSAGE BOX bg:#{@bgcolor} , co:#{@color} , colorpair:#{acolor}"
-      @window.bkgd(Ncurses.COLOR_PAIR(acolor));
+      @window.wbkgd(Ncurses.COLOR_PAIR(acolor)); #  does not work on xterm-256color
 
     #print_borders unless @suppress_borders # do this once only, unless everything changes
     #@window.print_border_mb 1,2, @height, @width, $normalcolor, FFI::NCurses::A_REVERSE
