@@ -9,7 +9,6 @@
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'rubygems'
 
 # Event created when state changed (as in ViewPort)
 module RubyCurses

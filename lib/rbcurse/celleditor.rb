@@ -1,8 +1,3 @@
-require 'rubygems'
-#require 'ncurses'
-require 'logger'
-#require 'lib/rbcurse/rwidget'
-
 
 ##
 # This file gives us a mean of using a component as an editor in a list or later table.
@@ -23,7 +18,6 @@ module RubyCurses
       s = @component.class.to_s.downcase()
       s.slice!("rubycurses::")
       @_class = s.to_sym
-      #$log.debug " CELL EIDOTR got #{@_class}"
       config_setup config # @config.each_pair { |k,v| variable_set(k,v) }
       instance_eval &block if block_given?
     end
@@ -75,7 +69,6 @@ module RubyCurses
       f = @component
       f.on_leave
       if f.respond_to? :editable and f.modified?
-        $log.debug " Table about to fire CHANGED for #{f} "
         f.fire_handler(:CHANGED, f) 
       end
     end
@@ -97,13 +90,12 @@ module RubyCurses
       widget.visible = true
       widget.form = parent.form
       #$log.debug " prepare editor value #{widget.display_length} displlen #{widget.maxlen}"
-      $log.debug " prepare editor form: #{widget.form} "
+      #$log.debug " prepare editor form: #{widget.form} " # 2011-11-15 12:54:41
       #widget.display_length = widget.display_length -1
       widget.bgcolor = 'yellow'
       widget.color = 'black'
       widget.on_enter
       #widget.attr = Ncurses::A_REVERSE | Ncurses::A_BOLD
-      #$log.debug " prepare editor value #{value} : fr:#{row}, fc:#{col}"
     end
     #This may not really be necessary since we paint the cell editor only if editing is on
     def cancel_editor

@@ -24,7 +24,6 @@
 
 =end
 require 'logger'
-#require 'rbcurse/mapper'
 require 'rbcurse/colormap'
 require 'rbcurse/orderedhash'
 require 'rbcurse/rinputdataevent' # for FIELD 2010-09-11 12:31 

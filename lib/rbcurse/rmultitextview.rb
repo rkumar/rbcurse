@@ -11,8 +11,6 @@
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtextview'

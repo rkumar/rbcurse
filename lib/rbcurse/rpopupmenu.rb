@@ -24,8 +24,6 @@ a user friendly string to identifiy the action, as well as a disabled option.
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
-#require 'ncurses'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/action'

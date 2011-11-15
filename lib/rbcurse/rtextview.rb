@@ -11,7 +11,6 @@ TODO
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/listscrollable'
