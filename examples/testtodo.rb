@@ -1,8 +1,4 @@
-#$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
-#require 'ver/keyboard'
 require 'rbcurse'
 require 'rbcurse/rcombo'
 require 'rbcurse/rtable'
@@ -115,7 +111,7 @@ module TestTodo
       d = @data
       require 'csv'
       #CSV.open('todocsv.csv', 'w') do |writer|     
-      CSV.open("todocsv.csv", "w") do |writer|
+      CSV.open("data/todocsv.csv", "w") do |writer|
         #writer << [nil, nil]                  
         d.each do |row|
           #parced_cells = CSV.generate_rows(row, row.size, buf)

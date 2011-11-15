@@ -1,6 +1,3 @@
-$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rcombo'
@@ -143,7 +140,7 @@ module ViewTodo
     File.open("todo.csv", "w") { |f| YAML.dump( d, f )}
     buf =''
     require 'csv'
-    CSV.open('todocsv.csv', 'w') do |writer|     
+    CSV.open('data/todocsv.csv', 'w') do |writer|     
       #writer << [nil, nil]                  
       d.each do |row|
         #parced_cells = CSV.generate_rows(row, row.size, buf)

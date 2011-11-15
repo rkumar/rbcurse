@@ -7,8 +7,6 @@
 # This is an offshoot of sqlc.rb -- this demo uses a multicontainer for tables
 # instead of a tabbed panes. 
 #
-require 'rubygems'
-#require 'ncurses' # FFI
 require 'logger'
 require 'sqlite3'
 require 'rbcurse'
