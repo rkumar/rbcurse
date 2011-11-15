@@ -1,6 +1,8 @@
 require 'rbcurse/app'
 require 'fileutils'
 require 'rbcurse/tree/treemodel'
+#require 'rbcurse/common/file'
+require './common/file'
 
 def _directories wd
   $log.debug " directories got XXX: #{wd} "
@@ -32,7 +34,7 @@ App.new do
      
 
 
-  ht = 24
+  ht = FFI::NCurses.LINES - 2
   borderattrib = :reverse
   stack :margin_top => 1, :margin => 0, :width => 30 do
     @t = tree :data => model, :height => ht, :border_attrib => borderattrib
@@ -55,12 +57,14 @@ App.new do
       if ev.state == :SELECTED
         node = ev.node
         path = File.join(*node.user_object_path)
-        files = Dir.new(path).entries
-        files.delete(".")
-        @l.list files 
-        #TODO show all details in filelist
-        @current_path = path
-        $log.debug " XXX selected afterseeting lb: #{@l} "
+        if File.exists? path
+          files = Dir.new(path).entries
+          files.delete(".")
+          @l.list files 
+          #TODO show all details in filelist
+          @current_path = path
+          $log.debug " XXX selected afterseeting lb: #{@l} "
+        end
       end
     end # select
     @t.expand_node last # 
@@ -71,8 +75,14 @@ App.new do
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       $log.debug " XXX GOT A LIST EVENT #{ev} "
       message ev.source.selected_value
+      file_page   ev.source.selected_value if ev.type == :INSERT
       #TODO when selects drill down
       #TODO when selecting, sync tree with this
     end
+    # on pressing enter, we edit the file using vi or EDITOR
+    @l.bind :PRESS  do |ev|
+      file_edit ev.text if File.exists? ev.text
+    end
   end
+  status_line :row => FFI::NCurses.LINES - 1
 end # app
