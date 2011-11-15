@@ -656,6 +656,9 @@ class RFe
     vimp = %x[which #{editor}].chomp
     shell_out "#{vimp} #{fp}"
   end
+
+  # TODO we need to move these to some common file so differnt programs and demos
+  # can use them on pressing space or enter.
   def page fp=@current_list.filepath
     ft=%x[file #{fp}]
     if ft.index("text")
