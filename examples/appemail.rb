@@ -1,6 +1,6 @@
 require 'rbcurse/app'
 require 'fileutils'
-require './rmail'
+require './common/rmail'
 # You need mailread.rb which is present in 1.8, but missing in 1.9
 # I've loaded it here ... http://gist.github.com/634166 with line encoding
 # You need to fix paths of local mbox files
