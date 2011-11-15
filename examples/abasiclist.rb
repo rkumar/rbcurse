@@ -6,7 +6,9 @@ App.new do
   header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Basic List Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
   message "Press F10 to escape from here"
 
-  list = %W{ bhikshu boddisattva avalokiteswara mu mun kwan paramita prajna samadhi sutra shakyamuni }
+  #list = %W{ bhikshu boddisattva avalokiteswara mu mun kwan paramita prajna samadhi sutra shakyamuni }
+  list = File.open("data/brew.txt",'r').readlines
+  list2 = File.open("data/gemlist.txt",'r').readlines
   lb = nil
   vimsplit :row => 1, :col => 0, :suppress_borders => false, :width => 60, :height => Ncurses.LINES-2, :weight => 0.4, :orientation => :VERTICAL do |s|
     lb = RubyCurses::BasicListbox.new nil, :list => list, :suppress_borders => false
@@ -19,7 +21,7 @@ App.new do
     
     s.add lb, :FIRST
     #lb2= RubyCurses::BasicListbox.new nil, :list => list.shuffle, :justify => :center
-    lb2 = basiclist :list => list.shuffle, :justify => :left, :suppress_borders => false
+    lb2 = basiclist :list => list2, :justify => :left, :suppress_borders => false
     s.add lb2, :SECOND
     label({:text => "checking overwrite from list", :row => 10, :col => 60})
     label({:text => "checking overwrite from list 1", :row => 11, :col => 60})
