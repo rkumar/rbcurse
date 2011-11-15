@@ -778,6 +778,20 @@ module VER
     ##
     # NOTE : FOR MESSAGEBOXES ONLY !!!! 
     def print_border_mb row, col, height, width, color, attr
+      # the next is for xterm-256 
+      att = get_attrib attr
+      len = width
+      len = Ncurses.COLS-0 if len == 0
+      # print a bar across the screen 
+      #attron(Ncurses.COLOR_PAIR(color) | att)
+      # this works for newmessagebox but not for old one.
+      # Even now in some cases some black shows through, if the widget is printing spaces
+      # such as field or textview on a messagebox.
+      (row-1).upto(row+height-1) do |r|
+        mvwhline(r, col, 1, len)
+      end
+      #attroff(Ncurses.COLOR_PAIR(color) | att)
+
       mvwaddch row, col, Ncurses::ACS_ULCORNER
       mvwhline( row, col+1, Ncurses::ACS_HLINE, width-6)
       mvwaddch row, col+width-5, Ncurses::ACS_URCORNER
@@ -801,10 +815,9 @@ module VER
       # 2009-11-02 00:45 made att nil for blanking out
       # FIXME - in tabbedpanes this clears one previous line ??? XXX when using a textarea/view
       # when using a pad this calls pads printstring which again reduces top and left !!! 2010-01-26 23:53 
+      ww=width-2
       (row+1).upto(row+height-1) do |r|
-        #printstring( r, col+1," "*(width-2) , $datacolor, nil)
-        #prv_printstring( r, col+1,"."*(width-2) , $datacolor, nil)
-        prv_printstring( r, col+1," "*(width-2) , color, att)
+        prv_printstring( r, col+1," "*ww , color, att)
       end
       prv_print_border_only row, col, height, width, color, att
     end
