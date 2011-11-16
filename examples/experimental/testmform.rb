@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'rbcurse/experimental/widgets/multiform'
 
 App.new do 

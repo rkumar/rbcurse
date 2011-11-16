@@ -3,7 +3,7 @@
 # However, integrating this into our library seems a little difficult now
 # since each widget handles keys and often there are heirachies of widgets.
 # However, this being a terminal app, mouseless, we really need to make it key-friendly.
-require 'rbcurse/orderedhash'
+require 'rbcurse/core/include/orderedhash'
 class Mapper
   attr_reader :keymap
   attr_reader :view

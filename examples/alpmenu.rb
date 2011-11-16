@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
   App.new do 
     #title "Demo of Menu - rbcurse"

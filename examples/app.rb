@@ -20,7 +20,7 @@ include RubyCurses::Utils
 module RubyCurses
   extend self
 
- # NOTE most of this has move to lib/rbcurse/app.rb
+ # NOTE most of this has move to lib/rbcurse/core/util/app.rb
   #
   class Widget
     def changed *args, &block
@@ -437,7 +437,7 @@ module RubyCurses
       config[:width] ||= @stack.last.width if @stack.last
       w = Table.new @form, config
       if ext
-        require 'rbcurse/extras/tableextended' 
+        require 'rbcurse/extras/include/tableextended' 
           # so we can increase and decrease column width using keys
         w.extend TableExtended
         w.bind_key(?w){ w.next_column }

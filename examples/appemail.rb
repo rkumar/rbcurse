@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'fileutils'
 require './common/rmail'
 # You need mailread.rb which is present in 1.8, but missing in 1.9

@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'sqlite3'
 #require 'rbcurse/experimental/resultsettextview.rb'
 require 'rbcurse/experimental/widgets/undomanager'
@@ -41,7 +41,7 @@ end
 # @return [Array] if mode is :multiple
 #
 def create_popup array, selection_mode=:single,  &blk
-  require 'rbcurse/rlistbox'
+  require 'rbcurse/extras/widgets/rlistbox'
   #raise "no block given " unless block_given?
   listconfig = {'bgcolor' => 'blue', 'color' => 'white'}
   url_list= RubyCurses::ListDataModel.new(array)
@@ -229,7 +229,7 @@ App.new do
       end
     end
     menu "Others" do
-      require 'rbcurse/common/appmethods.rb'
+      require 'rbcurse/core/include/appmethods.rb'
       item "Shell Output" do
         command { shell_output }
       end

@@ -8,7 +8,7 @@
 
 =end
 require 'rbcurse/core/widgets/rwidget'
-require 'rbcurse/rlistbox'
+require 'rbcurse/extras/widgets/rlistbox'
 
 module RubyCurses
   ##

@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'gmail'
 
 # requires gmail gem
@@ -115,7 +115,7 @@ class GmailField
 
   def udisplay_list list1 # gmailfield
     unless @commandwin
-      require 'rbcurse/rcommandwindow'
+      require 'rbcurse/core/util/rcommandwindow'
       if @style == :old
         h = @config.fetch(:height, 5)
         w = @config.fetch(:width, Ncurses.COLS-1)
@@ -165,7 +165,7 @@ module AppgCompose
     def __udisplay_list list1 # gmailcompose
       warn "is this used ?"
       unless @commandwin
-        require 'rbcurse/rcommandwindow'
+        require 'rbcurse/core/util/rcommandwindow'
         layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
         rc = CommandWindow.new nil, :layout => layout, :box => true #, :title => config[:title]
         @commandwin = rc

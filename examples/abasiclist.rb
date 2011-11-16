@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'rbcurse/core/widgets/rbasiclistbox'
 
 # just a simple test to ensure that rbasiclistbox is running inside a container.

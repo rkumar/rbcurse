@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
 ####
 #  If you want to create an application which can run standaalong from terminal, or be passed

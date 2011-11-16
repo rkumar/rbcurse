@@ -3,12 +3,12 @@
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rwidget'
-#require 'rbcurse/listcellrenderer'
-#require 'rbcurse/celleditor'
-require 'rbcurse/rlistbox'
-require 'rbcurse/vieditable'
+#require 'rbcurse/core/include/listcellrenderer'
+#require 'rbcurse/extras/include/celleditor'
+require 'rbcurse/extras/widgets/rlistbox'
+require 'rbcurse/core/include/vieditable'
 require 'rbcurse/experimental/widgets/undomanager'
-#require 'rbcurse/rmessagebox'
+#require 'rbcurse/deprecated/widgets/rmessagebox'
 class RubyCurses::Listbox
   # vieditable includes listeditable which
   # does bring in some functions which can crash program like x and X TODO

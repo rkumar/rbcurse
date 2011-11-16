@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
 #if $0 == __FILE__
   App.new do 

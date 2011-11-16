@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'fileutils'
 require 'rbcurse/tree/treemodel'
 #require 'rbcurse/common/file'

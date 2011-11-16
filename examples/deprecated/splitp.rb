@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
 App.new do 
   header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Splitpane Demo", :text_right =>""

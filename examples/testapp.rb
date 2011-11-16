@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
 # this was a test to see how i could have a class and an app inside
 # and i could call methods in the class and have variables available

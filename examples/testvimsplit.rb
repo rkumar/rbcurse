@@ -16,7 +16,7 @@
 # TODO: create a class that contains component array and a pointer so it can give next/prev
 # i am tired of maintaining this everywhere.
 require 'rbcurse'
-require 'rbcurse/rlistbox'
+require 'rbcurse/extras/widgets/rlistbox'
 require 'rbcurse/core/widgets/rtextview'
 require 'rbcurse/extras/widgets/rvimsplit'
 

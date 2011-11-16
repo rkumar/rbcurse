@@ -13,8 +13,8 @@
 
 
 if __FILE__ == $PROGRAM_NAME
-  require 'rbcurse/app'
-  require 'rbcurse/rlistbox'
+  require 'rbcurse/core/util/app'
+  require 'rbcurse/extras/widgets/rlistbox'
   require 'rbcurse/experimental/stackflow'
   App.new do
 

@@ -1,4 +1,4 @@
-require 'ver/ncurses'
+require 'rbcurse/core/system/ncurses'
 module RubyCurses
   #
   # an attempt to make a window based on stdscr for bottom line printing so the entire 

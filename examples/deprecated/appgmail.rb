@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'fileutils'
 require 'yaml'
 require 'gmail'
@@ -318,7 +318,7 @@ def connect
 end
 def test
   # creating a scratch window. should be put a textview in it ? or label ?
-  require 'rbcurse/rcommandwindow'
+  require 'rbcurse/core/util/rcommandwindow'
   @layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-5, :left => 0 }
   rc = CommandWindow.new nil, :layout => @layout
   w = rc.window

@@ -15,19 +15,19 @@ require 'rbcurse/core/widgets/rtextview'
 require 'rbcurse/core/widgets/rmenu'
 require 'rbcurse/core/widgets/rcombo'
 require 'rbcurse/extras/widgets/rcomboedit'
-require 'rbcurse/listcellrenderer'
-require 'rbcurse/checkboxcellrenderer'
-require 'rbcurse/comboboxcellrenderer'
-require 'rbcurse/celleditor'
-require 'rbcurse/rlistbox'
+require 'rbcurse/core/include/listcellrenderer'
+require 'rbcurse/extras/include/checkboxcellrenderer'
+require 'rbcurse/extras/include/comboboxcellrenderer'
+require 'rbcurse/extras/include/celleditor'
+require 'rbcurse/extras/widgets/rlistbox'
 require 'rbcurse/core/widgets/rbasiclistbox'
-#require 'rbcurse/rmessagebox'
+#require 'rbcurse/deprecated/widgets/rmessagebox'
 require 'rbcurse/core/widgets/rtree'
-require 'rbcurse/common/appmethods.rb'
+require 'rbcurse/core/include/appmethods.rb'
 require 'rbcurse/core/widgets/scrollbar'
 def help_text
       <<-eos
-               TEST2  HELP 
+               TEST2  HELP 1.5.0
 
       This is some help text for test2.
 
@@ -605,7 +605,7 @@ if $0 == __FILE__
      
       # END
       @form.bind_key(FFI::NCurses::KEY_F3) { 
-        require 'rbcurse/extras/viewer'
+        require 'rbcurse/core/util/viewer'
         RubyCurses::Viewer.view(path || "rbc13.log", :close_key => KEY_RETURN, :title => "<Enter> to close")
       }
       @form.bind_key(FFI::NCurses::KEY_F4) {  shell_output }

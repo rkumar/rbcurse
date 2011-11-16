@@ -2,10 +2,10 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rcombo'
 require 'rbcurse/extras/widgets/rtable'
-require 'rbcurse/extras/tableextended' 
+require 'rbcurse/extras/include/tableextended' 
 require 'rbcurse/core/widgets/keylabelprinter'
 require 'rbcurse/core/widgets/applicationheader'
-require 'rbcurse/action'
+require 'rbcurse/core/include/action'
 require 'sqlite3' # changing to sqlite3 since yml, csv a pain for updating
 #require 'yaml'   # 1.9 2009-10-05 13:11 
 ###############################

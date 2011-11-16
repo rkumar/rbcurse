@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'rbcurse/extras/widgets/rvimsplit'
 require 'fileutils'
 require 'rbcurse/core/widgets/tabularwidget'

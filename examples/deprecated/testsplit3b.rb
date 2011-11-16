@@ -33,7 +33,7 @@ require 'rbcurse/rsplitpane'
 require 'rbcurse/rscrollpane'
 require 'rbcurse/core/widgets/rtextarea'
 require 'rbcurse/core/widgets/rtextview'
-require 'rbcurse/rlistbox'
+require 'rbcurse/extras/widgets/rlistbox'
 if $0 == __FILE__
   include RubyCurses
   include RubyCurses::Utils

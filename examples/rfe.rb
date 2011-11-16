@@ -12,11 +12,11 @@
 #require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rcombo'
-require 'rbcurse/rlistbox'
+require 'rbcurse/extras/widgets/rlistbox'
 require './rfe_renderer'
 require 'rbcurse/core/widgets/keylabelprinter'
 require 'rbcurse/core/widgets/applicationheader'
-require 'rbcurse/action'
+require 'rbcurse/core/include/action'
 require 'fileutils'
 require 'yaml'  ## added for 1.9
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
@@ -818,7 +818,7 @@ class RFe
       w = arr.max_by(&:length).length
       #arr = ["this is some help text","hello there"]
 
-      require 'rbcurse/extras/viewer'
+      require 'rbcurse/core/util/viewer'
       RubyCurses::Viewer.view(arr, :layout => [10,10, 4+arr.size, w+2],:close_key => KEY_RETURN, :title => "<Enter> to close", :print_footer => false) do |t|
       # you may configure textview further here.
       #t.suppress_borders true

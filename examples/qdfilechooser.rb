@@ -1,8 +1,8 @@
 # this is a test program, tests out messageboxes. type F1 to exit
 # a quick dirty file chooser in 2 lines of code.
 require 'logger'
-require 'ver/ncurses'
-require 'ver/window'
+require 'rbcurse/core/system/ncurses'
+require 'rbcurse/core/system/window'
 require 'rbcurse/core/widgets/rwidget'
 
 ##

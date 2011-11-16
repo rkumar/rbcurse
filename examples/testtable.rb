@@ -1,10 +1,10 @@
 require 'rbcurse'
 require 'rbcurse/core/widgets/rcombo'
 require 'rbcurse/extras/widgets/rtable'
-require 'rbcurse/celleditor'
+require 'rbcurse/extras/include/celleditor'
 #require 'rbcurse/table/tablecellrenderer'
-require 'rbcurse/comboboxcellrenderer'
-require 'rbcurse/action'
+require 'rbcurse/extras/include/comboboxcellrenderer'
+require 'rbcurse/core/include/action'
 
 ##
 # a renderer which paints alternate lines with

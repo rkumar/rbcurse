@@ -7,7 +7,7 @@
 #
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rmessagebox'
+require 'rbcurse/deprecated/widgets/rmessagebox'
 
 if $0 == __FILE__
   # Initialize curses

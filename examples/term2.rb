@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 require 'rbcurse/core/widgets/tabular'
 require 'rbcurse/core/widgets/scrollbar'
 

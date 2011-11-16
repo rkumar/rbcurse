@@ -1,7 +1,7 @@
 # this is a test program, tests out tabbed panes. type F1 to exit
 #
 require 'rbcurse'
-require 'rbcurse/common/widgetshortcuts'
+require 'rbcurse/core/util/widgetshortcuts'
 
 include RubyCurses
 include RubyCurses::Utils

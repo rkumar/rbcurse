@@ -1,7 +1,7 @@
 $LOAD_PATH << "/Users/rahul/work/projects/rbcurse/lib"
 require 'rbcurse'
 require 'rbcurse/extras/widgets/rmultisplit'
-require 'rbcurse/rlistbox'
+require 'rbcurse/extras/widgets/rlistbox'
 require 'fileutils'
 
 #

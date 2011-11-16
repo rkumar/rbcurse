@@ -1,8 +1,8 @@
 require 'ffi-ncurses' # ADDED FFI 2011-09-6 
-require 'ver/ncurses'
-require 'ver/window'
+require 'rbcurse/core/system/ncurses'
+require 'rbcurse/core/system/window'
 require 'rbcurse/core/widgets/rwidget'
-require 'rbcurse/rdialogs'
+require 'rbcurse/core/util/rdialogs'
 class Rbcurse
-  VERSION = '1.4.1'
+  VERSION = '1.5.0'
 end

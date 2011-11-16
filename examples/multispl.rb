@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
 App.new do 
   header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "MultiSplit Demo", :text_right =>"ColumnBrowse pattern"

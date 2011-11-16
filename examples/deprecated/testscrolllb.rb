@@ -4,7 +4,7 @@ require 'rubygems'
 #require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rlistbox'
+require 'rbcurse/extras/widgets/rlistbox'
 require 'rbcurse/rscrollpane'
 if $0 == __FILE__
   include RubyCurses

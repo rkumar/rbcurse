@@ -1,4 +1,4 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
 
 if $0 == __FILE__
   # NOTE try using the readonly tabular or tabular widget instead, see term2.rb

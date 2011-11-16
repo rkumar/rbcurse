@@ -9,7 +9,7 @@
 # ----------------------------------------------------------------------------- #
 #
 
-require 'rbcurse/common/appmethods'
+require 'rbcurse/core/include/appmethods'
 module RubyCurses
   def file_edit fp #=@current_list.filepath
     #$log.debug " edit #{fp}"

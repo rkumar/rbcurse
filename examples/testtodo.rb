@@ -2,12 +2,12 @@ require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rcombo'
 require 'rbcurse/extras/widgets/rtable'
-require 'rbcurse/celleditor'
+require 'rbcurse/extras/include/celleditor'
 #require 'rbcurse/table/tablecellrenderer'
-require 'rbcurse/comboboxcellrenderer'
+require 'rbcurse/extras/include/comboboxcellrenderer'
 require 'rbcurse/core/widgets/keylabelprinter'
 require 'rbcurse/core/widgets/applicationheader'
-require 'rbcurse/action'
+require 'rbcurse/core/include/action'
 
 include RubyCurses
 include RubyCurses::Utils # this was resulting in get_color crashing
