@@ -1,6 +1,30 @@
 # rbcurse (for ruby 1.9.x)
 
-*  News!! Migrated from ncurses-ruby to ffi-ncurses since 1.3.0
+
+## DESCRIPTION:
+
+A small but comprehensive widget library written in ruby for creating ncurses/curses
+applications. Tested on 1.9.1/2, compatible with 1.8.7.
+
+## News
+
+*  2011-11-16 - I am now working on 1.5.0, so please check that branch for latest work. I am separating
+   the gem into core, extras and experimental. I am also moving to ruby 1.9.3.
+
+   Changes expected in 1.5.0:
+
+   - breakup into separate gems
+   - core will be stable and backward compatible (in future)
+   - may have directory structure changes such as a core directory, or core/widgets
+     or widgets/core and widgets/experimental etc.
+   - more standardization of methods across widgets in core
+   - simplification of widget interfaces and code
+   - more work on stacks and flows
+   - inclusion of some experimental stuff into core such as color formatting of text
+   - editable tables and lists will be moved to rbcurse/extras. Non-editable versions will
+     be moved into core.
+
+*  2011-11-16 - I have released a 1.4.1.pre2 gem, and will make it 1.4.1 in a few days if all remains fine.
 
 * After releasing 1.4.1, I will be separating this gem into core, extras and experimental.
   Until now the basic widgets have often been volatile, with sudden changes coming in minor
@@ -11,10 +35,7 @@
   printing colored text in ansi-escape format or a better format based on tmux's status-line 
   config, which allows for nesting of colors. I need to iron out the interface.
 
-## DESCRIPTION:
-
-A small but comprehensive widget library written in ruby for creating ncurses
-applications. Tested on 1.9.1/2, compatible with 1.8.7.
+*  Migrated from ncurses-ruby to ffi-ncurses since 1.3.0. Thanks Sean.
 
 ## FEATURES
 
@@ -87,14 +108,17 @@ runtime. Very flexible unlike ncurses forms and fields.
 
    * app.rb  - demo of the app feature. Also has progress bars (type in the textarea to see progress bar)
 
-   * appemail.rb - a larger demo of the app feature and Column Browse pattern. Uses mbox to display mails. M-x to show commands at bottom of screen. Vim and bash-like file selection and other goodies.
+   * appemail.rb - a larger demo of the app feature and Column Browse pattern. Uses mbox to display mails. M-x to show commands at bottom of screen. Vim and bash-like file selection and other goodies. You will need  to supply an mbox location.
 
    * appdirtree - demo of file browser using Tree on left and list on right.
 
    * dbdemo.rb - sqlite database query program
 
-## Recent news
+## Major changes
 
+* 1.4.1: More cleanup, a lot of experimental stuff that is going to be standardized soon
+         color formatting of documents in ANSI or tmux format. Rewrite of 
+         tabbed pane and message box.
 * 1.4.0: Cleanup, some small new features, deprecated stuff, added StatusLine. 
          Improvements to 'app'.
 * 1.3.0: ffi-ification of rbcurses with some minor bug-fixes, deprecations
@@ -126,7 +150,7 @@ related methods often gave errors or seg-faults.
 
 The following are issues with terminals (or with ncurses-ruby in some cases) not with rbcurse.
 
-* Some terminals may not show underlines (e.g screen).
+* Some terminals may not show underlines (e.g screen). xterm-color is fine.
 
 * Some terminals do not process Function keys, avoid declaring F1 etc if
   unsure of client terminals. I have put in fixes for xterm-color F1 and
@@ -139,14 +163,19 @@ The following are issues with terminals (or with ncurses-ruby in some cases) not
 
 * Some screens do not display window background color under spaces.
   This is okay under "screen" and "xterm-color" but not under "xterm" and "xterm-256color". You will notice
-  this in the message box samples.
+  this in the message box samples. I am trying hard to work around this since some terminals do not seem to
+  implement windows `bkgd` method.
 
-I am developing and testing under "screen" (compiled with 256 colors) under OSX Lion, using zsh)
+I am developing and testing under "gnu screen" (compiled with 256 colors) under OSX Lion, using zsh). I have 
+just shifted to iTerm2 - this gives me some additional keys such as PageUp, PageDown, Home and End but takes 
+away some others that Terminal gaves me such as shifted-function keys and Control-left, Ctrl-Right.
+
+Just for information, I am transitioning from macports to homebrew. I use rvm.
 
 
 ## REQUIREMENTS:
 
-* ruby 1.9.1, 1.9.2 (I believe it is working on 1.8.7, 1.8.6 as well).
+* ruby 1.9.1, 1.9.2 1.9.3(I believe it is working on 1.8.7, 1.8.6 as well).
 
 * ffi-ncurses (>= 0.4.0) Thanks Sean !
 
@@ -165,6 +194,6 @@ I am developing and testing under "screen" (compiled with 256 colors) under OSX 
 
 ## LICENSE:
 
-Copyright (c) 2008 -2010 rkumar
+Copyright (c) 2008 -2011 rkumar
 
 Same as ruby license.
