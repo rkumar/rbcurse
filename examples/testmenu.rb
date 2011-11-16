@@ -1,7 +1,7 @@
 require 'logger'
 require 'rbcurse'
 #require 'lib/rbcurse/rform'
-require 'rbcurse/rpopupmenu'
+require 'rbcurse/extras/widgets/rpopupmenu'
 if $0 == __FILE__
   include RubyCurses
 

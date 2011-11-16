@@ -29,7 +29,7 @@ require 'rubygems'
 #require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rtable'
+require 'rbcurse/extras/widgets/rtable'
 require 'rbcurse/rscrollpane'
 if $0 == __FILE__
   include RubyCurses

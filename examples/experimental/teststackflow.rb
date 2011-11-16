@@ -26,7 +26,7 @@ if __FILE__ == $PROGRAM_NAME
     alist = %w[ ruby perl python java jruby macruby rubinius rails rack sinatra pylons django cakephp grails] 
     str = "Hello, people of Earth.\nI am HAL, a textbox.\nUse arrow keys, j/k/h/l/gg/G/C-a/C-e/C-n/C-p\n"
     str << alist.join("\n")
-    require 'rbcurse/rtextview'
+    require 'rbcurse/core/widgets/rtextview'
     tv = TextView.new nil, :name => "text"
     tv.set_content str
 =begin

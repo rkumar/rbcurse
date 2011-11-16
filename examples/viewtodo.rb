@@ -1,10 +1,10 @@
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rcombo'
-require 'rbcurse/rtable'
+require 'rbcurse/core/widgets/rcombo'
+require 'rbcurse/extras/widgets/rtable'
 require 'rbcurse/extras/tableextended' 
-require 'rbcurse/keylabelprinter'
-require 'rbcurse/applicationheader'
+require 'rbcurse/core/widgets/keylabelprinter'
+require 'rbcurse/core/widgets/applicationheader'
 require 'rbcurse/action'
 require 'sqlite3' # changing to sqlite3 since yml, csv a pain for updating
 #require 'yaml'   # 1.9 2009-10-05 13:11 
@@ -470,7 +470,7 @@ module ViewTodo
 
     end
     def make_popup table
-      require 'rbcurse/rpopupmenu'
+      require 'rbcurse/extras/widgets/rpopupmenu'
       tablemenu = RubyCurses::PopupMenu.new "Table"
       #tablemenu.add(item = RubyCurses::PMenuItem.new("Open",'O'))
       tablemenu.add(item = RubyCurses::PMenuItem.new("&Open"))

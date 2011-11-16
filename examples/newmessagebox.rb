@@ -1,7 +1,7 @@
 # this is a test program, tests out tabbed panes. type F1 to exit
 #
 require 'rbcurse'
-require 'rbcurse/extras/newmessagebox'
+require 'rbcurse/core/widgets/newmessagebox'
 
 def alertme mess, config={}
 

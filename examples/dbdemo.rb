@@ -1,7 +1,7 @@
 require 'rbcurse/app'
 require 'sqlite3'
 #require 'rbcurse/experimental/resultsettextview.rb'
-require 'rbcurse/undomanager'
+require 'rbcurse/experimental/widgets/undomanager'
 
 # @return array of table names from selected db file
 def get_table_names
@@ -86,7 +86,7 @@ def view_sql stmt
   content = get_data stmt
   if content.nil?
   else
-    require 'rbcurse/extras/tabular'
+    require 'rbcurse/core/widgets/tabular'
     t = Tabular.new do |t|
       t.headings = $columns
       t.data=content   

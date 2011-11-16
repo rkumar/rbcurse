@@ -1,7 +1,7 @@
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rmulticontainer'
-require 'rbcurse/rtextarea'
+require 'rbcurse/extras/widgets/rmulticontainer'
+require 'rbcurse/core/widgets/rtextarea'
 if $0 == __FILE__
   include RubyCurses
   include RubyCurses::Utils

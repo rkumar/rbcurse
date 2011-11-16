@@ -4,10 +4,10 @@ require 'rubygems'
 #require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
-#require 'rbcurse/rtextview'
-require 'rbcurse/rmultitextview'
+#require 'rbcurse/core/widgets/rtextview'
+require 'rbcurse/extras/widgets/rmultitextview'
 require 'rbcurse/rscrollpane'
-require 'rbcurse/undomanager'
+require 'rbcurse/experimental/widgets/undomanager'
 if $0 == __FILE__
   include RubyCurses
   include RubyCurses::Utils

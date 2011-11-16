@@ -27,7 +27,7 @@ NOTE:
 =end
 require 'rbcurse'
 require 'ver/rpad'
-#require 'rbcurse/rscrollform' # tried, shows in all cases teh buttons but never gets control
+#require 'rbcurse/experimental/widgets/rscrollform' # tried, shows in all cases teh buttons but never gets control
 
 KEY_TAB ||= 9
 KEY_BTAB ||= 353

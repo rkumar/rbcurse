@@ -1,4 +1,4 @@
-require 'rbcurse/extras/resultsettextview.rb'
+require 'rbcurse/experimental/widgets/resultsettextview.rb'
 require 'fileutils'
 
 =begin

@@ -25,13 +25,13 @@
 require 'logger'
 require 'sqlite3'
 require 'rbcurse'
-require 'rbcurse/rcombo'
-require 'rbcurse/rtextarea'
-require 'rbcurse/rtable'
+require 'rbcurse/core/widgets/rcombo'
+require 'rbcurse/core/widgets/rtextarea'
+require 'rbcurse/extras/widgets/rtable'
 #require 'rbcurse/table/tablecellrenderer'
 #require 'rbcurse/comboboxcellrenderer'
-#require 'rbcurse/keylabelprinter'
-require 'rbcurse/applicationheader'
+#require 'rbcurse/core/widgets/keylabelprinter'
+require 'rbcurse/core/widgets/applicationheader'
 require 'rbcurse/action' # not used here
 require 'rbcurse/rtabbedpane'
 

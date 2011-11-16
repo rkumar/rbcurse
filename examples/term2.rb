@@ -1,6 +1,6 @@
 require 'rbcurse/app'
-require 'rbcurse/extras/tabular'
-require 'rbcurse/extras/scrollbar'
+require 'rbcurse/core/widgets/tabular'
+require 'rbcurse/core/widgets/scrollbar'
 
 App.new do 
   header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "Tabular Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 

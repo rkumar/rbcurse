@@ -18,9 +18,9 @@
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtabbedpane'
-require 'rbcurse/rtextview'
-require 'rbcurse/rtextarea'
-require 'rbcurse/rtable'
+require 'rbcurse/core/widgets/rtextview'
+require 'rbcurse/core/widgets/rtextarea'
+require 'rbcurse/extras/widgets/rtable'
 
 class TestTabbedPane
   def initialize

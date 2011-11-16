@@ -1,7 +1,7 @@
 require 'rbcurse/app'
-require 'rbcurse/rvimsplit'
+require 'rbcurse/extras/widgets/rvimsplit'
 require 'fileutils'
-require 'rbcurse/extras/tabularwidget'
+require 'rbcurse/core/widgets/tabularwidget'
 require './common/rmail'
 class ColumnBrowse < Widget
   require 'forwardable'

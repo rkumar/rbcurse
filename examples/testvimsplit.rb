@@ -17,8 +17,8 @@
 # i am tired of maintaining this everywhere.
 require 'rbcurse'
 require 'rbcurse/rlistbox'
-require 'rbcurse/rtextview'
-require 'rbcurse/rvimsplit'
+require 'rbcurse/core/widgets/rtextview'
+require 'rbcurse/extras/widgets/rvimsplit'
 
 if $0 == __FILE__
 class Tester

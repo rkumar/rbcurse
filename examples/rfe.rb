@@ -11,11 +11,11 @@
 #require 'ncurses'
 #require 'logger'
 require 'rbcurse'
-require 'rbcurse/rcombo'
+require 'rbcurse/core/widgets/rcombo'
 require 'rbcurse/rlistbox'
 require './rfe_renderer'
-require 'rbcurse/keylabelprinter'
-require 'rbcurse/applicationheader'
+require 'rbcurse/core/widgets/keylabelprinter'
+require 'rbcurse/core/widgets/applicationheader'
 require 'rbcurse/action'
 require 'fileutils'
 require 'yaml'  ## added for 1.9
@@ -476,7 +476,7 @@ class RFe
   end
   ## TODO : make this separate and callable with its own keylabels
   def view  content=nil # can throw IO errors
-    require 'rbcurse/rtextview'
+    require 'rbcurse/core/widgets/rtextview'
     wt = 0
     wl = 0
     wh = Ncurses.LINES-wt

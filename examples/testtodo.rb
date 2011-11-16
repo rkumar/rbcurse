@@ -1,12 +1,12 @@
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rcombo'
-require 'rbcurse/rtable'
+require 'rbcurse/core/widgets/rcombo'
+require 'rbcurse/extras/widgets/rtable'
 require 'rbcurse/celleditor'
 #require 'rbcurse/table/tablecellrenderer'
 require 'rbcurse/comboboxcellrenderer'
-require 'rbcurse/keylabelprinter'
-require 'rbcurse/applicationheader'
+require 'rbcurse/core/widgets/keylabelprinter'
+require 'rbcurse/core/widgets/applicationheader'
 require 'rbcurse/action'
 
 include RubyCurses
@@ -152,7 +152,7 @@ module TestTodo
       return key_labels
     end
     def make_popup table
-      require 'rbcurse/rpopupmenu'
+      require 'rbcurse/extras/widgets/rpopupmenu'
       tablemenu = RubyCurses::PopupMenu.new "Table"
       #tablemenu.add(item = RubyCurses::PMenuItem.new("Open",'O'))
       tablemenu.add(item = RubyCurses::PMenuItem.new("&Open"))

@@ -1,5 +1,5 @@
 require 'rbcurse/app'
-require 'rbcurse/extras/multiform'
+require 'rbcurse/experimental/widgets/multiform'
 
 App.new do 
   header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "My Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 

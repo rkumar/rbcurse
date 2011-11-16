@@ -1,5 +1,5 @@
 require 'rbcurse'
-require 'rbcurse/rtree'
+require 'rbcurse/core/widgets/rtree'
 
 if $0 == __FILE__
   $choice = ARGV[0].to_i || 1

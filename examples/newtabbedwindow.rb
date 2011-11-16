@@ -3,9 +3,9 @@
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/extras/newtabbedpane'
-require 'rbcurse/rcontainer'
-require 'rbcurse/rcombo'
-require 'rbcurse/extras/newtabbedwindow'
+require 'rbcurse/core/widgets/rcontainer'
+require 'rbcurse/core/widgets/rcombo'
+require 'rbcurse/core/widgets/newtabbedwindow'
 
 include RubyCurses
 class SetupTabbedPane

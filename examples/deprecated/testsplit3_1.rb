@@ -25,8 +25,8 @@ require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
-require 'rbcurse/rtextarea'
-require 'rbcurse/rtextview'
+require 'rbcurse/core/widgets/rtextarea'
+require 'rbcurse/core/widgets/rtextview'
 require 'rbcurse/rlistbox'
 if $0 == __FILE__
   include RubyCurses

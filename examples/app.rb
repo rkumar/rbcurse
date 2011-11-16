@@ -375,7 +375,7 @@ module RubyCurses
     end
     # editable text area
     def textarea *args, &block
-      require 'rbcurse/rtextarea'
+      require 'rbcurse/core/widgets/rtextarea'
       config = {}
       # TODO confirm events many more
       events = [ :CHANGE,  :LEAVE, :ENTER ]
@@ -395,7 +395,7 @@ module RubyCurses
     end
     # progress bar
     def progress *args, &block
-      require 'rbcurse/rprogress'
+      require 'rbcurse/core/widgets/rprogress'
       config = {}
       # TODO confirm events many more
       events = [ :CHANGE,  :LEAVE, :ENTER ]
@@ -418,7 +418,7 @@ module RubyCurses
     #    other options are :column_widths => [12,4,12]
     #    :size_to_fit => true
     def table *args, &block
-      require 'rbcurse/rtable'
+      require 'rbcurse/extras/widgets/rtable'
       config = {}
       # TODO confirm events many more
       events = [ :ENTER_ROW,  :LEAVE, :ENTER ]
@@ -463,7 +463,7 @@ module RubyCurses
     end
     # menu bar
     def menubar &block
-      require 'rbcurse/rmenu'
+      require 'rbcurse/core/widgets/rmenu'
       RubyCurses::MenuBar.new &block
     end
 
@@ -487,15 +487,15 @@ module RubyCurses
       @app_row += 1
     end
     def app_header title, config={}, &block
-      require 'rbcurse/applicationheader'
+      require 'rbcurse/core/widgets/applicationheader'
       header = ApplicationHeader.new @form, title, config, &block
     end
     def dock labels, config={}, &block
-      require 'rbcurse/keylabelprinter'
+      require 'rbcurse/core/widgets/keylabelprinter'
       klp = RubyCurses::KeyLabelPrinter.new @form, labels, config, &block
     end
     def link *args, &block
-      require 'rbcurse/extras/rlink'
+      require 'rbcurse/extras/widgets/rlink'
       config = {}
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
@@ -511,7 +511,7 @@ module RubyCurses
       return toggle
     end
     def menulink *args, &block
-      require 'rbcurse/extras/rmenulink'
+      require 'rbcurse/extras/widgets/rmenulink'
       config = {}
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
@@ -552,7 +552,7 @@ module RubyCurses
       return w
     end
     def multisplit *args, &block
-      require 'rbcurse/rmultisplit'
+      require 'rbcurse/extras/widgets/rmultisplit'
       config = {}
       events = [ :PROPERTY_CHANGE,  :LEAVE, :ENTER ]
       block_event = events[0]

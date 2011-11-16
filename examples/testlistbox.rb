@@ -2,12 +2,12 @@
 #require 'ncurses' # FFI
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rwidget'
+require 'rbcurse/core/widgets/rwidget'
 #require 'rbcurse/listcellrenderer'
 #require 'rbcurse/celleditor'
 require 'rbcurse/rlistbox'
 require 'rbcurse/vieditable'
-require 'rbcurse/undomanager'
+require 'rbcurse/experimental/widgets/undomanager'
 #require 'rbcurse/rmessagebox'
 class RubyCurses::Listbox
   # vieditable includes listeditable which

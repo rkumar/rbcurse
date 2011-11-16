@@ -1,8 +1,8 @@
 require 'rbcurse/app'
 require 'fileutils'
 require 'rbcurse/tree/treemodel'
-require 'rbcurse/extras/directorylist'
-require 'rbcurse/extras/directorytree'
+require 'rbcurse/experimental/widgets/directorylist'
+require 'rbcurse/experimental/widgets/directorytree'
 
 # TODO - tree expand - also populate list
 # TODO - startup     = populate list

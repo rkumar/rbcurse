@@ -19,7 +19,7 @@ require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtabbedpane'
-require 'rbcurse/rtable'
+require 'rbcurse/extras/widgets/rtable'
 require 'rbcurse/rscrollpane'
 
 class TestTabbedPane

@@ -1,6 +1,6 @@
 require 'rbcurse'
-require 'rbcurse/rcombo'
-require 'rbcurse/rtable'
+require 'rbcurse/core/widgets/rcombo'
+require 'rbcurse/extras/widgets/rtable'
 require 'rbcurse/celleditor'
 #require 'rbcurse/table/tablecellrenderer'
 require 'rbcurse/comboboxcellrenderer'

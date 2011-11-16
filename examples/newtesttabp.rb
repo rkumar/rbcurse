@@ -2,7 +2,7 @@
 #
 require 'logger'
 require 'rbcurse'
-#require 'rbcurse/newtabbedpane'
+#require 'rbcurse/core/widgets/newtabbedpane'
 require 'rbcurse/rtabbedpane'
 
 class TestTabbedPane

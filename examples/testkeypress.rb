@@ -1,6 +1,6 @@
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rtextarea'
+require 'rbcurse/core/widgets/rtextarea'
 #require 'rbcurse/oldrtextarea'
 if $0 == __FILE__
   include RubyCurses

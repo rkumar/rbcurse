@@ -3,7 +3,7 @@
 require 'logger'
 require 'ver/ncurses'
 require 'ver/window'
-require 'rbcurse/rwidget'
+require 'rbcurse/core/widgets/rwidget'
 
 ##
 # a quick dirty file chooser - only temporary till we make something better.

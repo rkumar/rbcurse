@@ -7,7 +7,7 @@
   * file separated on 2009-01-13 22:39 
 
 =end
-require 'rbcurse/rwidget'
+require 'rbcurse/core/widgets/rwidget'
 require 'rbcurse/rlistbox'
 
 module RubyCurses

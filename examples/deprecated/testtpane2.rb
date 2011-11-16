@@ -19,8 +19,8 @@ require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rtabbedpane'
-require 'rbcurse/rtextview'
-require 'rbcurse/rtextarea'
+require 'rbcurse/core/widgets/rtextview'
+require 'rbcurse/core/widgets/rtextarea'
 require 'rbcurse/rscrollpane'
 
 class TestTabbedPane

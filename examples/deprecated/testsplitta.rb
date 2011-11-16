@@ -15,9 +15,9 @@ require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
-require 'rbcurse/rtextarea'
-require 'rbcurse/rmultitextview'
-require 'rbcurse/undomanager'
+require 'rbcurse/core/widgets/rtextarea'
+require 'rbcurse/extras/widgets/rmultitextview'
+require 'rbcurse/experimental/widgets/undomanager'
 
 ## This sample creates a single scrollpane, 
 ##+ and embeds a textarea inside it

@@ -16,7 +16,7 @@ require 'rubygems'
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/rsplitpane'
-require 'rbcurse/rtextview'
+require 'rbcurse/core/widgets/rtextview'
 
 ## This sample creates a single scrollpane, 
 ##+ and embeds a textarea inside it

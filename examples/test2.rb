@@ -10,21 +10,21 @@
 #
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/rtextarea'
-require 'rbcurse/rtextview'
-require 'rbcurse/rmenu'
-require 'rbcurse/rcombo'
-require 'rbcurse/extras/rcomboedit'
+require 'rbcurse/core/widgets/rtextarea'
+require 'rbcurse/core/widgets/rtextview'
+require 'rbcurse/core/widgets/rmenu'
+require 'rbcurse/core/widgets/rcombo'
+require 'rbcurse/extras/widgets/rcomboedit'
 require 'rbcurse/listcellrenderer'
 require 'rbcurse/checkboxcellrenderer'
 require 'rbcurse/comboboxcellrenderer'
 require 'rbcurse/celleditor'
 require 'rbcurse/rlistbox'
-require 'rbcurse/rbasiclistbox'
+require 'rbcurse/core/widgets/rbasiclistbox'
 #require 'rbcurse/rmessagebox'
-require 'rbcurse/rtree'
+require 'rbcurse/core/widgets/rtree'
 require 'rbcurse/common/appmethods.rb'
-require 'rbcurse/extras/scrollbar'
+require 'rbcurse/core/widgets/scrollbar'
 def help_text
       <<-eos
                TEST2  HELP 
@@ -532,7 +532,7 @@ if $0 == __FILE__
       }
       #col += 22
       col += 15
-      require 'rbcurse/rprogress'
+      require 'rbcurse/core/widgets/rprogress'
       pbar = Progress.new @form, {:width => 20, :row => Ncurses.LINES-1, :col => Ncurses.COLS-20 , 
         :bgcolor => 'white', :color => 'red', :name => "pbar"}
       #len = 1

@@ -1,11 +1,11 @@
 #$LOAD_PATH << "/Users/rahul/work/projects/rbcurse/"
 require 'logger'
 #require 'lib/rbcurse/mapper'
-#require 'lib/rbcurse/keylabelprinter'
+#require 'lib/rbcurse/core/widgets/keylabelprinter'
 #require 'lib/rbcurse/commonio'
-#require 'lib/rbcurse/rwidget'
+#require 'lib/rbcurse/core/widgets/rwidget'
 #require 'lib/rbcurse/rform'
-require 'rbcurse/extras/rcomboedit'
+require 'rbcurse/extras/widgets/rcomboedit'
 if $0 == __FILE__
   include RubyCurses
 
