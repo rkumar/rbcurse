@@ -1,5 +1,6 @@
 # rbcurse (for ruby 1.9.x)
 
+> The essence of 'simple' is knowing "what to leave out"   - attributed to Steve Jobs
 
 ## DESCRIPTION:
 
@@ -11,18 +12,19 @@ applications. Tested on 1.9.1/2, compatible with 1.8.7.
 *  2011-11-16 - I am now working on 1.5.0, so please check that branch for latest work. I am separating
    the gem into core, extras and experimental. I am also moving to ruby 1.9.3.
 
-   Changes expected in 1.5.0:
+    *  Changes expected in 1.5.0:
 
-   - breakup into separate gems
-   - core will be stable and backward compatible (in future)
-   - may have directory structure changes such as a core directory, or core/widgets
-     or widgets/core and widgets/experimental etc.
-   - more standardization of methods across widgets in core
-   - simplification of widget interfaces and code
-   - more work on stacks and flows
-   - inclusion of some experimental stuff into core such as color formatting of text
-   - editable tables and lists will be moved to rbcurse/extras. Non-editable versions will
-     be moved into core.
+       * breakup into separate gems
+       * core will be stable and backward compatible (in future)
+       * may have directory structure changes such as a core directory, or core/widgets
+         or widgets/core and widgets/experimental etc.
+       * more standardization of methods across widgets in core
+       * simplification of widget interfaces and code
+       * more work on stacks and flows
+       * inclusion of some experimental stuff into core such as color formatting of text
+       * editable tables and lists will be moved to rbcurse/extras. Non-editable versions will
+         be moved into core.
+
 
 *  2011-11-16 - I have released a 1.4.1.pre2 gem, and will make it 1.4.1 in a few days if all remains fine.
 
@@ -34,6 +36,7 @@ applications. Tested on 1.9.1/2, compatible with 1.8.7.
   existing one in 1.5.0 and push the existing ones into /deprecated. There is now support for
   printing colored text in ansi-escape format or a better format based on tmux's status-line 
   config, which allows for nesting of colors. I need to iron out the interface.
+
 
 *  Migrated from ncurses-ruby to ffi-ncurses since 1.3.0. Thanks Sean.
 
