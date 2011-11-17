@@ -1,5 +1,16 @@
 # rbcurse (for ruby 1.9.x)
 
+## WARNING
+
+  Currently this repo is in flux. I've moved stuff off to other repos (rbcurse-core, rbcurse-extras
+  and rbcurse-experimental.). This will be a wrapper repo. 
+  
+  Please go to branch [1.4.1](https://github.com/rkumar/rbcurse/tree/1.4.1) for the last version of all code in one repo.
+
+  [rbcurse-core](https://github.com/rkumar/rbcurse-core)
+  [rbcurse-extras](https://github.com/rkumar/rbcurse-extras)
+  [rbcurse-experimental](https://github.com/rkumar/rbcurse-experimental)
+
 > The essence of 'simple' is knowing "what to leave out"   - attributed to Steve Jobs
 
 ## DESCRIPTION:
@@ -13,7 +24,7 @@ applications. Tested on 1.9.1/2, compatible with 1.8.7.
        Oh, wait, i've done all this in the 1.5.0 branch, did not think of first
        merging with master, since if things went wrong, master would be fine.
 
-       I guess now its time to merge with master.
+      Merged with master. Now to update the gemspecs
 
 *  2011-11-16 - I am now working on 1.5.0, so please check that branch for latest work. I am separating
    the gem into core, extras and experimental. I am also moving to ruby 1.9.3.
