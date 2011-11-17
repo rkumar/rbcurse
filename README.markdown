@@ -7,9 +7,11 @@
   
   Please go to branch [1.4.1](https://github.com/rkumar/rbcurse/tree/1.4.1) for the last version of all code in one repo.
 
-  [rbcurse-core](https://github.com/rkumar/rbcurse-core)
-  [rbcurse-extras](https://github.com/rkumar/rbcurse-extras)
-  [rbcurse-experimental](https://github.com/rkumar/rbcurse-experimental)
+  *  [rbcurse-core](https://github.com/rkumar/rbcurse-core)
+
+  *  [rbcurse-extras](https://github.com/rkumar/rbcurse-extras)
+
+  *  [rbcurse-experimental](https://github.com/rkumar/rbcurse-experimental)
 
 > The essence of 'simple' is knowing "what to leave out"   - attributed to Steve Jobs
 
