@@ -9,6 +9,12 @@ applications. Tested on 1.9.1/2, compatible with 1.8.7.
 
 ## News
 
+*  2011-11-17 - I have spun off all the code into core, extras and experimental. 
+       Oh, wait, i've done all this in the 1.5.0 branch, did not think of first
+       merging with master, since if things went wrong, master would be fine.
+
+       I guess now its time to merge with master.
+
 *  2011-11-16 - I am now working on 1.5.0, so please check that branch for latest work. I am separating
    the gem into core, extras and experimental. I am also moving to ruby 1.9.3.
 
