@@ -683,7 +683,7 @@ App.new do
 
     @vim = master_detail :width => :EXPAND, :weight => 0.15 # TODO i want to change width of left container
     # labels list on left
-    @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
+    @dirs = listbox :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
     
     # we override/open instance so as to only print basename. Also, print unread count 

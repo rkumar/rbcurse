@@ -82,7 +82,7 @@ App.new do
 
     #@vim = MasterDetail.new @form, :row => 1, :col => 1, :width => :EXPAND
     @vim = master_detail :width => :EXPAND
-    @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
+    @dirs = listbox :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
     
     # commands that can be mapped to or executed using M-x

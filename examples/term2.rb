@@ -8,13 +8,13 @@ App.new do
 
   stack :margin_top => 2, :margin => 5, :width => 30 do
     t = Tabular.new(['a', 'b'], [1, 2], [3, 4])
-    list_box :list => t.render
+    listbox :list => t.render
     t = Tabular.new ['a', 'b']
     t << [1, 2]
     t << [3, 4]
     t << [4, 6]
     #list_box :list => t.to_s.split("\n")
-    list_box :list => t.render
+    listbox :list => t.render
   end # stack
   r = `/bin/df -gh`     # stock BSD df
   #r = `df -gh`   # I've installed brew, the df (maybe coreutils gives an error due to g option"
@@ -41,7 +41,7 @@ App.new do
   t = t.render
   wid = t[0].length + 2
   stack :margin_top => 2, :margin => 35, :width => wid do
-    list_box :list => t, :title => '[df -gh]'
+    listbox :list => t, :title => '[df -gh]'
 
     r = `ls -l`
     res = r.split("\n")

@@ -66,7 +66,6 @@ App.new do
     #@t.mark_parents_expanded last # make parents visible
     @t.expand_parents last # make parents visible and expand
     s.add @t, :FIRST
-    #@l = list_box :height => ht, :border_attrib => borderattrib, :selection_mode => :multiple
     s.add dl, :SECOND
     end # vimsplit
   end # stack

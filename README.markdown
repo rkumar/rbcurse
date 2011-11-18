@@ -5,7 +5,7 @@
   Currently this repo is in flux. I've moved stuff off to other repos (rbcurse-core, rbcurse-extras
   and rbcurse-experimental.). This will be a wrapper repo. 
   
-  Please go to branch [1.4.1](https://github.com/rkumar/rbcurse/tree/1.4.1) for the last version of all code in one repo.
+  Please go to branch [1.4.1](https://github.com/rkumar/rbcurse/tree/1.4.1) for the last version of all code in one repo. Gem 1.4.1 is the last gem that contains all the code in one gem/repo.
 
   *  [rbcurse-core](https://github.com/rkumar/rbcurse-core)
 
@@ -13,12 +13,15 @@
 
   *  [rbcurse-experimental](https://github.com/rkumar/rbcurse-experimental)
 
-> The essence of 'simple' is knowing "what to leave out"   - attributed to Steve Jobs
 
 ## DESCRIPTION:
 
 A small but comprehensive widget library written in ruby for creating ncurses/curses
-applications. Tested on 1.9.1/2, compatible with 1.8.7.
+applications. (Tested on 1.9.1/2, compatible with 1.8.7.)
+
+rbcurse is now a meta-gem. It depends on core, extras and experimental. You may install core in isolation, too, if you don't want all these. Extras and experimental depend on core. rbcurse-core depends only on ffi-ncurses.
+
+> The essence of 'simple' is knowing "what to leave out"   - attributed to Steve Jobs
 
 ## News
 
@@ -26,7 +29,8 @@ applications. Tested on 1.9.1/2, compatible with 1.8.7.
        Oh, wait, i've done all this in the 1.5.0 branch, did not think of first
        merging with master, since if things went wrong, master would be fine.
 
-      Merged with master. Now to update the gemspecs
+      Merged with master. Now to update the gemspecs. Done that and created gems locally.
+      Am testing them out, seems okay, will release shortly.
 
 *  2011-11-16 - I am now working on 1.5.0, so please check that branch for latest work. I am separating
    the gem into core, extras and experimental. I am also moving to ruby 1.9.3.
@@ -197,7 +201,7 @@ Just for information, I am transitioning from macports to homebrew. I use rvm.
 
 ## REQUIREMENTS:
 
-* ruby 1.9.1, 1.9.2 1.9.3(I believe it is working on 1.8.7, 1.8.6 as well).
+* ruby 1.9.1, 1.9.2, 1.9.3 (I believe it is working on 1.8.7, 1.8.6 as well).
 
 * ffi-ncurses (>= 0.4.0) Thanks Sean !
 
@@ -213,6 +217,9 @@ Just for information, I am transitioning from macports to homebrew. I use rvm.
     ruby test2.rb
     LOGDIR=~/tmp ruby test1.rb
 
+To install only the core:
+
+   `gem install rbcurse-core`
 
 ## LICENSE:
 

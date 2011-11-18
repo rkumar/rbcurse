@@ -261,7 +261,7 @@ App.new do
     #@vim = vimsplit :height => Ncurses.LINES-2, :weight => 0.25, :orientation => :VERTICAL do |s|
       # try with new listbox
     @vim = ColumnBrowse.new @form, :row => 1, :col => 1, :width => :EXPAND
-    @dirs = list_box :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
+    @dirs = listbox :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
     def @dirs.convert_value_to_text(text, crow) ; File.basename(text); end
     @vim.set_left_component @dirs
@@ -270,7 +270,7 @@ App.new do
     @mails = []
     # FIXME why was list required in next, should have managed. length
     # error
-    @lb2 = list_box :border_attrib => borderattrib, :suppress_borders => true #, :list => []
+    @lb2 = listbox :border_attrib => borderattrib, :suppress_borders => true #, :list => []
     @lb2.one_key_selection = false
     def @lb2.create_default_cell_renderer
       return MailCellRenderer.new "", {"color"=>@color, "bgcolor"=>@bgcolor, "parent" => self, "display_length"=> @width-@internal_width-@left_margin}

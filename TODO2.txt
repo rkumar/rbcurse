@@ -118,4 +118,4 @@
 125	[ ] 1.5.0: replace messagebox with new version, deprecate old (2011-11-17)
 126	[ ] 1.5.0: replace tabbedpane with new version, deprecate old (2011-11-17)
 127	[x] 1.5.0: change paths based on new structure, and chg requires (2011-11-17)
-128	[ ] 1.5.0: chg names of rbasiclistbox and listbox (2011-11-17)
+128	[x] 1.5.0: chg names of rbasiclistbox and listbox (2011-11-17)

@@ -1,5 +1,5 @@
 require 'rbcurse/core/util/app'
-require 'rbcurse/core/widgets/rbasiclistbox'
+require 'rbcurse/core/widgets/rlist'
 
 # just a simple test to ensure that rbasiclistbox is running inside a container.
 App.new do 
@@ -11,17 +11,17 @@ App.new do
   list2 = File.open("data/gemlist.txt",'r').readlines
   lb = nil
   vimsplit :row => 1, :col => 0, :suppress_borders => false, :width => 60, :height => Ncurses.LINES-2, :weight => 0.4, :orientation => :VERTICAL do |s|
-    lb = RubyCurses::BasicListbox.new nil, :list => list, :suppress_borders => false
-    #lb = RubyCurses::BasicListbox.new nil, :list => list, :show_selector => true, :row_selected_symbol => "*", :suppress_borders => false
-    #lb = RubyCurses::BasicListbox.new nil, :list => list
+    lb = RubyCurses::List.new nil, :list => list, :suppress_borders => false
+    #lb = RubyCurses::List.new nil, :list => list, :show_selector => true, :row_selected_symbol => "*", :suppress_borders => false
+    #lb = RubyCurses::List.new nil, :list => list
     #lb = list_box "A list", :list => list
     lb.show_selector = false
     #lb.row_selected_symbol = "*"
     #lb = list_box "A list", :list => list
     
     s.add lb, :FIRST
-    #lb2= RubyCurses::BasicListbox.new nil, :list => list.shuffle, :justify => :center
-    lb2 = basiclist :list => list2, :justify => :left, :suppress_borders => false
+    #lb2= RubyCurses::List.new nil, :list => list.shuffle, :justify => :center
+    lb2 = listbox :list => list2, :justify => :left, :suppress_borders => false
     s.add lb2, :SECOND
     label({:text => "checking overwrite from list", :row => 10, :col => 60})
     label({:text => "checking overwrite from list 1", :row => 11, :col => 60})

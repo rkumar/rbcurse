@@ -71,7 +71,7 @@ App.new do
     @t.mark_parents_expanded last # make parents visible
   end
   stack :margin_top => 1, :margin => 30, :width => 50 do
-    @l = list_box :height => ht, :border_attrib => borderattrib
+    @l = listbox :height => ht, :border_attrib => borderattrib
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       $log.debug " XXX GOT A LIST EVENT #{ev} "
       message ev.source.selected_value

@@ -1,3 +1,20 @@
+**2011-11-17**
+## 1.5.0
+
+### split rbcurse into core, extras and experimental
+    Now rbcurse is a meta-gem which includes the other three.
+
+### major rehaul of directory structures
+    ilb/core/widgets, lib/core/include, lib/core/system etc
+
+### class name changes
+
+    * rbasiclistbox -> rlist, shortcut: basic_list -> listbox
+		* rlistbox              , shortcut: list_box   -> edit_list
+    * rtable                , shortcut: table      -> edit_table
+    * rtabularwidget        , shortcut: tabular_widget -> table (alias)
+
+
 **2011-11-06**
 ## 1.4.1
 

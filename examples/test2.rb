@@ -20,7 +20,7 @@ require 'rbcurse/extras/include/checkboxcellrenderer'
 require 'rbcurse/extras/include/comboboxcellrenderer'
 require 'rbcurse/extras/include/celleditor'
 require 'rbcurse/extras/widgets/rlistbox'
-require 'rbcurse/core/widgets/rbasiclistbox'
+require 'rbcurse/core/widgets/rlist'
 #require 'rbcurse/deprecated/widgets/rmessagebox'
 require 'rbcurse/core/widgets/rtree'
 require 'rbcurse/core/include/appmethods.rb'
@@ -100,7 +100,7 @@ if $0 == __FILE__
         r += 1
         mylist = File.open("data/tasks.txt",'r').readlines
         #0.upto(100) { |v| mylist << "#{v} scrollable data" }
-        listb = BasicListbox.new @form do
+        listb = List.new @form do
           name   "mylist" 
           row  r 
           col  1 

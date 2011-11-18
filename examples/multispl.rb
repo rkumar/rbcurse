@@ -10,10 +10,10 @@ App.new do
   stack :margin_top => 2, :margin => 1, :width => FFI::NCurses.COLS-2 do
     splp = multisplit "outer", :height => FFI::NCurses.LINES - 3 , :split_count => 2, :orientation => oo  do |s|
       #s.suppress_borders = false
-        lb = list_box "Classes",:list => `ri -f bs`.split("\n")
+        lb = listbox "Classes",:list => `ri -f bs`.split("\n")
         s.add lb
 
-        lb2 = list_box "Methods", :list => ["highline", "sqlite3-ruby", "thor", "ncurses"], :choose => ["thor"]
+        lb2 = listbox "Methods", :list => ["highline", "sqlite3-ruby", "thor", "ncurses"], :choose => ["thor"]
         #lb2.suppress_borders true
         s.add lb2
       #sc = textarea "Edit"
