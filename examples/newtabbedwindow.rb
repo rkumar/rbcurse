@@ -2,10 +2,10 @@
 #
 require 'logger'
 require 'rbcurse'
-require 'rbcurse/extras/newtabbedpane'
+require 'rbcurse/core/widgets/tabbedpane'
 require 'rbcurse/core/widgets/rcontainer'
 require 'rbcurse/core/widgets/rcombo'
-require 'rbcurse/core/widgets/newtabbedwindow'
+require 'rbcurse/core/widgets/tabbedwindow'
 
 include RubyCurses
 class SetupTabbedPane
@@ -26,7 +26,7 @@ class SetupTabbedPane
     r.add(f2)
     r.add(f3,f4,f5)
 
-    tp = NewTabbedWindow.new :row => 3, :col => 7, :width => 60, :height => 20 do
+    tp = TabbedWindow.new :row => 3, :col => 7, :width => 60, :height => 20 do
       title "User Setup"
       button_type :ok_apply_cancel
       tab "&Profile" do

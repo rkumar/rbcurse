@@ -3,7 +3,7 @@
 require 'logger'
 require 'rbcurse'
 #require 'rbcurse/core/widgets/newtabbedpane'
-require 'rbcurse/rtabbedpane'
+require 'rbcurse/core/widgets/rtabbedpane'
 
 class TestTabbedPane
   def initialize
