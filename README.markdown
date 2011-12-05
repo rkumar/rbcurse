@@ -1,8 +1,12 @@
 # rbcurse (for ruby 1.9.x)
 
+## Please install rbcurse-core. I have just released 0.0.0 on Dec 5, 2011.
+
+    `gem install rbcurse-core`
+
 ## WARNING
 
-  Currently this repo is in flux. I've moved stuff off to other repos (rbcurse-core, rbcurse-extras
+  Currently this repo (rbcurse) is in flux. I've moved stuff off to other repos (rbcurse-core, rbcurse-extras
   and rbcurse-experimental.). This will be a wrapper repo. 
   
   Please go to branch [1.4.1](https://github.com/rkumar/rbcurse/tree/1.4.1) for the last version of all code in one repo. Gem 1.4.1 is the last gem that contains all the code in one gem/repo.
