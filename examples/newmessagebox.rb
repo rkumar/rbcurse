@@ -1,12 +1,12 @@
 # this is a test program, tests out tabbed panes. type F1 to exit
 #
 require 'rbcurse'
-require 'rbcurse/core/widgets/newmessagebox'
+require 'rbcurse/core/widgets/rmessagebox'
 
 def alertme mess, config={}
 
   _title = config[:title] || "Alert"
-    tp = NewMessagebox.new config do
+    tp = Messagebox.new config do
       title _title
       button_type :ok
       message mess
@@ -16,13 +16,14 @@ def alertme mess, config={}
 end
 def textdialog mess, config={}
   config[:title] ||= "Alert"
-  tp = NewMessagebox.new config do
+  tp = Messagebox.new config do
     button_type :ok
     text mess
   end
   tp.run
 end
 # 
+# FIXME needs to return field entered if OK, else nil
 def newget_string label, config={}
   config[:title] ||= "Entry"
   label_config = config[:label_config] || {}
@@ -39,7 +40,7 @@ def newget_string label, config={}
   #field_config[:display_length] ||= 50  # i want it to extend since i don't know the actual width
   field_config[:width] ||= 50  # i want it to extend since i don't know the actual width
 
-  tp = NewMessagebox.new config do
+  tp = Messagebox.new config do
     button_type :ok_cancel
     item Label.new nil, label_config
     item Field.new nil, field_config
@@ -52,8 +53,8 @@ class SetupMessagebox
     $config_hash ||= Variable.new Hash.new
     #configvar.update_command(){ |v| $config_hash[v.source()] = v.value }
 
-    #tp = NewMessagebox.new :row => 3, :col => 7, :width => 60, :height => 20 , :color => :white, :bgcolor => :blue do
-    tp = NewMessagebox.new :color => :white, :bgcolor => :blue do
+    #tp = Messagebox.new :row => 3, :col => 7, :width => 60, :height => 20 , :color => :white, :bgcolor => :blue do
+    tp = Messagebox.new :color => :white, :bgcolor => :blue do
       title "User Setup"
       button_type :ok_apply_cancel
         item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
