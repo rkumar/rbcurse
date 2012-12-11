@@ -1,11 +1,16 @@
-require 'rbcurse/app'
+require 'rbcurse/core/util/app'
+
+def help_text
+    <<-eos
+    eos
+end
 
 App.new do 
   header = app_header "rbcurse #{Rbcurse::VERSION}", :text_center => "My Demo", :text_right =>"New Improved!", 
       :color => :black, :bgcolor => :white, :attr => :bold 
   message "Press F10 to exit from here, F1 for help, F2 for menu"
 
-  stack :margin_top => 2, :margin => 5, :width => 30 do
+  stack :margin_top => 1, height => FFI::NCurses.LINES-3 do
 
   end # stack
   status_line :row => FFI::NCurses.LINES-1
