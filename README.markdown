@@ -2,7 +2,7 @@
 
 ## Please install rbcurse-core. I have just released 0.0.0 on Dec 5, 2011.
 
-    `gem install rbcurse-core`
+    gem install rbcurse-core
 
 ## WARNING
 
@@ -172,9 +172,11 @@ runtime. Very flexible unlike ncurses forms and fields.
    Splitpanes suffered from the problem of the system not knowing which pane the user was 
    issuing a command (resize) in (when there were embedded panes). 
 
-## Scrollpane - Avoid this. Listboxes and textareas already implement scrolling. I was using pads 
-to implement a viewport, this was slow esp with scrollpanes within splitpanes, but the copywin() and
-related methods often gave errors or seg-faults. 
+## Scrollpane 
+   Avoid this. Listboxes and textareas already implement scrolling. I was using
+   pads to implement a viewport, this was slow esp with scrollpanes within
+   splitpanes, but the copywin() and related methods often gave errors or
+   seg-faults. 
 
 ## General terminal related issues.
 
