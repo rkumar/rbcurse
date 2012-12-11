@@ -4,6 +4,8 @@
 # I have used a listbox here, perhaps a Table would be more configurable
 # than a listbox.
 #
+# FIXME many popups use the old Messagebox which will crash. i've updated
+# grep not the others.
 # Copyright rkumar 2009, 2010 under Ruby License.
 #
 ####################################################
@@ -83,9 +85,10 @@ class FileExplorer
   def goto_previous_dir
     #alert "Previous dirs contain #{@prev_dirs} "
     d = @prev_dirs.pop
-    if !d.nil? and d == @wdir
+    if !d.nil? && d == @wdir
       d = @prev_dirs.pop
     end
+    d = @wdir unless d # for those cases where we are showing some result and user doesn't know how t get back
     change_dir d unless d.nil?
   end
   def filter list
@@ -308,10 +311,11 @@ class RFe
   def initialize
     @window = VER::Window.root_window
     @form = Form.new @window
-    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>Ncurses.COLS-2}
+    # made in invisible since i am using chunks to print. however, we do set this variable
+    status_row = RubyCurses::Label.new @form, {'text' => "", :row => Ncurses.LINES-4, :col => 0, :display_length=>Ncurses.COLS-2, :visible => false}
     @status_row = status_row
     colb = Ncurses.COLS/2
-    ht = Ncurses.LINES - 5
+    ht = Ncurses.LINES - 4
     wid = Ncurses.COLS/2 - 0
     @trash_path = File.expand_path("~/.Trash")
     @trash_exists = File.directory? @trash_path
@@ -350,28 +354,44 @@ class RFe
     else
       str= "#{@current_list.list.selected_row_count} files "
     end
-    mb = RubyCurses::MessageBox.new do
-      title "Move"
-      message "Move #{str} to"
-      type :input
-      width 80
-      default_value other_dir
-      button_type :ok_cancel
-      default_button 0
-    end
+
+      mb = RubyCurses::MessageBox.new :width => 80 do
+        title "Move"
+        message "Move #{str} to"
+        add Field.new :default => other_dir, :bgcolor => :cyan, :name => "name"
+        button_type :ok_cancel
+        default_button 0
+      end
+      index = mb.run
+      fld = mb.widget("name")
+
+    #mb = RubyCurses::MessageBox.new do
+      #title "Move"
+      #message "Move #{str} to"
+      #type :input
+      #width 80
+      #default_value other_dir
+      #button_type :ok_cancel
+      #default_button 0
+    #end
       #confirm "selected :#{mb.input_value}, #{mb.selected_index}"
-      if mb.selected_index == 0
+      if index == 0
+        begin
         if @current_list.list.selected_row_count == 0
-          FileUtils.move(fp, mb.input_value)
+          FileUtils.move(fp, fld.text)
           #ret = @current_list.list.list().delete_at @current_list.list.current_index  # ???
           #  @current_list.entries.delete_at @current_list.current_index
           @current_list.delete_at
         else
           each_selected_row do |f|
-            FileUtils.move(f, mb.input_value)
+            FileUtils.move(f, fld.text)
           end
           @current_list.remove_selected_rows
           @current_list.list.clear_selection
+        end
+        rescue => err
+          textdialog err
+          $log.debug "XXX: Exception in rfe, move #{err.to_s} "
         end
         other_list.rescan
       end 
@@ -427,7 +447,7 @@ class RFe
     else
       str= "#{@current_list.list.selected_row_count} files "
     end
-    if confirm("delete #{str}")==:YES
+    if confirm("delete #{str}")
       if @current_list.list.selected_row_count == 0
         if @trash_exists
           FileUtils.mv fp, @trash_path
@@ -475,6 +495,7 @@ class RFe
       end 
   end
   ## TODO : make this separate and callable with its own keylabels
+  # Now you can just use viewer() instead of having to write this. See Utils in rwidget.rb
   def view  content=nil # can throw IO errors
     require 'rbcurse/core/widgets/rtextview'
     wt = 0
@@ -502,7 +523,7 @@ class RFe
       row  0
       col  0
       width ww
-      height wh-2
+      height wh-0
       title fp
       title_attrib 'bold'
       print_footer true
@@ -515,7 +536,7 @@ class RFe
     @v_window.wrefresh
     Ncurses::Panel.update_panels
     while((ch = @v_window.getchar()) != ?\C-q.getbyte(0) )
-      break if ch == FFI::NCurses::KEY_F3
+      break if ch == FFI::NCurses::KEY_F3 || ch == KEY_F10 || ch == ?q.getbyte(0)
       @v_form.handle_key ch
       @v_form.repaint
       ##@v_window.wrefresh
@@ -553,7 +574,7 @@ class RFe
       delete
     when 'u'
       str= "move #{fn} to #{other_list.cur_dir}"
-      if confirm("#{str}")==:YES
+      if confirm("#{str}")
       $log.debug " MOVE #{str}"
       end
     when 'v'
@@ -564,7 +585,7 @@ class RFe
       #end
     when 'r'
       str= "ruby #{fn}"
-      if confirm("#{str}")=='y'
+      if confirm("#{str}")
       $log.debug " #{str} "
       end
     when 'e'
@@ -596,7 +617,7 @@ class RFe
       @open_in_other = true # ???basically keep opening in other
     when 'd'
       str= "delete #{fn} "
-      if confirm("#{str}")==:YES
+      if confirm("#{str}")
         $log.debug " delete #{fp}"
         FileUtils.rm fp
         ret=@current_list.list.list_data_model.delete_at @current_list.list.current_index  # ???
@@ -604,7 +625,7 @@ class RFe
       end
     when 'u'
       str= "move #{fn} to #{other_list.cur_dir}"
-      if confirm("#{str}")==:YES
+      if confirm("#{str}")
       $log.debug " MOVE #{str}"
       end
     when 'b'
@@ -712,36 +733,23 @@ class RFe
     @lista.draw_screen lasta
     @listb.draw_screen lastb
 
-#    @form.bind_key(?\M-x){
-#      @current_list.mark_block
-#    }
-    # i am just testing out double key bindings
-    @form.bind_key([?\C-w,?v]){
-      @status_row.text = "got C-w, v"
-      $log.debug " Got C-w v "
-      view()
-    }
-    @form.bind_key([?\C-w,?e]){
-      @status_row.text = "got C-w, e"
-      $log.debug " Got C-w e "
-      edit()
-    }
     # bind dd to delete file
     # actually this should be in listbox, and we should listen for row delete and then call opt_file
-    @form.bind_key([?d,?d]){
+    @form.bind_key([?d,?d], 'delete'){
       opt_file 'd'
     }
-    @form.bind_key([?q,?q]){
+    # list traps 'q' so this won't work
+    @form.bind_key([?q,?q], 'quit'){
       @stopping = true
     }
     # this won't work since the listbox will consume the d first
-    @form.bind_key(?@){
+    @form.bind_key(?@, 'home'){
       @current_list.change_dir File.expand_path("~/")
     }
-    @form.bind_key(?^){
+    @form.bind_key(?^, 'previous dir'){
       @current_list.change_dir @current_list.prev_dirs[0] unless @current_list.prev_dirs.empty?
     }
-    @form.bind_key(?\C-f){
+    @form.bind_key(?\C-f, 'file menu'){
       @klp.mode :file
       @klp.repaint
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
@@ -756,7 +764,8 @@ class RFe
       end
       @klp.mode :normal
     }
-    @form.bind_key(?\C-d){
+    # C-d has been bound to scroll-down
+    @form.bind_key(?\C-w, 'dir menu'){
       @klp.mode :dir
       @klp.repaint
       keys = @klp.get_current_keys
@@ -772,24 +781,24 @@ class RFe
       end
       @klp.mode :normal
     }
-    # backspace
-    @form.bind_key(127){
+    # backspace KEY_BS
+    @form.bind_key(127, 'previous dir'){
       @current_list.goto_previous_dir
     }
     # form gives this to list which consumes it for selection.
     # need to bind to list's LIST_SELECTION_EVENT
-    @form.bind_key(32){
+    @form.bind_key(32, 'pager'){
       fp = @current_list.filepath
       page fp
     }
-    @form.bind_key(FFI::NCurses::KEY_F3){
+    @form.bind_key(FFI::NCurses::KEY_F3, 'view'){
       begin 
         view()
       rescue => err
         alert err.to_s
       end
     }
-    @form.bind_key(FFI::NCurses::KEY_F1){
+    @form.bind_key(FFI::NCurses::KEY_F1, 'help'){
       #Io.view(["this is some help text","hello there"])
       color0 = get_color($promptcolor, 'black','green')
       color1 = get_color($reversecolor, 'green','black')
@@ -843,29 +852,29 @@ class RFe
       }
     end
     }
-    @form.bind_key(FFI::NCurses::KEY_F4){
+    @form.bind_key(FFI::NCurses::KEY_F4, 'edit'){
       edit()
     }
-    @form.bind_key(FFI::NCurses::KEY_F6){
+    @form.bind_key(FFI::NCurses::KEY_F6, 'sort'){
       selected_index, sort_key, reverse, case_sensitive = sort_popup
       if selected_index == 0
         @current_list.sort(sort_key, reverse)
       end
     }
-    @form.bind_key(FFI::NCurses::KEY_F5){
+    @form.bind_key(FFI::NCurses::KEY_F5, 'filter'){
       filter()
     }
-    @form.bind_key(FFI::NCurses::KEY_F7){
+    @form.bind_key(FFI::NCurses::KEY_F7, 'grep'){
       grep_popup()
     }
-    @form.bind_key(FFI::NCurses::KEY_F8){
+    @form.bind_key(FFI::NCurses::KEY_F8, 'system'){
       system_popup()
     }
     # will work if you are in vim mode
-    @form.bind_key(?p){
+    @form.bind_key(?p, 'pager'){
       page
     }
-    @form.bind_key(?q){
+    @form.bind_key(?z, 'qlmanage OSX'){
       qlmanage
     }
     # will no longer come here. list event has to be used
@@ -895,16 +904,18 @@ class RFe
     Ncurses::Panel.update_panels
     begin
       chunks=["File","Key"]
-      color0 = get_color($promptcolor, 'black','cyan')
-      color1 = get_color($datacolor, 'white','cyan')
+      color0 = get_color($promptcolor, 'white','blue')
+      color1 = get_color($datacolor, 'black','green')
 
       ## qq stops program, but only if M-v (vim mode)
     while(!stopping? && (ch = @window.getchar()) != ?\C-q.getbyte(0) )
+      break if ch == KEY_F10
       s = keycode_tos ch
       #status_row.text = "|  Pressed #{ch} , #{s}"
       @form.handle_key(ch)
 
       # the following is just a test of show_colored_chunks
+      # Please use status_line introduced in 1.4.x
       #count = @current_list.list.size
       count1 = @lista.list.size
       count2 = @listb.list.size
@@ -948,7 +959,7 @@ def get_key_labels categ=nil
   if categ.nil?
   key_labels = [
     ['C-q', 'Exit'], ['C-v', 'View'], 
-    ['C-f', 'File'], ['C-d', 'Dir'],
+    ['C-f', 'File'], ['C-w', 'Dir'],
     ['C-Sp','Select'], ['Spc', "Preview"],
     ['F3', 'View'], ['F4', 'Edit'],
     ['F5', 'Filter'], ['F6', 'Sort'],
@@ -997,7 +1008,8 @@ def get_key_labels_table
   return key_labels
 end
 def sort_popup
-  mform = RubyCurses::Form.new nil
+  #mform = RubyCurses::Form.new nil
+  mform = nil
   field_list = []
   r = 4
   $radio = RubyCurses::Variable.new
@@ -1009,8 +1021,8 @@ def sort_popup
       value rtextvalue[ix]
       color 'black'
       bgcolor 'white'
-      row r
-      col 5
+      #row r
+      #col 5
     end
     field_list << field
     r += 1
@@ -1022,27 +1034,29 @@ def sort_popup
       name cbtext
       color 'black'
       bgcolor 'white'
-      row r
-      col 30
+      #row r
+      #col 30
     end
     field_list << field
     r += 1
   end
-  mb = RubyCurses::MessageBox.new mform do
+  mb = RubyCurses::MessageBox.new :width => 50 do
     title "Sort Options"
     button_type :ok_cancel
     default_button 0
   end
-  if mb.selected_index == 0
+  field_list.each { |e| mb.add(e) }
+  index = mb.run
+  if index == 0
     $log.debug " SORT POPUP #{$radio.value}"
     #$log.debug " SORT POPUP #{mb.inspect}"
-    $log.debug " SORT POPUP #{mform.by_name["Reverse"].value}"
-    $log.debug " SORT POPUP #{mform.by_name["case sensitive"].value}"
+    $log.debug " SORT POPUP #{mb.widget("Reverse").value}"
+    $log.debug " SORT POPUP #{mb.widget("case sensitive").value}"
   end
-  return mb.selected_index, $radio.value, mform.by_name["Reverse"].value, mform.by_name["case sensitive"].value
+  return index, $radio.value, mb.widget("Reverse").value, mb.widget("case sensitive").value
 end
 def filter
-  f = get_string("Enter a filter pattern", 20, "*")
+  f = get_string("Enter a filter pattern", :maxlen => 20, :default => "*")
   f = "*" if f.nil? or f == ""
   @current_list.filter_pattern = f
   @current_list.rescan
@@ -1050,53 +1064,65 @@ end
 
 # ask user for pattern to grep through files
 #  and display file names in same list
+#  Please see testmessagebox.rb for cleaner ways of creating messageboxes.
 
 def grep_popup
   last_regex = @last_regex || ""
   last_pattern = @last_pattern || "*"
-  mform = RubyCurses::Form.new nil
   r = 4
+  mform = nil
     field = RubyCurses::Field.new mform do
       name "regex"
-      row r
-      col 30
+      #row r
+      #col 30
       set_buffer last_regex
-      set_label Label.new @form, {'text' => 'Regex', 'col'=>5, :color=>'black',:bgcolor=>'white','mnemonic'=> 'R'}
+      label 'Regex'
+      #set_label Label.new @form, {'text' => 'Regex', 'col'=>5, 'mnemonic'=> 'R'}
     end
     r += 1
-    field = RubyCurses::Field.new mform do
+    field1 = RubyCurses::Field.new mform do
       name "filepattern"
-      row r
-      col 30
+      #row r
+      #col 30
       set_buffer last_pattern
-      set_label Label.new @form, {'text' => 'File Pattern','col'=>5, :color=>'black',:bgcolor=>'white','mnemonic'=> 'F'}
+      label 'File Pattern'
+      #set_label Label.new @form, {'text' => 'File Pattern','col'=>5, :color=>'black',:bgcolor=>'white','mnemonic'=> 'F'}
     end
     r += 1
+    fields = []
   ["Recurse", "case insensitive"].each do |cbtext|
-    field = RubyCurses::CheckBox.new mform do
+    fields.push(RubyCurses::CheckBox.new(mform) do
       text cbtext
       name cbtext
-      color 'black'
-      bgcolor 'white'
-      row r
-      col 5
+      #color 'black'
+      #bgcolor 'white'
+      #row r
+      #col 5
     end
+               )
     r += 1
   end
-  mb = RubyCurses::MessageBox.new mform do
+  mb = RubyCurses::MessageBox.new :width => 50 do
     title "Grep Options"
     button_type :ok_cancel
     default_button 0
+    item field
+    item field1
+    item fields.first
+    item fields.last
   end
-  if mb.selected_index == 0
-    return if mform.by_name["regex"].getvalue()==""
-    @last_regex = mform.by_name["regex"].getvalue
-    inp = mform.by_name["regex"].getvalue
-    fp = mform.by_name["filepattern"].getvalue
+  selected_index = mb.run
+  if selected_index == 0
+    return if mb.form.by_name["regex"].getvalue()==""
+    @last_regex = mb.form.by_name["regex"].getvalue
+    inp = mb.form.by_name["regex"].getvalue
+    fp = mb.form.by_name["filepattern"].getvalue
     @last_pattern = fp
     flags=""
-    flags << " -i "  if mform.by_name["case insensitive"].value==true
-    flags << " -R " if mform.by_name["Recurse"].value==true
+    #flags << " -i "  if mb.form.by_name["case insensitive"].value==true
+    #flags << " -R " if mb.form.by_name["Recurse"].value==true
+    flags << " -i "  if fields[0].value==true
+    flags << " -R "  if fields[1].value==true
     # sometimes grep pukes "No such file or directory if you specify some
     #  filespec that is not present. I don't want it to come in filestr
     #  so i am not piping stderr to stdout
@@ -1113,19 +1139,32 @@ def grep_popup
     @current_list.populate files
     # Use backspace to go back
   end
-  return mb.selected_index, mform.by_name["regex"].getvalue, mform.by_name["filepattern"].getvalue, mform.by_name["Recurse"].value, mform.by_name["case insensitive"].value
+  return selected_index, mb.form.by_name["regex"].getvalue, mb.form.by_name["filepattern"].getvalue, fields[1].value, fields[0].value
 end
 
 def system_popup
   deflt = @last_system || ""
   options=["run in shell","view output","file explorer"]
   #inp = get_string("Enter a system command", 30, deflt)
-  sel, inp, hash = get_string_with_options("Enter a system command", 40, deflt, {"radiobuttons" => options, "radio_default"=>@last_system_radio || options[0]})
+  
+      mb = MessageBox.new :title => "System Command" , :width => 80 do
+        add Field.new :label => 'Enter command', :name => "cmd", :display_length => 50, :bgcolor => :cyan, 
+          :text => deflt
+        $radio = RubyCurses::Variable.new
+        add RadioButton.new :text => "run in shell", :color => :blue, :variable => $radio
+        add RadioButton.new :text => "view output", :color => :red, :variable => $radio
+        add RadioButton.new :text => "file explorer", :color => :red, :variable => $radio
+        button_type :ok_cancel
+      end
+      sel = mb.run
+      inp = mb.widget("cmd").text
+      $log.debug "XXX:  value of radio is #{$radio.value}, inp : #{inp}  "
+  #sel, inp, hash = get_string_with_options("Enter a system command", 40, deflt, {"radiobuttons" => options, "radio_default"=>@last_system_radio || options[0]})
   if sel == 0
     if !inp.nil?
       @last_system = inp
-      @last_system_radio = hash["radio"]
-      case hash["radio"]
+      @last_system_radio = $radio.value
+      case $radio.value
       when options[0]
         shell_out inp
       when options[1]
@@ -1138,10 +1177,13 @@ def system_popup
         @current_list.title inp
         @current_list.populate files
         $log.debug " SYSTEM got #{files.size}, #{files.inspect}"
+      else
+        shell_out inp
       end
     end
   end
 end
+# This will notwork, dunno if its being called
 def popup
   deflt = @last_regexp || ""
   #sel, inp, hash = get_string_with_options("Enter a filter pattern", 20, "*", {"checkboxes" => ["case sensitive","reverse"], "checkbox_defaults"=>[true, false]})
@@ -1159,13 +1201,15 @@ def popup
   end
   $log.debug " POPUP: #{sel}: #{inp}, #{hash['case sensitive']}, #{hash['reverse']}"
 end
+# This won't work if you do something like 'ls -l', you will need to do 'ls -l | less'
 def shell_out command
   @window.hide
   Ncurses.endwin
-  system command
+  ret = system command
   Ncurses.refresh
   #Ncurses.curs_set 0  # why ?
   @window.show
+  ret
 end
 end
 if $0 == __FILE__
