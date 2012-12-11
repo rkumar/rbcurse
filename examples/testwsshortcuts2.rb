@@ -1,4 +1,4 @@
-# this is a test program, tests out tabbed panes. type F1 to exit
+# this is a test program, tests out widget shortcuts. type C-q to exit
 #
 require 'rbcurse'
 require 'rbcurse/core/util/widgetshortcuts'
@@ -96,7 +96,7 @@ class SetupMessagebox
       flow do
         #box do
           button :text => "  Ok  " do  alert "Pressed okay"  end
-          button :text => "Cancel" do  confirm "Quit?" ; throw :close;  end
+          button :text => "Cancel" do  confirm "Do you wish to Quit?" ; throw :close;  end
           button :text => "Apply "
         #end
       end
