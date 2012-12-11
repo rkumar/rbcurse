@@ -606,7 +606,7 @@ if $0 == __FILE__
       # END
       @form.bind_key(FFI::NCurses::KEY_F3) { 
         require 'rbcurse/core/util/viewer'
-        RubyCurses::Viewer.view(path || "rbc13.log", :close_key => KEY_RETURN, :title => "<Enter> to close")
+        RubyCurses::Viewer.view(path || "rbc13.log", :close_key => KEY_ENTER, :title => "<Enter> to close")
       }
       @form.bind_key(FFI::NCurses::KEY_F4) {  shell_output }
       @form.bind_key(FFI::NCurses::KEY_F5) {  suspend }
