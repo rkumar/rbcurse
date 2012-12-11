@@ -32,14 +32,14 @@ class Tester
     h = 20; w = 75; t = 3; l = 4
 
     vf = :H
-    @vim = VimSplit.new @form, {:row => 2, :col => 5, :width => :EXPAND, :height => 25, :orientation => vf, :weight => 0.4}
-    lb = Listbox.new nil, :list => ["ruby","perl","lisp","jaava", "c-blunt"] , :name => "mylist"
-    lb1 = Listbox.new nil, :list => ["roger","borg","haas","tsonga", "kolya","delpotro"] , :name => "mylist1"
+    @vim = VimSplit.new @form, {:row => 2, :col => 5, :width => :EXPAND, :height => 25, :orientation => vf, :weight => 0.6}
+    lb = Listbox.new nil, :list => ["ruby","perl","lisp","java", "scala"] , :name => "mylist"
+    lb1 = Listbox.new nil, :list => ["roger","borg","laver","edberg", "sampras","ashe"] , :name => "mylist1"
     
     lb2 = Listbox.new nil, :list => `gem list --local`.split("\n") , :name => "mylist2"
 
-    alist = %w[ ruby perl python java jruby macruby rubinius rails rack sinatra pylons django cakephp grails] 
-    str = "Hello people of this world.\nThis is a textbox.\nUse arrow keys, j/k/h/l/gg/G/C-a/C-e/C-n/C-p\n"
+    alist = %w[ ruby perl python java jruby macruby rubinius rails rack sinatra gawk zsh bash groovy] 
+    str = "Hello people of this world.\nThis is a textbox.\nUse arrow keys, j/k/h/l/gg/G/C-a/C-e/C-d/C-b\n"
     str << alist.join("\n")
     stfl = vf == :V ? :FLOW : :STACK
     @vim.add lb, :FIRST, :AUTO
@@ -47,7 +47,7 @@ class Tester
     @vim.add ["mercury","venus","earth","mars","jupiter", "saturn"], :FIRST, :AUTO
     @vim.add alist, :FIRST, 0.4, stfl
     #@vim.add alist, :FIRST, nil, stfl
-    @vim.add alist.shuffle, :FIRST, nil, stfl
+    @vim.add alist.shuffle, :FIRST, 0.6, stfl
     @vim.add lb2, :SECOND, :AUTO
     @vim.add str, :SECOND, :AUTO
       ok_button = Button.new @form do
