@@ -11,17 +11,17 @@ require 'rbcurse/core/util/app'
       w = 60
       menulink "&View Todo", :width => w, :description => "View TODO in sqlite"  do |s|
         message "Pressed #{s.text} "
-        require './viewtodo'; todo = ViewTodo::TodoApp.new; todo.run
+        #require './viewtodo'; todo = ViewTodo::TodoApp.new; todo.run
       end
       blank
       menulink "&Edit Todo", :width => w, :description => "Edit TODO in CSV"  do |s|
         message "Pressed #{s.text} "
-        require './testtodo'; todo = TestTodo::TodoApp.new; todo.run
+        #require './testtodo'; todo = TestTodo::TodoApp.new; todo.run
       end
       blank
       menulink "&Messages", :width => w, :description => "View messages in current folder"  do |s|
         message "Pressed #{s.text} "
-        load './menu1.rb'
+        #load './menu1.rb'
       end
       blank
       menulink "&Compose", :width => w, :description => "Compose a mail"  do |s|
