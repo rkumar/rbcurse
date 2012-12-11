@@ -247,7 +247,8 @@ if $0 == __FILE__
         rescue => ex
           $log.debug( ex) if ex
           $log.debug(ex.backtrace.join("\n")) if ex
-          alert ex.to_s
+          #alert ex.to_s
+          textdialog ex
         end
       end
     end
