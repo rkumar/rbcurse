@@ -1,8 +1,10 @@
 # rbcurse (for ruby 1.9.x)
 
-## Please install rbcurse-core. I have just released 0.0.0 on Dec 5, 2011.
+## Please install rbcurse-core. I have just released 0.0.3 on Jan 5, 2012.
 
     gem install rbcurse-core
+
+Version 1.5.2 of rbcurse will install both core and rbcurse-extras.
 
 ## WARNING
 
