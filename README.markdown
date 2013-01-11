@@ -107,7 +107,6 @@ runtime. Very flexible unlike ncurses forms and fields.
 
 ## Screenshots
 
-*  <http://www.benegal.org/files/screen/?M=D>  
 *  <http://totalrecall.wordpress.com>   
 *  <http://github.com/rkumar/rbcurse/wikis/screenshots>
 
