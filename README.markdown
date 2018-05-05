@@ -2,7 +2,8 @@
 
 ## Kindly use the `canis` gem instead. Have a look at `ncumbra` too.
 
-## Please install rbcurse-core. I have just released 0.0.3 on Jan 5, 2012.
+
+Please install rbcurse-core. I have just released 0.0.3 on Jan 5, 2012.
 
     gem install rbcurse-core
 
